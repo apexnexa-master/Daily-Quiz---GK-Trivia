@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Deletion - GK Quiz Daily</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0A0E27 0%, #1A1F4B 50%, #0A0E27 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            backdrop-filter: blur(20px);
+        }
+        h1 {
+            color: #fff;
+            font-size: 28px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+        h2 {
+            color: #fff;
+            font-size: 18px;
+            margin: 24px 0 12px;
+        }
+        p, li {
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+        ol {
+            padding-left: 20px;
+        }
+        ol li { margin-bottom: 8px; }
+        .step {
+            background: rgba(99,102,241,0.1);
+            border: 1px solid rgba(99,102,241,0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .step h3 { color: #818CF8; font-size: 15px; margin-bottom: 8px; }
+        .step p { font-size: 13px; }
+        code {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #A5B4FC;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+        }
+        .data-table th, .data-table td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 13px;
+            color: rgba(255,255,255,0.8);
+        }
+        .data-table th { color: rgba(255,255,255,0.5); font-weight: 500; }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-deleted { background: rgba(34,197,94,0.2); color: #22C55E; }
+        .badge-retained { background: rgba(234,179,8,0.2); color: #EAB308; }
+        .email-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #6366F1, #8B5CF6);
+            color: #fff;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            margin-top: 16px;
+            transition: opacity 0.2s;
+        }
+        .email-link:hover { opacity: 0.9; }
+        .footer {
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>GK Quiz Daily</h1>
+        <p class="subtitle">Account &amp; Data Deletion Request</p>
+
+        <p>We respect your privacy and provide a straightforward way to delete your account and associated data from GK Quiz Daily.</p>
+
+        <h2>How to Delete Your Account</h2>
+
+        <div class="step">
+            <h3>Option 1: Delete from the App (Recommended)</h3>
+            <p>Open the GK Quiz Daily app, go to <strong>Profile &rarr; Settings &rarr; Delete Account</strong>. Follow the on-screen confirmation to permanently delete your account and data.</p>
+        </div>
+
+        <div class="step">
+            <h3>Option 2: Request via Email</h3>
+            <p>Send an email from the email address associated with your GK Quiz Daily account with the subject line <strong>"Account Deletion Request"</strong> to:</p>
+            <p style="margin-top: 12px;"><a class="email-link" href="mailto:your-email@example.com?subject=Account Deletion Request">Send Deletion Request</a></p>
+            <p style="margin-top: 8px; font-size: 13px;">We will process your request within <strong>7 business days</strong> and send a confirmation email once completed.</p>
+        </div>
+
+        <h2>What Data Is Deleted</h2>
+        <table class="data-table">
+            <thead>
+                <tr><th>Data Type</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Profile information (name, email, photo)</td><td><span class="badge badge-deleted">Deleted</span></td></tr>
+                <tr><td>Quiz scores and attempt history</td><td><span class="badge badge-deleted">Deleted</span></td></tr>
+                <tr><td>Streaks and achievements</td><td><span class="badge badge-deleted">Deleted</span></td></tr>
+                <tr><td>Leaderboard rankings</td><td><span class="badge badge-deleted">Deleted</span></td></tr>
+                <tr><td>Preferences and settings</td><td><span class="badge badge-deleted">Deleted</span></td></tr>
+                <tr><td>Firebase Authentication account</td><td><span class="badge badge-deleted">Deleted</span></td></tr>
+            </tbody>
+        </table>
+
+        <h2>Data Retained</h2>
+        <table class="data-table">
+            <thead>
+                <tr><th>Data Type</th><th>Reason</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Anonymous aggregate analytics</td><td><span class="badge badge-retained">Anonymized</span></td></tr>
+                <tr><td>Crash logs (without personal identifiers)</td><td><span class="badge badge-retained">Anonymized</span></td></tr>
+            </tbody>
+        </table>
+
+        <p style="font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 16px;">No data is shared with third parties beyond standard Firebase and AdMob services as described in our Privacy Policy.</p>
+
+        <h2>Important Notes</h2>
+        <ol>
+            <li>Account deletion is <strong>permanent and irreversible</strong>.</li>
+            <li>You will lose all quiz history, streaks, and achievements.</li>
+            <li>If you sign in again after deletion, a new account will be created.</li>
+            <li>For guest (anonymous) users, clearing app data or uninstalling automatically removes all local data.</li>
+            <li>If you need help, contact us at <strong>nexasoftstudios@gmail.com</strong>.</li>
+        </ol>
+
+        <div class="footer">
+            GK Quiz Daily &copy; 2026 
+        </div>
+    </div>
+</body>
+</html>
