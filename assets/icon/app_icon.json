@@ -1,0 +1,14 @@
+{
+  "info": {
+    "author": "x",
+    "generator": "Icon Kitchen"
+  },
+  "images": [
+    {
+      "filename": "app_icon.png",
+      "idiom": "universal",
+      "platform": "android",
+      "size": "1024x1024"
+    }
+  ]
+}

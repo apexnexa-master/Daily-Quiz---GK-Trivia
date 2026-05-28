@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Users ──────────────────────────────────────────────
+    match /users/{uid} {
+      // User can read/write own doc only
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+      // Attempts subcollection: user can read/write own attempts
+      match /attempts/{attemptId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if false; // Only written by Cloud Functions
+      }
+
+      // Streak subcollection
+      match /streak/{docId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if false; // Only written by Cloud Functions
+      }
+    }
+
+    // ── Quizzes (read-only for all authenticated users) ────
+    match /quizzes/{quizId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only Cloud Functions write quizzes
+
+      match /questions/{questionId} {
+        allow read: if request.auth != null;
+        allow write: if false;
+      }
+    }
+
+    // ── Leaderboard (read by all, write by Cloud Functions) ─
+    match /leaderboard/{entryId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // ── Challenges ─────────────────────────────────────────
+    match /challenges/{challengeId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Written by generateChallenge function
+    }
+  }
+}
