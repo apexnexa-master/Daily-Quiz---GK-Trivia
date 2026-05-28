@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Daily GK Quiz App 🎯
 > Production-ready Flutter + Firebase quiz app for Indian competitive exam aspirants
 > Target: SSC, UPSC, WBPSC, WBP, Bank PO — Bengali-first, AdMob monetized
@@ -226,3 +227,6 @@ When you hit 50K+ users:
 - [ ] Test on low-end Android device (Redmi, Realme) — your target users
 - [ ] Test offline mode (airplane mode)
 - [ ] Test Bengali rendering on device (not just emulator)
+=======
+# Daily-Quiz---GK-Trivia
+>>>>>>> aff7e7d77c5ab8720235e980c7fc50efc3c9d2c4
