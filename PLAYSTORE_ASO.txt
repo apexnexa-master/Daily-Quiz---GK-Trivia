@@ -1,5 +1,11 @@
 Daily GK Quiz - GK & Trivia App for India
 
+📢 DISCLAIMER:
+This app is NOT affiliated with, endorsed by, or connected to any government entity, including UPSC, SSC, WBPSC, or any other government organization. All content is for educational purposes only.
+
+🔗 SOURCES:
+Quiz content is sourced from publicly available government publications including NCERT textbooks (ncert.nic.in), the National Portal of India (india.gov.in), and official government exam syllabi.
+
 🎯 KEY FEATURES:
 ★ Daily General Knowledge quizzes for exam preparation
 ★ Compatible with SSC, Bank PO, UPSC, Railway, CLAT preparation

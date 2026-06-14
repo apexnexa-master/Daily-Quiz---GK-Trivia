@@ -5,6 +5,7 @@ import '../providers/app_providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_manager.dart';
 import '../../core/services/question_tracking_service.dart';
+import '../widgets/gamification_bar.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -40,6 +41,12 @@ class ProfileScreen extends ConsumerWidget {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _StatsSection(lang: lang, isDark: isDark, ref: ref),
+                    const SizedBox(height: 16),
+                    const DailyRewardBanner(),
+                    const SizedBox(height: 8),
+                    const DailyChallengesCard(),
+                    const SizedBox(height: 8),
+                    const GamificationBar(),
                     const SizedBox(height: 24),
                     _AchievementsSection(lang: lang, isDark: isDark, ref: ref),
                     // Exam mode stats - commented out as not required
@@ -60,6 +67,8 @@ class ProfileScreen extends ConsumerWidget {
                       themeMode: themeMode,
                       isDark: isDark,
                     ),
+                    const SizedBox(height: 24),
+                    _DisclaimerSection(lang: lang, isDark: isDark),
                     const SizedBox(height: 24),
                     _SignOutSection(lang: lang, ref: ref, isDark: isDark),
                     const SizedBox(height: 32),
@@ -1462,6 +1471,68 @@ class _SettingsTile extends StatelessWidget {
                   : Colors.grey.withValues(alpha: 0.1),
             ),
           ),
+      ],
+    );
+  }
+}
+
+class _DisclaimerSection extends StatelessWidget {
+  final String lang;
+  final bool isDark;
+  const _DisclaimerSection({required this.lang, required this.isDark});
+
+  bool get _isBn => lang == 'bn';
+  bool get _isHi => lang == 'hi';
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          icon: Icons.info_outline_rounded,
+          title: _isBn
+              ? 'দাবিত্যাগ ও উৎস'
+              : _isHi
+                  ? 'अस्वीकरण और स्रोत'
+                  : 'Disclaimer & Sources',
+          isDark: isDark,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppTheme.cardDark : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: (isDark ? Colors.black : Colors.grey)
+                    .withValues(alpha: 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              _SettingsTile(
+                icon: Icons.info_outline_rounded,
+                iconColor: AppTheme.warningColor,
+                label: _isBn
+                    ? 'দাবিত্যাগ ও উৎস'
+                    : _isHi
+                        ? 'अस्वीकरण और स्रोत'
+                        : 'Disclaimer & Sources',
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: isDark ? Colors.white38 : Colors.grey.shade400,
+                ),
+                onTap: () => Navigator.pushNamed(context, '/disclaimer'),
+                isDark: isDark,
+                showDivider: false,
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

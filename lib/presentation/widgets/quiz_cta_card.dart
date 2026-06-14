@@ -222,20 +222,6 @@ class QuizCtaCard extends ConsumerWidget {
                     color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
-                if (!isQuizActive) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    isBn
-                        ? 'আজকের কুইজ ${scheduler.getCountdownString()} এ শুরু হবে'
-                        : isHi
-                            ? 'आज का क्विज़ ${scheduler.getCountdownString()} में शुरू होगा'
-                            : 'Daily quiz starts ${scheduler.getCountdownString()}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ],
                 const SizedBox(height: 10),
                 Center(
                   child: Text(

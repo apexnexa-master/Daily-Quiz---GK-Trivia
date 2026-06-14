@@ -1,5 +1,4 @@
 // lib/presentation/screens/login_screen.dart
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
@@ -11,68 +10,33 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen>
-    with TickerProviderStateMixin {
-  bool _loading = false;
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  bool _googleLoading = false;
+  bool _guestLoading = false;
   String? _error;
   bool _showAdminPassword = false;
   String _adminEmail = '';
   final _adminPasswordController = TextEditingController();
-  late AnimationController _animController;
-  late AnimationController _pulseController;
-  late AnimationController _floatController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _glowAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1500));
-    _pulseController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 2000))
-      ..repeat(reverse: true);
-    _floatController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 3))
-          ..repeat(reverse: true);
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-            parent: _animController,
-            curve: const Interval(0.0, 0.7, curve: Curves.easeOut)));
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero).animate(
-            CurvedAnimation(
-                parent: _animController,
-                curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic)));
-    _glowAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
-        CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
-    _animController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    _pulseController.dispose();
-    _floatController.dispose();
-    super.dispose();
-  }
 
   Future<void> _signInGoogle() async {
     setState(() {
-      _loading = true;
+      _googleLoading = true;
       _error = null;
     });
     try {
       final result = await ref.read(authServiceProvider).signInWithGoogle();
       if (!mounted) return;
 
-      if (result?.isAdminEmail == true) {
+      if (result == null) {
+        setState(() => _googleLoading = false);
+        return;
+      }
+
+      if (result.isAdminEmail) {
         setState(() {
-          _loading = false;
+          _googleLoading = false;
           _showAdminPassword = true;
-          _adminEmail = result!.credential.user?.email ?? '';
+          _adminEmail = result.credential.user?.email ?? '';
         });
       } else {
         Navigator.pushReplacementNamed(context, '/home');
@@ -80,7 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } catch (e) {
       setState(() {
         _error = e.toString();
-        _loading = false;
+        _googleLoading = false;
       });
     }
   }
@@ -92,7 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     }
 
     setState(() {
-      _loading = true;
+      _googleLoading = true;
       _error = null;
     });
 
@@ -107,14 +71,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           Navigator.pushReplacementNamed(context, '/admin');
         } else {
           setState(() {
-            _loading = false;
+            _googleLoading = false;
             _error = 'Invalid password';
           });
         }
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        setState(() {
+          _googleLoading = false;
+          _error = 'Verification failed: ${e.toString()}';
+        });
       }
     }
   }
@@ -129,7 +96,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
   Future<void> _continueAsGuest() async {
     setState(() {
-      _loading = true;
+      _guestLoading = true;
       _error = null;
     });
     try {
@@ -138,9 +105,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } catch (e) {
       setState(() {
         _error = e.toString();
-        _loading = false;
+        _guestLoading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _adminPasswordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -149,61 +122,74 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final lang = ref.watch(languageProvider);
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
-    final size = MediaQuery.of(context).size;
 
     if (_showAdminPassword) {
       return _buildAdminPasswordScreen(isDark, isBn, isHi);
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E27),
-      body: Stack(
-        children: [
-          _AnimatedBackground(isDark: isDark),
-          _FloatingParticles(size: size, controller: _floatController),
-          _CyberGridLines(size: size, controller: _floatController),
-          SafeArea(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 40),
-                      _buildLogo(isDark, isBn, isHi),
-                      const SizedBox(height: 20),
-                      _buildTitle(isDark, isBn, isHi),
-                      const SizedBox(height: 12),
-                      _buildSubtitle(isDark, isBn, isHi),
-                      const SizedBox(height: 50),
-                      _buildFeatureCards(isDark, isBn, isHi),
-                      const SizedBox(height: 40),
-                      if (_error != null) _buildError(),
-                      if (_loading)
-                        _buildLoading()
-                      else
-                        _buildButtons(isDark, isBn, isHi),
-                      const SizedBox(height: 20),
-                      _buildDisclaimer(isDark, isBn, isHi),
-                      const SizedBox(height: 30),
-                      _buildFooter(isDark),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDark
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF0F172A),
+                    Color(0xFF1E1B4B),
+                    Color(0xFF0F172A),
+                  ],
+                )
+              : const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFFF8FAFC),
+                    Color(0xFFEEF2FF),
+                    Color(0xFFF8FAFC),
+                  ],
                 ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
+                  _buildLogo(),
+                  const SizedBox(height: 24),
+                  _buildTitle(isDark),
+                  const SizedBox(height: 8),
+                  _buildSubtitle(isBn, isHi, isDark),
+                  const SizedBox(height: 48),
+                  if (_error != null) _buildError(isDark),
+                  const SizedBox(height: 12),
+                  _buildGoogleButton(isBn, isHi),
+                  const SizedBox(height: 14),
+                  _buildGuestButton(isBn, isHi, isDark),
+                  const SizedBox(height: 32),
+                  _buildDisclaimer(isBn, isHi, isDark),
+                  const SizedBox(height: 20),
+                  _buildFooter(isDark),
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildAdminPasswordScreen(bool isDark, bool isBn, bool isHi) {
+    final fgColor = isDark ? Colors.white : Colors.black87;
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final inputBg = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04);
+    final inputBorder = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1);
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E27),
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -215,82 +201,97 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.deepPurple.withValues(alpha: 0.2),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryColor.withValues(alpha: 0.2),
+                        AppTheme.secondaryColor.withValues(alpha: 0.2),
+                      ],
+                    ),
                   ),
                   child: const Icon(
-                    Icons.admin_panel_settings,
-                    size: 60,
-                    color: Colors.deepPurple,
+                    Icons.admin_panel_settings_rounded,
+                    size: 56,
+                    color: AppTheme.primaryColor,
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Admin Access',
                   style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: fgColor,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _adminEmail,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(fontSize: 13, color: fgColor.withValues(alpha: 0.6)),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Enter your admin password',
-                  style: TextStyle(color: Colors.white54),
-                ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(16),
+                    color: inputBg,
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: inputBorder,
                     ),
                   ),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _adminPasswordController,
-                        obscureText: true,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Password',
-                          labelStyle: TextStyle(color: Colors.white70),
-                          prefixIcon: Icon(Icons.lock, color: Colors.white70),
-                          border: InputBorder.none,
-                        ),
+                  child: TextField(
+                    controller: _adminPasswordController,
+                    obscureText: true,
+                    style: TextStyle(color: fgColor, fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      hintStyle: TextStyle(
+                        color: fgColor.withValues(alpha: 0.4),
                       ),
-                    ],
+                      prefixIcon: Icon(
+                        Icons.lock_outline_rounded,
+                        color: fgColor.withValues(alpha: 0.5),
+                      ),
+                      border: InputBorder.none,
+                    ),
                   ),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 16),
                   Text(
                     _error!,
-                    style: const TextStyle(color: Colors.red),
+                    style: const TextStyle(color: AppTheme.errorColor, fontSize: 13),
                   ),
                 ],
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
+                  height: 50,
                   child: ElevatedButton(
-                    onPressed: _loading ? null : _verifyAdminPassword,
+                    onPressed: _googleLoading ? null : _verifyAdminPassword,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
+                      backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
                     ),
-                    child: _loading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Verify'),
+                    child: _googleLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Verify',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -299,9 +300,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     _cancelAdmin();
                     Navigator.pushReplacementNamed(context, '/home');
                   },
-                  child: const Text(
+                  child: Text(
                     'Continue as Normal User',
-                    style: TextStyle(color: Colors.white54),
+                    style: TextStyle(
+                      color: fgColor.withValues(alpha: 0.5),
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -312,75 +316,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
-  Widget _buildLogo(bool isDark, bool isBn, bool isHi) {
-    return AnimatedBuilder(
-      animation: _glowAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: 1.0 + (_glowAnimation.value * 0.05),
-          child: Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppTheme.primaryColor.withValues(alpha: 0.3),
-                  AppTheme.primaryColor.withValues(alpha: 0.1),
-                  Colors.transparent,
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryColor
-                      .withValues(alpha: 0.4 * _glowAnimation.value),
-                  blurRadius: 60 * _glowAnimation.value,
-                  spreadRadius: 20 * _glowAnimation.value,
-                ),
-                BoxShadow(
-                  color: AppTheme.secondaryColor
-                      .withValues(alpha: 0.3 * _glowAnimation.value),
-                  blurRadius: 40,
-                  spreadRadius: 10,
-                ),
-              ],
-            ),
-            child: Center(
-              child: Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppTheme.primaryColor,
-                      AppTheme.secondaryColor,
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.5),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.psychology_rounded,
-                  size: 48,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+  Widget _buildLogo() {
+    return Container(
+      width: 110,
+      height: 110,
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+            blurRadius: 30,
+            spreadRadius: 5,
           ),
-        );
-      },
+        ],
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          'assets/icon/daily_gk_quiz_playstore_icon.png',
+          width: 100,
+          height: 100,
+          fit: BoxFit.cover,
+        ),
+      ),
     );
   }
 
-  Widget _buildTitle(bool isDark, bool isBn, bool isHi) {
+  Widget _buildTitle(bool isDark) {
     return ShaderMask(
       shaderCallback: (bounds) => const LinearGradient(
         colors: [Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFEC4899)],
@@ -388,17 +350,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       child: Text(
         'GK Quiz',
         style: TextStyle(
-          fontSize: 42,
+          fontSize: 38,
           fontWeight: FontWeight.w900,
-          color: Colors.white,
+          color: isDark ? Colors.white : Colors.black,
           letterSpacing: -1,
-          height: 1.1,
         ),
       ),
     );
   }
 
-  Widget _buildSubtitle(bool isDark, bool isBn, bool isHi) {
+  Widget _buildSubtitle(bool isBn, bool isHi, bool isDark) {
     return Column(
       children: [
         Text(
@@ -408,27 +369,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   ? 'अपना ज्ञान टेस्ट करें'
                   : 'Test Your Knowledge',
           style: TextStyle(
-            fontSize: 16,
-            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 15,
+            color: isDark ? Colors.white.withValues(alpha: 0.6) : Colors.black.withValues(alpha: 0.6),
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: AppTheme.primaryColor.withValues(alpha: 0.3),
+              color: AppTheme.primaryColor.withValues(alpha: 0.25),
             ),
-            color: AppTheme.primaryColor.withValues(alpha: 0.1),
+            color: AppTheme.primaryColor.withValues(alpha: 0.08),
           ),
           child: Text(
             'SSC • UPSC • WBPSC • Bank PO',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppTheme.primaryColor.withValues(alpha: 0.9),
+              color: AppTheme.primaryColor.withValues(alpha: 0.8),
               letterSpacing: 1,
             ),
           ),
@@ -437,75 +398,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
-  Widget _buildFeatureCards(bool isDark, bool isBn, bool isHi) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _FeatureCard(
-          icon: Icons.auto_awesome,
-          title: isBn
-              ? 'দৈনিক কুইজ'
-              : isHi
-                  ? 'दैनिक क्विज़'
-                  : 'Daily Quiz',
-          subtitle: isBn
-              ? 'নতুন প্রশ্ন'
-              : isHi
-                  ? 'नए प्रश्न'
-                  : 'Fresh Questions',
-          color: const Color(0xFF6366F1),
-          controller: _floatController,
-        ),
-        _FeatureCard(
-          icon: Icons.school_rounded,
-          title: isBn
-              ? 'অনুশীলন'
-              : isHi
-                  ? 'अभ्यास'
-                  : 'Practice',
-          subtitle: isBn
-              ? 'যেকোনো সময়'
-              : isHi
-                  ? 'कभी भी'
-                  : 'Anytime',
-          color: const Color(0xFF8B5CF6),
-          controller: _floatController,
-          delay: 0.5,
-        ),
-        _FeatureCard(
-          icon: Icons.emoji_events_rounded,
-          title: isBn
-              ? 'অর্জন'
-              : isHi
-                  ? 'उपलब्धियाँ'
-                  : 'Achievements',
-          subtitle: isBn
-              ? 'প্রগ্রেস ট্র্যাক'
-              : isHi
-                  ? 'प्रगति ट्रैक'
-                  : 'Track Progress',
-          color: const Color(0xFFEC4899),
-          controller: _floatController,
-          delay: 1.0,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildError() {
+  Widget _buildError(bool isDark) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.errorColor.withValues(alpha: 0.15),
+        color: AppTheme.errorColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppTheme.errorColor.withValues(alpha: 0.3),
+          color: AppTheme.errorColor.withValues(alpha: 0.25),
         ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: AppTheme.errorColor, size: 20),
+          const Icon(Icons.error_outline, color: AppTheme.errorColor, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -518,70 +424,156 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     );
   }
 
-  Widget _buildLoading() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppTheme.primaryColor.withValues(alpha: 0.2),
-        ),
-      ),
-      child: const Column(
-        children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
+  Widget _buildGoogleButton(bool isBn, bool isHi) {
+    final isPressed = ValueNotifier(false);
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return GestureDetector(
+          onTapDown: (_) => setLocalState(() => isPressed.value = true),
+          onTapUp: (_) => setLocalState(() => isPressed.value = false),
+          onTapCancel: () => setLocalState(() => isPressed.value = false),
+          onTap: _googleLoading ? null : _signInGoogle,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            transform: isPressed.value ? Matrix4.diagonal3Values(0.98, 0.98, 1) : Matrix4.identity(),
+            width: double.infinity,
+            height: 54,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4285F4), Color(0xFF3578E8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF4285F4).withValues(alpha: 0.35),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: _googleLoading
+                ? const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/icon/icons8-google-48.png',
+                        width: 28,
+                        height: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        isBn
+                            ? 'Google দিয়ে লগইন করুন'
+                            : isHi
+                                ? 'Google से साइन इन करें'
+                                : 'Sign in with Google',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
-          SizedBox(height: 12),
-          Text(
-            'Connecting...',
-            style: TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildButtons(bool isDark, bool isBn, bool isHi) {
-    return Column(
-      children: [
-        _FuturisticButton(
-          onTap: _signInGoogle,
-          label: isBn
-              ? 'Google দিয়ে লগইন করুন'
-              : isHi
-                  ? 'Google से साइन इन करें'
-                  : 'Sign in with Google',
-          icon: Icons.g_mobiledata_rounded,
-          gradient: const [Color(0xFF4285F4), Color(0xFF3578E8)],
-          glowColor: const Color(0xFF4285F4),
-        ),
-        const SizedBox(height: 16),
-        _FuturisticButton(
-          onTap: _continueAsGuest,
-          label: isBn
-              ? 'অতিথি হিসাবে চালিয়ে যান'
-              : isHi
-                  ? 'अतिथि के रूप में जारी रखें'
-                  : 'Continue as Guest',
-          icon: Icons.person_outline_rounded,
-          gradient: const [Color(0xFF1E1E2E), Color(0xFF2D2D44)],
-          glowColor: AppTheme.primaryColor,
-          isOutlined: true,
-        ),
-      ],
+  Widget _buildGuestButton(bool isBn, bool isHi, bool isDark) {
+    final isPressed = ValueNotifier(false);
+    final fgColor = isDark ? Colors.white : Colors.black87;
+    final bgColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03);
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.12);
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        return GestureDetector(
+          onTapDown: (_) => setLocalState(() => isPressed.value = true),
+          onTapUp: (_) => setLocalState(() => isPressed.value = false),
+          onTapCancel: () => setLocalState(() => isPressed.value = false),
+          onTap: _guestLoading ? null : _continueAsGuest,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            transform: isPressed.value ? Matrix4.diagonal3Values(0.98, 0.98, 1) : Matrix4.identity(),
+            width: double.infinity,
+            height: 54,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: borderColor,
+                width: 1.5,
+              ),
+            ),
+            child: _guestLoading
+                ? Center(
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: fgColor.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: fgColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.person_outline_rounded,
+                          size: 22,
+                          color: fgColor.withValues(alpha: 0.8),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        isBn
+                            ? 'অতিথি হিসাবে চালিয়ে যান'
+                            : isHi
+                                ? 'अतिथि के रूप में जारी रखें'
+                                : 'Continue as Guest',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: fgColor.withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildDisclaimer(bool isDark, bool isBn, bool isHi) {
+  Widget _buildDisclaimer(bool isBn, bool isHi, bool isDark) {
+    final fgColor = isDark ? Colors.white : Colors.black;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
+        color: fgColor.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: fgColor.withValues(alpha: 0.06),
         ),
       ),
       child: Row(
@@ -589,8 +581,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         children: [
           Icon(
             Icons.info_outline_rounded,
-            size: 14,
-            color: Colors.white.withValues(alpha: 0.4),
+            size: 13,
+            color: fgColor.withValues(alpha: 0.4),
           ),
           const SizedBox(width: 8),
           Text(
@@ -601,7 +593,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     : 'Guest progress will not be saved',
             style: TextStyle(
               fontSize: 11,
-              color: Colors.white.withValues(alpha: 0.4),
+              color: fgColor.withValues(alpha: 0.4),
             ),
           ),
         ],
@@ -614,366 +606,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(Icons.favorite_rounded,
-            size: 14, color: Colors.pink.withValues(alpha: 0.7)),
+            size: 13, color: Colors.pink.withValues(alpha: 0.6)),
         const SizedBox(width: 6),
         Text(
           'Made in India',
           style: TextStyle(
             fontSize: 11,
-            color: Colors.white.withValues(alpha: 0.3),
+            color: isDark ? Colors.white.withValues(alpha: 0.25) : Colors.black.withValues(alpha: 0.25),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _AnimatedBackground extends StatelessWidget {
-  final bool isDark;
-  const _AnimatedBackground({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFF0A0E27),
-            const Color(0xFF1A1F4B),
-            const Color(0xFF0A0E27),
-          ],
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppTheme.primaryColor.withValues(alpha: 0.15),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -150,
-            left: -100,
-            child: Container(
-              width: 400,
-              height: 400,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppTheme.secondaryColor.withValues(alpha: 0.1),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FloatingParticles extends StatelessWidget {
-  final Size size;
-  final AnimationController controller;
-  const _FloatingParticles({required this.size, required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        return CustomPaint(
-          size: size,
-          painter: _ParticlePainter(controller.value),
-        );
-      },
-    );
-  }
-}
-
-class _ParticlePainter extends CustomPainter {
-  final double animationValue;
-  _ParticlePainter(this.animationValue);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.1)
-      ..style = PaintingStyle.fill;
-
-    final random = math.Random(42);
-    for (int i = 0; i < 30; i++) {
-      final x = random.nextDouble() * size.width;
-      final y = (random.nextDouble() + animationValue) % 1 * size.height;
-      final radius = random.nextDouble() * 2 + 1;
-      canvas.drawCircle(Offset(x, y), radius, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-class _CyberGridLines extends StatelessWidget {
-  final Size size;
-  final AnimationController controller;
-  const _CyberGridLines({required this.size, required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: size,
-      painter: _GridPainter(),
-    );
-  }
-}
-
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.03)
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
-
-    const spacing = 60.0;
-    for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _FeatureCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final AnimationController controller;
-  final double delay;
-
-  const _FeatureCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.controller,
-    this.delay = 0,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) {
-        final offset = math.sin((controller.value + delay) * math.pi * 2) * 8;
-        return Transform.translate(
-          offset: Offset(0, offset),
-          child: Container(
-            width: 100,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: color.withValues(alpha: 0.2),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.1),
-                  blurRadius: 20,
-                  spreadRadius: -5,
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        color.withValues(alpha: 0.2),
-                        color.withValues(alpha: 0.1),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: color, size: 22),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _FuturisticButton extends StatefulWidget {
-  final VoidCallback onTap;
-  final String label;
-  final IconData icon;
-  final List<Color> gradient;
-  final Color glowColor;
-  final bool isOutlined;
-
-  const _FuturisticButton({
-    required this.onTap,
-    required this.label,
-    required this.icon,
-    required this.gradient,
-    required this.glowColor,
-    this.isOutlined = false,
-  });
-
-  @override
-  State<_FuturisticButton> createState() => _FuturisticButtonState();
-}
-
-class _FuturisticButtonState extends State<_FuturisticButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _glowAnimation;
-  bool _isPressed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-    _glowAnimation = Tween<double>(begin: 0.3, end: 0.8).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _glowAnimation,
-      builder: (context, child) {
-        return GestureDetector(
-          onTapDown: (_) => setState(() => _isPressed = true),
-          onTapUp: (_) => setState(() => _isPressed = false),
-          onTapCancel: () => setState(() => _isPressed = false),
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                gradient: widget.isOutlined
-                    ? null
-                    : LinearGradient(
-                        colors: widget.gradient,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                color: widget.isOutlined
-                    ? Colors.white.withValues(alpha: 0.03)
-                    : null,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: widget.isOutlined
-                      ? widget.glowColor.withValues(alpha: 0.3)
-                      : Colors.transparent,
-                  width: 1.5,
-                ),
-                boxShadow: widget.isOutlined
-                    ? null
-                    : [
-                        BoxShadow(
-                          color: widget.glowColor
-                              .withValues(alpha: _glowAnimation.value * 0.4),
-                          blurRadius: 20 * _glowAnimation.value,
-                          spreadRadius: -2,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white
-                          .withValues(alpha: widget.isOutlined ? 0.1 : 0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      widget.icon,
-                      size: 22,
-                      color:
-                          widget.isOutlined ? widget.glowColor : Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    widget.label,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color:
-                          widget.isOutlined ? widget.glowColor : Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }

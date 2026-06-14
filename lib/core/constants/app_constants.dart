@@ -65,6 +65,19 @@ class AppConstants {
     return 'ca-app-pub-3940256099942544/1712485313';
   }
 
+  // ── Disclaimer & Attribution ─────────────────────────────
+  static const String disclaimerText =
+      'This app is not affiliated with, endorsed by, or connected to any '
+      'government entity, including UPSC, SSC, WBPSC, or any other '
+      'government organization. All content is for educational purposes only.';
+
+  static const String sourceAttribution =
+      'Quiz content is sourced from publicly available government publications '
+      'including NCERT textbooks (ncert.nic.in), the National Portal of India '
+      '(india.gov.in), and official government exam syllabi.';
+
+  static const String sourceUrl = 'https://ncert.nic.in';
+
   // ── Deep Link Base ────────────────────────────────────────
   static const String deepLinkBase = 'https://dailyquiz.page.link';
   static const String appLinksDomain = 'dailyquiz.nexasoft.com';

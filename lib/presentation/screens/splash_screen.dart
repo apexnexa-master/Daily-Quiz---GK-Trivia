@@ -86,21 +86,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             children: [
               ScaleTransition(
                 scale: _scaleAnimation,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(35),
-                    boxShadow: [
-                      BoxShadow(
-                          color: primaryColor.withValues(alpha: 0.5),
-                          blurRadius: 40,
-                          offset: const Offset(0, 16))
-                    ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(35),
+                  child: Image.asset(
+                    'assets/icon/daily_gk_quiz_playstore_icon.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
                   ),
-                  child: const Icon(Icons.quiz_rounded,
-                      size: 64, color: AppTheme.primaryColor),
                 ),
               ),
               const SizedBox(height: 32),

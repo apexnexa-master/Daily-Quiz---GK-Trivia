@@ -18,16 +18,11 @@ class QuizSchedulerService {
   int _quizStartMinute = 0;
   int _quizEndHour = 23;
   int _quizEndMinute = 59;
-  bool _timingLoaded = false;
+  DateTime? _lastFetchTime;
+  static const Duration _cacheDuration = Duration(seconds: 30);
 
-  // Load timing config from Firestore (non-blocking)
-  void _loadTimingConfig() {
-    if (_timingLoaded) return;
-    // Don't await - load in background
-    _loadTimingConfigAsync();
-  }
-
-  Future<void> _loadTimingConfigAsync() async {
+  /// Fetch timing config from Firestore and update cached values
+  Future<void> refreshTiming() async {
     try {
       final doc = await _db.collection('settings').doc('quiz_timing').get();
       if (doc.exists) {
@@ -36,12 +31,19 @@ class QuizSchedulerService {
         _quizStartMinute = data['start_minute'] ?? 0;
         _quizEndHour = data['end_hour'] ?? 23;
         _quizEndMinute = data['end_minute'] ?? 59;
-        _timingLoaded = true;
-      } else {
-        _timingLoaded = true;
       }
-    } catch (e) {
-      _timingLoaded = true;
+    } catch (_) {
+      // Keep existing values on error
+    }
+    _lastFetchTime = DateTime.now();
+  }
+
+  /// Ensure cached timing is fresh; called on first use
+  void _ensureTimingFresh() {
+    if (_lastFetchTime == null ||
+        DateTime.now().difference(_lastFetchTime!) > _cacheDuration) {
+      _lastFetchTime = DateTime.now();
+      refreshTiming(); // fire-and-forget
     }
   }
 
@@ -51,6 +53,7 @@ class QuizSchedulerService {
   int get quizEndMinute => _quizEndMinute;
 
   bool isQuizActive() {
+    _ensureTimingFresh();
     final now = DateTime.now();
     final currentMinutes = now.hour * 60 + now.minute;
     final startMinutes = _quizStartHour * 60 + _quizStartMinute;
@@ -59,7 +62,7 @@ class QuizSchedulerService {
   }
 
   bool canShowAnswers() {
-    // Answers can be shown after quiz end time
+    _ensureTimingFresh();
     final now = DateTime.now();
     final currentMinutes = now.hour * 60 + now.minute;
     final endMinutes = _quizEndHour * 60 + _quizEndMinute;
@@ -67,7 +70,7 @@ class QuizSchedulerService {
   }
 
   Future<bool> isNewQuizAvailable() async {
-    _loadTimingConfig();
+    _ensureTimingFresh();
     final now = DateTime.now();
     final today =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -92,6 +95,7 @@ class QuizSchedulerService {
   }
 
   String getCountdownString() {
+    _ensureTimingFresh();
     final duration = getTimeUntilNextQuiz();
 
     if (duration.isNegative) {
@@ -130,15 +134,15 @@ class QuizSchedulerService {
   }
 
   bool get showAnswersNow {
+    _ensureTimingFresh();
     if (!isQuizActive()) {
-      // If quiz hasn't started or has ended, show answers
       return true;
     }
     return canShowAnswers();
   }
 
   Future<QuizModel?> prepareDailyQuiz(String examMode) async {
-    _loadTimingConfig();
+    _ensureTimingFresh();
     final now = DateTime.now();
     final today =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';

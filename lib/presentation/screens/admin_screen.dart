@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/services/question_service.dart';
 import '../../core/services/admin_service.dart';
+import '../../core/services/quiz_scheduler_service.dart';
 import '../../data/models/firestore_models.dart';
 
 enum AdminFlowStep { email, password, dashboard }
@@ -1340,6 +1341,7 @@ EXP:hi नई दिल्ली भारत की राजधानी ह�
         'end_minute': _quizEndMinute,
         'updated_at': FieldValue.serverTimestamp(),
       });
+      await QuizSchedulerService.instance.refreshTiming();
       _showSnackBar('Quiz timing configuration saved!');
     } catch (e) {
       _showSnackBar('Error saving: ${e.toString()}', isError: true);

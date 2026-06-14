@@ -34,9 +34,9 @@ android {
     defaultConfig {
         applicationId = "com.nexasoft.dailyquiz"
         minSdk = 23
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 35
+        versionCode = 3
+        versionName = "1.0.2"
         multiDexEnabled = true
     }
 
@@ -53,7 +53,7 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

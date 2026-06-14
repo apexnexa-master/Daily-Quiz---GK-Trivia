@@ -200,7 +200,7 @@ class AuthService {
 
   Future<void> deleteAccount() async {
     final user = currentUser;
-    if (user == null) throw AuthException('No user logged in');
+    if (user == null) throw const AuthException('No user logged in');
 
     await _db.collection(AppConstants.colUsers).doc(user.uid).delete();
 

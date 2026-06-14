@@ -1,7 +1,7 @@
 name: gk_quiz_app
 description: Daily GK Quiz for Indian competitive exam aspirants
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.2+3
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -60,9 +60,18 @@ dev_dependencies:
   hive_generator: ^2.0.1
   flutter_lints: ^3.0.2
   mockito: ^5.4.4
+  flutter_launcher_icons: ^0.14.3
 
-# To generate icons, run: flutter pub run flutter_launcher_icons
-# Place your 1024x1024 icon at: assets/icon/app_icon.png
+flutter_launcher_icons:
+  android: true
+  ios: false
+  remove_alpha_ios: false
+  image_path: "assets/icon/daily_gk_quiz_playstore_icon.png"
+  adaptive_icon_background: "#6366F1"
+  adaptive_icon_foreground: "assets/icon/daily_gk_quiz_playstore_icon.png"
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/icon/
