@@ -1,0 +1,202 @@
+[
+  {
+    "id": "wb04",
+    "order": 3,
+    "correctIndex": 3,
+    "category": "West Bengal Culture",
+    "difficulty": "easy",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Which festival is most famous in West Bengal?",
+      "hi": "पश्चिम बंगाल में कौन-सा त्यौहार सबसे प्रसिद्ध है?",
+      "bn": "পশ্চিমবঙ্গে সবচেয়ে বিখ্যাত উৎসব কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Holi",
+        "Diwali",
+        "Eid",
+        "Durga Puja"
+      ],
+      "hi": [
+        "होली",
+        "दिवाली",
+        "ईद",
+        "दुर्गा पूजा"
+      ],
+      "bn": [
+        "হোলি",
+        "দীপাবলি",
+        "ঈদ",
+        "দুর্গাপূজা"
+      ]
+    },
+    "explanation": {
+      "en": "Durga Puja is the most significant festival in West Bengal.",
+      "hi": "दुर्गा पूजा पश्चिम बंगाल का सबसे महत्वपूर्ण त्यौहार है।",
+      "bn": "দুর্গাপূজা পশ্চিমবঙ্গের সবচেয়ে গুরুত্বপূর্ণ উৎসব।"
+    }
+  },
+  {
+    "id": "wb09",
+    "order": 8,
+    "correctIndex": 3,
+    "category": "West Bengal Culture",
+    "difficulty": "medium",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Rabindranath Tagore won the Nobel Prize in which year?",
+      "hi": "रवींद्रनाथ टैगोर को किस वर्ष नोबेल पुरस्कार मिला?",
+      "bn": "রবীন্দ্রনাথ ঠাকুর কোন বছর নোবেল পুরস্কার পান?"
+    },
+    "options": {
+      "en": [
+        "1910",
+        "1911",
+        "1912",
+        "1913"
+      ],
+      "hi": [
+        "1910",
+        "1911",
+        "1912",
+        "1913"
+      ],
+      "bn": [
+        "১৯১০",
+        "১৯১১",
+        "১৯১২",
+        "১৯১৩"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "wb12",
+    "order": 11,
+    "correctIndex": 0,
+    "category": "West Bengal Culture",
+    "difficulty": "easy",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "What is the state bird of West Bengal?",
+      "hi": "पश्चिम बंगाल का राज्य पक्षी क्या है?",
+      "bn": "পশ্চিমবঙ্গের রাজ্য পাখি কী?"
+    },
+    "options": {
+      "en": [
+        "White-throated Kingfisher",
+        "Peacock",
+        "Parrot",
+        "Pigeon"
+      ],
+      "hi": [
+        "सफेद गला मछली पकड़ने वाला",
+        "मोर",
+        "तोता",
+        "कबूतर"
+      ],
+      "bn": [
+        "সাদা-গলা মাছরাঙা",
+        "ময়ূর",
+        "টিয়া",
+        "কবুতর"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "सफेद गला किंगफिशर पश्चिम बंगाल का राज्य पक्षी है।",
+      "bn": "সাদা-গলা মাছরাঙা পশ্চিমবঙ্গের রাজ্য পাখি।"
+    }
+  },
+  {
+    "id": "wb14",
+    "order": 13,
+    "correctIndex": 2,
+    "category": "West Bengal Culture",
+    "difficulty": "medium",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Which famous folk dance originated from West Bengal?",
+      "hi": "पश्चिम बंगाल से कौन सा प्रसिद्ध लोक नृत्य उत्पन्न हुआ?",
+      "bn": "পশ্চিমবঙ্গ থেকে কোন বিখ্যাত লোকনৃত্যের উৎপত্তি?"
+    },
+    "options": {
+      "en": [
+        "Bihu",
+        "Bhootham",
+        "Jatra",
+        "Baul"
+      ],
+      "hi": [
+        "বিহু",
+        "ভূতাম",
+        "জাট্রা",
+        "বাউল"
+      ],
+      "bn": [
+        "বিহু",
+        "ভূতাম",
+        "জাট্রা",
+        "বাউল"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "জাট্রা পশ্চিমবঙ্গের একটি জনপ্রিয় লোকনাট্য রূপ।",
+      "bn": "জাট্রা পশ্চিমবঙ্গের একটি জনপ্রিয় লোকনাট্য রূপ।"
+    }
+  },
+  {
+    "id": "wb17",
+    "order": 16,
+    "correctIndex": 3,
+    "category": "West Bengal Culture",
+    "difficulty": "easy",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "What is the state language of West Bengal?",
+      "hi": "पश्चिम बंगाल की राज्य भाषा क्या है?",
+      "bn": "পশ্চিমবঙ্গের রাজ্য ভাষা কী?"
+    },
+    "options": {
+      "en": [
+        "Hindi",
+        "English",
+        "Nepali",
+        "Bengali"
+      ],
+      "hi": [
+        "হিন্দি",
+        "ইংরেজি",
+        "নেপালি",
+        "বাংলা"
+      ],
+      "bn": [
+        "হিন্দি",
+        "ইংরেজি",
+        "নেপালি",
+        "বাংলা"
+      ]
+    },
+    "explanation": {
+      "en": "Bengali is the official language of West Bengal.",
+      "hi": "বাংলা পশ্চিমবঙ্গের সরকারি ভাষা।",
+      "bn": "বাংলা পশ্চিমবঙ্গের সরকারি ভাষা।"
+    }
+  }
+]

@@ -1,6 +1,7 @@
 // lib/core/services/bookmark_service.dart
 
 import 'package:hive_flutter/hive_flutter.dart';
+import 'cloud_sync_service.dart';
 
 class BookmarkService {
   static const String _boxName = 'bookmarks';
@@ -21,6 +22,7 @@ class BookmarkService {
         as Map<String, dynamic>;
     bookmarks[questionId] = questionData;
     await _box?.put('questions', bookmarks);
+    await CloudSyncService.instance.syncBookmarkAdded(questionId, questionData);
   }
 
   Future<void> removeBookmark(String questionId) async {
@@ -28,6 +30,7 @@ class BookmarkService {
         as Map<String, dynamic>;
     bookmarks.remove(questionId);
     await _box?.put('questions', bookmarks);
+    await CloudSyncService.instance.syncBookmarkRemoved(questionId);
   }
 
   bool isBookmarked(String questionId) {

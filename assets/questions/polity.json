@@ -1,0 +1,188 @@
+[
+  {
+    "id": "up01",
+    "order": 0,
+    "correctIndex": 2,
+    "category": "Polity",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "",
+      "hi": "भारतीय संविधान द्वारा कितने मौलिक अधिकार गारंटी दिए गए हैं?",
+      "bn": "ভারতীয় সংবিধান কতটি মৌলিক অধিকারের নিশ্চয়তা দেয়?"
+    },
+    "options": {
+      "en": [
+        "5",
+        "7",
+        "6",
+        "8"
+      ],
+      "hi": [
+        "5",
+        "7",
+        "6",
+        "8"
+      ],
+      "bn": [
+        "৫",
+        "৭",
+        "৬",
+        "৮"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "up06",
+    "order": 5,
+    "correctIndex": 1,
+    "category": "Polity",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "",
+      "hi": "",
+      "bn": "ভারতীয় সংবিধানের কোন অনুচ্ছেদ সমতার অধিকার নিয়ে আলোচনা করে?"
+    },
+    "options": {
+      "en": [
+        "Article 12",
+        "Article 14",
+        "Article 19",
+        "Article 21"
+      ],
+      "hi": [
+        "अनुच्छेद 12",
+        "अनुच्छेद 14",
+        "अनुच्छेद 19",
+        "अनुच्छेद 21"
+      ],
+      "bn": [
+        "অনুচ্ছেদ ১২",
+        "অনুচ্ছেদ ১৪",
+        "অনুচ্ছেদ ১৯",
+        "অনুচ্ছেদ ২১"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "up11",
+    "order": 10,
+    "correctIndex": 2,
+    "category": "Polity",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "",
+      "hi": "भारतीय संविधान का कौन सा अनुच्छेद अस्पृश्यता को समाप्त करता है?",
+      "bn": "ভারতীয় সংবিধানের কোন অনুচ্ছেদ অস্পৃশ্যতা বিলুপ্ত করে?"
+    },
+    "options": {
+      "en": [
+        "Article 15",
+        "Article 16",
+        "Article 17",
+        "Article 18"
+      ],
+      "hi": [
+        "অনুচ্ছেদ ১৫",
+        "অনুচ্ছেদ ১৬",
+        "অনুচ্ছেদ ১৭",
+        "অনুচ্ছেদ ১৮"
+      ],
+      "bn": [
+        "অনুচ্ছেদ ১৫",
+        "অনুচ্ছেদ ১৬",
+        "অনুচ্ছেদ ১৭",
+        "অনুচ্ছেদ ১৮"
+      ]
+    },
+    "explanation": {
+      "en": "Article 17 of the Indian Constitution abolishes untouchability.",
+      "hi": "ভারতীয় সংবিধানের ১৭ অনুচ্ছেদ অস্পৃশ্যতা বিলুপ্ত করে।",
+      "bn": "ভারতীয় সংবিধানের ১৭ অনুচ্ছেদ অস্পৃশ্যতা বিলুপ্ত করে।"
+    }
+  },
+  {
+    "id": "up16",
+    "order": 15,
+    "correctIndex": 2,
+    "category": "Polity",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "",
+      "hi": "রাষ্ট্রপতি দ্বারা রাজ্যসভায় কতজন সদস্য মনোনীত হন?",
+      "bn": "রাষ্ট্রপতি দ্বারা রাজ্যসভায় কতজন সদস্য মনোনীত হন?"
+    },
+    "options": {
+      "en": [
+        "10",
+        "12",
+        "14",
+        "16"
+      ],
+      "hi": [
+        "10",
+        "12",
+        "14",
+        "16"
+      ],
+      "bn": [
+        "10",
+        "12",
+        "14",
+        "16"
+      ]
+    },
+    "explanation": {
+      "en": "The President nominates 12 members to the Rajya Sabha.",
+      "hi": "রাষ্ট্রপতি রাজ্যসভায় 12 জন সদস্য মনোনীত করেন।",
+      "bn": "রাষ্ট্রপতি রাজ্যসভায় 12 জন সদস্য মনোনীত করেন।"
+    }
+  },
+  {
+    "id": "up19",
+    "order": 18,
+    "correctIndex": 3,
+    "category": "Polity",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "",
+      "The power of the Supreme Court to review any act of the government is called": ",",
+      "hi": "",
+      "bn": ""
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  }
+]

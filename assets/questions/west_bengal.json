@@ -1,0 +1,107 @@
+[
+  {
+    "id": "wb02",
+    "order": 1,
+    "correctIndex": 2,
+    "category": "West Bengal",
+    "difficulty": "easy",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "What is the capital of West Bengal?",
+      "hi": "पश्चिम बंगाल की राजधानी क्या है?",
+      "bn": "পশ্চিমবঙ্গের রাজধানী কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Siliguri",
+        "Howrah",
+        "Kolkata",
+        "Asansol"
+      ],
+      "hi": [
+        "सिलीगुड़ी",
+        "हावड़ा",
+        "कोलकाता",
+        "आसनसोल"
+      ],
+      "bn": [
+        "শিলিগুড়ি",
+        "হাওড়া",
+        "কলকাতা",
+        "আসানসোল"
+      ]
+    },
+    "explanation": {
+      "en": "Kolkata (formerly Calcutta) is the capital of West Bengal.",
+      "hi": "कोलकाता पश्चिम बंगाल की राजधानी है।",
+      "bn": "কলকাতা পশ্চিমবঙ্গের রাজধানী।"
+    }
+  },
+  {
+    "id": "wb08",
+    "order": 7,
+    "correctIndex": 0,
+    "category": "West Bengal",
+    "difficulty": "easy",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "What is the state animal of West Bengal?",
+      "hi": "पश्चिम बंगाल का राज्य पशु क्या है?",
+      "bn": "পশ্চিমবঙ্গের রাজ্য প্রাণী কী?"
+    },
+    "options": {
+      "en": [
+        "Fishing Cat",
+        "Tiger",
+        "Elephant",
+        "Leopard"
+      ],
+      "hi": [
+        "फिशिंग कैट",
+        "बाघ",
+        "हाथी",
+        "तेंदुआ"
+      ],
+      "bn": [
+        "ফিশিং ক্যাট",
+        "বাঘ",
+        "হাতি",
+        "চিতাবাঘ"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "फिशिंग कैट पश्चिम बंगाल का राज्य पशु है।",
+      "bn": "ফিশিং ক্যাট পশ্চিমবঙ্গের রাজ্য প্রাণী।"
+    }
+  },
+  {
+    "id": "wb10",
+    "order": 9,
+    "correctIndex": 2,
+    "category": "West Bengal",
+    "difficulty": "hard",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Where is the Sundarbans located?",
+      "hi": "सुंदरबन कहाँ स्थित है?",
+      "bn": "সুন্দরবন কোথায় অবস্থিত?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "सुंदरबन पश्चिम बंगाल के दक्षिणी डेल्टा क्षेत्र में स्थित है।",
+      "bn": ""
+    }
+  }
+]

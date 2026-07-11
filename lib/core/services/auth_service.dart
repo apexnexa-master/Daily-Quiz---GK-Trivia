@@ -1,6 +1,7 @@
 // lib/core/services/auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../constants/app_constants.dart';
@@ -130,6 +131,12 @@ class AuthService {
     await _ensureGoogleSignIn();
     await GoogleSignIn.instance.signOut();
     await _auth.signOut();
+    try {
+      await Hive.box<String>(AppConstants.hiveBoxQuiz).clear();
+      await Hive.box<String>(AppConstants.hiveBoxUser).clear();
+      final bookmarksBox = await Hive.openBox('bookmarks');
+      await bookmarksBox.clear();
+    } catch (_) {}
   }
 
   Future<void> _upsertUserDoc(User user, {required bool isAnonymous}) async {
@@ -219,6 +226,12 @@ class AuthService {
     await _ensureGoogleSignIn();
     await GoogleSignIn.instance.signOut();
     await _auth.signOut();
+    try {
+      await Hive.box<String>(AppConstants.hiveBoxQuiz).clear();
+      await Hive.box<String>(AppConstants.hiveBoxUser).clear();
+      final bookmarksBox = await Hive.openBox('bookmarks');
+      await bookmarksBox.clear();
+    } catch (_) {}
   }
 }
 

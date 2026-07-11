@@ -3,9 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
-import '../../data/models/firestore_models.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/constants/app_constants.dart';
+import '../widgets/quiz/question_card.dart';
+import '../widgets/quiz/quiz_timer_bar.dart';
+import '../widgets/quiz/quiz_progress_stepper.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_animations.dart';
 
 class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen({super.key});
@@ -30,13 +34,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   bool _lifelineExtraTimeUsed = false;
   String _currentLang = 'en';
   Set<int> _5050VisibleIndices = {};
+  bool _isPaused = false;
 
   @override
   void initState() {
     super.initState();
     _timerController = AnimationController(
       vsync: this,
-      duration: Duration(seconds: AppConstants.questionTimerSeconds),
+      duration: const Duration(seconds: 30),
       value: 1.0,
     )..reverse();
 
@@ -63,18 +68,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     _startTimer();
   }
 
-  List<int> get _5050WrongOptions {
-    final session = ref.read(quizSessionProvider);
-    if (session == null) return [];
-    final question = session.quiz.questions[session.currentIndex];
-    final correct = question.correctIndex;
-    final allOptions =
-        List.generate(question.getOptions(_currentLang).length, (i) => i);
-    allOptions.remove(correct);
-    allOptions.shuffle();
-    return allOptions.take(2).toList();
-  }
-
   List<int> get5050Indices() {
     if (_lifeline5050Used) return [];
     final session = ref.read(quizSessionProvider);
@@ -83,14 +76,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     final correct = question.correctIndex;
     final totalOptions = question.getOptions(_currentLang).length;
 
-    // Can't do 50:50 with less than 4 options
     if (totalOptions < 4) return [];
 
-    // Get all wrong option indices
     final allWrong = List.generate(totalOptions, (i) => i)..remove(correct);
     allWrong.shuffle();
 
-    // Remove 2 wrong options, show 2 options (correct + 1 wrong)
     final toRemove = allWrong.take(2).toList();
     final visibleIndices = {correct, toRemove[0]};
 
@@ -112,8 +102,25 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   }
 
   void _startTimer() {
-    _timer?.cancel();
     _timerController.value = 1.0;
+    _resumeTimer();
+  }
+
+  void _togglePause() {
+    setState(() {
+      _isPaused = !_isPaused;
+    });
+
+    if (_isPaused) {
+      _timer?.cancel();
+      _timerController.stop();
+    } else {
+      _resumeTimer();
+    }
+  }
+
+  void _resumeTimer() {
+    _timer?.cancel();
     _timerController.reverse();
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -161,7 +168,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()),
-            backgroundColor: AppTheme.errorColor,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -224,7 +231,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
 
     if (session == null) {
       return Scaffold(
-        backgroundColor: _isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -232,16 +238,17 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppTheme.errorColor.withValues(alpha: 0.1),
+                  color: AppColors.error.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.error_outline,
-                    size: 48, color: AppTheme.errorColor),
+                child: const Icon(Icons.error_outline_rounded,
+                    size: 48, color: AppColors.error),
               ),
               const SizedBox(height: 16),
-              Text('No quiz loaded. Please go back and try again.',
-                  style: TextStyle(
-                      color: _isDark ? Colors.white70 : Colors.grey.shade600)),
+              Text(
+                'No quiz loaded. Please go back and try again.',
+                style: TextStyle(color: _isDark ? Colors.white70 : Colors.grey.shade600),
+              ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
@@ -255,7 +262,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
 
     if (session.isComplete) {
       return Scaffold(
-        backgroundColor: _isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -263,13 +269,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
               const CircularProgressIndicator(),
               const SizedBox(height: 16),
               Text(
-                lang == 'bn'
+                isBn
                     ? 'ফলাফল লোড হচ্ছে...'
-                    : lang == 'hi'
+                    : isHi
                         ? 'परिणाम लोड हो रहा है...'
                         : 'Loading results...',
-                style: TextStyle(
-                    color: _isDark ? Colors.white70 : Colors.grey.shade600),
+                style: TextStyle(color: _isDark ? Colors.white70 : Colors.grey.shade600),
               ),
             ],
           ),
@@ -285,38 +290,28 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         if (!didPop) _showExitDialog(context);
       },
       child: Scaffold(
-        backgroundColor: _isDark ? AppTheme.surfaceDark : AppTheme.surfaceLight,
         body: Stack(
           children: [
-            _buildBackgroundDecorations(_isDark),
+            _buildBackgroundDecorations(),
             SafeArea(
               child: Column(
                 children: [
-                  _QuizHeader(
-                    current: session.currentIndex + 1,
-                    total: session.quiz.questionCount,
-                    timerAnimation: _timerController,
-                    pulseAnimation: _pulseController,
-                    remainingSeconds: session.remainingSeconds,
-                    onExit: () => _showExitDialog(context),
-                    isDark: _isDark,
-                    lang: lang,
-                  ),
+                  // Sleek Quiz AppBar Header
+                  _buildHeaderBar(session, lang),
+                  
+                  // Question and Options Card
                   Expanded(
                     child: FadeTransition(
                       opacity: _questionFadeController,
-                      child: _QuestionCard(
+                      child: QuestionCard(
                         question: question,
                         lang: lang,
-                        selectedAnswer:
-                            session.selectedAnswers[session.currentIndex],
-                        onAnswerSelected: (i) =>
-                            _onAnswerSelected(session.currentIndex, i),
+                        selectedAnswer: session.selectedAnswers[session.currentIndex],
+                        onAnswerSelected: (i) => _onAnswerSelected(session.currentIndex, i),
                         isDark: _isDark,
-                        visibleOptions:
-                            _lifeline5050Used && _5050VisibleIndices.isNotEmpty
-                                ? _5050VisibleIndices
-                                : null,
+                        visibleOptions: _lifeline5050Used && _5050VisibleIndices.isNotEmpty
+                            ? _5050VisibleIndices
+                            : null,
                         correctAnimationController: _correctAnimationController,
                         wrongAnimationController: _wrongAnimationController,
                         selectedForFeedback: _selectedAnswerForFeedback,
@@ -324,7 +319,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                       ),
                     ),
                   ),
-                  _buildLifelinesRow(lang, _isDark),
+                  
+                  // Lifelines
+                  _buildLifelinesRow(lang),
+                  
+                  // Skip button
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: Row(
@@ -337,13 +336,166 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                 ],
               ),
             ),
+            if (_isPaused) _buildPauseOverlay(lang),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildLifelinesRow(String lang, bool isDark) {
+  Widget _buildPauseOverlay(String lang) {
+    final isBn = lang == 'bn';
+    final isHi = lang == 'hi';
+
+    return Container(
+      color: Colors.black.withValues(alpha: 0.65),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: _isDark ? const Color(0xFF1E1E2F) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.25),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.pause_circle_filled_rounded,
+                  color: AppColors.primary,
+                  size: 64,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                isBn ? 'কুইজ বিরতি দেওয়া হয়েছে' : isHi ? 'क्विज़ रोक दिया गया है' : 'Quiz Paused',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: _isDark ? Colors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                isBn
+                    ? 'একটু বিশ্রাম নিন। আপনি প্রস্তুত হলে আবার শুরু করুন।'
+                    : isHi
+                        ? 'थोड़ा आराम करें। जब आप तैयार हों, तब जारी रखें।'
+                        : 'Take a breath. Press resume when you are ready to continue.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _isDark ? Colors.white60 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _togglePause,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: Text(
+                    isBn ? 'কুইজ পুনরায় শুরু করুন' : isHi ? 'क्विज़ जारी रखें' : 'Resume Quiz',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderBar(QuizSessionState session, String lang) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _isDark ? AppColors.cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.grey.withValues(alpha: 0.1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: _isDark ? 0.2 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              // Exit button
+              GestureDetector(
+                onTap: () => _showExitDialog(context),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(AppIcons.close, color: AppColors.error, size: 20),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Pause button
+              GestureDetector(
+                onTap: _togglePause,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.pause_rounded, color: AppColors.primary, size: 20),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Stepper
+              Expanded(
+                child: QuizProgressStepper(
+                  current: session.currentIndex + 1,
+                  total: session.quiz.questionCount,
+                  lang: lang,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Timer bar
+          QuizTimerBar(
+            animation: _timerController,
+            remainingSeconds: session.remainingSeconds,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLifelinesRow(String lang) {
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
     return Padding(
@@ -351,13 +503,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // 50:50 Lifeline
           _lifelineButton(
-            icon: Icons.filter_5,
-            label: isBn
-                ? '50:50'
-                : isHi
-                    ? '50:50'
-                    : '50:50',
+            icon: AppIcons.halfHalf,
+            label: '50:50',
             used: _lifeline5050Used,
             onTap: () {
               final indices = get5050Indices();
@@ -365,21 +514,21 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(isBn
-                        ? '2টি ভুল উত্তর সরানো হয়েছে!'
+                        ? '২টি ভুল উত্তর সরানো হয়েছে!'
                         : isHi
                             ? '2 गलत उत्तर हटाए गए!'
                             : '2 wrong options removed!'),
-                    backgroundColor: AppTheme.successColor,
+                    backgroundColor: AppColors.success,
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
-            isDark: isDark,
           ),
           const SizedBox(width: 16),
+          // +15s Extra Time Lifeline
           _lifelineButton(
-            icon: Icons.timer,
+            icon: Icons.add_alarm_rounded,
             label: isBn
                 ? '+15সে'
                 : isHi
@@ -394,13 +543,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                       ? '15 সেকেন্ড যোগ করা হয়েছে!'
                       : isHi
                           ? '15 सेकंड जोड़े गए!'
-                          : '15 seconds added!'),
-                  backgroundColor: AppTheme.successColor,
+                      : '15 seconds added!'),
+                  backgroundColor: AppColors.success,
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             },
-            isDark: isDark,
           ),
         ],
       ),
@@ -412,7 +560,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     required String label,
     required bool used,
     required VoidCallback onTap,
-    required bool isDark,
   }) {
     return GestureDetector(
       onTap: used ? null : onTap,
@@ -423,27 +570,26 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: used
-                ? (isDark ? Colors.grey.shade800 : Colors.grey.shade300)
-                : AppTheme.primaryColor.withValues(alpha: 0.1),
+                ? (_isDark ? Colors.grey.shade800 : Colors.grey.shade300)
+                : AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: used
                   ? Colors.grey
-                  : AppTheme.primaryColor.withValues(alpha: 0.3),
+                  : AppColors.primary.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon,
-                  size: 18, color: used ? Colors.grey : AppTheme.primaryColor),
+              Icon(icon, size: 18, color: used ? Colors.grey : AppColors.primary),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: used ? Colors.grey : AppTheme.primaryColor,
+                  fontWeight: FontWeight.w700,
+                  color: used ? Colors.grey : AppColors.primary,
                 ),
               ),
             ],
@@ -456,52 +602,48 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   Widget _buildSkipButton(String lang) {
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          _timer?.cancel();
-          ref.read(quizSessionProvider.notifier).nextQuestion();
-          _onQuestionAdvanced();
-        },
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+    return AnimatedScaleButton(
+      onTap: () {
+        _timer?.cancel();
+        ref.read(quizSessionProvider.notifier).nextQuestion();
+        _onQuestionAdvanced();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.3),
+          ),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              AppIcons.skip,
+              color: AppColors.primary,
+              size: 20,
             ),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.skip_next_rounded,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
+            const SizedBox(width: 8),
+            Text(
+              isBn
+                  ? 'এড়িয়ে যান'
+                  : isHi
+                      ? 'छोड़ें'
+                      : 'Skip',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(width: 8),
-              Text(
-                isBn
-                    ? 'এড়িয়ে যান'
-                    : isHi
-                        ? 'छोड़ें'
-                        : 'Skip',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildBackgroundDecorations(bool isDark) {
+  Widget _buildBackgroundDecorations() {
     return Positioned.fill(
       child: IgnorePointer(
         child: Stack(
@@ -516,8 +658,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppTheme.primaryColor.withValues(alpha: 0.08),
-                      AppTheme.primaryColor.withValues(alpha: 0.0),
+                      AppColors.primary.withValues(alpha: 0.08),
+                      AppColors.primary.withValues(alpha: 0.0),
                     ],
                   ),
                 ),
@@ -533,8 +675,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      AppTheme.secondaryColor.withValues(alpha: 0.06),
-                      AppTheme.secondaryColor.withValues(alpha: 0.0),
+                      AppColors.secondary.withValues(alpha: 0.06),
+                      AppColors.secondary.withValues(alpha: 0.0),
                     ],
                   ),
                 ),
@@ -555,7 +697,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: _isDark ? AppTheme.cardDark : Colors.white,
+        backgroundColor: _isDark ? AppColors.cardDark : Colors.white,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
@@ -563,11 +705,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.warningColor.withValues(alpha: 0.15),
+                color: AppColors.warning.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(Icons.exit_to_app_rounded,
-                  color: AppTheme.warningColor, size: 20),
+              child: const Icon(Icons.exit_to_app_rounded,
+                  color: AppColors.warning, size: 20),
             ),
             const SizedBox(width: 12),
             Text(
@@ -587,7 +729,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           isBn
               ? 'এই কুইজে আপনার অগ্রগতি হারাবে।'
               : isHi
-                  ? 'इस क्विज पर आপনার প্রগতি खो जाएगी।'
+                  ? 'इस क्विज पर आपकी प्रगति खो जाएगी।'
                   : 'Your progress on this quiz will be lost.',
           style: TextStyle(
             color: _isDark ? Colors.white70 : Colors.grey.shade600,
@@ -596,11 +738,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(isBn
-                ? 'চালিয়ে যান'
-                : isHi
-                    ? 'जारी रखें'
-                    : 'Continue'),
+            child: Text(isBn ? 'চালিয়ে যান' : isHi ? 'जारी रखें' : 'Continue'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -611,555 +749,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
               if (nav.mounted) nav.pop();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorColor,
+              backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
             ),
-            child: Text(isBn
-                ? 'প্রস্থান'
-                : isHi
-                    ? 'बाहर निकलें'
-                    : 'Exit'),
+            child: Text(isBn ? 'প্রস্থান' : isHi ? 'बाहर निकलें' : 'Exit'),
           ),
         ],
       ),
     );
-  }
-}
-
-// ── Quiz Header ───────────────────────────────────────────────
-class _QuizHeader extends StatelessWidget {
-  final int current;
-  final int total;
-  final AnimationController timerAnimation;
-  final AnimationController pulseAnimation;
-  final int remainingSeconds;
-  final VoidCallback onExit;
-  final bool isDark;
-  final String lang;
-
-  const _QuizHeader({
-    required this.current,
-    required this.total,
-    required this.timerAnimation,
-    required this.pulseAnimation,
-    required this.remainingSeconds,
-    required this.onExit,
-    required this.isDark,
-    required this.lang,
-  });
-
-  Color _timerColor(int s) {
-    if (s > 20) return AppTheme.successColor;
-    if (s > 10) return AppTheme.warningColor;
-    return AppTheme.errorColor;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = current / total;
-    final isBn = lang == 'bn';
-    final isHi = lang == 'hi';
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      decoration: BoxDecoration(
-        gradient:
-            isDark ? AppTheme.primaryGradientDark : AppTheme.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withValues(alpha: 0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: onExit,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.close_rounded,
-                        color: Colors.white, size: 20),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        isBn
-                            ? 'প্রশ্ন $current এর $total'
-                            : isHi
-                                ? 'प्रश्न $current का $total'
-                                : 'Question $current of $total',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Stack(
-                        children: [
-                          Container(
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                          ),
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            height: 6,
-                            width: MediaQuery.of(context).size.width *
-                                progress *
-                                0.45,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(3),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.white.withValues(alpha: 0.4),
-                                  blurRadius: 6,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                AnimatedBuilder(
-                  animation: pulseAnimation,
-                  builder: (_, __) {
-                    final scale = 1.0 +
-                        (remainingSeconds <= 5
-                            ? 0.05 * pulseAnimation.value
-                            : 0.0);
-                    return Transform.scale(
-                      scale: scale,
-                      child: Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 2,
-                          ),
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 44,
-                              height: 44,
-                              child: CircularProgressIndicator(
-                                value: timerAnimation.value,
-                                backgroundColor:
-                                    Colors.white.withValues(alpha: 0.2),
-                                valueColor: AlwaysStoppedAnimation(
-                                    _timerColor(remainingSeconds)),
-                                strokeWidth: 3,
-                              ),
-                            ),
-                            Text(
-                              '$remainingSeconds',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: _timerColor(remainingSeconds),
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 4,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuestionCard extends StatefulWidget {
-  final QuestionModel question;
-  final String lang;
-  final int? selectedAnswer;
-  final ValueChanged<int> onAnswerSelected;
-  final bool isDark;
-  final Set<int>? visibleOptions;
-  final AnimationController? correctAnimationController;
-  final AnimationController? wrongAnimationController;
-  final int? selectedForFeedback;
-  final bool? isCorrectFeedback;
-
-  const _QuestionCard({
-    required this.question,
-    required this.lang,
-    required this.selectedAnswer,
-    required this.onAnswerSelected,
-    required this.isDark,
-    this.visibleOptions,
-    this.correctAnimationController,
-    this.wrongAnimationController,
-    this.selectedForFeedback,
-    this.isCorrectFeedback,
-  });
-
-  @override
-  State<_QuestionCard> createState() => _QuestionCardState();
-}
-
-class _QuestionCardState extends State<_QuestionCard> {
-  @override
-  Widget build(BuildContext context) {
-    final questionText = widget.question.getText(widget.lang);
-    final options = widget.question.getOptions(widget.lang);
-    final isBengali = widget.lang == 'bn';
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(bottom: 20),
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-            decoration: BoxDecoration(
-              gradient: widget.isDark
-                  ? LinearGradient(
-                      colors: [
-                        AppTheme.cardDark,
-                        AppTheme.surfaceElevatedDark.withValues(alpha: 0.5),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : LinearGradient(
-                      colors: [
-                        Colors.white,
-                        const Color(0xFFF8FAFC),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: (widget.isDark ? Colors.black : AppTheme.primaryColor)
-                      .withValues(alpha: 0.12),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.primaryGradient,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        widget.question.category.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _difficultyColor(widget.question.difficulty)
-                            .withValues(alpha: widget.isDark ? 0.2 : 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: _difficultyColor(widget.question.difficulty)
-                              .withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Text(
-                        widget.question.difficulty.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: _difficultyColor(widget.question.difficulty),
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  questionText,
-                  style: isBengali
-                      ? AppTheme.bengaliStyle(
-                          fontSize: 18, fontWeight: FontWeight.w600)
-                      : Theme.of(context).textTheme.titleLarge?.copyWith(
-                            height: 1.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          ...options.asMap().entries.map((entry) {
-            final i = entry.key;
-            if (widget.visibleOptions != null &&
-                !widget.visibleOptions!.contains(i)) {
-              return const SizedBox.shrink();
-            }
-            final text = entry.value;
-            final isSelected = widget.selectedAnswer == i;
-            return _OptionTile(
-              index: i,
-              text: text,
-              isSelected: isSelected,
-              isBengali: isBengali,
-              isDark: widget.isDark,
-              onTap: widget.selectedAnswer == null
-                  ? () => widget.onAnswerSelected(i)
-                  : null,
-              isCorrectFeedback: widget.selectedForFeedback == i
-                  ? widget.isCorrectFeedback
-                  : null,
-              correctAnimation: widget.correctAnimationController,
-              wrongAnimation: widget.wrongAnimationController,
-            );
-          }),
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  Color _difficultyColor(String d) {
-    switch (d) {
-      case 'easy':
-        return AppTheme.successColor;
-      case 'hard':
-        return AppTheme.errorColor;
-      default:
-        return AppTheme.warningColor;
-    }
-  }
-}
-
-class _OptionTile extends StatelessWidget {
-  final int index;
-  final String text;
-  final bool isSelected;
-  final bool isBengali;
-  final bool isDark;
-  final VoidCallback? onTap;
-  final bool? isCorrectFeedback;
-  final AnimationController? correctAnimation;
-  final AnimationController? wrongAnimation;
-
-  const _OptionTile({
-    required this.index,
-    required this.text,
-    required this.isSelected,
-    required this.isBengali,
-    required this.isDark,
-    this.onTap,
-    this.isCorrectFeedback,
-    this.correctAnimation,
-    this.wrongAnimation,
-  });
-
-  static const _labels = ['A', 'B', 'C', 'D'];
-  static const _colors = [
-    Color(0xFF6366F1),
-    Color(0xFF10B981),
-    Color(0xFFF59E0B),
-    Color(0xFFEF4444),
-  ];
-
-  Color get _optionColor => _colors[index];
-
-  @override
-  Widget build(BuildContext context) {
-    Widget container = GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  colors: [
-                    _optionColor,
-                    _optionColor.withValues(alpha: 0.8),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color:
-              isSelected ? null : (isDark ? AppTheme.cardDark : Colors.white),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? Colors.transparent
-                : (isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.grey.withValues(alpha: 0.15)),
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: _optionColor.withValues(alpha: 0.4),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Row(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: isSelected
-                    ? LinearGradient(
-                        colors: [
-                          Colors.white.withValues(alpha: 0.3),
-                          Colors.white.withValues(alpha: 0.1),
-                        ],
-                      )
-                    : null,
-                color: isSelected
-                    ? null
-                    : (isDark
-                        ? AppTheme.surfaceElevatedDark
-                        : const Color(0xFFF1F5F9)),
-                border: Border.all(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.5)
-                      : _optionColor.withValues(alpha: 0.3),
-                  width: 1.5,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                _labels[index],
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: isSelected ? Colors.white : _optionColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                text,
-                style: isBengali
-                    ? AppTheme.bengaliStyle(
-                        fontSize: 15,
-                        color: isSelected
-                            ? Colors.white
-                            : (isDark ? Colors.white : null))
-                    : Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: isSelected
-                              ? Colors.white
-                              : (isDark ? Colors.white : null),
-                          fontWeight: FontWeight.w500,
-                        ),
-              ),
-            ),
-            if (isSelected)
-              Icon(Icons.check_circle_rounded,
-                  color: Colors.white.withValues(alpha: 0.9), size: 22),
-          ],
-        ),
-      ),
-    );
-
-    if (isCorrectFeedback != null &&
-        (correctAnimation != null || wrongAnimation != null)) {
-      if (isCorrectFeedback == true && correctAnimation != null) {
-        return AnimatedBuilder(
-          animation: correctAnimation!,
-          builder: (context, child) {
-            final value = Curves.elasticOut.transform(correctAnimation!.value);
-            return Transform.scale(
-              scale: 1.0 + (0.2 * value),
-              child: child,
-            );
-          },
-          child: container,
-        );
-      } else if (isCorrectFeedback == false && wrongAnimation != null) {
-        return AnimatedBuilder(
-          animation: wrongAnimation!,
-          builder: (context, child) {
-            final value = Curves.elasticOut.transform(wrongAnimation!.value);
-            final shake = 10.0 *
-                (1 - value) *
-                (wrongAnimation!.value < 0.5
-                    ? (wrongAnimation!.value * 4).floor() % 2 == 0
-                        ? 1
-                        : -1
-                    : -((wrongAnimation!.value * 4).floor() % 2 == 0 ? 1 : -1));
-            return Transform.translate(
-              offset: Offset(shake * (1 - value), 0),
-              child: child,
-            );
-          },
-          child: container,
-        );
-      }
-    }
-
-    return container;
   }
 }

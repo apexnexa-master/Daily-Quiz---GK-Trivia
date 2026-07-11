@@ -108,7 +108,7 @@ class QuizService {
     int questionCount = 10,
     String? difficulty,
   }) async {
-    return LocalQuizData.getPracticeQuiz(examMode, questionCount);
+    return LocalQuizData.getPracticeQuiz(examMode, questionCount, difficulty: difficulty);
   }
 
   // ── Submit Attempt via Cloud Function ────────────────────

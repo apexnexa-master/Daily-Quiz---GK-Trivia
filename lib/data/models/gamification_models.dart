@@ -362,3 +362,25 @@ class ReferralRewardModel extends Equatable {
   @override
   List<Object?> get props => [referralCode, referrerReward, refereeReward];
 }
+
+class QuizRewards {
+  final int xpEarned;
+  final int coinsEarned;
+  final int streakBonus;
+  final int speedBonus;
+  final bool isPerfect;
+
+  const QuizRewards({
+    required this.xpEarned,
+    required this.coinsEarned,
+    this.streakBonus = 0,
+    this.speedBonus = 0,
+    this.isPerfect = false,
+  });
+
+  // Keep compatibility fields
+  int get xp => xpEarned;
+  int get coins => coinsEarned;
+  bool get isSpeedBonus => speedBonus > 0;
+  bool get isStreakBonus => streakBonus > 0;
+}

@@ -1,5 +1,6 @@
 // lib/core/services/admin_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/app_logger.dart';
 
 class AdminService {
   static final AdminService instance = AdminService._();
@@ -67,7 +68,7 @@ class AdminService {
         final pass = data['pass'] as String? ?? '';
         final status = (data['status'] as String?)?.toUpperCase() ?? '';
 
-        print('Checking admin: username=$username, status=$status');
+        AppLogger.info('Checking admin: username=$username, status=$status', name: 'ADMIN');
 
         if (username == emailLower && pass == password && status == 'A') {
           _verifiedAdminEmail = emailLower;

@@ -1,0 +1,82 @@
+[
+  {
+    "id": "wb03",
+    "order": 2,
+    "correctIndex": 1,
+    "category": "West Bengal Polity",
+    "difficulty": "medium",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "How many districts are there in West Bengal?",
+      "hi": "पश्चिम बंगाल में कितने जिले हैं?",
+      "bn": "পশ্চিমবঙ্গে কতটি জেলা আছে?"
+    },
+    "options": {
+      "en": [
+        "20",
+        "23",
+        "30",
+        "18"
+      ],
+      "hi": [
+        "20",
+        "23",
+        "30",
+        "18"
+      ],
+      "bn": [
+        "২০",
+        "২৩",
+        "৩০",
+        "১৮"
+      ]
+    },
+    "explanation": {
+      "en": "West Bengal currently has 23 districts.",
+      "hi": "पश्चिम बंगाल में वर्तमान में 23 जिले हैं।",
+      "bn": "পশ্চিমবঙ্গে বর্তমানে ২৩টি জেলা রয়েছে।"
+    }
+  },
+  {
+    "id": "wb19",
+    "order": 18,
+    "correctIndex": 2,
+    "category": "West Bengal Polity",
+    "difficulty": "medium",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "How many legislative assembly seats are there in West Bengal?",
+      "hi": "पश्चिम बंगाल में कितनी विधानसभा सीटें हैं?",
+      "bn": "পশ্চিমবঙ্গে কতটি বিধানসভা আসন আছে?"
+    },
+    "options": {
+      "en": [
+        "294",
+        "295",
+        "296",
+        "297"
+      ],
+      "hi": [
+        "২৯৪",
+        "২৯৫",
+        "২৯৬",
+        "২৯৭"
+      ],
+      "bn": [
+        "২৯৪",
+        "২৯৫",
+        "২৯৬",
+        "২৯৭"
+      ]
+    },
+    "explanation": {
+      "en": "West Bengal Legislative Assembly has 294 seats.",
+      "hi": "পশ্চিমবঙ্গ বিধানসভায় ২৯৪টি আসন আছে।",
+      "bn": "পশ্চিমবঙ্গ বিধানসভায় ২৯৪টি আসন আছে।"
+    }
+  }
+]

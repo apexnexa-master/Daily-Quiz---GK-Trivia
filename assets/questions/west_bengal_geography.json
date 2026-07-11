@@ -1,0 +1,162 @@
+[
+  {
+    "id": "wb05",
+    "order": 4,
+    "correctIndex": 0,
+    "category": "West Bengal Geography",
+    "difficulty": "medium",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Which river flows through Kolkata?",
+      "hi": "कोलकाता से होकर कौन-सी नदी बहती है?",
+      "bn": "কলকাতার মধ্য দিয়ে কোন নদী বয়ে যায়?"
+    },
+    "options": {
+      "en": [
+        "Hooghly",
+        "Ganges",
+        "Damodar",
+        "Rupnarayan"
+      ],
+      "hi": [
+        "हुगली",
+        "गंगा",
+        "दामोदर",
+        "रूपनारायण"
+      ],
+      "bn": [
+        "হুগলি",
+        "গঙ্গা",
+        "দামোদর",
+        "রূপনারায়ণ"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "हुगली नदी (गंगा की एक शाखा) कोलकाता से होकर बहती है।",
+      "bn": "হুগলি নদী (গঙ্গার একটি শাখা) কলকাতার মধ্য দিয়ে বয়ে যায়।"
+    }
+  },
+  {
+    "id": "wb11",
+    "order": 10,
+    "correctIndex": 1,
+    "category": "West Bengal Geography",
+    "difficulty": "medium",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "What is the state flower of West Bengal?",
+      "hi": "पश्चिम बंगाल का राज्य फूल क्या है?",
+      "bn": "পশ্চিমবঙ্গের রাজ্য ফুল কী?"
+    },
+    "options": {
+      "en": [
+        "Rose",
+        "Glory Lily",
+        "Marigold",
+        "Lotus"
+      ],
+      "hi": [
+        "गुलाब",
+        "ग्लोरी लिली",
+        "गेंदा",
+        "कमल"
+      ],
+      "bn": [
+        "গোলাপ",
+        "গ্লোরি লিলি",
+        "গাঁদা ফুল",
+        "পদ্ম"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "ग्लोरी लिली पश्चिम बंगाल का राज्य फूल है।",
+      "bn": "গ্লোরি লিলি পশ্চিমবঙ্গের রাজ্য ফুল।"
+    }
+  },
+  {
+    "id": "wb15",
+    "order": 14,
+    "correctIndex": 0,
+    "category": "West Bengal Geography",
+    "difficulty": "medium",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Which river is known as the \"Suffering River\" of West Bengal?",
+      "hi": "किस नदी को पश्चिम बंगाल की \"दुखद नदी\" कहा जाता है?",
+      "bn": "কোন নদীকে পশ্চিমবঙ্গের \"দুঃখময় নদী\" বলা হয়?"
+    },
+    "options": {
+      "en": [
+        "Damodar",
+        "Rupnarayan",
+        "Ajoy",
+        "Kangsabati"
+      ],
+      "hi": [
+        "দামোদর",
+        "রূপনারায়ণ",
+        "অজয়",
+        "কাঁচাই"
+      ],
+      "bn": [
+        "দামোদর",
+        "রূপনারায়ণ",
+        "অজয়",
+        "কাংসাবতী"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "দামোদর নদীকে \"বঙ্গের শোক\" বলা হয় ঘন ঘন বন্যার কারণে।",
+      "bn": "দামোদর নদীকে \"বঙ্গের শোক\" বলা হয় ঘন ঘন বন্যার কারণে।"
+    }
+  },
+  {
+    "id": "wb20",
+    "order": 19,
+    "correctIndex": 1,
+    "category": "West Bengal Geography",
+    "difficulty": "easy",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Which is the highest peak in West Bengal?",
+      "hi": "पश्चिम बंगाल की सबसे ऊँची चोटी कौन सी है?",
+      "bn": "পশ্চিমবঙ্গের সর্বোচ্চ শৃঙ্গ কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Sandakphu",
+        "Fulong",
+        "Tonglu",
+        "Kangchenjunga"
+      ],
+      "hi": [
+        "সন্দকফু",
+        "ফুলং",
+        "টংলু",
+        "কাংচেনজঙ্ঘা"
+      ],
+      "bn": [
+        "সন্দকফু",
+        "ফুলং",
+        "টংলু",
+        "কাংচেনজঙ্ঘা"
+      ]
+    },
+    "explanation": {
+      "en": "Sandakphu (3,636 m) is the highest peak in West Bengal.",
+      "hi": "সন্দকফু (৩,৬৩৬ মি) পশ্চিমবঙ্গের সর্বোচ্চ শৃঙ্গ।",
+      "bn": "সন্দকফু (৩,৬৩৬ মি) পশ্চিমবঙ্গের সর্বোচ্চ শৃঙ্গ।"
+    }
+  }
+]

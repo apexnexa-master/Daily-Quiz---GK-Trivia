@@ -34,6 +34,8 @@ class CloudSyncService {
       final merged = _mergeStats(localStats, cloudData);
       await _uploadStatsToCloud(merged);
     }
+
+    await syncBookmarks();
   }
 
   Future<void> _uploadStatsToCloud(Map<String, dynamic> stats) async {
@@ -170,5 +172,57 @@ class CloudSyncService {
         .collection('users')
         .doc(_currentUser!.uid)
         .update({'lives': FieldValue.increment(1)});
+  }
+
+  Future<void> syncBookmarkAdded(String questionId, Map<String, dynamic> questionData) async {
+    if (_currentUser == null) return;
+    try {
+      await _db
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .collection('bookmarks')
+          .doc(questionId)
+          .set(questionData);
+    } catch (_) {}
+  }
+
+  Future<void> syncBookmarkRemoved(String questionId) async {
+    if (_currentUser == null) return;
+    try {
+      await _db
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .collection('bookmarks')
+          .doc(questionId)
+          .delete();
+    } catch (_) {}
+  }
+
+  Future<void> syncBookmarks() async {
+    if (_currentUser == null) return;
+    try {
+      final querySnapshot = await _db
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .collection('bookmarks')
+          .get();
+
+      final localBox = await Hive.openBox('bookmarks');
+      final localBookmarks = localBox.get('questions', defaultValue: <String, dynamic>{}) as Map;
+      final merged = Map<String, dynamic>.from(localBookmarks);
+
+      for (final doc in querySnapshot.docs) {
+        merged[doc.id] = doc.data();
+      }
+
+      await localBox.put('questions', merged);
+
+      final cloudDocIds = querySnapshot.docs.map((d) => d.id).toSet();
+      for (final key in localBookmarks.keys) {
+        if (!cloudDocIds.contains(key)) {
+          await syncBookmarkAdded(key as String, Map<String, dynamic>.from(localBookmarks[key]));
+        }
+      }
+    } catch (_) {}
   }
 }

@@ -1,0 +1,122 @@
+[
+  {
+    "id": "ssc04",
+    "order": 3,
+    "correctIndex": 2,
+    "category": "Reasoning",
+    "difficulty": "medium",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    },
+    "options": {
+      "en": [
+        "NBNHP",
+        "NZMHP",
+        "NBOHP",
+        "NZMGP"
+      ],
+      "hi": [
+        "NBNHP",
+        "NZMHP",
+        "NBOHP",
+        "NZMGP"
+      ],
+      "bn": [
+        "NBNHP",
+        "NZMHP",
+        "NBOHP",
+        "NZMGP"
+      ]
+    },
+    "explanation": {
+      "en": "Each letter is shifted +1. M→N, A→B, N→O, G→H, O→P → NBOHP.",
+      "hi": "हर अक्षर +1 होता है। M→N, A→B, N→O, G→H, O→P → NBOHP।",
+      "bn": "প্রতিটি অক্ষর +1 শিফট হয়। M→N, A→B, N→O, G→H, O→P → NBOHP।"
+    }
+  },
+  {
+    "id": "ssc12",
+    "order": 11,
+    "correctIndex": 1,
+    "category": "Reasoning",
+    "difficulty": "easy",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Find the next number: 2, 6, 12, 20, 30, ?",
+      "hi": "अगला नंबर ज्ञात करें: 2, 6, 12, 20, 30, ?",
+      "bn": "পরবর্তী সংখ্যা বের করুন: 2, 6, 12, 20, 30, ?"
+    },
+    "options": {
+      "en": [
+        "40",
+        "42",
+        "44",
+        "38"
+      ],
+      "hi": [
+        "40",
+        "42",
+        "44",
+        "38"
+      ],
+      "bn": [
+        "40",
+        "42",
+        "44",
+        "38"
+      ]
+    },
+    "explanation": {
+      "en": "Pattern: n² + n. So 6² + 6 = 42.",
+      "hi": "প্যাটার্ন হল n² + n। তাই 6² + 6 = 42।",
+      "bn": "প্যাটার্ন হল n² + n। তাই 6² + 6 = 42।"
+    }
+  },
+  {
+    "id": "ssc17",
+    "order": 16,
+    "correctIndex": 0,
+    "category": "Reasoning",
+    "difficulty": "medium",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "If BROTHER is coded as 1234567, how is MOTHER coded?",
+      "hi": "",
+      "bn": ""
+    },
+    "options": {
+      "en": [
+        "145267",
+        "145276",
+        "154267",
+        "145627"
+      ],
+      "hi": [
+        "145267",
+        "145276",
+        "154267",
+        "145627"
+      ],
+      "bn": [
+        "145267",
+        "145276",
+        "154267",
+        "145627"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  }
+]

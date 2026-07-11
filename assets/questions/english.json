@@ -1,0 +1,162 @@
+[
+  {
+    "id": "ssc01",
+    "order": 0,
+    "correctIndex": 1,
+    "category": "English",
+    "difficulty": "medium",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Choose the correct synonym for \"Eloquent\":",
+      "hi": "\"Eloquent\" का सही पर्यायवाची चुनें:",
+      "bn": "\"Eloquent\" শব্দের সঠিক সমার্থক বেছে নিন:"
+    },
+    "options": {
+      "en": [
+        "Silent",
+        "Articulate",
+        "Confused",
+        "Rude"
+      ],
+      "hi": [
+        "मौन",
+        "वाक्पटु",
+        "भ्रमित",
+        "असभ्य"
+      ],
+      "bn": [
+        "নীরব",
+        "বাকপটু",
+        "বিভ্রান্ত",
+        "অভদ্র"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": "Eloquent অর্থ বাকপটু, তাই \"Articulate\" সঠিক সমার্থক।"
+    }
+  },
+  {
+    "id": "ssc09",
+    "order": 8,
+    "correctIndex": 2,
+    "category": "English",
+    "difficulty": "medium",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Choose the correct antonym for \"Benevolent\":",
+      "hi": "\"Benevolent\" का सही विलोम चुनें:",
+      "bn": "\"Benevolent\" শব্দের সঠিক বিপরীতার্থক বেছে নিন:"
+    },
+    "options": {
+      "en": [
+        "Kind",
+        "Generous",
+        "Malevolent",
+        "Gracious"
+      ],
+      "hi": [
+        "दयालु",
+        "उदार",
+        "दुर्भावनापूर्ण",
+        "कृपालु"
+      ],
+      "bn": [
+        "দয়ালু",
+        "উদার",
+        "বিদ্বেষপরায়ণ",
+        "সদয়"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "Benevolent का विलोम Malevolent है।",
+      "bn": "Benevolent এর বিপরীত হল Malevolent।"
+    }
+  },
+  {
+    "id": "ssc11",
+    "order": 10,
+    "correctIndex": 2,
+    "category": "English",
+    "difficulty": "medium",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Choose the correct synonym for \"Abundant\":",
+      "hi": "\"Abundant\" का सही पर्यायवाची चुनें:",
+      "bn": "\"Abundant\" শব্দের সঠিক সমার্থক বেছে নিন:"
+    },
+    "options": {
+      "en": [
+        "Scarce",
+        "Limited",
+        "Plentiful",
+        "Rare"
+      ],
+      "hi": [
+        "दुर्लभ",
+        "सीमित",
+        "प्रचुर",
+        "दुर्लभ"
+      ],
+      "bn": [
+        "দুর্লভ",
+        "সীমিত",
+        "প্রচুর",
+        "দুর্লভ"
+      ]
+    },
+    "explanation": {
+      "en": "Abundant means existing in large quantities; plentiful.",
+      "hi": "Abundant का मतलब है प्रचुर मात्रा में।",
+      "bn": "Abundant অর্থ প্রচুর পরিমাণে বিদ্যমান।"
+    }
+  },
+  {
+    "id": "ssc16",
+    "order": 15,
+    "correctIndex": 2,
+    "category": "English",
+    "difficulty": "hard",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Which word is incorrectly spelled?",
+      "hi": "कौन सा शब्द गलत वर्तनी में है?",
+      "bn": "কোন শব্দটি ভুল বানানে আছে?"
+    },
+    "options": {
+      "en": [
+        "Necessary",
+        "Occasion",
+        "Accomodate",
+        "Restaurant"
+      ],
+      "hi": [
+        "Necessary",
+        "Occasion",
+        "Accomodate",
+        "Restaurant"
+      ],
+      "bn": [
+        "Necessary",
+        "Occasion",
+        "Accomodate",
+        "Restaurant"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "\"Accomodate\" ভুল বানান। সঠিক বানান \"Accommodate\"।",
+      "bn": "\"Accomodate\" ভুল বানান। সঠিক বানান \"Accommodate\"।"
+    }
+  }
+]

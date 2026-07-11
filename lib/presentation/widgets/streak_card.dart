@@ -1,6 +1,9 @@
 // lib/presentation/widgets/streak_card.dart
 import 'package:flutter/material.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_animations.dart';
 import '../../data/models/firestore_models.dart';
 
 class StreakCard extends StatelessWidget {
@@ -21,33 +24,39 @@ class StreakCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: isActive
-            ? AppTheme.streakGradient
+            ? const LinearGradient(
+                colors: [Color(0xFFFF9F43), Color(0xFFFF5252)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
             : LinearGradient(
                 colors: isDark
-                    ? [
-                        Colors.white.withValues(alpha: 0.05),
-                        Colors.white.withValues(alpha: 0.03)
-                      ]
-                    : [
-                        Theme.of(context).colorScheme.surface,
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
-                      ],
+                    ? [Colors.white.withValues(alpha: 0.05), Colors.white.withValues(alpha: 0.03)]
+                    : [Colors.white, const Color(0xFFF8FAFC)],
               ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: isActive
             ? [
                 BoxShadow(
-                    color: AppTheme.warningColor.withOpacity(0.3),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6))
+                  color: const Color(0xFFFF5252).withValues(alpha: 0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                )
               ]
-            : (isDark ? null : AppTheme.softShadow(AppTheme.primaryColor)),
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              ],
         border: isActive
             ? null
             : Border.all(
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.grey.withValues(alpha: 0.1),
+                    : Colors.grey.withValues(alpha: 0.15),
+                width: 1.5,
               ),
       ),
       child: Row(
@@ -57,41 +66,41 @@ class StreakCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    isActive ? '🔥' : '💤',
-                    style: const TextStyle(fontSize: 32),
-                  ),
-                  const SizedBox(width: 6),
+                  isActive
+                      ? const PulseWidget(
+                          child: Icon(
+                            AppIcons.streak,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        )
+                      : Icon(
+                          Icons.mode_night_rounded,
+                          color: isDark ? Colors.white24 : Colors.grey.shade400,
+                          size: 28,
+                        ),
+                  const SizedBox(width: 8),
                   Text(
                     '$current',
                     style: TextStyle(
-                      fontSize: 40,
+                      fontSize: 36,
                       fontWeight: FontWeight.w900,
-                      color: isActive
-                          ? Colors.white
-                          : (isDark ? Colors.white38 : Colors.grey.shade400),
+                      color: isActive ? Colors.white : (isDark ? Colors.white24 : Colors.grey.shade400),
                       height: 1.0,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 6),
               Text(
                 isBn ? 'দিনের ধারাবাহিকতা' : isHi ? 'दिनों का सिलसिला' : 'day streak',
-                style: isBn
-                    ? AppTheme.bengaliStyle(
-                        fontSize: 13,
-                        color: isActive
-                            ? Colors.white70
-                            : (isDark ? Colors.white38 : Colors.grey.shade500))
-                    : TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: isActive
-                            ? Colors.white70
-                            : (isDark ? Colors.white38 : Colors.grey.shade500)),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: isActive ? Colors.white.withValues(alpha: 0.85) : (isDark ? Colors.white38 : Colors.grey.shade500),
+                ),
               ),
             ],
           ),
@@ -105,20 +114,17 @@ class StreakCard extends StatelessWidget {
                 children: List.generate(7, (i) {
                   final filled = i < current.clamp(0, 7);
                   return Container(
-                    width: 10,
-                    height: 10,
+                    width: 8,
+                    height: 8,
                     margin: const EdgeInsets.only(left: 4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: filled
                           ? (isActive
                               ? Colors.white
-                              : (isDark
-                                  ? AppTheme.warningColor
-                                  : AppTheme.warningColor
-                                      .withValues(alpha: 0.7)))
+                              : AppColors.streak)
                           : (isActive
-                              ? Colors.white.withOpacity(0.25)
+                              ? Colors.white.withValues(alpha: 0.25)
                               : (isDark
                                   ? Colors.white.withValues(alpha: 0.08)
                                   : Colors.grey.shade200)),
@@ -126,36 +132,29 @@ class StreakCard extends StatelessWidget {
                   );
                 }),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? Colors.white.withOpacity(0.2)
+                      ? Colors.white.withValues(alpha: 0.2)
                       : (isDark
-                          ? AppTheme.primaryColor.withValues(alpha: 0.15)
-                          : Theme.of(context)
-                              .colorScheme
-                              .primaryContainer
-                              .withOpacity(0.5)),
+                          ? AppColors.primary.withValues(alpha: 0.15)
+                          : AppColors.primary.withValues(alpha: 0.08)),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isActive
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.transparent,
+                  ),
                 ),
                 child: Text(
                   isBn ? 'সর্বোচ্চ: $longest 🎯' : isHi ? 'सर्वश्रेष्ठ: $longest 🎯' : 'Best: $longest 🎯',
-                  style: isBn
-                      ? AppTheme.bengaliStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isActive
-                              ? Colors.white
-                              : Theme.of(context).colorScheme.primary)
-                      : TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isActive
-                              ? Colors.white
-                              : Theme.of(context).colorScheme.primary),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isActive ? Colors.white : AppColors.primary,
+                  ),
                 ),
               ),
             ],

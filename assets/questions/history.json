@@ -1,0 +1,327 @@
+[
+  {
+    "id": "g03",
+    "order": 2,
+    "correctIndex": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "In which year did India gain independence?",
+      "hi": "भारत को किस वर्ष स्वतंत्रता मिली?",
+      "bn": "ভারত কোন বছর স্বাধীনতা লাভ করে?"
+    },
+    "options": {
+      "en": [
+        "1947",
+        "1950",
+        "1942",
+        "1945"
+      ],
+      "hi": [
+        "1947",
+        "1950",
+        "1942",
+        "1945"
+      ],
+      "bn": [
+        "১৯৪৭",
+        "১৯৫০",
+        "১৯৪২",
+        "১৯৪৫"
+      ]
+    },
+    "explanation": {
+      "en": "India gained independence from British rule on 15 August 1947.",
+      "hi": "भारत को 15 अगस्त 1947 को ब्रिटिश शासन से स्वतंत्रता मिली।",
+      "bn": "ভারত ১৫ আগস্ট ১৯৪৭ সালে ব্রিটিশ শাসন থেকে মুক্তি পায়।"
+    }
+  },
+  {
+    "id": "g07",
+    "order": 6,
+    "correctIndex": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Who wrote the Indian National Anthem?",
+      "hi": "भारतीय राष्ट्रगान किसने लिखा?",
+      "bn": "ভারতীয় জাতীয় সংগীত কে লিখেছেন?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "जन गण मन रवींद्रनाथ टैगोर द्वारा लिखा गया था।",
+      "bn": ""
+    }
+  },
+  {
+    "id": "g13",
+    "order": 12,
+    "correctIndex": 3,
+    "category": "History",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Who was the first Prime Minister of India?",
+      "hi": "भारत के प्रथम प्रधानमंत्री कौन थे?",
+      "bn": "ভারতের প্রথম প্রধানমন্ত্রী কে ছিলেন?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "जवाहरलाल नेहरू भारत के पहले प्रधानमंत्री थे।",
+      "bn": "জওহরলাল নেহরু ভারতের প্রথম প্রধানমন্ত্রী ছিলেন।"
+    }
+  },
+  {
+    "id": "g19",
+    "order": 18,
+    "correctIndex": 2,
+    "category": "History",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "In which year did the Quit India Movement start?",
+      "hi": "भारत छोड़ो आंदोलन किस वर्ष शुरू हुआ?",
+      "bn": "ভারত ছাড়ো আন্দোলন কোন বছর শুরু হয়েছিল?"
+    },
+    "options": {
+      "en": [
+        "1940",
+        "1942",
+        "1944",
+        "1946"
+      ],
+      "hi": [
+        "1940",
+        "1942",
+        "1944",
+        "1946"
+      ],
+      "bn": [
+        "১৯৪০",
+        "১৯৪২",
+        "১৯৪৪",
+        "১৯৪৬"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "भारत छोड़ो आंदोलन 8 अगस्त 1942 को शुरू हुआ।",
+      "bn": "ভারত ছাড়ো আন্দোলন ৮ আগস্ট ১৯৪২ সালে শুরু হয়েছিল।"
+    }
+  },
+  {
+    "id": "ssc08",
+    "order": 7,
+    "correctIndex": 1,
+    "category": "History",
+    "difficulty": "medium",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "When was the Indian Constitution adopted?",
+      "hi": "भारतीय संविधान कब अपनाया गया?",
+      "bn": "ভারতীয় সংবিধান কবে গৃহীত হয়েছিল?"
+    },
+    "options": {
+      "en": [
+        "15 Aug 1947",
+        "26 Nov 1949",
+        "26 Jan 1950",
+        "30 Jan 1948"
+      ],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "भारतीय संविधान 26 नवंबर 1949 को अपनाया गया था।",
+      "bn": "ভারতীয় সংবিধান ২৬ নভেম্বর ১৯৪৯ সালে গৃহীত হয়।"
+    }
+  },
+  {
+    "id": "ssc14",
+    "order": 13,
+    "correctIndex": 3,
+    "category": "History",
+    "difficulty": "medium",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Who was known as the \"Iron Man of India\"?",
+      "hi": "किसे \"भारत का लौह पुरुष\" कहा जाता था?",
+      "bn": "কাকে \"ভারতের লৌহ পুরুষ\" বলা হত?"
+    },
+    "options": {
+      "en": [],
+      "hi": [
+        "মহাত্মা গান্ধী",
+        "জওহরলাল নেহরু",
+        "ভগত সিং",
+        "সর্দার প্যাটেল"
+      ],
+      "bn": [
+        "মহাত্মা গান্ধী",
+        "জওহরলাল নেহরু",
+        "ভগত সিং",
+        "সর্দার প্যাটেল"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "ssc20",
+    "order": 19,
+    "correctIndex": 0,
+    "category": "History",
+    "difficulty": "medium",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Who founded the Maurya Empire?",
+      "hi": "मौर्य साम्राज्य की स्थापना किसने की?",
+      "bn": "মৌর্য সাম্রাজ্যের প্রতিষ্ঠা কে করেছিলেন?"
+    },
+    "options": {
+      "en": [
+        "Chandragupta Maurya",
+        "Ashoka",
+        "Bindusara",
+        "Brihadratha"
+      ],
+      "hi": [
+        "চন্দ্রগুপ্ত মৌর্য",
+        "অশোক",
+        "বিন্দুসার",
+        "বৃহদ্রথ"
+      ],
+      "bn": [
+        "চন্দ্রগুপ্ত মৌর্য",
+        "অশোক",
+        "বিন্দুসার",
+        "বৃহদ্রথ"
+      ]
+    },
+    "explanation": {
+      "en": "Chandragupta Maurya founded the Maurya Empire around 321 BCE.",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "up05",
+    "order": 4,
+    "correctIndex": 2,
+    "category": "History",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "The Battle of Plassey was fought in which year?",
+      "hi": "प्लासी का युद्ध किस वर्ष लड़ा गया था?",
+      "bn": "পলাশীর যুদ্ধ কোন বছর হয়েছিল?"
+    },
+    "options": {
+      "en": [
+        "1764",
+        "1761",
+        "1757",
+        "1775"
+      ],
+      "hi": [
+        "1764",
+        "1761",
+        "1757",
+        "1775"
+      ],
+      "bn": [
+        "১৭৬৪",
+        "১৭৬১",
+        "১৭৫৭",
+        "১৭৭৫"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "प्लासी का युद्ध 23 जून 1757 को लड़ा गया था।",
+      "bn": "পলাশীর যুদ্ধ ২৩ জুন ১৭৫৭ সালে হয়েছিল।"
+    }
+  },
+  {
+    "id": "up09",
+    "order": 8,
+    "correctIndex": 1,
+    "category": "History",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "",
+      "hi": "\"धन की निकासी\" सिद्धांत किसने शुरू किया?",
+      "bn": "\"সম্পদ নিষ্কাশন\" তত্ত্ব কে শুরু করেছিলেন?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": "দাদাভাই নওরোজি প্রথম \"সম্পদ নিষ্কাশন\" তত্ত্ব উপস্থাপন করেন।"
+    }
+  },
+  {
+    "id": "up15",
+    "order": 14,
+    "correctIndex": 1,
+    "category": "History",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "Who wrote the \"Discovery of India\"?",
+      "hi": "\"ভারতের আবিষ্কার\" কে লিখেছিলেন?",
+      "bn": "\"ভারতের আবিষ্কার\" কে লিখেছিলেন?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  }
+]

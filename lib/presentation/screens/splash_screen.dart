@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/theme/theme_manager.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_animations.dart';
 import '../providers/app_providers.dart';
 import '../../routes/app_router.dart';
 
@@ -23,19 +23,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1200));
+      vsync: this, 
+      duration: const Duration(milliseconds: 1000),
+    );
     _scaleAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.3, 1.0, curve: Curves.easeIn)));
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.2, 1.0, curve: Curves.easeIn),
+      ),
+    );
     _controller.forward();
     _navigateAfterDelay();
   }
 
   void _navigateAfterDelay() {
-    Future.delayed(const Duration(milliseconds: 1800), () async {
+    Future.delayed(const Duration(milliseconds: 2000), () async {
       if (!mounted) return;
 
       final prefs = await SharedPreferences.getInstance();
@@ -46,7 +51,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         Navigator.pushReplacementNamed(context, AppRouter.onboarding);
       } else {
         Navigator.pushReplacementNamed(
-            context, user != null ? AppRouter.home : AppRouter.login);
+          context, 
+          user != null ? AppRouter.home : AppRouter.login,
+        );
       }
     });
   }
@@ -59,80 +66,109 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeModeProvider);
-    final isDark = themeMode == AppThemeMode.dark ||
-        (themeMode == AppThemeMode.system &&
-            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
-
-    final primaryColor = isDark ? AppTheme.primaryDark : AppTheme.primaryColor;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: primaryColor,
       body: Container(
         decoration: BoxDecoration(
-          gradient: isDark
-              ? const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF1E1B4B), Color(0xFF0F172A)])
-              : const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+          gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
         ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(35),
-                  child: Image.asset(
-                    'assets/icon/daily_gk_quiz_playstore_icon.png',
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.cover,
+        child: Stack(
+          children: [
+            // Center Content
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // App Icon Animated
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(35),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(35),
+                        child: Image.asset(
+                          'assets/icon/daily_gk_quiz_playstore_icon.png',
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // App Name & Tagline Animated
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Column(
+                      children: [
+                        Text(
+                          'GK Quiz',
+                          style: TextStyle(
+                            fontSize: 38,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                            letterSpacing: -1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Daily Quiz + Practice',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 60),
+                  // Progress spinner
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Version Display at bottom
+            Positioned(
+              bottom: 30,
+              left: 0,
+              right: 0,
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Center(
+                  child: Text(
+                    'v1.0.2',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white38 : Colors.grey.shade400,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Column(
-                  children: [
-                    const Text(
-                      'GK Quiz',
-                      style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: -1),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Daily Quiz + Practice',
-                      style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w400),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 60),
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      strokeWidth: 2.5),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

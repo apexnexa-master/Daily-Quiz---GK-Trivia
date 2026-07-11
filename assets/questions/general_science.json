@@ -1,0 +1,82 @@
+[
+  {
+    "id": "ssc06",
+    "order": 5,
+    "correctIndex": 0,
+    "category": "General Science",
+    "difficulty": "medium",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Which gas is used in fire extinguishers?",
+      "hi": "अग्निशामक यंत्रों में कौन-सी गैस का उपयोग किया जाता है?",
+      "bn": "অগ্নি নির্বাপক যন্ত্রে কোন গ্যাস ব্যবহার হয়?"
+    },
+    "options": {
+      "en": [
+        "Carbon Dioxide",
+        "Oxygen",
+        "Nitrogen",
+        "Helium"
+      ],
+      "hi": [
+        "कार्बन डाइऑक्साइड",
+        "ऑक्सीजन",
+        "नाइट्रोजन",
+        "हीलियम"
+      ],
+      "bn": [
+        "কার্বন ডাই-অক্সাইড",
+        "অক্সিজেন",
+        "নাইট্রোজেন",
+        "হিলিয়াম"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": "CO₂ অগ্নি নির্বাপকে ব্যবহৃত হয় কারণ এটি অক্সিজেন সরিয়ে দেয়।"
+    }
+  },
+  {
+    "id": "ssc15",
+    "order": 14,
+    "correctIndex": 1,
+    "category": "General Science",
+    "difficulty": "easy",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "What is the unit of electrical resistance?",
+      "hi": "विद्युत प्रतिरोध की इकाई क्या है?",
+      "bn": "বৈদ্যুতিক প্রতিরোধের একক কী?"
+    },
+    "options": {
+      "en": [
+        "Volt",
+        "Ohm",
+        "Ampere",
+        "Watt"
+      ],
+      "hi": [
+        "ভোল্ট",
+        "ওহম",
+        "অ্যাম্পিয়ার",
+        "ওয়াট"
+      ],
+      "bn": [
+        "ভোল্ট",
+        "ওহম",
+        "অ্যাম্পিয়ার",
+        "ওয়াট"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "বৈদ্যুতিক প্রতিরোধের SI একক ওহম (Ω)।",
+      "bn": "বৈদ্যুতিক প্রতিরোধের SI একক ওহম (Ω)।"
+    }
+  }
+]

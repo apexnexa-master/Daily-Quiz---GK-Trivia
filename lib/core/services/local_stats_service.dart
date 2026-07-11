@@ -2,6 +2,8 @@
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'gamification_service.dart';
+import '../../data/models/firestore_models.dart';
 
 class LocalStatsService {
   LocalStatsService._();
@@ -22,64 +24,16 @@ class LocalStatsService {
 
   // ── Streak Management ────────────────────────────────────────
   Future<LocalStreakData> getStreak() async {
-    final data = _box.get(_keyStreak);
-    if (data == null) {
-      return LocalStreakData(
-        currentStreak: 0,
-        longestStreak: 0,
-        lastPlayedDate: null,
-      );
-    }
-    try {
-      final map = jsonDecode(data) as Map<String, dynamic>;
-      return LocalStreakData.fromJson(map);
-    } catch (_) {
-      return LocalStreakData(
-        currentStreak: 0,
-        longestStreak: 0,
-        lastPlayedDate: null,
-      );
-    }
+    final stats = await GamificationService.instance.getUserStats();
+    return LocalStreakData(
+      currentStreak: stats.currentStreak,
+      longestStreak: stats.longestStreak,
+      lastPlayedDate: stats.lastAttemptDate?.toIso8601String(),
+    );
   }
 
   Future<void> updateStreakOnQuizComplete() async {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final streak = await getStreak();
-
-    int newCurrentStreak = streak.currentStreak;
-    int newLongestStreak = streak.longestStreak;
-
-    if (streak.lastPlayedDate == null) {
-      // First time playing
-      newCurrentStreak = 1;
-    } else if (streak.lastPlayedDate == today) {
-      // Already played today, don't update streak
-      return;
-    } else {
-      final lastDate = DateTime.parse(streak.lastPlayedDate!);
-      final todayDate = DateTime.parse(today);
-      final difference = todayDate.difference(lastDate).inDays;
-
-      if (difference == 1) {
-        // Consecutive day - increase streak
-        newCurrentStreak = streak.currentStreak + 1;
-      } else {
-        // Streak broken - reset to 1
-        newCurrentStreak = 1;
-      }
-    }
-
-    if (newCurrentStreak > newLongestStreak) {
-      newLongestStreak = newCurrentStreak;
-    }
-
-    final newStreak = LocalStreakData(
-      currentStreak: newCurrentStreak,
-      longestStreak: newLongestStreak,
-      lastPlayedDate: today,
-    );
-
-    await _box.put(_keyStreak, jsonEncode(newStreak.toJson()));
+    await GamificationService.instance.updateStreak();
   }
 
   // ── Personal Best ──────────────────────────────────────────

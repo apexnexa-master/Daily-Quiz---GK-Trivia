@@ -1,0 +1,72 @@
+[
+  {
+    "id": "wb07",
+    "order": 6,
+    "correctIndex": 1,
+    "category": "West Bengal Economy",
+    "difficulty": "medium",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Which port is the largest in West Bengal?",
+      "hi": "पश्चिम बंगाल का सबसे बड़ा बंदरगाह कौन सा है?",
+      "bn": "পশ্চিমবঙ্গের বৃহত্তম বন্দর কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Diamond Harbour",
+        "Kolkata Port",
+        "Haldia Port",
+        "Sandheads"
+      ],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "कोलकाता बंदरगाह भारत का सबसे पुराना प्रमुख बंदरगाह है।",
+      "bn": ""
+    }
+  },
+  {
+    "id": "wb18",
+    "order": 17,
+    "correctIndex": 0,
+    "category": "West Bengal Economy",
+    "difficulty": "medium",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Which is the major crop grown in West Bengal?",
+      "hi": "पश्चिम बंगाल में कौन सी प्रमुख फसल उगाई जाती है?",
+      "bn": "পশ্চিমবঙ্গে কোন প্রধান ফসল চাষ করা হয়?"
+    },
+    "options": {
+      "en": [
+        "Rice",
+        "Wheat",
+        "Sugarcane",
+        "Cotton"
+      ],
+      "hi": [
+        "চাল",
+        "গম",
+        "আখ",
+        "তুলা"
+      ],
+      "bn": [
+        "চাল",
+        "গম",
+        "আখ",
+        "তুলা"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  }
+]

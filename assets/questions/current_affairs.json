@@ -1,0 +1,67 @@
+[
+  {
+    "id": "g10",
+    "order": 9,
+    "correctIndex": 2,
+    "category": "Current Affairs",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Which city is known as the \"City of Joy\"?",
+      "hi": "\"আনন্দের শহর\" के नाम से कौन-सा शहर जाना जाता है?",
+      "bn": "\"আনন্দের শহর\" হিসেবে কোন শহর পরিচিত?"
+    },
+    "options": {
+      "en": [
+        "Mumbai",
+        "Delhi",
+        "Kolkata",
+        "Pune"
+      ],
+      "hi": [
+        "मुम्बई",
+        "दिल्ली",
+        "कोलकाता",
+        "पुणे"
+      ],
+      "bn": [
+        "মুম্বাই",
+        "দিল্লি",
+        "কলকাতা",
+        "পুনে"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "कोलकाता को \"आनंद का शहर\" कहा जाता है।",
+      "bn": ""
+    }
+  },
+  {
+    "id": "g25",
+    "order": 24,
+    "correctIndex": 1,
+    "category": "Current Affairs",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What does UNESCO stand for?",
+      "hi": "UNESCO का पूर्ण रूप क्या है?",
+      "bn": "UNESCO-এর পূর্ণ রূপ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": "UNESCO মানে জাতিসংঘ শিক্ষা, বৈজ্ঞানিক ও সাংস্কৃতিক সংস্থা।"
+    }
+  }
+]

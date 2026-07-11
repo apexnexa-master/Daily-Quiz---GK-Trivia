@@ -154,7 +154,7 @@ class _PreviewTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: _scoreColor(entry.score).withOpacity(isDark ? 0.15 : 0.1),
+              color: _scoreColor(entry.score).withValues(alpha: isDark ? 0.15 : 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(

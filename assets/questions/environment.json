@@ -1,0 +1,77 @@
+[
+  {
+    "id": "up04",
+    "order": 3,
+    "correctIndex": 0,
+    "category": "Environment",
+    "difficulty": "medium",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "What is the primary cause of the greenhouse effect?",
+      "hi": "ग्रीनहाउस प्रभाव का प्राथमिक कारण क्या है?",
+      "bn": "গ্রিনহাউস প্রভাবের প্রাথমিক কারণ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "up14",
+    "order": 13,
+    "correctIndex": 3,
+    "category": "Environment",
+    "difficulty": "medium",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "Which is the first Ramsar site in India?",
+      "hi": "ভারতের প্রথম রামসার স্থান কোনটি?",
+      "bn": "ভারতের প্রথম রামসার স্থান কোনটি?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "up20",
+    "order": 19,
+    "correctIndex": 0,
+    "category": "Environment",
+    "difficulty": "medium",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "Which is the first biosphere reserve in India?",
+      "hi": "ভারতের প্রথম বায়োস্ফিয়ার রিজার্ভ কোনটি?",
+      "bn": "ভারতের প্রথম বায়োস্ফিয়ার রিজার্ভ কোনটি?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  }
+]

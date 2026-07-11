@@ -1,6 +1,8 @@
-// lib/core/services/question_tracking_service.dart
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'gamification_service.dart';
+import '../../data/models/firestore_models.dart';
+import '../../data/models/gamification_models.dart';
 
 class QuestionTrackingService {
   QuestionTrackingService._();
@@ -111,16 +113,15 @@ class QuestionTrackingService {
   }
 
   Future<List<Achievement>> getAchievements() async {
-    final data = _box.get(_keyAchievements);
-    if (data == null) return _defaultAchievements;
-    try {
-      final list = jsonDecode(data) as List;
-      return list
-          .map((e) => Achievement.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } catch (_) {
-      return _defaultAchievements;
-    }
+    final list = GamificationService.instance.getAllAchievements();
+    return list.map((m) => Achievement(
+      id: m.type.name,
+      title: m.titleKey,
+      description: m.descriptionKey,
+      icon: m.icon,
+      isUnlocked: m.isUnlocked,
+      unlockedAt: m.unlockedAt,
+    )).toList();
   }
 
   Future<void> checkAndUnlockAchievements({
@@ -129,60 +130,7 @@ class QuestionTrackingService {
     required int bestScore,
     required Map<String, int> modeScores,
   }) async {
-    final achievements = await getAchievements();
-    bool updated = false;
-
-    for (final achievement in achievements) {
-      if (achievement.isUnlocked) continue;
-
-      bool shouldUnlock = false;
-      switch (achievement.id) {
-        case 'first_quiz':
-          shouldUnlock = totalQuizzes >= 1;
-          break;
-        case 'quiz_10':
-          shouldUnlock = totalQuizzes >= 10;
-          break;
-        case 'quiz_50':
-          shouldUnlock = totalQuizzes >= 50;
-          break;
-        case 'quiz_100':
-          shouldUnlock = totalQuizzes >= 100;
-          break;
-        case 'streak_3':
-          shouldUnlock = currentStreak >= 3;
-          break;
-        case 'streak_7':
-          shouldUnlock = currentStreak >= 7;
-          break;
-        case 'streak_30':
-          shouldUnlock = currentStreak >= 30;
-          break;
-        case 'perfect_score':
-          shouldUnlock = bestScore >= 100;
-          break;
-        case 'all_modes':
-          shouldUnlock = modeScores.keys.length >= 5;
-          break;
-        case 'general_master':
-          shouldUnlock = (modeScores['GENERAL'] ?? 0) >= 80;
-          break;
-        case 'wbpsc_aspirant':
-          shouldUnlock = (modeScores['WBPSC'] ?? 0) >= 70;
-          break;
-      }
-
-      if (shouldUnlock) {
-        achievement.isUnlocked = true;
-        achievement.unlockedAt = DateTime.now();
-        updated = true;
-      }
-    }
-
-    if (updated) {
-      await _box.put(_keyAchievements,
-          jsonEncode(achievements.map((a) => a.toJson()).toList()));
-    }
+    // Delegated to GamificationService during quiz rewards calculation
   }
 
   static final List<Achievement> _defaultAchievements = [

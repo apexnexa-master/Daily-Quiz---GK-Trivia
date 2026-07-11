@@ -1,0 +1,117 @@
+[
+  {
+    "id": "g04",
+    "order": 3,
+    "correctIndex": 3,
+    "category": "Sports",
+    "difficulty": "easy",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "How many players are there in a cricket team?",
+      "hi": "क्रिकेट टीम में कितने खिलाड़ी होते हैं?",
+      "bn": "একটি ক্রিকেট দলে কতজন খেলোয়াড় থাকে?"
+    },
+    "options": {
+      "en": [
+        "9",
+        "10",
+        "12",
+        "11"
+      ],
+      "hi": [
+        "9",
+        "10",
+        "12",
+        "11"
+      ],
+      "bn": [
+        "৯",
+        "১০",
+        "১২",
+        "১১"
+      ]
+    },
+    "explanation": {
+      "en": "A cricket team consists of 11 players.",
+      "hi": "क्रिकेट टीम में 11 खिलाड़ी होते हैं।",
+      "bn": "একটি ক্রিকেট দলে ১১ জন খেলোয়াড় থাকে।"
+    }
+  },
+  {
+    "id": "g16",
+    "order": 15,
+    "correctIndex": 0,
+    "category": "Sports",
+    "difficulty": "easy",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Which country won the first Cricket World Cup?",
+      "hi": "किस देश ने पहला क्रिकेट विश्व कप जीता?",
+      "bn": "কোন দেশ প্রথম ক্রিকেট বিশ্বকাপ জিতেছিল?"
+    },
+    "options": {
+      "en": [
+        "England",
+        "Australia",
+        "West Indies",
+        "India"
+      ],
+      "hi": [
+        "इंग्लैंड",
+        "ऑस्ट्रेलिया",
+        "वेस्ट इंडीज",
+        "भारत"
+      ],
+      "bn": [
+        "ইংল্যান্ড",
+        "অস্ট্রেলিয়া",
+        "ওয়েস্ট ইন্ডিজ",
+        "ভারত"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "इंग्लैंड ने 1975 में पहला क्रिकेट विश्व कप जीता।",
+      "bn": "১৯৭৫ সালে ইংল্যান্ড প্রথম ক্রিকেট বিশ্বকাপ জিতেছিল।"
+    }
+  },
+  {
+    "id": "g24",
+    "order": 23,
+    "correctIndex": 2,
+    "category": "Sports",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Which Indian city hosts the Indian Premier League (IPL)?",
+      "hi": "इंडियन प्रीमियर लीग (IPL) किस भारतीय शहर में आयोजित होती है?",
+      "bn": "আইপিএল কোন ভারতীয় শহরে অনুষ্ঠিত হয়?"
+    },
+    "options": {
+      "en": [],
+      "hi": [
+        "केवल मुंबई",
+        "केवल दिल्ली",
+        "कई शहर",
+        "केवल बेंगलुरु"
+      ],
+      "bn": [
+        "শুধু মুম্বাই",
+        "শুধু দিল্লি",
+        "একাধিক শহর",
+        "শুধু ব্যাঙ্গালোর"
+      ]
+    },
+    "explanation": {
+      "en": "IPL matches are hosted across multiple Indian cities each year.",
+      "hi": "IPL मैच हर साल भारत के कई शहरों में खेले जाते हैं।",
+      "bn": "আইপিএল ম্যাচ প্রতি বছর একাধিক ভারতীয় শহরে অনুষ্ঠিত হয়।"
+    }
+  }
+]

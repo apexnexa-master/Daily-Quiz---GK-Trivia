@@ -1,0 +1,132 @@
+[
+  {
+    "id": "wb01",
+    "order": 0,
+    "correctIndex": 0,
+    "category": "West Bengal History",
+    "difficulty": "medium",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "When was West Bengal state formed?",
+      "hi": "पश्चिम बंगाल राज्य कब बना?",
+      "bn": "পশ্চিমবঙ্গ রাজ্য কবে গঠিত হয়েছিল?"
+    },
+    "options": {
+      "en": [
+        "1947",
+        "1950",
+        "1956",
+        "1960"
+      ],
+      "hi": [
+        "1947",
+        "1950",
+        "1956",
+        "1960"
+      ],
+      "bn": [
+        "১৯৪৭",
+        "১৯৫০",
+        "১৯৫৬",
+        "১৯৬০"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "पश्चिम बंगाल 1947 में भारत और बंगाल के विभाजन के बाद बना।",
+      "bn": "পশ্চিমবঙ্গ ১৯৪৭ সালে ভারত বিভাজনের পর গঠিত হয়।"
+    }
+  },
+  {
+    "id": "wb06",
+    "order": 5,
+    "correctIndex": 2,
+    "category": "West Bengal History",
+    "difficulty": "hard",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Who founded the Brahmo Samaj in 1828?",
+      "hi": "ब्रह्म समाज की स्थापना 1828 में किसने की?",
+      "bn": "১৮২৮ সালে ব্রাহ্মসমাজ কে প্রতিষ্ঠা করেন?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "राजा राम मोहन रॉय ने 1828 में ब्रह्म समाज की स्थापना की।",
+      "bn": "রাজা রামমোহন রায় ১৮২৮ সালে ব্রাহ্মসমাজ প্রতিষ্ঠা করেন।"
+    }
+  },
+  {
+    "id": "wb13",
+    "order": 12,
+    "correctIndex": 3,
+    "category": "West Bengal History",
+    "difficulty": "hard",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "Who was the first Governor of West Bengal?",
+      "hi": "पश्चिम बंगाल के पहले राज्यपाल कौन थे?",
+      "bn": "পশ্চিমবঙ্গের প্রথম রাজ্যপাল কে ছিলেন?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "wb16",
+    "order": 15,
+    "correctIndex": 1,
+    "category": "West Bengal History",
+    "difficulty": "hard",
+    "examTags": [
+      "WBPSC"
+    ],
+    "text": {
+      "en": "In which year was the Battle of Plassey fought?",
+      "hi": "प्लासी का युद्ध किस वर्ष लड़ा गया था?",
+      "bn": "পলাশীর যুদ্ধ কোন বছর হয়েছিল?"
+    },
+    "options": {
+      "en": [
+        "1755",
+        "1757",
+        "1759",
+        "1761"
+      ],
+      "hi": [
+        "১৭৫৫",
+        "১৭৫৭",
+        "১৭৫৯",
+        "১৭৬১"
+      ],
+      "bn": [
+        "১৭৫৫",
+        "১৭৫৭",
+        "১৭৫৯",
+        "১৭৬১"
+      ]
+    },
+    "explanation": {
+      "en": "The Battle of Plassey was fought on June 23, 1757.",
+      "hi": "পলাশীর যুদ্ধ ২৩ জুন, ১৭৫৭ সালে হয়েছিল।",
+      "bn": "পলাশীর যুদ্ধ ২৩ জুন, ১৭৫৭ সালে হয়েছিল।"
+    }
+  }
+]

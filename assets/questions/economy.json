@@ -1,0 +1,167 @@
+[
+  {
+    "id": "g09",
+    "order": 8,
+    "correctIndex": 1,
+    "category": "Economy",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What does GDP stand for?",
+      "hi": "GDP का पूर्ण रूप क्या है?",
+      "bn": "GDP-এর পূর্ণ রূপ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "GDP का मतलब है ग्रॉस डोमेस्टिक प्रोडक्ट।",
+      "bn": ""
+    }
+  },
+  {
+    "id": "g22",
+    "order": 21,
+    "correctIndex": 1,
+    "category": "Economy",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Who is known as the Father of the Indian Nation?",
+      "hi": "भारतीय राष्ट्र के जनक किसे कहा जाता है?",
+      "bn": "ভারতীয় জাতির জনক কাকে বলা হয়?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "महात्मा गांधी को राष्ट्रपिता कहा जाता है।",
+      "bn": "মহাত্মা গান্ধীকে জাতির জনক বলা হয়।"
+    }
+  },
+  {
+    "id": "up02",
+    "order": 1,
+    "correctIndex": 1,
+    "category": "Economy",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    },
+    "options": {
+      "en": [
+        "First",
+        "Second",
+        "Third",
+        "Fourth"
+      ],
+      "hi": [
+        "पहली",
+        "दूसरी",
+        "तीसरी",
+        "चौथी"
+      ],
+      "bn": [
+        "প্রথম",
+        "দ্বিতীয়",
+        "তৃতীয়",
+        "চতুর্থ"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "पहली पंचवर्षीय योजना (1951-56) कृषि पर केंद्रित थी।",
+      "bn": ""
+    }
+  },
+  {
+    "id": "up07",
+    "order": 6,
+    "correctIndex": 0,
+    "category": "Economy",
+    "difficulty": "medium",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "",
+      "hi": "भारत में \"अंतिम उपाय का ऋणदाता\" किस संस्था को कहा जाता है?",
+      "bn": "ভারতে \"শেষ ঋণদাতা\" কোন সংস্থাকে বলা হয়?"
+    },
+    "options": {
+      "en": [
+        "Reserve Bank of India",
+        "SBI",
+        "NABARD",
+        "SEBI"
+      ],
+      "hi": [
+        "भारतीय रिजर्व बैंक",
+        "SBI",
+        "नाबार्ड",
+        "सेबी"
+      ],
+      "bn": [
+        "ভারতীয় রিজার্ভ ব্যাংক",
+        "SBI",
+        "নাবার্ড",
+        "সেবি"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "RBI वाणिज्यिक बैंकों के लिए अंतिम उपाय का ऋणदाता है।",
+      "bn": "RBI বাণিজ্যিক ব্যাংকগুলির জন্য শেষ ঋণদাতা হিসেবে কাজ করে।"
+    }
+  },
+  {
+    "id": "up13",
+    "order": 12,
+    "correctIndex": 0,
+    "category": "Economy",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "Which committee recommended the establishment of the RBI?",
+      "hi": "किस समिति ने RBI की स्थापना की सिफारिश की?",
+      "bn": "কোন কমিটি RBI প্রতিষ্ঠার সুপারিশ করেছিল?"
+    },
+    "options": {
+      "en": [],
+      "hi": [
+        "হিল্টন ইয়ং কমিশন",
+        "রাজকীয় কমিশন",
+        "JPC",
+        "নর্সিংহাম কমিটি"
+      ],
+      "bn": [
+        "হিল্টন ইয়ং কমিশন",
+        "রাজকীয় কমিশন",
+        "JPC",
+        "নর্সিংহাম কমিটি"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "হিল্টন ইয়ং কমিশন (1936) RBI প্রতিষ্ঠার সুপারিশ করেছিল।",
+      "bn": "হিল্টন ইয়ং কমিশন (1936) RBI প্রতিষ্ঠার সুপারিশ করেছিল।"
+    }
+  }
+]

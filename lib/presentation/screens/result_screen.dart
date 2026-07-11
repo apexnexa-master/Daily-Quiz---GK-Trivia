@@ -5,11 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/app_providers.dart';
+import '../widgets/result/score_circle.dart';
+import '../widgets/result/xp_breakdown_card.dart';
+import '../widgets/result/question_review_card.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/question_tracking_service.dart';
 import '../../core/services/quiz_scheduler_service.dart';
 import '../../core/services/gamification_service.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_animations.dart';
+import '../../data/models/gamification_models.dart';
 
 class ConfettiOverlay extends StatefulWidget {
   final bool show;
@@ -59,10 +66,10 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
         angle: _random.nextDouble() * math.pi * 2,
         rotationSpeed: _random.nextDouble() * 10 - 5,
         color: [
-          AppTheme.primaryColor,
-          AppTheme.secondaryColor,
-          AppTheme.successColor,
-          AppTheme.warningColor,
+          AppColors.primary,
+          AppColors.secondary,
+          AppColors.success,
+          AppColors.warning,
           Colors.pink,
           Colors.cyan,
         ][_random.nextInt(6)],
@@ -205,7 +212,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 
     if (session?.result == null) {
       return Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -302,8 +308,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     });
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
       body: Stack(
         children: [
           SafeArea(
@@ -313,22 +318,18 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                 position: _entranceSlide,
                 child: Column(
                   children: [
-                    _buildScoreHero(
-                        score, total, pct, lang, isDark, isBn, isHi),
+                    _buildScoreHero(score, total, pct, lang, isDark, isBn, isHi),
                     Expanded(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(20),
+                        padding: AppSpacing.paddingScreen,
                         child: Column(
                           children: [
-                            _buildActionButtons(context, ref, session, score,
-                                lang, isDark, isBn, isHi),
+                            _buildActionButtons(context, ref, session, score, lang, isDark, isBn, isHi),
                             const SizedBox(height: 20),
-                            _buildRewardsCard(isDark, isBn, isHi),
-                            _buildStatsRow(
-                                score, total, lang, isDark, isBn, isHi),
-                            const SizedBox(height: 20),
-                            _buildReviewSection(
-                                session, lang, isDark, isBn, isHi),
+                            XPBreakdownCard(rewards: _rewards, lang: lang, isDark: isDark),
+                            _buildStatsRow(score, total, lang, isDark, isBn, isHi),
+                            const SizedBox(height: 24),
+                            _buildReviewSection(session, lang, isDark, isBn, isHi),
                             const SizedBox(height: 100),
                           ],
                         ),
@@ -352,49 +353,32 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 
     if (pct >= 0.9) {
       emoji = '🏆';
-      message = isBn
-          ? 'অসাধারণ!'
-          : isHi
-              ? 'शानदार!'
-              : 'Excellent!';
-      ringColor = AppTheme.successColor;
+      message = isBn ? 'অসাধারণ!' : isHi ? 'शानदार!' : 'Excellent!';
+      ringColor = AppColors.success;
     } else if (pct >= 0.7) {
       emoji = '🌟';
-      message = isBn
-          ? 'দারুণ!'
-          : isHi
-              ? 'बहुत अच्छा!'
-              : 'Great Job!';
-      ringColor = AppTheme.primaryColor;
+      message = isBn ? 'দারুণ!' : isHi ? 'बहुत अच्छा!' : 'Great Job!';
+      ringColor = AppColors.primary;
     } else if (pct >= 0.5) {
       emoji = '👍';
-      message = isBn
-          ? 'মন্দ নয়!'
-          : isHi
-              ? 'ठीक है!'
-              : 'Good Effort!';
-      ringColor = AppTheme.warningColor;
+      message = isBn ? 'মন্দ নয়!' : isHi ? 'ठीक है!' : 'Good Effort!';
+      ringColor = AppColors.warning;
     } else {
       emoji = '💪';
-      message = isBn
-          ? 'আরো চেষ্টা করুন!'
-          : isHi
-              ? 'कोशिश जारी रखें!'
-              : 'Keep Trying!';
-      ringColor = AppTheme.errorColor;
+      message = isBn ? 'আরো চেষ্টা করুন!' : isHi ? 'कोशिश जारी रखें!' : 'Keep Trying!';
+      ringColor = AppColors.error;
     }
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
       decoration: BoxDecoration(
-        gradient:
-            isDark ? AppTheme.primaryGradientDark : AppTheme.primaryGradient,
+        gradient: isDark ? AppColors.primaryGradientDark : AppColors.primaryGradient,
         borderRadius: const BorderRadius.only(
             bottomLeft: Radius.circular(32), bottomRight: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-              color: AppTheme.primaryColor.withValues(alpha: 0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
               blurRadius: 24,
               offset: const Offset(0, 8))
         ],
@@ -406,71 +390,14 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
           Text(message,
               style: const TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   color: Colors.white)),
           const SizedBox(height: 24),
-          SizedBox(
-            width: 150,
-            height: 150,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                    width: 150,
-                    height: 150,
-                    child: CircularProgressIndicator(
-                        value: 1.0,
-                        strokeWidth: 12,
-                        backgroundColor: Colors.white.withValues(alpha: 0.15),
-                        valueColor: AlwaysStoppedAnimation(
-                            Colors.white.withValues(alpha: 0.15)))),
-                AnimatedBuilder(
-                  animation: _scoreRingController,
-                  builder: (_, __) {
-                    final curve = CurvedAnimation(
-                        parent: _scoreRingController,
-                        curve: Curves.easeOutCubic);
-                    return SizedBox(
-                      width: 150,
-                      height: 150,
-                      child: Transform.rotate(
-                        angle: -math.pi / 2,
-                        child: CircularProgressIndicator(
-                          value: curve.value * pct,
-                          strokeWidth: 12,
-                          backgroundColor: Colors.transparent,
-                          valueColor: AlwaysStoppedAnimation(ringColor),
-                          strokeCap: StrokeCap.round,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedBuilder(
-                      animation: _scoreRingController,
-                      builder: (_, __) {
-                        final curve = CurvedAnimation(
-                            parent: _scoreRingController,
-                            curve: Curves.easeOutCubic);
-                        final displayScore = (curve.value * score).round();
-                        return Text('$displayScore',
-                            style: const TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                height: 1.0));
-                      },
-                    ),
-                    Text('out of $total',
-                        style: const TextStyle(
-                            fontSize: 14, color: Colors.white70)),
-                  ],
-                ),
-              ],
-            ),
+          ScoreCircle(
+            score: score,
+            total: total,
+            percentage: pct,
+            animation: _scoreRingController,
           ),
         ],
       ),
@@ -491,16 +418,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         Expanded(
           child: _buildActionButton(
             context: context,
-            icon: Icons.home_rounded,
-            label: isBn
-                ? 'হোম'
-                : isHi
-                    ? 'होम'
-                    : 'Home',
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.grey.shade200,
-            textColor: isDark ? Colors.white : Colors.black87,
+            icon: AppIcons.home,
+            label: isBn ? 'হোম' : isHi ? 'होम' : 'Home',
+            color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade200,
+            textColor: isDark ? Colors.white : AppColors.textPrimaryLight,
             onTap: () {
               ref.read(quizSessionProvider.notifier).reset();
               Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
@@ -511,24 +432,13 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         Expanded(
           child: _buildActionButton(
             context: context,
-            icon: Icons.share_rounded,
-            label: isBn
-                ? 'শেয়ার করুন'
-                : isHi
-                    ? 'शेयर करें'
-                    : 'Share',
-            color: AppTheme.primaryColor,
+            icon: AppIcons.share,
+            label: isBn ? 'শেয়ার করুন' : isHi ? 'शेयर करें' : 'Share',
+            color: AppColors.primary,
             textColor: Colors.white,
             onTap: () async {
-              final percentage =
-                  ((score / session.quiz.questionCount) * 100).round();
-              final emoji = percentage >= 80
-                  ? '🌟'
-                  : percentage >= 60
-                      ? '👍'
-                      : percentage >= 40
-                          ? '💪'
-                          : '📚';
+              final percentage = ((score / session.quiz.questionCount) * 100).round();
+              final emoji = percentage >= 80 ? '🌟' : percentage >= 60 ? '👍' : percentage >= 40 ? '💪' : '📚';
               await Share.share(
                 isBn
                     ? 'GK Quiz-এ আমি ${score}/${session.quiz.questionCount} ($percentage%) $emoji পেয়েছি! 🎯 তুমি পারবে?\n\n#GKQuiz #DailyQuiz #IndiaQuiz'
@@ -543,13 +453,9 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         Expanded(
           child: _buildActionButton(
             context: context,
-            icon: Icons.leaderboard_rounded,
-            label: isBn
-                ? 'র‌্যাংকিং'
-                : isHi
-                    ? 'रैंकिंग'
-                    : 'Ranking',
-            color: AppTheme.secondaryColor,
+            icon: AppIcons.leaderboard,
+            label: isBn ? 'র‌্যাংকিং' : isHi ? 'रैंकिंग' : 'Ranking',
+            color: AppColors.secondary,
             textColor: Colors.white,
             onTap: () => Navigator.pushNamed(context, '/leaderboard'),
           ),
@@ -565,25 +471,24 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
       required Color color,
       required Color textColor,
       required VoidCallback onTap}) {
-    return Material(
-      color: color,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          child: Column(
-            children: [
-              Icon(icon, color: textColor, size: 22),
-              const SizedBox(height: 4),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: textColor)),
-            ],
-          ),
+    return AnimatedScaleButton(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: textColor, size: 22),
+            const SizedBox(height: 4),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: textColor)),
+          ],
         ),
       ),
     );
@@ -596,24 +501,24 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     return Row(
       children: [
         _buildStatPill(
-            icon: Icons.check_circle_rounded,
+            icon: AppIcons.correct,
             value: '$score',
             label: isBn ? 'সঠিক' : 'Correct',
-            color: AppTheme.successColor,
+            color: AppColors.success,
             isDark: isDark),
         const SizedBox(width: 10),
         _buildStatPill(
-            icon: Icons.cancel_rounded,
+            icon: AppIcons.incorrect,
             value: '$wrong',
             label: isBn ? 'ভুল' : 'Wrong',
-            color: AppTheme.errorColor,
+            color: AppColors.error,
             isDark: isDark),
         const SizedBox(width: 10),
         _buildStatPill(
             icon: Icons.percent_rounded,
             value: '$pct%',
             label: isBn ? 'শতাংশ' : 'Percent',
-            color: AppTheme.primaryColor,
+            color: AppColors.primary,
             isDark: isDark),
       ],
     );
@@ -631,8 +536,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         decoration: BoxDecoration(
           color: color.withValues(alpha: isDark ? 0.15 : 0.1),
           borderRadius: BorderRadius.circular(16),
-          border:
-              Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.2)),
+          border: Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.2)),
         ),
         child: Column(
           children: [
@@ -640,12 +544,12 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             const SizedBox(height: 6),
             Text(value,
                 style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.w800, color: color)),
+                    fontSize: 20, fontWeight: FontWeight.w900, color: color)),
             Text(label,
                 style: TextStyle(
                     fontSize: 10,
                     color: color.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w500)),
+                    fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -655,8 +559,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   Widget _buildReviewSection(QuizSessionState session, String lang, bool isDark,
       bool isBn, bool isHi) {
     final scheduler = QuizSchedulerService.instance;
-    final canShowAnswers =
-        scheduler.canShowAnswers() || !scheduler.isQuizActive();
+    final canShowAnswers = scheduler.canShowAnswers() || !scheduler.isQuizActive();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -672,33 +575,28 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                         : 'Question Review',
                 style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : Colors.black87),
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.textPrimaryLight),
               ),
             ),
             if (!canShowAnswers)
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.warningColor.withValues(alpha: 0.2),
+                  color: AppColors.warning.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.lock, size: 14, color: AppTheme.warningColor),
-                    const SizedBox(width: 4),
+                    Icon(AppIcons.lock, size: 14, color: AppColors.warning),
+                    SizedBox(width: 4),
                     Text(
-                      isBn
-                          ? 'বন্ধ'
-                          : isHi
-                              ? 'बंद'
-                              : 'Locked',
+                      'Locked',
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.warningColor,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.warning,
                       ),
                     ),
                   ],
@@ -707,20 +605,19 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
           ],
         ),
         const SizedBox(height: 12),
-        if (!canShowAnswers)
+        if (!canShowAnswers) ...[
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.warningColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.warning.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppTheme.warningColor.withValues(alpha: 0.3),
+                color: AppColors.warning.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline,
-                    color: AppTheme.warningColor, size: 20),
+                const Icon(AppIcons.info, color: AppColors.warning, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -731,414 +628,37 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                             : 'Answers and explanations will be available after the quiz ends.',
                     style: TextStyle(
                       fontSize: 13,
-                      color: isDark ? Colors.white70 : Colors.black54,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-        if (!canShowAnswers) const SizedBox(height: 12),
-        ...session.quiz.questions.asMap().entries.map((e) {
-          final q = e.value;
-          final i = e.key;
-          final userAnswer = i < session.selectedAnswers.length
-              ? session.selectedAnswers[i]
-              : null;
-          final isCorrect = userAnswer == q.correctIndex;
-          final isSkipped = userAnswer == null || userAnswer == -1;
-          final options = q.getOptions(lang);
+          const SizedBox(height: 12),
+        ],
+        if (canShowAnswers)
+          ...session.quiz.questions.asMap().entries.map((e) {
+            final q = e.value;
+            final i = e.key;
+            final userAnswer = i < session.selectedAnswers.length ? session.selectedAnswers[i] : null;
+            final isCorrect = userAnswer == q.correctIndex;
+            final isSkipped = userAnswer == null || userAnswer == -1;
+            final options = q.getOptions(lang);
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color:
-                  isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                  color: (isCorrect
-                          ? AppTheme.successColor
-                          : isSkipped
-                              ? Colors.grey
-                              : AppTheme.errorColor)
-                      .withValues(alpha: 0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: (isCorrect
-                            ? AppTheme.successColor
-                            : isSkipped
-                                ? Colors.grey
-                                : AppTheme.errorColor)
-                        .withValues(alpha: 0.1),
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(15)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: (isCorrect
-                                  ? AppTheme.successColor
-                                  : isSkipped
-                                      ? Colors.grey
-                                      : AppTheme.errorColor)
-                              .withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text('${i + 1}',
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: isCorrect
-                                    ? AppTheme.successColor
-                                    : isSkipped
-                                        ? Colors.grey
-                                        : AppTheme.errorColor)),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                          isCorrect
-                              ? Icons.check_circle
-                              : isSkipped
-                                  ? Icons.remove_circle_outline
-                                  : Icons.cancel,
-                          color: isCorrect
-                              ? AppTheme.successColor
-                              : isSkipped
-                                  ? Colors.grey
-                                  : AppTheme.errorColor,
-                          size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                          isCorrect
-                              ? (isBn
-                                  ? '✓ সঠিক'
-                                  : isBn
-                                      ? '✓ सही'
-                                      : 'Correct')
-                              : isSkipped
-                                  ? (isBn ? 'এড়িয়ে গেছে' : 'Skipped')
-                                  : (isBn ? '✗ ভুল' : 'Wrong'),
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: isCorrect
-                                  ? AppTheme.successColor
-                                  : isSkipped
-                                      ? Colors.grey
-                                      : AppTheme.errorColor)),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(q.getText(lang),
-                          style: TextStyle(
-                              fontSize: 14,
-                              color: isDark ? Colors.white : null,
-                              height: 1.4)),
-                      const SizedBox(height: 10),
-                      if (canShowAnswers) ...[
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppTheme.successColor
-                                .withValues(alpha: isDark ? 0.1 : 0.08),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                                color: AppTheme.successColor
-                                    .withValues(alpha: 0.2)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.check_circle_rounded,
-                                  color: AppTheme.successColor, size: 16),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                  child: Text(
-                                      options.length > q.correctIndex
-                                          ? options[q.correctIndex]
-                                          : '',
-                                      style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppTheme.successColor))),
-                            ],
-                          ),
-                        ),
-                        if (!isCorrect &&
-                            !isSkipped &&
-                            userAnswer >= 0 &&
-                            userAnswer < options.length) ...[
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppTheme.errorColor
-                                  .withValues(alpha: isDark ? 0.08 : 0.06),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                  color: AppTheme.errorColor
-                                      .withValues(alpha: 0.2)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.cancel_rounded,
-                                    color: AppTheme.errorColor, size: 16),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                    child: Text(options[userAnswer],
-                                        style: const TextStyle(
-                                            fontSize: 13,
-                                            color: AppTheme.errorColor))),
-                              ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor
-                                .withValues(alpha: isDark ? 0.1 : 0.08),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(Icons.lightbulb_rounded,
-                                  color: AppTheme.primaryColor, size: 16),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                  child: Text(q.getExplanation(lang),
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: isDark ? Colors.white70 : null,
-                                          height: 1.4))),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
+            return QuestionReviewCard(
+              question: q,
+              index: i,
+              userAnswer: userAnswer,
+              isCorrect: isCorrect,
+              isSkipped: isSkipped,
+              options: options,
+              lang: lang,
+              isDark: isDark,
+            );
+          }),
       ],
-    );
-  }
-
-  Widget _buildRewardsCard(bool isDark, bool isBn, bool isHi) {
-    if (_rewards == null) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [
-                  const Color(0xFF1E1B4B), // Indigo dark
-                  const Color(0xFF311042), // Purple dark
-                ]
-              : [
-                  const Color(0xFFEEF2FF), // Indigo light
-                  const Color(0xFFFDF2F8), // Pink light
-                ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : AppTheme.primaryColor.withValues(alpha: 0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryColor.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(
-            isBn
-                ? 'কুইজ পুরস্কার অর্জিত! 🎉'
-                : isHi
-                    ? 'क्विज़ पुरस्कार प्राप्त! 🎉'
-                    : 'Quiz Rewards Earned! 🎉',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : AppTheme.primaryColor,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // XP Reward
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.bolt_rounded, color: Colors.blue, size: 22),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '+${_rewards!.xp}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        'XP',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white54 : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              // Vertical Divider
-              Container(
-                height: 32,
-                width: 1,
-                color: isDark ? Colors.white12 : Colors.grey[300],
-              ),
-              // Coins Reward
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.monetization_on_rounded, color: Colors.amber, size: 20),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '+${_rewards!.coins}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        isBn ? 'কয়েন' : isHi ? 'सिक्के' : 'Coins',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white54 : Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          if (_rewards!.isPerfect || _rewards!.isSpeedBonus || _rewards!.isStreakBonus) ...[
-            const SizedBox(height: 14),
-            Divider(color: isDark ? Colors.white12 : Colors.grey[200], height: 1),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              alignment: WrapAlignment.center,
-              children: [
-                if (_rewards!.isPerfect)
-                  _buildBonusChip(
-                    icon: Icons.star_rounded,
-                    label: isBn ? 'নিখুঁত স্কোর' : isHi ? 'परफेक्ट स्कोर' : 'Perfect Score',
-                    color: Colors.purple,
-                    isDark: isDark,
-                  ),
-                if (_rewards!.isSpeedBonus)
-                  _buildBonusChip(
-                    icon: Icons.speed_rounded,
-                    label: isBn ? 'গতি বোনাস' : isHi ? 'स्पीड बोनस' : 'Speed Bonus',
-                    color: Colors.orange,
-                    isDark: isDark,
-                  ),
-                if (_rewards!.isStreakBonus)
-                  _buildBonusChip(
-                    icon: Icons.local_fire_department_rounded,
-                    label: isBn ? 'ধারাবাহিকতা বোনাস' : isHi ? 'स्ट्रीक बोनस' : 'Streak Bonus',
-                    color: Colors.red,
-                    isDark: isDark,
-                  ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBonusChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required bool isDark,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.2 : 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 12),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

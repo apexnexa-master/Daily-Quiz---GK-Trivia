@@ -1,0 +1,82 @@
+[
+  {
+    "id": "up08",
+    "order": 7,
+    "correctIndex": 3,
+    "category": "Science & Technology",
+    "difficulty": "medium",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "Which Indian spacecraft successfully orbited Mars?",
+      "hi": "किस भारतीय अंतरिक्ष यान ने सफलतापूर्वक मंगल की परिक्रमा की?",
+      "bn": ""
+    },
+    "options": {
+      "en": [
+        "Chandrayaan-1",
+        "Aryabhata",
+        "Astrosat",
+        "Mangalyaan"
+      ],
+      "hi": [
+        "चंद्रयान-1",
+        "आर्यभट्ट",
+        "एस्ट्रोसैट",
+        "मंगलयान"
+      ],
+      "bn": [
+        "চন্দ্রযান-১",
+        "আর্যভট্ট",
+        "অ্যাস্ট্রোস্যাট",
+        "মঙ্গলযান"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "up17",
+    "order": 16,
+    "correctIndex": 0,
+    "category": "Science & Technology",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "",
+      "hi": "কোন ভারতীয় উপগ্রহ প্রথম জিও-স্টেশনারি কক্ষপথে স্থাপিত হয়েছিল?",
+      "bn": "কোন ভারতীয় উপগ্রহ প্রথম জিও-স্টেশনারি কক্ষপথে স্থাপিত হয়েছিল?"
+    },
+    "options": {
+      "en": [
+        "APPLE",
+        "INSAT-1A",
+        "Rohini",
+        "Aryabhata"
+      ],
+      "hi": [
+        "APPLE",
+        "INSAT-1A",
+        "রোহিনি",
+        "আর্যভট্ট"
+      ],
+      "bn": [
+        "APPLE",
+        "INSAT-1A",
+        "রোহিনি",
+        "আর্যভট্ট"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "APPLE ছিল ভারতের প্রথম পরীক্ষামূলক যোগাযোগ উপগ্রহ।",
+      "bn": "APPLE ছিল ভারতের প্রথম পরীক্ষামূলক যোগাযোগ উপগ্রহ।"
+    }
+  }
+]

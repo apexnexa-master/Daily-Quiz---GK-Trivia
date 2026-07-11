@@ -1,13 +1,13 @@
 // lib/presentation/screens/battle_screen.dart
-// Battle Mode - 1v1 Quiz Battles
-
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
-import '../../core/theme/app_theme.dart';
-import '../../data/models/gamification_models.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_animations.dart';
 import '../../data/models/firestore_models.dart';
 import '../../data/local_quiz_data.dart';
 
@@ -106,90 +106,75 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
   void _showResultDialog() {
     final isWin = _playerScore > _opponentScore;
     final isDraw = _playerScore == _opponentScore;
-    final lang = ref.read(languageProvider);
-    final isBn = lang == 'bn';
-    final isHi = lang == 'hi';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFF1E1B4B)
-            : Colors.white,
+        backgroundColor: isDark ? AppColors.cardDark : Colors.white,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              isWin
-                  ? '🏆'
-                  : isDraw
-                      ? '🤝'
-                      : '💪',
+              isWin ? '🏆' : isDraw ? '🤝' : '💪',
               style: const TextStyle(fontSize: 64),
             ),
             const SizedBox(height: 16),
             Text(
-              isWin
-                  ? 'Victory!'
-                  : isDraw
-                      ? 'Draw!'
-                      : 'Keep Trying!',
+              isWin ? 'Victory!' : isDraw ? 'Draw!' : 'Keep Trying!',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w900,
                 color: isWin
-                    ? AppTheme.successColor
+                    ? AppColors.success
                     : isDraw
-                        ? AppTheme.warningColor
-                        : AppTheme.errorColor,
+                        ? AppColors.warning
+                        : AppColors.error,
               ),
             ),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildScoreColumn('You', _playerScore, AppTheme.primaryColor),
+                _buildScoreColumn('You', _playerScore, AppColors.primary),
                 Text(
                   'vs',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white54
-                        : Colors.grey,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white54 : Colors.grey,
                   ),
                 ),
-                _buildScoreColumn(
-                    'Opponent', _opponentScore, AppTheme.errorColor),
+                _buildScoreColumn('AI Bot', _opponentScore, AppColors.error),
               ],
             ),
             const SizedBox(height: 24),
             if (isWin) ...[
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: AppTheme.successColor.withValues(alpha: 0.15),
+                  color: AppColors.success.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.bolt_rounded,
-                        color: AppTheme.warningColor),
+                    const Icon(AppIcons.xp, color: AppColors.xp),
                     const SizedBox(width: 8),
                     Text(
                       '+${_playerScore * 20} XP',
                       style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.successColor,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.success,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
             ],
             Row(
               children: [
@@ -199,6 +184,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
                       Navigator.pop(context);
                       Navigator.pop(context);
                     },
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
                     child: const Text('Exit'),
                   ),
                 ),
@@ -219,8 +207,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
                       _startSearch();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: const Text('Rematch'),
                   ),
@@ -247,7 +237,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
           label,
           style: TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
             color: color,
           ),
         ),
@@ -257,6 +247,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.15),
             shape: BoxShape.circle,
+            border: Border.all(color: color.withValues(alpha: 0.3), width: 1.5),
           ),
           child: Text(
             '$score',
@@ -281,17 +272,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: isDark
-              ? const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF0F172A), Color(0xFF1E1B4B)],
-                )
-              : const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFFF8FAFC), Color(0xFFEEF2FF)],
-                ),
+          gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
         ),
         child: SafeArea(
           child: _isSearching
@@ -306,24 +287,21 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: AppSpacing.paddingCardCondensed,
           child: Row(
             children: [
               IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: Icon(Icons.arrow_back_rounded,
-                    color: isDark ? Colors.white : Colors.black),
+                    color: isDark ? Colors.white : AppColors.textPrimaryLight),
               ),
+              const SizedBox(width: 4),
               Text(
-                isBn
-                    ? 'Battle Mode'
-                    : isHi
-                        ? 'बैटल मोड'
-                        : 'Battle Mode',
+                isBn ? 'চ্যালেঞ্জ মোড' : isHi ? 'चैलेंज मोड' : 'Challenge Mode',
                 style: TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
                 ),
               ),
             ],
@@ -334,36 +312,38 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  width: 120,
-                  height: 120,
+                const SizedBox(
+                  width: 80,
+                  height: 80,
                   child: CircularProgressIndicator(
-                    strokeWidth: 6,
-                    valueColor: AlwaysStoppedAnimation(AppTheme.primaryColor),
+                    strokeWidth: 4,
+                    valueColor: AlwaysStoppedAnimation(AppColors.primary),
                   ),
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  isBn
-                      ? 'খোঁজা হচ্ছে...'
-                      : isHi
-                          ? 'खोज रहा है...'
-                          : 'Finding opponent...',
+                  isBn ? 'প্রতিপক্ষ খোঁজা হচ্ছে...' : isHi ? 'प्रतिद्वंद्वी खोज रहा है...' : 'Finding training bot...',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  isBn
-                      ? 'একজন প্রতিপক্ষ খুঁজছি'
-                      : isHi
-                          ? 'प्रतिद्वंद्वी खोज रहा है'
-                          : 'Looking for a worthy opponent',
-                  style: TextStyle(
-                    color: isDark ? Colors.white54 : Colors.grey,
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    isBn
+                        ? 'আপনার দক্ষতা পরীক্ষা করতে আমাদের সিমুলেটেড ট্রেনিং বটের সাথে ম্যাচ করা হচ্ছে।'
+                        : isHi
+                            ? 'आपके कौशल का परीक्षण करने के लिए हमारे सिम्युलेटेड ट्रेनिंग बॉट के साथ मैच किया जा रहा है।'
+                            : 'Matching with our simulated training bot to test your skills.',
+                    style: TextStyle(
+                      color: isDark ? Colors.white54 : Colors.grey[600],
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ],
@@ -377,79 +357,75 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
   Widget _buildBattleState(bool isDark, bool isBn, bool isHi) {
     if (_questions.isEmpty) return const SizedBox();
 
-    final lang = ref.read(languageProvider);
-
+    final lang = ref.watch(languageProvider);
     final question = _questions[_currentQuestion];
     final questionText = question.getText(lang);
     final options = question.getOptions(lang);
 
     return Column(
       children: [
+        // Battle score header bar
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               Expanded(
                 child: _BattleScoreBar(
-                  label: isBn
-                      ? 'আপনি'
-                      : isHi
-                          ? 'आप'
-                          : 'You',
+                  label: isBn ? 'আপনি' : isHi ? 'आप' : 'You',
                   score: _playerScore,
-                  color: AppTheme.primaryColor,
+                  color: AppColors.primary,
                   isDark: isDark,
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.grey.withValues(alpha: 0.1),
+                  color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.05),
+                  ),
                 ),
                 child: Text(
                   '${_currentQuestion + 1}/${_totalQuestions}',
                   style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : Colors.black87,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
                   ),
                 ),
               ),
               Expanded(
                 child: _BattleScoreBar(
-                  label: isBn
-                      ? 'প্রতিপক্ষ'
-                      : isHi
-                          ? 'प्रतिद्वंद्वी'
-                          : 'Opponent',
+                  label: isBn ? 'বট' : isHi ? 'बॉट' : 'Training Bot',
                   score: _opponentScore,
-                  color: AppTheme.errorColor,
+                  color: AppColors.error,
                   isDark: isDark,
-                  isRight: true,
                 ),
               ),
             ],
           ),
         ),
+        
+        // Question Area
         Expanded(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                // Question Card
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    color: isDark ? AppColors.cardDark : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -458,27 +434,28 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
                   child: Text(
                     questionText,
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      height: 1.5,
+                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
+                
+                // Option Buttons
                 ...List.generate(
-                    options.length,
-                    (i) => _BattleOptionTile(
-                          index: i,
-                          text: options[i],
-                          isSelected: _selectedAnswer == i,
-                          isCorrect: _isAnswered && i == question.correctIndex,
-                          isWrong: _isAnswered &&
-                              _selectedAnswer == i &&
-                              i != question.correctIndex,
-                          isDark: isDark,
-                          onTap:
-                              _isAnswered ? null : () => _onAnswerSelected(i),
-                        )),
+                  options.length,
+                  (i) => _BattleOptionTile(
+                    index: i,
+                    text: options[i],
+                    isSelected: _selectedAnswer == i,
+                    isCorrect: _isAnswered && i == question.correctIndex,
+                    isWrong: _isAnswered && _selectedAnswer == i && i != question.correctIndex,
+                    isDark: isDark,
+                    onTap: _isAnswered ? null : () => _onAnswerSelected(i),
+                  ),
+                ),
               ],
             ),
           ),
@@ -493,14 +470,12 @@ class _BattleScoreBar extends StatelessWidget {
   final int score;
   final Color color;
   final bool isDark;
-  final bool isRight;
 
   const _BattleScoreBar({
     required this.label,
     required this.score,
     required this.color,
     required this.isDark,
-    this.isRight = false,
   });
 
   @override
@@ -511,21 +486,22 @@ class _BattleScoreBar extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: isDark ? Colors.white54 : Colors.grey,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white54 : Colors.grey[700],
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Text(
             '$score',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w900,
               color: color,
             ),
@@ -566,10 +542,10 @@ class _BattleOptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Color getColor() {
-      if (isCorrect) return AppTheme.successColor;
-      if (isWrong) return AppTheme.errorColor;
-      if (isSelected) return _colors[index];
-      return isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white;
+      if (isCorrect) return AppColors.success;
+      if (isWrong) return AppColors.error;
+      if (isSelected) return _colors[index % _colors.length];
+      return isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
     }
 
     return GestureDetector(
@@ -578,33 +554,46 @@ class _BattleOptionTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: getColor().withValues(
-              alpha: isSelected || isCorrect || isWrong ? 0.2 : 0.1),
+          color: isSelected || isCorrect || isWrong
+              ? getColor().withValues(alpha: 0.2)
+              : (isDark ? AppColors.cardDark : Colors.white),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: getColor().withValues(alpha: 0.3),
-            width: isSelected || isCorrect || isWrong ? 2 : 1,
+            color: isSelected || isCorrect || isWrong
+                ? getColor()
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.grey.withValues(alpha: 0.15)),
+            width: isSelected || isCorrect || isWrong ? 2 : 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
+            // Prefix badge
             Container(
               width: 32,
               height: 32,
               decoration: BoxDecoration(
                 color: isSelected || isCorrect || isWrong
                     ? getColor()
-                    : _colors[index].withValues(alpha: 0.15),
+                    : _colors[index % _colors.length].withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: Text(
-                _labels[index],
+                _labels[index % _labels.length],
                 style: TextStyle(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                   color: isSelected || isCorrect || isWrong
                       ? Colors.white
-                      : _colors[index],
+                      : _colors[index % _colors.length],
                 ),
               ),
             ),
@@ -613,14 +602,16 @@ class _BattleOptionTile extends StatelessWidget {
               child: Text(
                 text,
                 style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
                 ),
               ),
             ),
             if (isCorrect)
-              const Icon(Icons.check_circle, color: AppTheme.successColor),
-            if (isWrong) const Icon(Icons.cancel, color: AppTheme.errorColor),
+              const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
+            if (isWrong)
+              const Icon(Icons.cancel_rounded, color: AppColors.error, size: 20),
           ],
         ),
       ),

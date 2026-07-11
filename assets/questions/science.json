@@ -1,0 +1,307 @@
+[
+  {
+    "id": "g02",
+    "order": 1,
+    "correctIndex": 2,
+    "category": "Science",
+    "difficulty": "easy",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Which planet is closest to the Sun?",
+      "hi": "सूर्य के सबसे नजदीक कौन-सा ग्रह है?",
+      "bn": "সূর্যের সবচেয়ে কাছের গ্রহ কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Venus",
+        "Earth",
+        "Mercury",
+        "Mars"
+      ],
+      "hi": [
+        "शुक्र",
+        "पृथ्वी",
+        "बुध",
+        "मंगल"
+      ],
+      "bn": [
+        "শুক্র",
+        "পৃথিবী",
+        "বুধ",
+        "মঙ্গল"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "बुध सूर्य का सबसे निकटतम ग्रह है।",
+      "bn": "বুধ সূর্যের সবচেয়ে কাছের গ্রহ।"
+    }
+  },
+  {
+    "id": "g05",
+    "order": 4,
+    "correctIndex": 1,
+    "category": "Science",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What is the chemical symbol for Gold?",
+      "hi": "सोने का रासायनिक प्रतीक क्या है?",
+      "bn": "সোনার রাসায়নিক প্রতীক কী?"
+    },
+    "options": {
+      "en": [
+        "Go",
+        "Au",
+        "Ag",
+        "Gd"
+      ],
+      "hi": [
+        "Go",
+        "Au",
+        "Ag",
+        "Gd"
+      ],
+      "bn": [
+        "Go",
+        "Au",
+        "Ag",
+        "Gd"
+      ]
+    },
+    "explanation": {
+      "en": "Au comes from the Latin word \"Aurum\" meaning Gold.",
+      "hi": "Au लैटिन शब्द \"Aurum\" से आया है जिसका अर्थ सोना है।",
+      "bn": "Au লাতিন শব্দ \"Aurum\" থেকে এসেছে যার অর্থ সোনা।"
+    }
+  },
+  {
+    "id": "g08",
+    "order": 7,
+    "correctIndex": 3,
+    "category": "Science",
+    "difficulty": "hard",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What is the speed of light in vacuum?",
+      "hi": "निर्वात में प्रकाश की गति क्या है?",
+      "bn": "শূন্যমাধ্যমে আলোর গতি কত?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "निर्वात में प्रकाश की गति लगभग 3 × 10⁸ m/s है।",
+      "bn": "শূন্যমাধ্যমে আলোর গতি প্রায় 3 × 10⁸ m/s।"
+    }
+  },
+  {
+    "id": "g11",
+    "order": 10,
+    "correctIndex": 1,
+    "category": "Science",
+    "difficulty": "easy",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What is the chemical symbol for Sodium?",
+      "hi": "सोडियम का रासायनिक प्रतीक क्या है?",
+      "bn": "সোডিয়ামের রাসায়নিক প্রতীক কী?"
+    },
+    "options": {
+      "en": [
+        "So",
+        "Na",
+        "Sd",
+        "Sm"
+      ],
+      "hi": [
+        "So",
+        "Na",
+        "Sd",
+        "Sm"
+      ],
+      "bn": [
+        "So",
+        "Na",
+        "Sd",
+        "Sm"
+      ]
+    },
+    "explanation": {
+      "en": "Na comes from the Latin word \"Natrium\" meaning Sodium.",
+      "hi": "Na लैटिन शब्द \"Natrium\" से आया है।",
+      "bn": "Na লাতিন শব্দ \"Natrium\" থেকে এসেছে।"
+    }
+  },
+  {
+    "id": "g15",
+    "order": 14,
+    "correctIndex": 1,
+    "category": "Science",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What is the SI unit of force?",
+      "hi": "बल की SI इकाई क्या है?",
+      "bn": "বলের SI একক কী?"
+    },
+    "options": {
+      "en": [
+        "Joule",
+        "Newton",
+        "Watt",
+        "Pascal"
+      ],
+      "hi": [
+        "जूल",
+        "न्यूटन",
+        "वाट",
+        "पास्कल"
+      ],
+      "bn": [
+        "জুল",
+        "নিউটন",
+        "ওয়াট",
+        "প্যাসকেল"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "बल की SI इकाई न्यूटन है।",
+      "bn": "বলের SI একক নিউটন।"
+    }
+  },
+  {
+    "id": "g18",
+    "order": 17,
+    "correctIndex": 1,
+    "category": "Science",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What is the largest organ in the human body?",
+      "hi": "मानव शरीर का सबसे बड़ा अंग कौन सा है?",
+      "bn": "মানবদেহের বৃহত্তম অঙ্গ কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Heart",
+        "Skin",
+        "Liver",
+        "Brain"
+      ],
+      "hi": [
+        "हृदय",
+        "त्वचा",
+        "यकृत",
+        "मस्तिष्क"
+      ],
+      "bn": [
+        "হৃদয়",
+        "ত্বক",
+        "যকৃত",
+        "মস্তিষ্ক"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "त्वचा मानव शरीर का सबसे बड़ा अंग है।",
+      "bn": "ত্বক মানবদেহের বৃহত্তম অঙ্গ।"
+    }
+  },
+  {
+    "id": "g20",
+    "order": 19,
+    "correctIndex": 0,
+    "category": "Science",
+    "difficulty": "easy",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What is the boiling point of water in Celsius?",
+      "hi": "सेल्सियस में पानी का क्वथनांक क्या है?",
+      "bn": "সেলসিয়াসে পানির স্ফুটনাঙ্ক কত?"
+    },
+    "options": {
+      "en": [
+        "100°C",
+        "90°C",
+        "110°C",
+        "80°C"
+      ],
+      "hi": [
+        "100°C",
+        "90°C",
+        "110°C",
+        "80°C"
+      ],
+      "bn": [
+        "১০০°C",
+        "৯০°C",
+        "১১০°C",
+        "৮০°C"
+      ]
+    },
+    "explanation": {
+      "en": "Water boils at 100°C (212°F) at standard atmospheric pressure.",
+      "hi": "पानी मानक वायुदाब पर 100°C पर उबलता है।",
+      "bn": "পানি মানক বায়ুমণ্ডলীয় চাপে ১০০°C-এ ফোটে।"
+    }
+  },
+  {
+    "id": "g23",
+    "order": 22,
+    "correctIndex": 0,
+    "category": "Science",
+    "difficulty": "hard",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What is the chemical formula of table salt?",
+      "hi": "टेबल साल्ट का रासायनिक सूत्र क्या है?",
+      "bn": "টেবিল সল্টের রাসায়নিক সূত্র কী?"
+    },
+    "options": {
+      "en": [
+        "NaCl",
+        "KCl",
+        "CaCl2",
+        "MgCl2"
+      ],
+      "hi": [
+        "NaCl",
+        "KCl",
+        "CaCl2",
+        "MgCl2"
+      ],
+      "bn": [
+        "NaCl",
+        "KCl",
+        "CaCl2",
+        "MgCl2"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "टेबल साल्ट सोडियम क्लोराइड (NaCl) है।",
+      "bn": "টেবিল সল্ট সোডিয়াম ক্লোরাইড (NaCl)।"
+    }
+  }
+]

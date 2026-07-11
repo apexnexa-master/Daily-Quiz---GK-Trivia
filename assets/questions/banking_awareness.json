@@ -1,0 +1,382 @@
+[
+  {
+    "id": "bk01",
+    "order": 0,
+    "correctIndex": 2,
+    "category": "Banking Awareness",
+    "difficulty": "medium",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "What does NEFT stand for?",
+      "hi": "NEFT का पूर्ण रूप क्या है?",
+      "bn": "NEFT-এর পূর্ণ রূপ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "NEFT का मतलब है National Electronic Funds Transfer।",
+      "bn": ""
+    }
+  },
+  {
+    "id": "bk02",
+    "order": 1,
+    "correctIndex": 0,
+    "category": "Banking Awareness",
+    "difficulty": "easy",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "What is the full form of RBI?",
+      "hi": "RBI का पूर्ण रूप क्या है?",
+      "bn": "RBI-এর পূর্ণ রূপ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "RBI stands for Reserve Bank of India, established in 1935.",
+      "hi": "RBI का अर्थ है Reserve Bank of India, 1935 में स्थापित।",
+      "bn": "RBI মানে Reserve Bank of India, ১৯৩৫ সালে প্রতিষ্ঠিত।"
+    }
+  },
+  {
+    "id": "bk03",
+    "order": 2,
+    "correctIndex": 1,
+    "category": "Banking Awareness",
+    "difficulty": "medium",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "Which is the largest public sector bank in India?",
+      "hi": "भारत में सबसे बड़ा सार्वजनिक क्षेत्र का बैंक कौन सा है?",
+      "bn": "ভারতের বৃহত্তম সরকারি ব্যাংক কোনটি?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "SBI भारत का सबसे बड़ा सार्वजनिक क्षेत्र का बैंक है।",
+      "bn": "SBI ভারতের বৃহত্তম সরকারি ব্যাংক।"
+    }
+  },
+  {
+    "id": "bk05",
+    "order": 4,
+    "correctIndex": 0,
+    "category": "Banking Awareness",
+    "difficulty": "easy",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    },
+    "options": {
+      "en": [
+        "₹0 (Zero Balance Jan Dhan)",
+        "₹500",
+        "₹1000",
+        "₹2000"
+      ],
+      "hi": [
+        "₹0 (जन धन)",
+        "₹500",
+        "₹1000",
+        "₹2000"
+      ],
+      "bn": [
+        "০ টাকা (জন ধন)",
+        "৫০০ টাকা",
+        "১০০০ টাকা",
+        "২০০০ টাকা"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "PMJDY (जन धन योजना) के तहत शून्य-शेष बचत खाता उपलब्ध है।",
+      "bn": ""
+    }
+  },
+  {
+    "id": "bk06",
+    "order": 5,
+    "correctIndex": 2,
+    "category": "Banking Awareness",
+    "difficulty": "medium",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "KYC stands for?",
+      "hi": "KYC का पूर्ण रूप क्या है?",
+      "bn": "KYC-এর পূর্ণ রূপ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "KYC का मतलब है Know Your Customer।",
+      "bn": ""
+    }
+  },
+  {
+    "id": "bk08",
+    "order": 7,
+    "correctIndex": 0,
+    "category": "Banking Awareness",
+    "difficulty": "medium",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "What is the full form of ATM?",
+      "hi": "ATM का पूर्ण रूप क्या है?",
+      "bn": "ATM-এর পূর্ণ রূপ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "ATM stands for Automated Teller Machine.",
+      "hi": "ATM का मतलब है Automated Teller Machine।",
+      "bn": "ATM মানে Automated Teller Machine।"
+    }
+  },
+  {
+    "id": "bk10",
+    "order": 9,
+    "correctIndex": 1,
+    "category": "Banking Awareness",
+    "difficulty": "medium",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "IMPS allows money transfer:",
+      "hi": "IMPS পैसे ট্রांসফর করने की अनुमति देता है:",
+      "bn": "IMPS-এর মাধ্যমে অর্থ স্থানান্তর সম্ভব:"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "IMPS 24×7, 365 दिन उपलब्ध है, बैंक छुट्टियों सहित।",
+      "bn": "IMPS ব্যাংকের ছুটির দিনসহ ২৪×৭, ৩৬৫ দিন উপলব্ধ।"
+    }
+  },
+  {
+    "id": "bk11",
+    "order": 10,
+    "correctIndex": 0,
+    "category": "Banking Awareness",
+    "difficulty": "easy",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "What does RTGS stand for?",
+      "hi": "RTGS का पूर्ण रूप क्या है?",
+      "bn": "RTGS-এর পূর্ণ রূপ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "bk13",
+    "order": 12,
+    "correctIndex": 1,
+    "category": "Banking Awareness",
+    "difficulty": "medium",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "What is the current Repo Rate in India?",
+      "hi": "ভারতে বর্তমান রেপো রেট কত?",
+      "bn": "ভারতে বর্তমান রেপো রেট কত?"
+    },
+    "options": {
+      "en": [
+        "5.50%",
+        "6.50%",
+        "7.00%",
+        "6.00%"
+      ],
+      "hi": [
+        "5.50%",
+        "6.50%",
+        "7.00%",
+        "6.00%"
+      ],
+      "bn": [
+        "5.50%",
+        "6.50%",
+        "7.00%",
+        "6.00%"
+      ]
+    },
+    "explanation": {
+      "en": "The Repo Rate is the rate at which RBI lends money to banks.",
+      "hi": "রেপো রেট হল সেই হার যেখানে RBI ব্যাংকগুলিকে টাকা ধার দেয়।",
+      "bn": "রেপো রেট হল সেই হার যেখানে RBI ব্যাংকগুলিকে টাকা ধার দেয়।"
+    }
+  },
+  {
+    "id": "bk14",
+    "order": 13,
+    "correctIndex": 0,
+    "category": "Banking Awareness",
+    "difficulty": "medium",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "Which organization issues currency notes in India?",
+      "hi": "ভারতে কোন সংস্থা মুদ্রা নোট জারি করে?",
+      "bn": "ভারতে কোন সংস্থা মুদ্রা নোট জারি করে?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "The Reserve Bank of India (RBI) issues currency notes in India.",
+      "hi": "ভারতীয় রিজার্ভ ব্যাংক (RBI) ভারতে মুদ্রা নোট জারি করে।",
+      "bn": "ভারতীয় রিজার্ভ ব্যাংক (RBI) ভারতে মুদ্রা নোট জারি করে।"
+    }
+  },
+  {
+    "id": "bk16",
+    "order": 15,
+    "correctIndex": 1,
+    "category": "Banking Awareness",
+    "difficulty": "medium",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "What is the full form of NPCI?",
+      "hi": "NPCI-এর পূর্ণ রূপ কী?",
+      "bn": "NPCI-এর পূর্ণ রূপ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "NPCI stands for National Payments Corporation of India.",
+      "hi": "NPCI মানে National Payments Corporation of India।",
+      "bn": "NPCI মানে National Payments Corporation of India।"
+    }
+  },
+  {
+    "id": "bk17",
+    "order": 16,
+    "correctIndex": 2,
+    "category": "Banking Awareness",
+    "difficulty": "easy",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "UPI stands for:",
+      "hi": "UPI-এর অর্থ কী?",
+      "bn": "UPI-এর অর্থ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "bk18",
+    "order": 17,
+    "correctIndex": 0,
+    "category": "Banking Awareness",
+    "difficulty": "hard",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "Which is the largest Public Sector Bank in India after merger?",
+      "hi": "একত্রীকরণের পর ভারতের বৃহত্তম পাবলিক সেক্টর ব্যাংক কোনটি?",
+      "bn": "একত্রীকরণের পর ভারতের বৃহত্তম পাবলিক সেক্টর ব্যাংক কোনটি?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "State Bank of India (SBI) ভারতের বৃহত্তম পাবলিক সেক্টর ব্যাংক।",
+      "bn": "State Bank of India (SBI) ভারতের বৃহত্তম পাবলিক সেক্টর ব্যাংক।"
+    }
+  },
+  {
+    "id": "bk20",
+    "order": 19,
+    "correctIndex": 1,
+    "category": "Banking Awareness",
+    "difficulty": "medium",
+    "examTags": [
+      "BANK"
+    ],
+    "text": {
+      "en": "What is the full form of BSR code?",
+      "hi": "BSR কোডের পূর্ণ রূপ কী?",
+      "bn": "BSR কোডের পূর্ণ রূপ কী?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "BSR মানে Basic Statistical Return, কর কর্তনের জন্য ব্যবহৃত হয়।",
+      "bn": "BSR মানে Basic Statistical Return, কর কর্তনের জন্য ব্যবহৃত হয়।"
+    }
+  }
+]

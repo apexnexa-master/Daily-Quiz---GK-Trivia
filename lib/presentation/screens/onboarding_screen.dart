@@ -1,8 +1,9 @@
 // lib/presentation/screens/onboarding_screen.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/theme/app_theme.dart';
-import '../../routes/app_router.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_icons.dart';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -21,46 +22,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     OnboardingPage(
       icon: Icons.quiz_rounded,
       title: 'Daily GK Quiz',
-      description: 'Test your knowledge with daily general knowledge quizzes',
-      color: AppTheme.primaryColor,
+      description: 'Test your knowledge with curated daily general knowledge quizzes',
+      color: AppColors.primary,
     ),
     OnboardingPage(
       icon: Icons.school_rounded,
       title: 'Practice Mode',
-      description:
-          'Practice anytime with questions from various exam categories',
-      color: AppTheme.secondaryColor,
+      description: 'Practice anytime with unlimited questions from various exam categories',
+      color: AppColors.secondary,
     ),
     OnboardingPage(
-      icon: Icons.emoji_events_rounded,
+      icon: AppIcons.achievement,
       title: 'Track Progress',
-      description:
-          'Build streaks, earn achievements, and climb the leaderboard',
-      color: Colors.orange,
+      description: 'Build streaks, earn badges, and climb the leaderboard rankings',
+      color: AppColors.warning,
     ),
     OnboardingPage(
       icon: Icons.language_rounded,
       title: 'Multiple Languages',
-      description:
-          'Choose your preferred language - English, Hindi, or Bengali',
-      color: Colors.teal,
+      description: 'Choose your preferred language - English, Hindi, or Bengali',
+      color: AppColors.accent,
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-          ),
+        decoration: BoxDecoration(
+          gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
         ),
         child: SafeArea(
           child: Column(
             children: [
+              // Page View
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
@@ -69,13 +66,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     setState(() => _currentPage = index);
                   },
                   itemBuilder: (context, index) {
-                    return _buildPage(_pages[index]);
+                    return _buildPage(_pages[index], isDark);
                   },
                 ),
               ),
+              // Dots Indicator
               _buildIndicators(),
-              _buildButtons(),
-              const SizedBox(height: 32),
+              // Navigation Buttons
+              _buildButtons(isDark),
+              AppSpacing.vXxl,
             ],
           ),
         ),
@@ -83,39 +82,69 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildPage(OnboardingPage page) {
+  Widget _buildPage(OnboardingPage page, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: AppSpacing.paddingScreen,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Illustration Container with glassmorphism/gradient feel
           Container(
-            width: 140,
-            height: 140,
+            width: 160,
+            height: 160,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              gradient: LinearGradient(
+                colors: [
+                  page.color.withValues(alpha: 0.25),
+                  page.color.withValues(alpha: 0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: page.color.withValues(alpha: 0.3),
+                width: 2.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: page.color.withValues(alpha: 0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            child: Icon(page.icon, size: 72, color: Colors.white),
+            child: Icon(
+              page.icon, 
+              size: 80, 
+              color: page.color,
+            ),
           ),
           const SizedBox(height: 48),
+          // Title
           Text(
             page.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              letterSpacing: -0.5,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          Text(
-            page.description,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white.withValues(alpha: 0.8),
+          // Description
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              page.description,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -133,8 +162,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           width: _currentPage == index ? 24 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color:
-                Colors.white.withValues(alpha: _currentPage == index ? 1 : 0.5),
+            color: _currentPage == index 
+                ? AppColors.primary 
+                : AppColors.primary.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -142,22 +172,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildButtons() {
+  Widget _buildButtons(bool isDark) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Skip Button
           TextButton(
             onPressed: _completeOnboarding,
             child: Text(
               'Skip',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: isDark ? Colors.white54 : AppColors.textSecondaryLight,
                 fontSize: 16,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
+          // Next/Get Started Button
           ElevatedButton(
             onPressed: () {
               if (_currentPage < _pages.length - 1) {
@@ -170,17 +203,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: AppTheme.primaryColor,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
+              elevation: 4,
+              shadowColor: AppColors.primary.withValues(alpha: 0.4),
             ),
             child: Text(
               _currentPage < _pages.length - 1 ? 'Next' : 'Get Started',
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
               ),
             ),

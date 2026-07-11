@@ -1,0 +1,122 @@
+[
+  {
+    "id": "ssc03",
+    "order": 2,
+    "correctIndex": 0,
+    "category": "General Awareness",
+    "difficulty": "easy",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Who is the head of state in India?",
+      "hi": "भारत में राज्य का प्रमुख कौन है?",
+      "bn": "ভারতে রাষ্ট্রের প্রধান কে?"
+    },
+    "options": {
+      "en": [
+        "President",
+        "Prime Minister",
+        "Chief Justice",
+        "Speaker"
+      ],
+      "hi": [
+        "राष्ट्रपति",
+        "प्रधानमंत्री",
+        "मुख्य न्यायाधीश",
+        "अध्यक्ष"
+      ],
+      "bn": [
+        "রাষ্ট্রপতি",
+        "প্রধানমন্ত্রী",
+        "প্রধান বিচারপতি",
+        "স্পিকার"
+      ]
+    },
+    "explanation": {
+      "en": "The President of India is the constitutional head of state.",
+      "hi": "भारत का राष्ट्रपति राज्य का संवैधानिक प्रमुख है।",
+      "bn": "ভারতের রাষ্ট্রপতি হলেন সাংবিধানিক রাষ্ট্রপ্রধান।"
+    }
+  },
+  {
+    "id": "ssc10",
+    "order": 9,
+    "correctIndex": 0,
+    "category": "General Awareness",
+    "difficulty": "medium",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Which is the longest river in India?",
+      "hi": "भारत की सबसे लंबी नदी कौन सी है?",
+      "bn": "ভারতের দীর্ঘতম নদী কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Ganga",
+        "Yamuna",
+        "Godavari",
+        "Indus"
+      ],
+      "hi": [
+        "गंगा",
+        "यमुना",
+        "गोदावरी",
+        "सिंधु"
+      ],
+      "bn": [
+        "গঙ্গা",
+        "যমুনা",
+        "গোদাবরী",
+        "সিন্ধু"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "गंगा (2,525 किमी) भारत की सबसे लंबी नदी है।",
+      "bn": "গঙ্গা (২,৫২৫ কিমি) ভারতের মধ্য দিয়ে প্রবাহিত দীর্ঘতম নদী।"
+    }
+  },
+  {
+    "id": "ssc18",
+    "order": 17,
+    "correctIndex": 3,
+    "category": "General Awareness",
+    "difficulty": "easy",
+    "examTags": [
+      "SSC"
+    ],
+    "text": {
+      "en": "Which is the national bird of India?",
+      "hi": "भारत का राष्ट्रीय पक्षी कौन सा है?",
+      "bn": "ভারতের জাতীয় পাখি কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Pigeon",
+        "Parrot",
+        "Peacock",
+        "Crow"
+      ],
+      "hi": [
+        "কবুতর",
+        "টিয়া",
+        "ময়ূর",
+        "কাক"
+      ],
+      "bn": [
+        "কবুতর",
+        "টিয়া",
+        "ময়ূর",
+        "কাক"
+      ]
+    },
+    "explanation": {
+      "en": "The Indian Peafowl (Peacock) is the national bird of India.",
+      "hi": "ভারতীয় ময়ূর ভারতের জাতীয় পাখি।",
+      "bn": "ভারতীয় ময়ূর ভারতের জাতীয় পাখি।"
+    }
+  }
+]

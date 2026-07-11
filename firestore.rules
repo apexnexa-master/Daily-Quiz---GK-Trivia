@@ -2,16 +2,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper function to check if the current user is an active admin
+    function isAdmin() {
+      return request.auth != null && 
+             request.auth.token.email != null && 
+             exists(/databases/$(database)/documents/admin/$(request.auth.token.email)) &&
+             get(/databases/$(database)/documents/admin/$(request.auth.token.email)).data.status == 'A';
+    }
+
     // ── Admin collection ──────────────────────────────────
-    match /admin/{docId} {
+    match /admin/{email} {
       allow read: if request.auth != null;
-      allow write: if false;
+      allow write: if false; // Admins can only be managed manually/via console
     }
 
     // ── Quiz timing settings ──────────────────────────────
     match /settings/{docId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow write: if isAdmin() &&
+                    request.resource.data.start_hour is int &&
+                    request.resource.data.start_hour >= 0 && request.resource.data.start_hour <= 23 &&
+                    request.resource.data.end_hour is int &&
+                    request.resource.data.end_hour >= 0 && request.resource.data.end_hour <= 23;
     }
 
     // ── Users ──────────────────────────────────────────────
@@ -32,18 +44,24 @@ service cloud.firestore {
     // ── Quizzes ──────────────────────────────────────────
     match /quizzes/{quizId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
 
       match /questions/{questionId} {
         allow read: if request.auth != null;
-        allow write: if request.auth != null;
+        allow write: if isAdmin() &&
+                      request.resource.data.id is string &&
+                      request.resource.data.correctIndex is int &&
+                      request.resource.data.correctIndex >= 0 &&
+                      request.resource.data.correctIndex <= 3;
       }
     }
 
     // ── Practice questions ────────────────────────────────
     match /practice/{examMode} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      allow write: if isAdmin() &&
+                    request.resource.data.exam_mode == examMode &&
+                    request.resource.data.questions is list;
     }
 
     // ── Leaderboard ────────────────────────────────────────

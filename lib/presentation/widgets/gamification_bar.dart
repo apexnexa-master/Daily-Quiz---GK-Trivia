@@ -1,10 +1,11 @@
 // lib/presentation/widgets/gamification_bar.dart
-// Gamification status bar showing XP, Level, Coins, Lives
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
-import '../../core/theme/app_theme.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_icons.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_animations.dart';
 
 class GamificationBar extends ConsumerWidget {
   const GamificationBar({super.key});
@@ -19,29 +20,18 @@ class GamificationBar extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          gradient: isDark
-              ? LinearGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: 0.1),
-                    Colors.white.withValues(alpha: 0.05),
-                  ],
-                )
-              : LinearGradient(
-                  colors: [
-                    Colors.white,
-                    const Color(0xFFF8FAFC),
-                  ],
-                ),
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? AppColors.cardDark : Colors.white,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.grey.withValues(alpha: 0.1),
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.grey.withValues(alpha: 0.15),
+            width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withValues(alpha: 0.1),
-              blurRadius: 12,
+              color: AppColors.primary.withValues(alpha: 0.05),
+              blurRadius: 16,
               offset: const Offset(0, 4),
             ),
           ],
@@ -67,20 +57,27 @@ class GamificationBar extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
+        gradient: isDark ? AppColors.levelGradient : AppColors.levelGradient,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.level.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.star_rounded, color: Colors.white, size: 16),
+          const Icon(AppIcons.level, color: Colors.white, size: 14),
           const SizedBox(width: 4),
           Text(
-            '${stats.level}',
+            'Lvl ${stats.level}',
             style: const TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              fontSize: 11,
             ),
           ),
         ],
@@ -95,35 +92,30 @@ class GamificationBar extends ConsumerWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.bolt_rounded, size: 14, color: AppTheme.warningColor),
+            const Icon(AppIcons.xp, size: 14, color: AppColors.xp),
             const SizedBox(width: 4),
-            Text(
-              '${stats.xp} XP',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white70 : Colors.grey[600],
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '${stats.xpForNextLevel}',
-              style: TextStyle(
-                fontSize: 10,
-                color: isDark ? Colors.white38 : Colors.grey[400],
+            Expanded(
+              child: Text(
+                '${stats.xp}/${stats.xpForNextLevel} XP',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white70 : Colors.grey[700],
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: stats.levelProgress,
             backgroundColor: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.grey.withValues(alpha: 0.2),
-            valueColor: AlwaysStoppedAnimation(AppTheme.warningColor),
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.grey.withValues(alpha: 0.15),
+            valueColor: const AlwaysStoppedAnimation(AppColors.xp),
             minHeight: 6,
           ),
         ),
@@ -135,23 +127,24 @@ class GamificationBar extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.successColor.withValues(alpha: 0.15),
+        color: AppColors.coin.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppTheme.successColor.withValues(alpha: 0.3),
+          color: AppColors.coin.withValues(alpha: 0.3),
+          width: 1.5,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('🪙', style: TextStyle(fontSize: 14)),
+          const Icon(AppIcons.coin, size: 14, color: AppColors.coin),
           const SizedBox(width: 4),
           Text(
             '${stats.coins}',
-            style: TextStyle(
-              color: AppTheme.successColor,
-              fontWeight: FontWeight.w800,
-              fontSize: 13,
+            style: const TextStyle(
+              color: AppColors.coin,
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
             ),
           ),
         ],
@@ -160,29 +153,32 @@ class GamificationBar extends ConsumerWidget {
   }
 
   Widget _buildLives(stats, bool isDark) {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: stats.lives > 0
+            ? AppColors.error.withValues(alpha: 0.12)
+            : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.12)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
           color: stats.lives > 0
-              ? AppTheme.errorColor.withValues(alpha: 0.15)
-              : Colors.grey.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
+              ? AppColors.error.withValues(alpha: 0.3)
+              : Colors.transparent,
+          width: 1.5,
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(
-            3,
-            (i) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              child: Icon(
-                Icons.favorite_rounded,
-                size: 14,
-                color: i < stats.lives
-                    ? AppTheme.errorColor
-                    : (isDark ? Colors.white24 : Colors.grey[300]),
-              ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(
+          3,
+          (i) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Icon(
+              AppIcons.life,
+              size: 14,
+              color: i < stats.lives
+                  ? AppColors.error
+                  : (isDark ? Colors.white10 : Colors.grey[300]),
             ),
           ),
         ),
@@ -206,22 +202,21 @@ class DailyRewardBanner extends ConsumerWidget {
       data: (stats) {
         if (!stats.canClaimDailyReward) return const SizedBox.shrink();
 
-        return GestureDetector(
+        return AnimatedScaleButton(
           onTap: () => _claimReward(context, ref, lang),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF667EEA),
-                  const Color(0xFF764BA2),
-                ],
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF667EEA).withValues(alpha: 0.4),
+                  color: const Color(0xFF2575FC).withValues(alpha: 0.4),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -230,12 +225,12 @@ class DailyRewardBanner extends ConsumerWidget {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: const Text('🎁', style: TextStyle(fontSize: 24)),
+                  child: const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 24),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -243,15 +238,11 @@ class DailyRewardBanner extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isBn
-                            ? 'দৈনিক পুরস্কার!'
-                            : isHi
-                                ? 'दैनिक पुरस्कार!'
-                                : 'Daily Reward!',
+                        isBn ? 'দৈনিক পুরস্কার!' : isHi ? 'दैनिक पुरस्कार!' : 'Daily Reward!',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -260,31 +251,34 @@ class DailyRewardBanner extends ConsumerWidget {
                             ? '+${10 + (stats.currentStreak ~/ 7) * 10} 🪙 পান'
                             : isHi
                                 ? '+${10 + (stats.currentStreak ~/ 7) * 10} 🪙 मिलें'
-                                : '+${10 + (stats.currentStreak ~/ 7) * 10} 🪙 Coins',
+                                : '+${10 + (stats.currentStreak ~/ 7) * 10} Coins Available',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.9),
                           fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      )
+                    ],
                   ),
                   child: Text(
-                    isBn
-                        ? 'দাবি'
-                        : isHi
-                            ? 'लो'
-                            : 'Claim',
-                    style: TextStyle(
-                      color: const Color(0xFF667EEA),
-                      fontWeight: FontWeight.w700,
+                    isBn ? 'দাবি' : isHi ? 'लो' : 'Claim',
+                    style: const TextStyle(
+                      color: Color(0xFF2575FC),
+                      fontWeight: FontWeight.w900,
                       fontSize: 13,
                     ),
                   ),
@@ -305,30 +299,24 @@ class DailyRewardBanner extends ConsumerWidget {
 
     if (context.mounted) {
       final message = claimed
-          ? (lang == 'bn'
-              ? 'পুরস্কার পেয়েছেন! 🎉'
-              : lang == 'hi'
-                  ? 'पुरस्कार मिला! 🎉'
-                  : 'Reward claimed! 🎉')
-          : (lang == 'bn'
-              ? 'আগেই দাবি করেছেন'
-              : lang == 'hi'
-                  ? 'पहले ही लिया'
-                  : 'Already claimed');
-      final color = claimed ? AppTheme.successColor : AppTheme.errorColor;
+          ? (lang == 'bn' ? 'পুরস্কার পেয়েছেন! 🎉' : lang == 'hi' ? 'पुरस्कार मिला! 🎉' : 'Reward claimed! 🎉')
+          : (lang == 'bn' ? 'আগেই দাবি করেছেন' : lang == 'hi' ? 'पहले ही लिया' : 'Already claimed');
+      final color = claimed ? AppColors.success : AppColors.error;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
           backgroundColor: color,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     }
   }
 }
 
-class StreakCard extends ConsumerWidget {
-  const StreakCard({super.key});
+class GamificationStreakCard extends ConsumerWidget {
+  const GamificationStreakCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -343,28 +331,31 @@ class StreakCard extends ConsumerWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? AppColors.cardDark : Colors.white,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.08)
-                : Colors.grey.withValues(alpha: 0.1),
+                : Colors.grey.withValues(alpha: 0.15),
+            width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.streak.withValues(alpha: 0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.orange.withValues(alpha: 0.2),
-                    Colors.red.withValues(alpha: 0.2),
-                  ],
-                ),
+                color: AppColors.streak.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
-              child: const Text('🔥', style: TextStyle(fontSize: 28)),
+              child: const Icon(AppIcons.streak, color: AppColors.streak, size: 24),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -372,14 +363,11 @@ class StreakCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isBn
-                        ? 'ধারাবাহিকতা'
-                        : isHi
-                            ? 'स्ट्रीक'
-                            : 'Streak',
+                    isBn ? 'ধারাবাহিকতা' : isHi ? 'स्ट्रीक' : 'Streak',
                     style: TextStyle(
                       color: isDark ? Colors.white54 : Colors.grey[600],
                       fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -387,22 +375,18 @@ class StreakCard extends ConsumerWidget {
                     children: [
                       Text(
                         '${stats.currentStreak}',
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontWeight: FontWeight.w800,
+                        style: const TextStyle(
+                          color: AppColors.streak,
+                          fontWeight: FontWeight.w900,
                           fontSize: 28,
                         ),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        isBn
-                            ? 'দিন'
-                            : isHi
-                                ? 'दिन'
-                                : 'days',
+                        isBn ? 'দিন' : isHi ? 'दिन' : 'days',
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : Colors.black87,
-                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white70 : AppColors.textPrimaryLight,
+                          fontWeight: FontWeight.bold,
                           fontSize: 14,
                         ),
                       ),
@@ -415,21 +399,18 @@ class StreakCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  isBn
-                      ? 'সেরা'
-                      : isHi
-                          ? 'सर्वश्रेष्ठ'
-                          : 'Best',
+                  isBn ? 'সেরা' : isHi ? 'सर्वश्रेष्ठ' : 'Best',
                   style: TextStyle(
-                    color: isDark ? Colors.white38 : Colors.grey[500],
+                    color: isDark ? Colors.white30 : Colors.grey[500],
                     fontSize: 10,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   '${stats.longestStreak} 🔥',
                   style: TextStyle(
-                    color: isDark ? Colors.white54 : Colors.grey[600],
-                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white60 : Colors.grey[600],
+                    fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
                 ),
@@ -460,13 +441,9 @@ class QuickActionsBar extends ConsumerWidget {
         children: [
           Expanded(
             child: _QuickActionButton(
-              icon: Icons.people_alt_rounded,
-              label: isBn
-                  ? 'Battle'
-                  : isHi
-                      ? 'लड़ाई'
-                      : 'Battle',
-              color: AppTheme.errorColor,
+              icon: AppIcons.battle,
+              label: isBn ? 'ব্যাটল' : isHi ? 'लड़ाई' : 'Battle',
+              color: AppColors.error,
               isDark: isDark,
               onTap: () => Navigator.pushNamed(context, '/battle'),
             ),
@@ -474,13 +451,9 @@ class QuickActionsBar extends ConsumerWidget {
           const SizedBox(width: 10),
           Expanded(
             child: _QuickActionButton(
-              icon: Icons.emoji_events_rounded,
-              label: isBn
-                  ? 'র‌্যাংকিং'
-                  : isHi
-                      ? 'रैंकिंग'
-                      : 'Rank',
-              color: AppTheme.primaryColor,
+              icon: AppIcons.leaderboard,
+              label: isBn ? 'র‌্যাংকিং' : isHi ? 'रैंकिंग' : 'Rank',
+              color: AppColors.primary,
               isDark: isDark,
               onTap: () => Navigator.pushNamed(context, '/leaderboard'),
             ),
@@ -488,13 +461,9 @@ class QuickActionsBar extends ConsumerWidget {
           const SizedBox(width: 10),
           Expanded(
             child: _QuickActionButton(
-              icon: Icons.workspace_premium_rounded,
-              label: isBn
-                  ? 'উপাদান'
-                  : isHi
-                      ? 'उपलब्धियां'
-                      : 'Badges',
-              color: AppTheme.successColor,
+              icon: AppIcons.achievement,
+              label: isBn ? 'উপাদান' : isHi ? 'उपलब्धियां' : 'Badges',
+              color: AppColors.success,
               isDark: isDark,
               onTap: () => Navigator.pushNamed(context, '/achievements'),
             ),
@@ -503,12 +472,8 @@ class QuickActionsBar extends ConsumerWidget {
           Expanded(
             child: _QuickActionButton(
               icon: Icons.card_giftcard_rounded,
-              label: isBn
-                  ? 'আমন্ত্রণ'
-                  : isHi
-                      ? 'निमंत्रण'
-                      : 'Invite',
-              color: Colors.purple,
+              label: isBn ? 'আমন্ত্রণ' : isHi ? 'निमंत्रण' : 'Invite',
+              color: AppColors.level,
               isDark: isDark,
               onTap: () => _showReferralDialog(context, ref, lang),
             ),
@@ -530,7 +495,7 @@ class QuickActionsBar extends ConsumerWidget {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF1E1B4B)
+              ? AppColors.cardDark
               : Colors.white,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -539,68 +504,62 @@ class QuickActionsBar extends ConsumerWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
+              decoration: const BoxDecoration(
+                color: AppColors.coin,
                 shape: BoxShape.circle,
               ),
-              child: const Text('🎁', style: TextStyle(fontSize: 32)),
+              child: const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 32),
             ),
             const SizedBox(height: 16),
             Text(
-              isBn
-                  ? 'বন্ধুদের আমন্ত্রণ করুন!'
-                  : isHi
-                      ? 'दोस्तों को आमंत्रित करें!'
-                      : 'Invite Friends!',
+              isBn ? 'বন্ধুদের আমন্ত্রণ করুন!' : isHi ? 'दोस्तों को आमंत्रित करें!' : 'Invite Friends!',
               style: TextStyle(
                 fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white
-                    : Colors.black87,
+                fontWeight: FontWeight.w900,
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimaryLight,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               isBn
-                  ? 'আপনার কোড শেয়ার করুন এবং ১০০ 🪙 পান!'
+                  ? 'আপনাকে কোড শেয়ার করুন এবং ১০০ 🪙 পান!'
                   : isHi
                       ? 'अपना कोड साझा करें और 100 🪙 पाएं!'
                       : 'Share your code and get 100 🪙!',
               style: TextStyle(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white54
-                    : Colors.grey[600],
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Colors.grey[600],
+                fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.grey.withValues(alpha: 0.1),
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white10 : Colors.grey.withValues(alpha: 0.15),
+                ),
               ),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       code,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 24,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
                         letterSpacing: 2,
-                        color: AppTheme.primaryColor,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
                   IconButton(
                     onPressed: () {
-                      // Copy to clipboard and share
+                      // Copy to clipboard
                     },
                     icon: const Icon(Icons.copy_rounded),
-                    color: AppTheme.primaryColor,
+                    color: AppColors.primary,
                   ),
                 ],
               ),
@@ -613,13 +572,9 @@ class QuickActionsBar extends ConsumerWidget {
                   // Share functionality
                 },
                 icon: const Icon(Icons.share_rounded),
-                label: Text(isBn
-                    ? 'শেয়ার করুন'
-                    : isHi
-                        ? 'साझा करें'
-                        : 'Share'),
+                label: Text(isBn ? 'শেয়ার করুন' : isHi ? 'साझा करें' : 'Share'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -652,18 +607,26 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AnimatedScaleButton(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          color: isDark ? AppColors.cardDark : Colors.white,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.08)
-                : Colors.grey.withValues(alpha: 0.1),
+                : Colors.grey.withValues(alpha: 0.15),
+            width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            )
+          ],
         ),
         child: Column(
           children: [
@@ -680,8 +643,8 @@ class _QuickActionButton extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white70 : Colors.grey[600],
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white70 : Colors.grey[700],
               ),
             ),
           ],
@@ -706,46 +669,50 @@ class DailyChallengesCard extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: isDark ? AppColors.cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.08)
-              : Colors.grey.withValues(alpha: 0.1),
+              : Colors.grey.withValues(alpha: 0.15),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Text('🎯', style: TextStyle(fontSize: 20)),
+              const Icon(Icons.track_changes_rounded, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(
-                isBn
-                    ? 'দৈনিক চ্যালেঞ্জ'
-                    : isHi
-                        ? 'दैनिक चुनौतियां'
-                        : 'Daily Challenges',
+                isBn ? 'দৈনিক চ্যালেঞ্জ' : isHi ? 'दैनिक चुनौतियां' : 'Daily Challenges',
                 style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : Colors.black87,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
                 ),
               ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.successColor.withValues(alpha: 0.15),
+                  color: AppColors.success.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${challenges.where((c) => c.isCompleted).length}/${challenges.length}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.successColor,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.success,
                   ),
                 ),
               ),
@@ -753,12 +720,12 @@ class DailyChallengesCard extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           ...challenges.map((challenge) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _ChallengeItem(
-                  challenge: challenge,
-                  isDark: isDark,
-                ),
-              )),
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _ChallengeItem(
+              challenge: challenge,
+              isDark: isDark,
+            ),
+          )),
         ],
       ),
     );
@@ -783,15 +750,13 @@ class _ChallengeItem extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(
             color: challenge.isCompleted
-                ? AppTheme.successColor.withValues(alpha: 0.15)
-                : AppTheme.primaryColor.withValues(alpha: 0.15),
+                ? AppColors.success.withValues(alpha: 0.15)
+                : AppColors.primary.withValues(alpha: 0.15),
             shape: BoxShape.circle,
           ),
           child: Icon(
             challenge.isCompleted ? Icons.check_rounded : Icons.flag_rounded,
-            color: challenge.isCompleted
-                ? AppTheme.successColor
-                : AppTheme.primaryColor,
+            color: challenge.isCompleted ? AppColors.success : AppColors.primary,
             size: 18,
           ),
         ),
@@ -804,22 +769,20 @@ class _ChallengeItem extends StatelessWidget {
                 challenge.title,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.black87,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 6),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: challenge.progressPercent,
                   backgroundColor: isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.grey.withValues(alpha: 0.2),
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.grey.withValues(alpha: 0.15),
                   valueColor: AlwaysStoppedAnimation(
-                    challenge.isCompleted
-                        ? AppTheme.successColor
-                        : AppTheme.primaryColor,
+                    challenge.isCompleted ? AppColors.success : AppColors.primary,
                   ),
                   minHeight: 4,
                 ),
@@ -833,17 +796,18 @@ class _ChallengeItem extends StatelessWidget {
           children: [
             Text(
               '+${challenge.xpReward} XP',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.warningColor,
+                fontWeight: FontWeight.bold,
+                color: AppColors.xp,
               ),
             ),
             Text(
               '+${challenge.coinReward} 🪙',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 10,
-                color: AppTheme.successColor,
+                color: AppColors.coin,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],

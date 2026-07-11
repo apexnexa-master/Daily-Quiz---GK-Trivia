@@ -40,7 +40,7 @@ class UserModel extends Equatable {
     required this.displayName,
     this.email,
     this.photoUrl,
-    this.language = 'bn',
+    this.language = 'en',
     this.isPro = false,
     this.isAnonymous = false,
     this.fcmToken,
@@ -239,24 +239,38 @@ class QuestionModel extends Equatable {
       explanation[lang] ?? explanation['en'] ?? '';
 
   QuestionModel shuffleOptions() {
-    final newOptions = <String, List<String>>{};
-    final newCorrectIndexMap = <String, int>{};
-
-    for (final lang in options.keys) {
-      final opts = List<String>.from(options[lang]!);
-      final originalCorrect = opts[correctIndex];
-
-      opts.shuffle();
-
-      newOptions[lang] = opts;
-      newCorrectIndexMap[lang] = opts.indexOf(originalCorrect);
+    final enOpts = options['en'];
+    if (enOpts == null || enOpts.isEmpty || correctIndex < 0 || correctIndex >= enOpts.length) {
+      return this;
     }
+
+    final indices = List<int>.generate(enOpts.length, (i) => i);
+    indices.shuffle();
+
+    final newOptions = <String, List<String>>{};
+    for (final lang in options.keys) {
+      final opts = options[lang] ?? [];
+      if (opts.isEmpty) {
+        newOptions[lang] = opts;
+        continue;
+      }
+
+      final shuffledOpts = <String>[];
+      for (final idx in indices) {
+        if (idx < opts.length) {
+          shuffledOpts.add(opts[idx]);
+        }
+      }
+      newOptions[lang] = shuffledOpts;
+    }
+
+    final newCorrectIndex = indices.indexOf(correctIndex);
 
     return QuestionModel(
       id: id,
       text: text,
       options: newOptions,
-      correctIndex: newCorrectIndexMap['en'] ?? correctIndex,
+      correctIndex: newCorrectIndex != -1 ? newCorrectIndex : correctIndex,
       explanation: explanation,
       category: category,
       difficulty: difficulty,

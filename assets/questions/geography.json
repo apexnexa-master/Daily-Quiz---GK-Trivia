@@ -1,0 +1,373 @@
+[
+  {
+    "id": "g01",
+    "order": 0,
+    "correctIndex": 1,
+    "category": "Geography",
+    "difficulty": "easy",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What is the capital of India?",
+      "hi": "भारत की राजधानी क्या है?",
+      "bn": "ভারতের রাজধানী কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Mumbai",
+        "New Delhi",
+        "Kolkata",
+        "Chennai"
+      ],
+      "hi": [
+        "मुम्बई",
+        "नई दिल्ली",
+        "कोलकाता",
+        "चेन्नई"
+      ],
+      "bn": [
+        "মুম্বাই",
+        "নতুন দিল্লি",
+        "কলকাতা",
+        "চেন্নাই"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "नई दिल्ली 1911 से भारत की राजधानी है।",
+      "bn": "নতুন দিল্লি ১৯১১ সাল থেকে ভারতের রাজধানী।"
+    }
+  },
+  {
+    "id": "g06",
+    "order": 5,
+    "correctIndex": 2,
+    "category": "Geography",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Which is the largest state in India by area?",
+      "hi": "क्षेत्रफल की दृष्टि से भारत का सबसे बड़ा राज्य कौन सा है?",
+      "bn": "আয়তনে ভারতের সবচেয়ে বড় রাজ্য কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Uttar Pradesh",
+        "Maharashtra",
+        "Rajasthan",
+        "Madhya Pradesh"
+      ],
+      "hi": [
+        "उत्तर प्रदेश",
+        "महाराष्ट्र",
+        "राजस्थान",
+        "मध्य प्रदेश"
+      ],
+      "bn": [
+        "উত্তর প্রদেশ",
+        "মহারাষ্ট্র",
+        "রাজস্থান",
+        "মধ্যপ্রদেশ"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "",
+      "bn": ""
+    }
+  },
+  {
+    "id": "g12",
+    "order": 11,
+    "correctIndex": 0,
+    "category": "Geography",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Which is the longest river in the world?",
+      "hi": "विश्व की सबसे लंबी नदी कौन सी है?",
+      "bn": "বিশ্বের দীর্ঘতম নদী কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Nile",
+        "Amazon",
+        "Yangtze",
+        "Mississippi"
+      ],
+      "hi": [
+        "नील",
+        "अमेज़न",
+        "यांग्त्ज़े",
+        "मिसिसिपी"
+      ],
+      "bn": [
+        "নীল",
+        "আমাজন",
+        "ইয়াংৎসে",
+        "মিসিসিপি"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "नील नदी विश्व की सबसे लंबी नदी है।",
+      "bn": "নীল নদী বিশ্বের দীর্ঘতম নদী।"
+    }
+  },
+  {
+    "id": "g14",
+    "order": 13,
+    "correctIndex": 2,
+    "category": "Geography",
+    "difficulty": "easy",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Which planet is known as the Red Planet?",
+      "hi": "कौन-सा ग्रह लाल ग्रह के नाम से जाना जाता है?",
+      "bn": "কোন গ্রহটি লাল গ্রহ নামে পরিচিত?"
+    },
+    "options": {
+      "en": [
+        "Venus",
+        "Jupiter",
+        "Mars",
+        "Saturn"
+      ],
+      "hi": [
+        "शुक्र",
+        "बृहस्पति",
+        "मंगल",
+        "शनि"
+      ],
+      "bn": [
+        "শুক্র",
+        "বৃহস্পতি",
+        "মঙ্গল",
+        "শনি"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "मंगल को लाल ग्रह इसके लाल रंग के कारण कहा जाता है।",
+      "bn": "মঙ্গলকে তার লাল রঙের কারণে লাল গ্রহ বলা হয়।"
+    }
+  },
+  {
+    "id": "g17",
+    "order": 16,
+    "correctIndex": 3,
+    "category": "Geography",
+    "difficulty": "hard",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "What is the deepest ocean trench in the world?",
+      "hi": "विश्व की सबसे गहरी समुद्री खाई कौन सी है?",
+      "bn": "বিশ্বের গভীরতম মহাসাগরীয় খাত কোনটি?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "মারিয়ানা ট্রেঞ্চ বিশ্বের গভীরতম মহাসাগরীয় খাত।",
+      "bn": "মারিয়ানা ট্রেঞ্চ বিশ্বের গভীরতম মহাসাগরীয় খাত।"
+    }
+  },
+  {
+    "id": "g21",
+    "order": 20,
+    "correctIndex": 3,
+    "category": "Geography",
+    "difficulty": "medium",
+    "examTags": [
+      "GENERAL"
+    ],
+    "text": {
+      "en": "Which country has the largest population in the world?",
+      "hi": "विश्व में किस देश की सबसे अधिक आबादी है?",
+      "bn": "বিশ্বে কোন দেশের জনসংখ্যা সবচেয়ে বেশি?"
+    },
+    "options": {
+      "en": [
+        "USA",
+        "Indonesia",
+        "Pakistan",
+        "India"
+      ],
+      "hi": [
+        "USA",
+        "इंडोनेशिया",
+        "पाकिस्तान",
+        "भारत"
+      ],
+      "bn": [
+        "USA",
+        "ইন্দোনেশিয়া",
+        "পাকিস্তান",
+        "ভারত"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "भारत दुनिया का सबसे अधिक आबादी वाला देश बन गया है।",
+      "bn": "ভারত বিশ্বের সবচেয়ে জনবহুল দেশ হয়েছে।"
+    }
+  },
+  {
+    "id": "up03",
+    "order": 2,
+    "correctIndex": 3,
+    "category": "Geography",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "Which is the highest peak in India?",
+      "hi": "भारत की सबसे ऊँची चोटी कौन-सी है?",
+      "bn": "ভারতের সর্বোচ্চ শৃঙ্গ কোনটি?"
+    },
+    "options": {
+      "en": [
+        "Mount Everest",
+        "Nanda Devi",
+        "Kanchenjunga",
+        "K2"
+      ],
+      "hi": [
+        "माउंट एवरेस्ट",
+        "नंदा देवी",
+        "कंचनजंगा",
+        "K2"
+      ],
+      "bn": [
+        "মাউন্ট এভারেস্ট",
+        "নন্দাদেবী",
+        "কাঞ্চনজঙ্ঘা",
+        "K2"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "hi": "कंचनजंगा (8,586 मीटर) भारतीय क्षेत्र की सबसे ऊँची चोटी है।",
+      "bn": "কাঞ্চনজঙ্ঘা (৮,৫৮৬ মি.) ভারতীয় ভূখণ্ডের সর্বোচ্চ শৃঙ্গ।"
+    }
+  },
+  {
+    "id": "up10",
+    "order": 9,
+    "correctIndex": 0,
+    "category": "Geography",
+    "difficulty": "medium",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "The Tropic of Cancer passes through how many Indian states?",
+      "hi": "কর্কটক্রান্তি রেখা কতটি ভারতীয় রাজ্যের মধ্য দিয়ে যায়?",
+      "bn": "কর্কটক্রান্তি রেখা কতটি ভারতীয় রাজ্যের মধ্য দিয়ে যায়?"
+    },
+    "options": {
+      "en": [
+        "8",
+        "7",
+        "9",
+        "6"
+      ],
+      "hi": [
+        "৮",
+        "৭",
+        "৯",
+        "৬"
+      ],
+      "bn": [
+        "৮",
+        "৭",
+        "৯",
+        "৬"
+      ]
+    },
+    "explanation": {
+      "en": "",
+      "The Tropic of Cancer passes through 8 Indian states": "Gujarat, Rajasthan, MP, Chhattisgarh, Jharkhand, West Bengal, Tripura, and Mizoram.",
+      "hi": "কর্কটক্রান্তি রেখা ৮টি ভারতীয় রাজ্যের মধ্য দিয়ে যায়।",
+      "bn": "কর্কটক্রান্তি রেখা ৮টি ভারতীয় রাজ্যের মধ্য দিয়ে যায়।"
+    }
+  },
+  {
+    "id": "up12",
+    "order": 11,
+    "correctIndex": 1,
+    "category": "Geography",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "Which is the largest delta in the world?",
+      "hi": "বিশ্বের বৃহত্তম ব-দ্বীপ কোনটি?",
+      "bn": "বিশ্বের বৃহত্তম ব-দ্বীপ কোনটি?"
+    },
+    "options": {
+      "en": [],
+      "hi": [],
+      "bn": []
+    },
+    "explanation": {
+      "en": "",
+      "hi": "গঙ্গা-ব্রহ্মপুত্র ব-দ্বীপ (সুন্দরবন) বিশ্বের বৃহত্তম ব-দ্বীপ।",
+      "bn": "গঙ্গা-ব্রহ্মপুত্র ব-দ্বীপ (সুন্দরবন) বিশ্বের বৃহত্তম ব-দ্বীপ।"
+    }
+  },
+  {
+    "id": "up18",
+    "order": 17,
+    "correctIndex": 1,
+    "category": "Geography",
+    "difficulty": "hard",
+    "examTags": [
+      "UPSC"
+    ],
+    "text": {
+      "en": "Which state has the longest coastline in India?",
+      "hi": "ভারতে কোন রাজ্যের উপকূলরেখা সবচেয়ে দীর্ঘ?",
+      "bn": "ভারতে কোন রাজ্যের উপকূলরেখা সবচেয়ে দীর্ঘ?"
+    },
+    "options": {
+      "en": [
+        "Tamil Nadu",
+        "Gujarat",
+        "Maharashtra",
+        "Andhra Pradesh"
+      ],
+      "hi": [
+        "তামিলনাড়ু",
+        "গুজরাট",
+        "মহারাষ্ট্র",
+        "অন্ধ্রপ্রদেশ"
+      ],
+      "bn": [
+        "তামিলনাড়ু",
+        "গুজরাট",
+        "মহারাষ্ট্র",
+        "অন্ধ্রপ্রদেশ"
+      ]
+    },
+    "explanation": {
+      "en": "Gujarat has the longest coastline in India at about 1,600 km.",
+      "hi": "গুজরাটের উপকূলরেখা প্রায় 1,600 কিমি যা ভারতে সবচেয়ে দীর্ঘ।",
+      "bn": "গুজরাটের উপকূলরেখা প্রায় 1,600 কিমি যা ভারতে সবচেয়ে দীর্ঘ।"
+    }
+  }
+]
