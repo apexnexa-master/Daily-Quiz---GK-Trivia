@@ -91,16 +91,17 @@ class GamificationService {
   Future<UserStatsModel> updateStreak() async {
     final stats = await getUserStats();
     final now = DateTime.now();
-    final today =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final todayDate = DateTime(now.year, now.month, now.day);
 
     int newStreak = stats.currentStreak;
     int newLongest = stats.longestStreak;
 
-    if (stats.lastAttemptDate != now) {
-      final lastDate =
-          DateTime.tryParse(stats.lastAttemptDate.toString()) ?? DateTime(2000);
-      final diff = now.difference(lastDate).inDays;
+    if (stats.lastAttemptDate == null) {
+      newStreak = 1;
+    } else {
+      final lastAttempt = stats.lastAttemptDate!;
+      final lastDate = DateTime(lastAttempt.year, lastAttempt.month, lastAttempt.day);
+      final diff = todayDate.difference(lastDate).inDays;
 
       if (diff == 1) {
         newStreak++;
@@ -116,7 +117,7 @@ class GamificationService {
     final updated = stats.copyWith(
       currentStreak: newStreak,
       longestStreak: newLongest,
-      lastDailyReward: now,
+      lastAttemptDate: now,
     );
     await saveUserStats(updated);
     return updated;
@@ -420,7 +421,7 @@ class GamificationService {
     required int totalQuestions,
     required int timeTaken,
   }) async {
-    final stats = await getUserStats();
+    final stats = await updateStreak();
 
     int baseXP = score * 10;
     int baseCoins = score * 5;

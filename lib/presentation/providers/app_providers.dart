@@ -224,6 +224,7 @@ class QuizSessionState {
   final int remainingSeconds;
   final bool isSubmitting;
   final AttemptResult? result;
+  final int totalTimeTaken;
 
   const QuizSessionState({
     required this.quiz,
@@ -232,6 +233,7 @@ class QuizSessionState {
     this.remainingSeconds = AppConstants.questionTimerSeconds,
     this.isSubmitting = false,
     this.result,
+    this.totalTimeTaken = 0,
   });
 
   bool get isComplete => currentIndex >= quiz.questions.length;
@@ -243,6 +245,7 @@ class QuizSessionState {
     int? remainingSeconds,
     bool? isSubmitting,
     AttemptResult? result,
+    int? totalTimeTaken,
   }) =>
       QuizSessionState(
         quiz: quiz,
@@ -251,6 +254,7 @@ class QuizSessionState {
         remainingSeconds: remainingSeconds ?? this.remainingSeconds,
         isSubmitting: isSubmitting ?? this.isSubmitting,
         result: result ?? this.result,
+        totalTimeTaken: totalTimeTaken ?? this.totalTimeTaken,
       );
 }
 
@@ -327,7 +331,7 @@ class QuizSessionNotifier extends StateNotifier<QuizSessionState?> {
       await _localStats.addScoreToLeaderboard(
           playerName, score, totalTimeTaken);
 
-      state = state!.copyWith(isSubmitting: false, result: result);
+      state = state!.copyWith(isSubmitting: false, result: result, totalTimeTaken: totalTimeTaken);
     } catch (e) {
       state = state!.copyWith(isSubmitting: false);
       rethrow;

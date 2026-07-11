@@ -13,6 +13,7 @@ class StreakCard extends StatelessWidget {
     final current = streak?.currentStreak ?? 0;
     final longest = streak?.longestStreak ?? 0;
     final isBn = lang == 'bn';
+    final isHi = lang == 'hi';
     final isActive = current > 0;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -78,7 +79,7 @@ class StreakCard extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                isBn ? 'দিনের ধারাবাহিকতা' : 'day streak',
+                isBn ? 'দিনের ধারাবাহিকতা' : isHi ? 'दिनों का सिलसिला' : 'day streak',
                 style: isBn
                     ? AppTheme.bengaliStyle(
                         fontSize: 13,
@@ -141,7 +142,7 @@ class StreakCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  isBn ? 'সর্বোচ্চ: $longest 🎯' : 'Best: $longest 🎯',
+                  isBn ? 'সর্বোচ্চ: $longest 🎯' : isHi ? 'सर्वश्रेष्ठ: $longest 🎯' : 'Best: $longest 🎯',
                   style: isBn
                       ? AppTheme.bengaliStyle(
                           fontSize: 12,

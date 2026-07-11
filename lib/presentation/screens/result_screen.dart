@@ -8,6 +8,7 @@ import '../providers/app_providers.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/question_tracking_service.dart';
 import '../../core/services/quiz_scheduler_service.dart';
+import '../../core/services/gamification_service.dart';
 import '../../core/theme/app_theme.dart';
 
 class ConfettiOverlay extends StatefulWidget {
@@ -159,6 +160,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   late Animation<double> _entranceFade;
   late Animation<Offset> _entranceSlide;
   bool _hasUpdatedStats = false;
+  QuizRewards? _rewards;
 
   @override
   void initState() {
@@ -211,7 +213,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     final result = session!.result!;
     final total = session.quiz.questionCount;
     int score = result.score;
-    final totalTimeTaken = 30 * total; // Approximate time taken
+    final totalTimeTaken = session.totalTimeTaken > 0 ? session.totalTimeTaken : 30 * total;
 
     // Calculate actual score for local quizzes
     if (session.quiz.quizId.startsWith('local_')) {
@@ -264,6 +266,30 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
           modeScores: modeScores,
         );
 
+        // Calculate and apply gamification rewards
+        try {
+          final rewards = await ref.read(gamificationServiceProvider).calculateQuizRewards(
+            score: score,
+            totalQuestions: total,
+            timeTaken: totalTimeTaken,
+          );
+          if (mounted) {
+            setState(() {
+              _rewards = rewards;
+            });
+          }
+        } catch (_) {}
+
+        // Sync local stats to cloud
+        try {
+          await ref.read(cloudSyncServiceProvider).syncStatsToCloud();
+        } catch (_) {}
+
+        // Refresh gamification stats notifier
+        try {
+          await ref.read(gamificationNotifierProvider.notifier).refresh();
+        } catch (_) {}
+
         // Refresh providers
         ref.invalidate(localStreakProvider);
         ref.invalidate(localLeaderboardProvider);
@@ -271,6 +297,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         ref.invalidate(totalQuizzesProvider);
         ref.invalidate(achievementsProvider);
         ref.invalidate(modeStatsProvider);
+        ref.invalidate(userStatsProvider);
       }
     });
 
@@ -296,6 +323,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                             _buildActionButtons(context, ref, session, score,
                                 lang, isDark, isBn, isHi),
                             const SizedBox(height: 20),
+                            _buildRewardsCard(isDark, isBn, isHi),
                             _buildStatsRow(
                                 score, total, lang, isDark, isBn, isHi),
                             const SizedBox(height: 20),
@@ -911,6 +939,206 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
           );
         }),
       ],
+    );
+  }
+
+  Widget _buildRewardsCard(bool isDark, bool isBn, bool isHi) {
+    if (_rewards == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [
+                  const Color(0xFF1E1B4B), // Indigo dark
+                  const Color(0xFF311042), // Purple dark
+                ]
+              : [
+                  const Color(0xFFEEF2FF), // Indigo light
+                  const Color(0xFFFDF2F8), // Pink light
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : AppTheme.primaryColor.withValues(alpha: 0.1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            isBn
+                ? 'কুইজ পুরস্কার অর্জিত! 🎉'
+                : isHi
+                    ? 'क्विज़ पुरस्कार प्राप्त! 🎉'
+                    : 'Quiz Rewards Earned! 🎉',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : AppTheme.primaryColor,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              // XP Reward
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.bolt_rounded, color: Colors.blue, size: 22),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '+${_rewards!.xp}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        'XP',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white54 : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              // Vertical Divider
+              Container(
+                height: 32,
+                width: 1,
+                color: isDark ? Colors.white12 : Colors.grey[300],
+              ),
+              // Coins Reward
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.monetization_on_rounded, color: Colors.amber, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '+${_rewards!.coins}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        isBn ? 'কয়েন' : isHi ? 'सिक्के' : 'Coins',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white54 : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (_rewards!.isPerfect || _rewards!.isSpeedBonus || _rewards!.isStreakBonus) ...[
+            const SizedBox(height: 14),
+            Divider(color: isDark ? Colors.white12 : Colors.grey[200], height: 1),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              alignment: WrapAlignment.center,
+              children: [
+                if (_rewards!.isPerfect)
+                  _buildBonusChip(
+                    icon: Icons.star_rounded,
+                    label: isBn ? 'নিখুঁত স্কোর' : isHi ? 'परफेक्ट स्कोर' : 'Perfect Score',
+                    color: Colors.purple,
+                    isDark: isDark,
+                  ),
+                if (_rewards!.isSpeedBonus)
+                  _buildBonusChip(
+                    icon: Icons.speed_rounded,
+                    label: isBn ? 'গতি বোনাস' : isHi ? 'स्पीड बोनस' : 'Speed Bonus',
+                    color: Colors.orange,
+                    isDark: isDark,
+                  ),
+                if (_rewards!.isStreakBonus)
+                  _buildBonusChip(
+                    icon: Icons.local_fire_department_rounded,
+                    label: isBn ? 'ধারাবাহিকতা বোনাস' : isHi ? 'स्ट्रीक बोनस' : 'Streak Bonus',
+                    color: Colors.red,
+                    isDark: isDark,
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBonusChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.2 : 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 12),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

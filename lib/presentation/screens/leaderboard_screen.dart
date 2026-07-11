@@ -26,8 +26,8 @@ class LeaderboardScreen extends ConsumerWidget {
             Expanded(
               child: leaderboardAsync.when(
                 data: (entries) => entries.isEmpty
-                    ? _buildEmptyState(isDark, isBn)
-                    : _buildLeaderboardList(entries, isDark, isBn),
+                    ? _buildEmptyState(isDark, isBn, isHi)
+                    : _buildLeaderboardList(entries, isDark, isBn, isHi),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
                     child: Text('Error: $e',
@@ -118,7 +118,7 @@ class LeaderboardScreen extends ConsumerWidget {
     return '${now.day} ${months[now.month - 1]}';
   }
 
-  Widget _buildEmptyState(bool isDark, bool isBn) {
+  Widget _buildEmptyState(bool isDark, bool isBn, bool isHi) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -133,7 +133,11 @@ class LeaderboardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            isBn ? 'কোনো র‍্যাংকিং নেই' : 'No rankings yet',
+            isBn
+                ? 'কোনো র‍্যাংকিং নেই'
+                : isHi
+                    ? 'अभी तक कोई रैंकिंग नहीं'
+                    : 'No rankings yet',
             style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -141,7 +145,11 @@ class LeaderboardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            isBn ? 'কুইজ দিয়ে প্রথম হন!' : 'Be the first to attempt!',
+            isBn
+                ? 'কুইজ দিয়ে প্রথম হন!'
+                : isHi
+                    ? 'क्विज़ देकर पहले बनें!'
+                    : 'Be the first to attempt!',
             style: TextStyle(
                 fontSize: 13, color: isDark ? Colors.white54 : Colors.grey),
           ),
@@ -151,7 +159,7 @@ class LeaderboardScreen extends ConsumerWidget {
   }
 
   Widget _buildLeaderboardList(
-      List<LeaderboardEntryLocal> entries, bool isDark, bool isBn) {
+      List<LeaderboardEntryLocal> entries, bool isDark, bool isBn, bool isHi) {
     return ListView.builder(
       padding: const EdgeInsets.all(20),
       itemCount: entries.length,

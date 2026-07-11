@@ -369,13 +369,13 @@ Widget _buildQuickStrip(
 
   final actions = [
     (Icons.people_alt_rounded, AppTheme.errorColor, 
-     isBn ? 'Battle' : isHi ? 'লড়াই' : 'Battle', () => Navigator.pushNamed(context, '/battle')),
+     isBn ? 'লড়াই' : isHi ? 'मुकाबला' : 'Battle', () => Navigator.pushNamed(context, '/battle')),
     (Icons.emoji_events_rounded, AppTheme.primaryColor,
-     isBn ? 'Rank' : isHi ? 'র্যাঙ্ক' : 'Rank', () => Navigator.pushNamed(context, '/leaderboard')),
+     isBn ? 'র‍্যাঙ্ক' : isHi ? 'रैंक' : 'Rank', () => Navigator.pushNamed(context, '/leaderboard')),
     (Icons.workspace_premium_rounded, AppTheme.successColor,
-     isBn ? 'Badges' : isHi ? 'ব্যাজ' : 'Badges', () => Navigator.pushNamed(context, '/achievements')),
+     isBn ? 'ব্যাজ' : isHi ? 'बैज' : 'Badges', () => Navigator.pushNamed(context, '/achievements')),
     (Icons.card_giftcard_rounded, Colors.purple,
-     isBn ? 'Invite' : isHi ? 'আমন্ত্রণ' : 'Invite', () => _showReferralDialog(context, ref, lang)),
+     isBn ? 'আমন্ত্রণ' : isHi ? 'आमंत्रण' : 'Invite', () => _showReferralDialog(context, ref, lang)),
   ];
 
   return Row(
@@ -812,7 +812,7 @@ Widget _buildLeaderboardPreview(
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: Text(isBn ? 'সব দেখুন →' : 'See all →',
+            child: Text(isBn ? 'সব দেখুন →' : isHi ? 'सभी देखें →' : 'See all →',
                 style: TextStyle(
                     fontSize: 11,
                     color: AppTheme.primaryColor,
@@ -836,7 +836,9 @@ Widget _buildLeaderboardPreview(
                   child: Text(
                       isBn
                           ? 'কুইজ দিয়ে প্রথম হন!'
-                          : 'Be the first to attempt!',
+                          : isHi
+                              ? 'क्विज़ देकर पहले बनें!'
+                              : 'Be the first to attempt!',
                       style: TextStyle(
                           color: isDark ? Colors.white38 : Colors.grey))),
             );

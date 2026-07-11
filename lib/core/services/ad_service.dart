@@ -12,6 +12,7 @@
 //  2. Never show ads during active quiz — hurts UX and retention
 //  3. Rewarded video = highest CPM (~₹40-80/1000 views in India)
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../constants/app_constants.dart';
@@ -120,23 +121,34 @@ class AdService {
       return false;
     }
 
+    final completer = Completer<bool>();
     bool rewarded = false;
+
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         _rewardedAd = null;
         loadRewarded();
+        if (!completer.isCompleted) {
+          completer.complete(rewarded);
+        }
       },
-      onAdFailedToShowFullScreenContent: (ad, _) {
+      onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
         _rewardedAd = null;
+        if (!completer.isCompleted) {
+          completer.complete(false);
+        }
       },
     );
 
     await _rewardedAd!.show(
-      onUserEarnedReward: (_, __) => rewarded = true,
+      onUserEarnedReward: (_, __) {
+        rewarded = true;
+      },
     );
-    return rewarded;
+
+    return completer.future;
   }
 
   bool get isRewardedReady => _rewardedAd != null;
