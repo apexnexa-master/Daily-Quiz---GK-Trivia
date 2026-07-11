@@ -14,6 +14,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/offline_manager.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -58,6 +59,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             children: [
               HomeHeader(lang: lang, isDark: isDark),
+              const NetworkStatusBanner(),
               Expanded(
                 child: RefreshIndicator(
                   color: AppColors.primary,

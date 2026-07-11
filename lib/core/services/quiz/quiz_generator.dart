@@ -264,6 +264,13 @@ class QuizGenerator {
   }
 
   List<QuestionModel> _getLocalFallbackQuestions(String examMode) {
+    try {
+      final localQuestions = LocalQuizData.getAllQuestionsForMode(examMode);
+      if (localQuestions.isNotEmpty) {
+        return localQuestions;
+      }
+    } catch (_) {}
+
     return [
       QuestionModel(
         id: 'fallback_1',

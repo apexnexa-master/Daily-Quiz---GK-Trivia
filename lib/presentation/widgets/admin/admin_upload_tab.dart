@@ -1,6 +1,7 @@
 // lib/presentation/widgets/admin/admin_upload_tab.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/services/question_service.dart';
 import '../../../data/models/firestore_models.dart';
 import '../../../core/theme/app_colors.dart';
@@ -27,6 +28,7 @@ class AdminUploadTab extends StatefulWidget {
 class _AdminUploadTabState extends State<AdminUploadTab> {
   final _bulkQuestionsController = TextEditingController();
   bool _isLoading = false;
+  bool _showGuide = false;
   final List<String> _examModes = ['GENERAL', 'WBPSC', 'SSC', 'UPSC', 'BANK'];
 
   @override
@@ -387,57 +389,60 @@ class _AdminUploadTabState extends State<AdminUploadTab> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.cardDark : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: widget.selectedExamMode,
+                        isExpanded: true,
+                        dropdownColor: isDark ? AppColors.cardDark : Colors.white,
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        items: _examModes
+                            .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                            .toList(),
+                        onChanged: (v) => widget.onExamModeChanged(v!),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.cardDark : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: widget.selectedExamMode,
-                      isExpanded: true,
-                      dropdownColor: isDark ? AppColors.cardDark : Colors.white,
-                      style: TextStyle(
-                        color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      items: _examModes
-                          .map((m) => DropdownMenuItem(value: m, child: Text(m)))
-                          .toList(),
-                      onChanged: (v) => widget.onExamModeChanged(v!),
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildQuizTypeChip('Daily Quiz', true),
+                      _buildQuizTypeChip('Practice', false),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.cardDark : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildQuizTypeChip('Daily Quiz', true),
-                    _buildQuizTypeChip('Practice', false),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: Container(
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildGuideCard(context, isDark),
+            const SizedBox(height: 12),
+            Container(
+              height: 240,
               decoration: BoxDecoration(
                 color: isDark ? AppColors.cardDark : Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -451,39 +456,39 @@ class _AdminUploadTabState extends State<AdminUploadTab> {
                 expands: true,
                 textAlignVertical: TextAlignVertical.top,
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Paste JSON list, CSV, or plain text questions here...',
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(16),
+                  contentPadding: EdgeInsets.all(16),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton.icon(
-              onPressed: _isLoading ? null : _uploadBulkQuestions,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Icon(Icons.cloud_upload_rounded),
-              label: Text(
-                widget.isDailyQuiz ? 'Upload to Daily Quiz' : 'Upload to Practice',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                onPressed: _isLoading ? null : _uploadBulkQuestions,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.cloud_upload_rounded),
+                label: Text(
+                  widget.isDailyQuiz ? 'Upload to Daily Quiz' : 'Upload to Practice',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -509,4 +514,168 @@ class _AdminUploadTabState extends State<AdminUploadTab> {
       ),
     );
   }
+
+  Widget _buildGuideCard(BuildContext context, bool isDark) {
+    final fgColor = isDark ? Colors.white : AppColors.textPrimaryLight;
+    final cardBg = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02);
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.08);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.help_outline_rounded, color: AppColors.primary, size: 20),
+            title: Text(
+              'AI Prompt & Question Format Guide',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: fgColor,
+              ),
+            ),
+            trailing: Icon(
+              _showGuide ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+              color: fgColor.withValues(alpha: 0.6),
+            ),
+            onTap: () => setState(() => _showGuide = !_showGuide),
+          ),
+          if (_showGuide) ...[
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'To get perfectly translated questions in English, Hindi, and Bengali, copy the prompt below and paste it in ChatGPT, Claude, or Gemini:',
+                    style: TextStyle(fontSize: 12, height: 1.4),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.black26 : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.psychology_rounded, size: 16, color: Colors.purple),
+                            const SizedBox(width: 8),
+                            Text(
+                              'AI System Prompt Template',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: fgColor.withValues(alpha: 0.7),
+                              ),
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: () {
+                                Clipboard.setData(const ClipboardData(text: _aiPromptText));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text('AI Prompt copied to clipboard!'),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.copy_rounded, size: 12, color: AppColors.primary),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Copy',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Act as a professional GK Quiz developer. Generate 10 high-quality questions for GK Quiz App in Indian context. Output strictly as a JSON list matching this format...',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontFamily: 'monospace',
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    '⚠️ Crucial Checkpoints:\n'
+                    '• Ensure correctIndex matches correct options in all three languages.\n'
+                    '• The tags will automatically default to the selected exam mode.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.bold,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static const String _aiPromptText = '''
+Act as a professional GK Quiz developer. Generate 10 high-quality questions for GK Quiz App in Indian context.
+You must provide the output strictly as a JSON list matching this structure:
+
+[
+  {
+    "text": {
+      "en": "English question text here",
+      "hi": "Hindi translation of the question",
+      "bn": "Bengali translation of the question"
+    },
+    "options": {
+      "en": ["Option A", "Option B", "Option C", "Option D"],
+      "hi": ["विकल्प A", "विकल्प B", "विकल्प C", "विकल्प D"],
+      "bn": ["অপশন A", "অপশন B", "অপশন C", "অপশন D"]
+    },
+    "correctIndex": 1, // 0-indexed correct option (0=A, 1=B, 2=C, 3=D) across all translation options lists
+    "explanation": {
+      "en": "English explanation here",
+      "hi": "Hindi translation of the explanation",
+      "bn": "Bengali translation of the explanation"
+    },
+    "category": "General Knowledge", // Must match: General Knowledge, Indian History, Geography, Science, Polity, Economy, Current Affairs, Art & Culture
+    "difficulty": "medium", // easy, medium, hard
+    "order": 0
+  }
+]
+
+Make sure:
+1. Options order is exactly aligned across all languages (e.g. Option B in English matches Option B in Hindi/Bengali).
+2. Output ONLY the raw JSON list, no extra markdown or introduction text.
+''';
 }
