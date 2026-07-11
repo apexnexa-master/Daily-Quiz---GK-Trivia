@@ -10,6 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
+import '../../core/constants/app_constants.dart';
 
 class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen({super.key});
@@ -41,7 +42,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     super.initState();
     _timerController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 30),
+      duration: const Duration(seconds: AppConstants.questionTimerSeconds),
       value: 1.0,
     )..reverse();
 
@@ -283,6 +284,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     }
 
     final question = session.quiz.questions[session.currentIndex];
+    final examMode = session.quiz.examMode;
 
     return PopScope(
       canPop: false,
@@ -290,35 +292,58 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         if (!didPop) _showExitDialog(context);
       },
       child: Scaffold(
-        body: Stack(
-          children: [
-            _buildBackgroundDecorations(),
-            SafeArea(
-              child: Column(
-                children: [
-                  // Sleek Quiz AppBar Header
-                  _buildHeaderBar(session, lang),
-                  
-                  // Question and Options Card
-                  Expanded(
-                    child: FadeTransition(
-                      opacity: _questionFadeController,
-                      child: QuestionCard(
-                        question: question,
-                        lang: lang,
-                        selectedAnswer: session.selectedAnswers[session.currentIndex],
-                        onAnswerSelected: (i) => _onAnswerSelected(session.currentIndex, i),
-                        isDark: _isDark,
-                        visibleOptions: _lifeline5050Used && _5050VisibleIndices.isNotEmpty
-                            ? _5050VisibleIndices
-                            : null,
-                        correctAnimationController: _correctAnimationController,
-                        wrongAnimationController: _wrongAnimationController,
-                        selectedForFeedback: _selectedAnswerForFeedback,
-                        isCorrectFeedback: _isAnswerCorrect,
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: _isDark
+                  ? [
+                      AppColors.bgDark,
+                      Color.alphaBlend(
+                        AppColors.examModeColor(examMode).withValues(alpha: 0.12),
+                        AppColors.bgDark,
                       ),
-                    ),
-                  ),
+                    ]
+                  : [
+                      Colors.white,
+                      Color.alphaBlend(
+                        AppColors.examModeColor(examMode).withValues(alpha: 0.06),
+                        const Color(0xFFF8FAFC),
+                      ),
+                    ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                    children: [
+                      // Sleek Quiz AppBar Header
+                      _buildHeaderBar(session, lang),
+                      
+                      // Question and Options Card
+                      Expanded(
+                        child: FadeTransition(
+                          opacity: _questionFadeController,
+                          child: QuestionCard(
+                            question: question,
+                            lang: lang,
+                            selectedAnswer: session.selectedAnswers[session.currentIndex],
+                            onAnswerSelected: (i) => _onAnswerSelected(session.currentIndex, i),
+                            isDark: _isDark,
+                            visibleOptions: _lifeline5050Used && _5050VisibleIndices.isNotEmpty
+                                ? _5050VisibleIndices
+                                : null,
+                            correctAnimationController: _correctAnimationController,
+                            wrongAnimationController: _wrongAnimationController,
+                            selectedForFeedback: _selectedAnswerForFeedback,
+                            isCorrectFeedback: _isAnswerCorrect,
+                          ),
+                        ),
+                      ),
                   
                   // Lifelines
                   _buildLifelinesRow(lang),
@@ -340,7 +365,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildPauseOverlay(String lang) {

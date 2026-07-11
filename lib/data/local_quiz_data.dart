@@ -12,8 +12,6 @@ class LocalQuizData {
   static final List<QuestionModel> _allQuestions = [];
   static final Map<String, List<QuestionModel>> _questionsByMode = {
     'GENERAL': [],
-    'WBPSC': [],
-    'SSC': [],
     'UPSC': [],
     'BANK': [],
   };

@@ -165,6 +165,30 @@ class AppColors {
   static Color examModeColor(String mode) {
     return _examModeColors[mode.toUpperCase()] ?? primary;
   }
+
+  static LinearGradient examModeGradient(String mode) {
+    switch (mode.toUpperCase()) {
+      case 'UPSC':
+        return const LinearGradient(
+          colors: [Color(0xFF881337), Color(0xFFE11D48)], // Deep Burgundy to Vivid Rose
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case 'BANK':
+        return const LinearGradient(
+          colors: [Color(0xFF0369A1), Color(0xFF0EA5E9)], // Deep Sky to Sky Blue
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+      case 'GENERAL':
+      default:
+        return const LinearGradient(
+          colors: [Color(0xFF4F46E5), Color(0xFF818CF8)], // Indigo to Indigo Light
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        );
+    }
+  }
 }
 
 // BuildContext Extension for easy access to theme colors in UI

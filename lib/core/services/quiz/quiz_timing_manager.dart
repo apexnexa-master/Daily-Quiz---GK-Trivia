@@ -23,7 +23,16 @@ class QuizTimingManager {
 
   Future<void> refreshTiming() async {
     try {
-      final doc = await _db.collection('settings').doc('quiz_timing').get();
+      final now = DateTime.now();
+      final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      
+      // 1. Try to fetch date-specific override config
+      var doc = await _db.collection('settings').doc('quiz_timing_$today').get();
+      if (!doc.exists) {
+        // 2. Fallback to global defaults
+        doc = await _db.collection('settings').doc('quiz_timing').get();
+      }
+
       if (doc.exists) {
         final data = doc.data()!;
         _quizStartHour = data['start_hour'] ?? 6;

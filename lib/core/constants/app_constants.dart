@@ -8,7 +8,7 @@ class AppConstants {
   static const String appName = 'Daily Quiz - GK & Trivia';
   static const String appPackage = 'com.nexasoft.dailyquiz';
   static const int quizQuestionCount = 10;
-  static const int questionTimerSeconds = 30;
+  static const int questionTimerSeconds = 15;
   static const int maxInterstitialsPerSession = 3;
 
   // ── Firestore Collections ─────────────────────────────────

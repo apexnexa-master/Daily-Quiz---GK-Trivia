@@ -18,8 +18,6 @@ class ExamModeSelector extends ConsumerWidget {
     final current = ref.watch(examModeProvider);
     final modes = [
       ('GENERAL', '📚'),
-      ('WBPSC', '🏛️'),
-      ('SSC', '📝'),
       ('UPSC', '🎯'),
       ('BANK', '💰')
     ];

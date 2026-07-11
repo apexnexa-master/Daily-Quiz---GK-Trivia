@@ -104,7 +104,7 @@ class QuestionTrackingService {
   }
 
   Future<Map<String, ModeStats>> getAllModeStats() async {
-    final modes = ['GENERAL', 'WBPSC', 'SSC', 'UPSC', 'BANK'];
+    final modes = ['GENERAL', 'UPSC', 'BANK'];
     final statsMap = <String, ModeStats>{};
     for (final mode in modes) {
       statsMap[mode] = await getModeStats(mode);

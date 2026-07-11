@@ -50,27 +50,6 @@ class ProfileScreen extends ConsumerWidget {
                       index: 0,
                       child: _StatsSection(lang: lang, isDark: isDark, ref: ref),
                     ),
-                    const SizedBox(height: 16),
-                    StaggeredListItem(
-                      index: 1,
-                      child: const DailyRewardBanner(),
-                    ),
-                    const SizedBox(height: 8),
-                    StaggeredListItem(
-                      index: 2,
-                      child: const DailyChallengesCard(),
-                    ),
-                    const SizedBox(height: 8),
-                    StaggeredListItem(
-                      index: 3,
-                      child: const GamificationBar(),
-                    ),
-                    const SizedBox(height: 24),
-                    // Achievements
-                    StaggeredListItem(
-                      index: 4,
-                      child: _AchievementsSection(lang: lang, isDark: isDark, ref: ref),
-                    ),
                     const SizedBox(height: 24),
                     if (user.isAnonymous) ...[
                       StaggeredListItem(
@@ -153,7 +132,7 @@ class _StatsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final streakAsync = ref.watch(localStreakProvider);
+    final accuracyAsync = ref.watch(overallAccuracyProvider);
     final totalQuizzesAsync = ref.watch(totalQuizzesProvider);
     final personalBestAsync = ref.watch(localPersonalBestProvider);
     final isBn = lang == 'bn';
@@ -175,22 +154,22 @@ class _StatsSection extends ConsumerWidget {
         Row(
           children: [
             Expanded(
-              child: streakAsync.when(
-                data: (streak) => _StatCard(
-                  icon: AppIcons.streak,
-                  iconColor: AppColors.streak,
-                  value: '${streak.currentStreak}',
-                  label: isBn ? 'ধারাবাহিকতা' : isHi ? 'स्ट्रीक' : 'Streak',
-                  sublabel: isBn ? 'দিন' : isHi ? 'दिन' : 'days',
+              child: accuracyAsync.when(
+                data: (acc) => _StatCard(
+                  icon: Icons.percent_rounded,
+                  iconColor: AppColors.secondary,
+                  value: '${acc.toInt()}%',
+                  label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
+                  sublabel: isBn ? 'হার' : isHi ? 'दर' : 'rate',
                   isDark: isDark,
                 ),
                 loading: () => _StatCardSkeleton(isDark: isDark),
                 error: (_, __) => _StatCard(
-                  icon: AppIcons.streak,
-                  iconColor: AppColors.streak,
-                  value: '0',
-                  label: isBn ? 'ধারাবাহিকতা' : isHi ? 'स्ट्रीक' : 'Streak',
-                  sublabel: isBn ? 'দিন' : isHi ? 'दिन' : 'days',
+                  icon: Icons.percent_rounded,
+                  iconColor: AppColors.secondary,
+                  value: '0%',
+                  label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
+                  sublabel: isBn ? 'হার' : isHi ? 'दर' : 'rate',
                   isDark: isDark,
                 ),
               ),

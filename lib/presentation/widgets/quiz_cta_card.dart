@@ -33,10 +33,12 @@ class QuizCtaCard extends ConsumerWidget {
 
     final qCount = quiz!.questionCount;
     final mins = (qCount * 30 / 60).clamp(1, 99).toInt();
+    final examMode = quiz!.examMode;
+    final cardGradient = AppColors.examModeGradient(examMode);
 
     return Container(
       decoration: BoxDecoration(
-        gradient: isDark ? AppColors.primaryGradientDark : AppColors.primaryGradient,
+        gradient: cardGradient,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(

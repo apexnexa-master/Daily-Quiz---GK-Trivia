@@ -13,6 +13,7 @@ import '../../core/services/question_tracking_service.dart';
 import '../../core/services/quiz_scheduler_service.dart';
 import '../../core/services/gamification_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
@@ -219,7 +220,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     final result = session!.result!;
     final total = session.quiz.questionCount;
     int score = result.score;
-    final totalTimeTaken = session.totalTimeTaken > 0 ? session.totalTimeTaken : 30 * total;
+    final totalTimeTaken = session.totalTimeTaken > 0 ? session.totalTimeTaken : AppConstants.questionTimerSeconds * total;
 
     // Calculate actual score for local quizzes
     if (session.quiz.quizId.startsWith('local_')) {
@@ -325,8 +326,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                         child: Column(
                           children: [
                             _buildActionButtons(context, ref, session, score, lang, isDark, isBn, isHi),
-                            const SizedBox(height: 20),
-                            XPBreakdownCard(rewards: _rewards, lang: lang, isDark: isDark),
+                            const SizedBox(height: 24),
                             _buildStatsRow(score, total, lang, isDark, isBn, isHi),
                             const SizedBox(height: 24),
                             _buildReviewSection(session, lang, isDark, isBn, isHi),
@@ -447,17 +447,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                         : 'I scored ${score}/${session.quiz.questionCount} ($percentage%) $emoji on GK Quiz! 🎯\n\nCan you beat me?\n\n#GKQuiz #DailyQuiz #IndiaQuiz',
               );
             },
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionButton(
-            context: context,
-            icon: AppIcons.leaderboard,
-            label: isBn ? 'র‌্যাংকিং' : isHi ? 'रैंकिंग' : 'Ranking',
-            color: AppColors.secondary,
-            textColor: Colors.white,
-            onTap: () => Navigator.pushNamed(context, '/leaderboard'),
           ),
         ),
       ],

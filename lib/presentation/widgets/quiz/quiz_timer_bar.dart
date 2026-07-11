@@ -11,12 +11,12 @@ class QuizTimerBar extends StatelessWidget {
     super.key,
     required this.animation,
     required this.remainingSeconds,
-    this.totalSeconds = 30,
+    this.totalSeconds = 15,
   });
 
   Color _timerColor(int s) {
-    if (s > 20) return AppColors.success;
-    if (s > 10) return AppColors.warning;
+    if (s > 10) return AppColors.success;
+    if (s > 5) return AppColors.warning;
     return AppColors.error;
   }
 

@@ -29,7 +29,8 @@ class _AdminUploadTabState extends State<AdminUploadTab> {
   final _bulkQuestionsController = TextEditingController();
   bool _isLoading = false;
   bool _showGuide = false;
-  final List<String> _examModes = ['GENERAL', 'WBPSC', 'SSC', 'UPSC', 'BANK'];
+  final List<String> _examModes = ['GENERAL', 'UPSC', 'BANK'];
+  DateTime _selectedUploadDate = DateTime.now();
 
   @override
   void dispose() {
@@ -76,13 +77,13 @@ class _AdminUploadTabState extends State<AdminUploadTab> {
       }
 
       if (widget.isDailyQuiz) {
-        final today = DateTime.now().toIso8601String().split('T')[0];
+        final dateStr = '${_selectedUploadDate.year}-${_selectedUploadDate.month.toString().padLeft(2, '0')}-${_selectedUploadDate.day.toString().padLeft(2, '0')}';
         await QuestionService.instance.uploadQuestions(
           examMode: widget.selectedExamMode,
           questions: questions,
-          date: today,
+          date: dateStr,
         );
-        _showSnackBar('${questions.length} questions uploaded to $today quiz!');
+        _showSnackBar('${questions.length} questions uploaded to $dateStr quiz!');
       } else {
         await QuestionService.instance.uploadPracticeQuestions(
           examMode: widget.selectedExamMode,
@@ -438,6 +439,10 @@ class _AdminUploadTabState extends State<AdminUploadTab> {
                 ),
               ],
             ),
+            if (widget.isDailyQuiz) ...[
+              const SizedBox(height: 12),
+              _buildDateSelector(isDark),
+            ],
             const SizedBox(height: 12),
             _buildGuideCard(context, isDark),
             const SizedBox(height: 12),
@@ -584,7 +589,7 @@ class _AdminUploadTabState extends State<AdminUploadTab> {
                             const Spacer(),
                             GestureDetector(
                               onTap: () {
-                                Clipboard.setData(const ClipboardData(text: _aiPromptText));
+                                Clipboard.setData(ClipboardData(text: _getAiPromptText()));
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: const Text('AI Prompt copied to clipboard!'),
@@ -612,11 +617,11 @@ class _AdminUploadTabState extends State<AdminUploadTab> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Act as a professional GK Quiz developer. Generate 10 high-quality questions for GK Quiz App in Indian context. Output strictly as a JSON list matching this format...',
-                          maxLines: 2,
+                        Text(
+                          _getAiPromptText(),
+                          maxLines: 4,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 11,
                             fontFamily: 'monospace',
                             color: Colors.grey,
@@ -646,8 +651,23 @@ class _AdminUploadTabState extends State<AdminUploadTab> {
     );
   }
 
-  static const String _aiPromptText = '''
-Act as a professional GK Quiz developer. Generate 10 high-quality questions for GK Quiz App in Indian context.
+  String _getAiPromptText() {
+    final mode = widget.selectedExamMode;
+    final type = widget.isDailyQuiz ? 'Daily Quiz' : 'Practice Mode';
+    
+    String categoriesList;
+    if (mode == 'BANK') {
+      categoriesList = 'Banking Awareness, Financial GK, Computer Knowledge, Current Affairs, Economy';
+    } else if (mode == 'UPSC') {
+      categoriesList = 'Indian History, Geography, Indian Polity & Governance, Economic & Social Development, General Science, Ecology & Biodiversity, Current Affairs';
+    } else {
+      categoriesList = 'General Knowledge, Indian History, Geography, Science, Polity, Economy, Current Affairs, Art & Culture';
+    }
+
+    return '''Act as a professional GK Quiz developer. Generate 10 high-quality questions for a GK Quiz App in Indian context.
+Target Exam Mode: $mode
+Target Quiz Type: $type
+
 You must provide the output strictly as a JSON list matching this structure:
 
 [
@@ -660,7 +680,7 @@ You must provide the output strictly as a JSON list matching this structure:
     "options": {
       "en": ["Option A", "Option B", "Option C", "Option D"],
       "hi": ["विकल्प A", "विकल्प B", "विकल्प C", "विकल्प D"],
-      "bn": ["অপশন A", "অপশন B", "অপশন C", "অপশন D"]
+      "bn": ["অপশন A", "অপশন B", "অপशन C", "অপশন D"]
     },
     "correctIndex": 1, // 0-indexed correct option (0=A, 1=B, 2=C, 3=D) across all translation options lists
     "explanation": {
@@ -668,7 +688,7 @@ You must provide the output strictly as a JSON list matching this structure:
       "hi": "Hindi translation of the explanation",
       "bn": "Bengali translation of the explanation"
     },
-    "category": "General Knowledge", // Must match: General Knowledge, Indian History, Geography, Science, Polity, Economy, Current Affairs, Art & Culture
+    "category": "General Knowledge", // MUST choose one from: $categoriesList
     "difficulty": "medium", // easy, medium, hard
     "order": 0
   }
@@ -676,6 +696,76 @@ You must provide the output strictly as a JSON list matching this structure:
 
 Make sure:
 1. Options order is exactly aligned across all languages (e.g. Option B in English matches Option B in Hindi/Bengali).
-2. Output ONLY the raw JSON list, no extra markdown or introduction text.
+2. The category field is strictly set to one of the options listed above.
+3. Output ONLY the raw JSON list, no extra markdown or introduction text.
 ''';
+  }
+
+  Widget _buildDateSelector(bool isDark) {
+    return GestureDetector(
+      onTap: _selectUploadDate,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.cardDark : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Daily Quiz Upload Date (Future/Today Only)',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? Colors.white54 : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_selectedUploadDate.year}-${_selectedUploadDate.month.toString().padLeft(2, '0')}-${_selectedUploadDate.day.toString().padLeft(2, '0')}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_drop_down_rounded),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectUploadDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedUploadDate,
+      firstDate: DateTime.now(), // Restricts selection to today and future dates
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: AppColors.primary,
+              brightness: Theme.of(context).brightness,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedUploadDate = picked;
+      });
+    }
+  }
 }

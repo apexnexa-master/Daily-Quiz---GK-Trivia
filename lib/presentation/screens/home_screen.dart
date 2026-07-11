@@ -112,21 +112,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               index: 4,
                               child: _buildStatsCards(context, ref, isDark, isBn, isHi),
                             ),
-                            const SizedBox(height: 16),
-                            // Quick Action Buttons
-                            StaggeredListItem(
-                              index: 5,
-                              child: _buildQuickStrip(context, ref, lang, isDark),
-                            ),
-                            const SizedBox(height: 16),
-                            _divider(isDark),
-                            const SizedBox(height: 16),
-                            // Leaderboard Preview
-                            StaggeredListItem(
-                              index: 6,
-                              child: _buildLeaderboardPreview(context, ref, lang, isDark),
-                            ),
-                            const SizedBox(height: 100),
+                            const SizedBox(height: 48),
                           ]),
                         ),
                       ),
@@ -491,31 +477,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildStatsCards(
       BuildContext context, WidgetRef ref, bool isDark, bool isBn, bool isHi) {
-    final streakAsync = ref.watch(localStreakProvider);
+    final accuracyAsync = ref.watch(overallAccuracyProvider);
     final bestAsync = ref.watch(localPersonalBestProvider);
     final totalAsync = ref.watch(totalQuizzesProvider);
     final totalScoreAsync = ref.watch(totalScoreProvider);
 
     return Row(
       children: [
-        // Streak Card
+        // Accuracy Card
         Expanded(
-          child: streakAsync.when(
-            data: (s) => _buildStatCard(
+          child: accuracyAsync.when(
+            data: (acc) => _buildStatCard(
               context,
-              icon: AppIcons.streak,
-              value: '${s.currentStreak}',
-              label: isBn ? 'ধারাবাহিকতা' : isHi ? 'स्ट्रीक' : 'Streak',
-              color: AppColors.streak,
+              icon: Icons.percent_rounded,
+              value: '${acc.toInt()}%',
+              label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
+              color: AppColors.secondary,
               isDark: isDark,
             ),
             loading: () => const ShimmerBox(height: 96),
             error: (_, __) => _buildStatCard(
               context,
-              icon: AppIcons.streak,
-              value: '0',
-              label: isBn ? 'ধারাবাহিকতা' : isHi ? 'स्ट्रीक' : 'Streak',
-              color: AppColors.streak,
+              icon: Icons.percent_rounded,
+              value: '0%',
+              label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
+              color: AppColors.secondary,
               isDark: isDark,
             ),
           ),
@@ -844,6 +830,118 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyFactCard(BuildContext context, String lang, bool isDark) {
+    final day = DateTime.now().day;
+    final isBn = lang == 'bn';
+    final isHi = lang == 'hi';
+
+    final facts = [
+      {
+        'en': 'The Indian Constitution is the longest written constitution of any sovereign country in the world.',
+        'hi': 'भारतीय संविधान दुनिया के किसी भी संप्रभु देश का सबसे लंबा लिखित संविधान है।',
+        'bn': 'ভারতের সংবিধান বিশ্বের যেকোনো সার্বভৌম দেশের দীর্ঘতম লিখিত সংবিধান।'
+      },
+      {
+        'en': 'Chanakya (Kautilya) was a pioneer of political science and economics in ancient India.',
+        'hi': 'चाणक्य (कौटिल्य) प्राचीन भारत में राजनीति विज्ञान और अर्थशास्त्र के प्रणेता थे।',
+        'bn': 'চাণক্য (কৌটিল্য) প্রাচীন ভারতের রাষ্ট্রবিজ্ঞান ও অর্থনীতির পথপ্রদর্শক ছিলেন।'
+      },
+      {
+        'en': 'Zero and the decimal system were developed in ancient India by mathematicians like Aryabhata.',
+        'hi': 'प्राचीन भारत में आर्यभट्ट जैसे गणितज्ञों द्वारा शून्य और दशमलव प्रणाली का विकास किया गया था।',
+        'bn': 'প্রাচীন ভারতে আর্যভট্টের মতো গণিতবিদদের দ্বারা শূন্য এবং দশমিক পদ্ধতি তৈরি হয়েছিল।'
+      },
+      {
+        'en': 'The national motto of India, "Satyameva Jayate", is taken from the Mundaka Upanishad.',
+        'hi': 'भारत का राष्ट्रीय आदर्श वाक्य, "सत्यमेव जयते", मुंडक उपनिषद से लिया गया है।',
+        'bn': 'ভারতের জাতীয় স্লোগান, "সত্যমেভ জয়তে", মুণ্ডক উপনিষদ থেকে নেওয়া হয়েছে।'
+      },
+      {
+        'en': 'Rabindranath Tagore is the only person to have written national anthems for two countries: India and Bangladesh.',
+        'hi': 'रवींद्रनाथ टैगोर एकमात्र व्यक्ति हैं जिन्होंने दो देशों के लिए राष्ट्रगान लिखा है: भारत और बांग्लादेश।',
+        'bn': 'রবীন্দ্রনাথ ঠাকুর হলেন একমাত্র ব্যক্তি যিনি দুটি দেশের জাতীয় সঙ্গীত লিখেছেন: ভারত এবং বাংলাদেশ।'
+      },
+      {
+        'en': 'The Indus Valley Civilization was one of the world\'s earliest urban societies with advanced planning.',
+        'hi': 'सिंधु घाटी सभ्यता उन्नत योजना के साथ दुनिया के सबसे शुरुआती शहरी समाजों में से एक थी।',
+        'bn': 'সিন্ধু উপত্যকা সভ্যতা ছিল উন্নত নগর পরিকল্পনাসহ বিশ্বের অন্যতম প্রাচীন নগর সমাজ।'
+      },
+      {
+        'en': 'The Reserve Bank of India (RBI) was established on April 1, 1935, based on the Hilton Young Commission.',
+        'hi': 'हिल्टन यंग कमीशन के आधार पर 1 अप्रैल, 1935 को भारतीय रिजर्व बैंक (RBI) की स्थापना की गई थी।',
+        'bn': 'হিলটন ইয়ং কমিশনের ভিত্তিতে ১৯৩৫ সালের ১ এপ্রিল ভারতীয় রিজার্ভ ব্যাঙ্ক (RBI) প্রতিষ্ঠিত হয়।'
+      }
+    ];
+
+    final fact = facts[day % facts.length];
+    final factText = fact[lang] ?? fact['en']!;
+
+    final cardBg = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
+    final borderCol = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.1);
+    final titleColor = isDark ? AppColors.accent : AppColors.primary;
+    final textColor = isDark ? Colors.white70 : AppColors.textSecondaryLight;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderCol),
+        boxShadow: isDark ? null : [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.lightbulb_rounded,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isBn ? 'দৈনিক তথ্য' : isHi ? 'दैनिक तथ्य' : 'Did You Know?',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: titleColor,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  factText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: textColor,
+                    height: 1.45,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

@@ -37,3 +37,24 @@ final currentModeStatsProvider = FutureProvider<ModeStats>((ref) async {
   final mode = ref.watch(examModeProvider);
   return ref.watch(questionTrackingProvider).getModeStats(mode);
 });
+
+final overallAccuracyProvider = FutureProvider<double>((ref) async {
+  final statsMap = await ref.watch(modeStatsProvider.future);
+  int totalCorrect = 0;
+  int totalQuestions = 0;
+  statsMap.forEach((_, stats) {
+    totalCorrect += stats.totalCorrect;
+    totalQuestions += stats.totalQuestions;
+  });
+  if (totalQuestions == 0) return 0.0;
+  return (totalCorrect / totalQuestions) * 100;
+});
+
+final totalCorrectQuestionsProvider = FutureProvider<int>((ref) async {
+  final statsMap = await ref.watch(modeStatsProvider.future);
+  int totalCorrect = 0;
+  statsMap.forEach((_, stats) {
+    totalCorrect += stats.totalCorrect;
+  });
+  return totalCorrect;
+});

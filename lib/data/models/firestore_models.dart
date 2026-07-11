@@ -232,11 +232,63 @@ class QuestionModel extends Equatable {
     required this.order,
   });
 
-  // Convenience: get localised text
-  String getText(String lang) => text[lang] ?? text['en'] ?? '';
-  List<String> getOptions(String lang) => options[lang] ?? options['en'] ?? [];
-  String getExplanation(String lang) =>
-      explanation[lang] ?? explanation['en'] ?? '';
+  // Convenience: get localised text with robust fallback chain
+  String getText(String lang) {
+    // 1. Try requested language
+    final t = text[lang];
+    if (t != null && t.trim().isNotEmpty) return t;
+
+    // 2. Try English
+    final enText = text['en'];
+    if (enText != null && enText.trim().isNotEmpty) return enText;
+
+    // 3. Try any available non-empty translation
+    for (final val in text.values) {
+      if (val.trim().isNotEmpty) return val;
+    }
+
+    return '';
+  }
+
+  List<String> getOptions(String lang) {
+    // 1. Try requested language, ensuring it has valid non-empty options
+    final opts = options[lang];
+    if (opts != null && opts.isNotEmpty && opts.any((o) => o.trim().isNotEmpty)) {
+      return opts;
+    }
+
+    // 2. Try English
+    final enOpts = options['en'];
+    if (enOpts != null && enOpts.isNotEmpty && enOpts.any((o) => o.trim().isNotEmpty)) {
+      return enOpts;
+    }
+
+    // 3. Fallback to any translation with valid options
+    for (final val in options.values) {
+      if (val.isNotEmpty && val.any((o) => o.trim().isNotEmpty)) {
+        return val;
+      }
+    }
+
+    return [];
+  }
+
+  String getExplanation(String lang) {
+    // 1. Try requested language
+    final exp = explanation[lang];
+    if (exp != null && exp.trim().isNotEmpty) return exp;
+
+    // 2. Try English
+    final enExp = explanation['en'];
+    if (enExp != null && enExp.trim().isNotEmpty) return enExp;
+
+    // 3. Try any available non-empty translation
+    for (final val in explanation.values) {
+      if (val.trim().isNotEmpty) return val;
+    }
+
+    return '';
+  }
 
   QuestionModel shuffleOptions() {
     final enOpts = options['en'];

@@ -208,10 +208,10 @@ class QuestionService {
         final mode = doc.data()['exam_mode'] as String?;
         if (mode != null) modes.add(mode);
       }
-      if (modes.isEmpty) return ['GENERAL', 'WBPSC', 'SSC', 'UPSC', 'BANK'];
+      if (modes.isEmpty) return ['GENERAL', 'UPSC', 'BANK'];
       return modes.toList();
     } catch (e) {
-      return ['GENERAL', 'WBPSC', 'SSC', 'UPSC', 'BANK'];
+      return ['GENERAL', 'UPSC', 'BANK'];
     }
   }
 }
