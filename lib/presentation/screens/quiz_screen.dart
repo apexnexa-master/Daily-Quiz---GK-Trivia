@@ -10,6 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
+import '../../core/theme/theme_manager.dart';
 import '../../core/constants/app_constants.dart';
 
 class QuizScreen extends ConsumerStatefulWidget {
@@ -454,7 +455,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   Widget _buildHeaderBar(QuizSessionState session, String lang) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: _isDark ? AppColors.cardDark : Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -484,10 +485,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                     color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(AppIcons.close, color: AppColors.error, size: 20),
+                  child: const Icon(AppIcons.close, color: AppColors.error, size: 18),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               // Pause button
               GestureDetector(
                 onTap: _togglePause,
@@ -497,10 +498,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.pause_rounded, color: AppColors.primary, size: 20),
+                  child: const Icon(Icons.pause_rounded, color: AppColors.primary, size: 18),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 8),
               // Stepper
               Expanded(
                 child: QuizProgressStepper(
@@ -509,9 +510,15 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                   lang: lang,
                 ),
               ),
+              const SizedBox(width: 8),
+              // Language selector
+              _QuizLanguageButton(lang: lang),
+              const SizedBox(width: 6),
+              // Theme toggle button (Sun/Moon)
+              const _QuizThemeToggleButton(),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           // Timer bar
           QuizTimerBar(
             animation: _timerController,
@@ -783,6 +790,113 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+class _QuizThemeToggleButton extends ConsumerWidget {
+  const _QuizThemeToggleButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: () {
+        final newMode = isDark ? AppThemeMode.light : AppThemeMode.dark;
+        ref.read(themeModeProvider.notifier).setThemeMode(newMode);
+      },
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.amber.withValues(alpha: 0.15)
+              : AppColors.primary.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isDark
+                ? Colors.amber.withValues(alpha: 0.4)
+                : AppColors.primary.withValues(alpha: 0.3),
+            width: 1.2,
+          ),
+        ),
+        child: Icon(
+          isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
+          color: isDark ? Colors.amber : AppColors.primary,
+          size: 15,
+        ),
+      ),
+    );
+  }
+}
+
+class _QuizLanguageButton extends ConsumerWidget {
+  final String lang;
+  const _QuizLanguageButton({required this.lang});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final langs = [
+      ('en', 'English'),
+      ('hi', 'हिंदी'),
+      ('bn', 'বাংলা'),
+    ];
+
+    return PopupMenuButton<String>(
+      initialValue: lang,
+      onSelected: (l) => ref.read(languageProvider.notifier).setLanguage(l),
+      color: isDark ? AppColors.cardDark : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.language_rounded,
+              size: 13,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 3),
+            Text(
+              lang.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (_) => langs
+          .map((l) => PopupMenuItem(
+                value: l.$1,
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.language_rounded,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      l.$2,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ))
+          .toList(),
     );
   }
 }

@@ -739,7 +739,7 @@ class _AdminQuestionListTabState extends State<AdminQuestionListTab> {
                               decoration: _filterDecoration('Exam Mode'),
                               dropdownColor:
                                   isDark ? AppColors.cardDark : Colors.white,
-                              items: ['GENERAL', 'BANK', 'UPSC'].map((mode) {
+                              items: ['GENERAL'].map((mode) {
                                 return DropdownMenuItem(
                                     value: mode, child: Text(mode));
                               }).toList(),

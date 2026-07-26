@@ -241,6 +241,13 @@ class QuizService {
     }
   }
 
+  static Future<void> clearAllCachedQuizzes() async {
+    try {
+      final box = await Hive.openBox<String>(AppConstants.hiveBoxQuiz);
+      await box.clear();
+    } catch (_) {}
+  }
+
   // ── Simple JSON serialization for Hive cache ─────────────
   String _serializeQuiz(QuizModel quiz) {
     final map = {
@@ -271,30 +278,40 @@ class QuizService {
     final map = jsonDecode(cached) as Map<String, dynamic>;
     final questions = (map['questions'] as List).map((q) {
       final qm = q as Map<String, dynamic>;
+
+      Map<String, List<String>> parsedOptions = {};
+      if (qm['options'] is Map) {
+        (qm['options'] as Map).forEach((k, v) {
+          if (v is List) {
+            parsedOptions[k.toString()] = List<String>.from(v.map((e) => e.toString()));
+          }
+        });
+      } else if (qm['options'] is List) {
+        parsedOptions['en'] = List<String>.from((qm['options'] as List).map((e) => e.toString()));
+      }
+
       return QuestionModel(
-        id: qm['id'],
-        text: Map<String, String>.from(qm['text']),
-        options: (qm['options'] as Map).map(
-          (k, v) => MapEntry(k as String, List<String>.from(v)),
-        ),
-        correctIndex: qm['correct_index'],
-        explanation: Map<String, String>.from(qm['explanation']),
-        category: qm['category'],
-        difficulty: qm['difficulty'],
-        examTags: List<String>.from(qm['exam_tags']),
-        order: qm['order'],
+        id: qm['id'] ?? '',
+        text: Map<String, String>.from(qm['text'] ?? {}),
+        options: parsedOptions,
+        correctIndex: qm['correct_index'] ?? 0,
+        explanation: Map<String, String>.from(qm['explanation'] ?? {}),
+        category: qm['category'] ?? 'General',
+        difficulty: qm['difficulty'] ?? 'medium',
+        examTags: List<String>.from(qm['exam_tags'] ?? []),
+        order: qm['order'] ?? 0,
       );
     }).toList();
 
     return QuizModel(
-      quizId: map['quiz_id'],
-      date: map['date'],
-      examMode: map['exam_mode'],
-      status: map['status'],
-      questionCount: map['question_count'],
+      quizId: map['quiz_id'] ?? '',
+      date: map['date'] ?? '',
+      examMode: map['exam_mode'] ?? 'GENERAL',
+      status: map['status'] ?? 'active',
+      questionCount: map['question_count'] ?? questions.length,
       createdAt: DateTime.now(),
       expiresAt: DateTime.now().add(const Duration(days: 1)),
-      totalAttempts: map['total_attempts'],
+      totalAttempts: map['total_attempts'] ?? 0,
       questions: questions,
     );
   }

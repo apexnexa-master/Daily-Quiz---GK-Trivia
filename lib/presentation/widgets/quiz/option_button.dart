@@ -28,43 +28,37 @@ class OptionButton extends StatelessWidget {
   });
 
   static const _labels = ['A', 'B', 'C', 'D'];
-  static const _colors = [
-    Color(0xFF6366F1),
-    Color(0xFF10B981),
-    Color(0xFFF59E0B),
-    Color(0xFFEF4444),
-  ];
-
-  Color get _optionColor => _colors[index % _colors.length];
-
-  Color _getTileColor() {
-    if (isCorrectFeedback != null) {
-      return isCorrectFeedback! 
-          ? AppColors.success.withValues(alpha: 0.15)
-          : AppColors.error.withValues(alpha: 0.15);
-    }
-    return isSelected ? _optionColor : (isDark ? AppColors.cardDark : Colors.white);
-  }
-
-  Border? _getBorder() {
-    if (isCorrectFeedback != null) {
-      return Border.all(
-        color: isCorrectFeedback! ? AppColors.success : AppColors.error,
-        width: 2.0,
-      );
-    }
-    return Border.all(
-      color: isSelected
-          ? Colors.transparent
-          : (isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.grey.withValues(alpha: 0.15)),
-      width: 1.5,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
+    // Determine clean, non-confusing neutral colors
+    final baseBg = isDark ? AppColors.cardDark : Colors.white;
+    final selectedBg = AppColors.primary;
+
+    Color tileBgColor;
+    Color borderColor;
+    Color textColor;
+    Color badgeBgColor;
+    Color badgeTextColor;
+
+    if (isSelected) {
+      tileBgColor = selectedBg;
+      borderColor = selectedBg;
+      textColor = Colors.white;
+      badgeBgColor = Colors.white.withValues(alpha: 0.25);
+      badgeTextColor = Colors.white;
+    } else {
+      tileBgColor = baseBg;
+      borderColor = isDark
+          ? Colors.white.withValues(alpha: 0.1)
+          : Colors.grey.withValues(alpha: 0.2);
+      textColor = isDark ? Colors.white : AppColors.textPrimaryLight;
+      badgeBgColor = isDark
+          ? Colors.white.withValues(alpha: 0.08)
+          : const Color(0xFFF1F5F9);
+      badgeTextColor = AppColors.primary;
+    }
+
     Widget container = Semantics(
       label: 'Option ${_labels[index % _labels.length]}. $text',
       selected: isSelected,
@@ -73,26 +67,29 @@ class OptionButton extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutCubic,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
-            color: _getTileColor(),
+            color: tileBgColor,
             borderRadius: BorderRadius.circular(16),
-            border: _getBorder(),
+            border: Border.all(
+              color: borderColor,
+              width: isSelected ? 2.0 : 1.5,
+            ),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: _optionColor.withValues(alpha: 0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ]
                 : [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                      blurRadius: 8,
+                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                      blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
                   ],
@@ -101,20 +98,16 @@ class OptionButton extends StatelessWidget {
             children: [
               // Option Prefix Badge (A, B, C, D)
               AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
+                duration: const Duration(milliseconds: 180),
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.2)
-                      : (isDark
-                          ? AppColors.surfaceElevatedDark
-                          : const Color(0xFFF1F5F9)),
+                  color: badgeBgColor,
                   border: Border.all(
                     color: isSelected
-                        ? Colors.white.withValues(alpha: 0.5)
-                        : _optionColor.withValues(alpha: 0.3),
+                        ? Colors.white.withValues(alpha: 0.4)
+                        : AppColors.primary.withValues(alpha: 0.2),
                     width: 1.5,
                   ),
                 ),
@@ -124,11 +117,7 @@ class OptionButton extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: isSelected 
-                        ? Colors.white 
-                        : (isCorrectFeedback != null
-                            ? (isCorrectFeedback! ? AppColors.success : AppColors.error)
-                            : _optionColor),
+                    color: badgeTextColor,
                   ),
                 ),
               ),
@@ -140,69 +129,26 @@ class OptionButton extends StatelessWidget {
                   style: isBengali
                       ? AppTheme.bengaliStyle(
                           fontSize: 15,
-                          color: isSelected
-                              ? Colors.white
-                              : (isDark ? Colors.white : null))
+                          color: textColor,
+                        )
                       : Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: isSelected
-                                ? Colors.white
-                                : (isDark ? Colors.white : null),
-                            fontWeight: FontWeight.w500,
+                            color: textColor,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           ),
                 ),
               ),
-              // Feedback icon
-              if (isCorrectFeedback != null)
-                Icon(
-                  isCorrectFeedback! ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                  color: isCorrectFeedback! ? AppColors.success : AppColors.error,
+              // Clean selection indicator icon (Checkmark)
+              if (isSelected)
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
                   size: 22,
-                )
-              else if (isSelected)
-                Icon(Icons.check_circle_rounded,
-                    color: Colors.white.withValues(alpha: 0.9), size: 22),
+                ),
             ],
           ),
         ),
       ),
     );
-
-    // Apply animations for feedback if present
-    if (isCorrectFeedback != null &&
-        (correctAnimation != null || wrongAnimation != null)) {
-      if (isCorrectFeedback == true && correctAnimation != null) {
-        return AnimatedBuilder(
-          animation: correctAnimation!,
-          builder: (context, child) {
-            final value = Curves.elasticOut.transform(correctAnimation!.value);
-            return Transform.scale(
-              scale: 1.0 + (0.15 * value),
-              child: child,
-            );
-          },
-          child: container,
-        );
-      } else if (isCorrectFeedback == false && wrongAnimation != null) {
-        return AnimatedBuilder(
-          animation: wrongAnimation!,
-          builder: (context, child) {
-            final value = Curves.elasticOut.transform(wrongAnimation!.value);
-            final shake = 10.0 *
-                (1 - value) *
-                (wrongAnimation!.value < 0.5
-                    ? (wrongAnimation!.value * 4).floor() % 2 == 0
-                        ? 1
-                        : -1
-                    : -((wrongAnimation!.value * 4).floor() % 2 == 0 ? 1 : -1));
-            return Transform.translate(
-              offset: Offset(shake * (1 - value), 0),
-              child: child,
-            );
-          },
-          child: container,
-        );
-      }
-    }
 
     return container;
   }

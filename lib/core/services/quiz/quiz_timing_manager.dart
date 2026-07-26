@@ -1,4 +1,5 @@
-// lib/core/services/quiz/quiz_timing_manager.dart
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,7 +22,58 @@ class QuizTimingManager {
   int get quizEndHour => _quizEndHour;
   int get quizEndMinute => _quizEndMinute;
 
-  Future<void> refreshTiming() async {
+  final ValueNotifier<int> timingVersion = ValueNotifier<int>(0);
+  StreamSubscription? _settingsSubscription;
+
+  void listenToTimingChanges() {
+    _settingsSubscription?.cancel();
+    final now = DateTime.now();
+    final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    // Listen for realtime updates on settings collection
+    _settingsSubscription = _db.collection('settings').snapshots().listen((snapshot) {
+      DocumentSnapshot? activeDoc;
+      for (final doc in snapshot.docs) {
+        if (doc.id == 'quiz_timing_$today') {
+          activeDoc = doc;
+          break;
+        } else if (doc.id == 'quiz_timing') {
+          if (activeDoc == null) activeDoc = doc;
+        }
+      }
+
+      if (activeDoc != null && activeDoc.exists) {
+        final data = activeDoc.data() as Map<String, dynamic>? ?? {};
+        _quizStartHour = data['start_hour'] ?? 6;
+        _quizStartMinute = data['start_minute'] ?? 0;
+        _quizEndHour = data['end_hour'] ?? 23;
+        _quizEndMinute = data['end_minute'] ?? 59;
+        _lastFetchTime = DateTime.now();
+        timingVersion.value++;
+      }
+    });
+  }
+
+  String get formattedStartTime {
+    final period = _quizStartHour >= 12 ? 'PM' : 'AM';
+    final h12 = _quizStartHour % 12 == 0 ? 12 : _quizStartHour % 12;
+    final mStr = _quizStartMinute.toString().padLeft(2, '0');
+    return '$h12:$mStr $period';
+  }
+
+  String get formattedEndTime {
+    final period = _quizEndHour >= 12 ? 'PM' : 'AM';
+    final h12 = _quizEndHour % 12 == 0 ? 12 : _quizEndHour % 12;
+    final mStr = _quizEndMinute.toString().padLeft(2, '0');
+    return '$h12:$mStr $period';
+  }
+
+  Future<void> refreshTiming({bool force = false}) async {
+    if (!force && _lastFetchTime != null &&
+        DateTime.now().difference(_lastFetchTime!) < _cacheDuration) {
+      return;
+    }
+
     try {
       final now = DateTime.now();
       final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -40,16 +92,15 @@ class QuizTimingManager {
         _quizEndHour = data['end_hour'] ?? 23;
         _quizEndMinute = data['end_minute'] ?? 59;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('QuizTimingManager error fetching timing: $e');
+    }
     _lastFetchTime = DateTime.now();
+    timingVersion.value++;
   }
 
-  void ensureTimingFresh() {
-    if (_lastFetchTime == null ||
-        DateTime.now().difference(_lastFetchTime!) > _cacheDuration) {
-      _lastFetchTime = DateTime.now();
-      refreshTiming();
-    }
+  Future<void> ensureTimingFresh({bool force = false}) async {
+    await refreshTiming(force: force);
   }
 
   bool isQuizActive() {

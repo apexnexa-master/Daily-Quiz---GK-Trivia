@@ -270,7 +270,8 @@ class QuestionModel extends Equatable {
       }
     }
 
-    return [];
+    // 4. Absolute Fallback: Default placeholder options so options are NEVER empty
+    return ['Option A', 'Option B', 'Option C', 'Option D'];
   }
 
   String getExplanation(String lang) {
@@ -332,13 +333,23 @@ class QuestionModel extends Equatable {
   }
 
   factory QuestionModel.fromFirestore(DocumentSnapshot doc) {
-    final d = doc.data() as Map<String, dynamic>;
+    final d = doc.data() as Map<String, dynamic>? ?? {};
+    
+    Map<String, List<String>> parsedOptions = {};
+    if (d['options'] is Map) {
+      (d['options'] as Map).forEach((k, v) {
+        if (v is List) {
+          parsedOptions[k.toString()] = List<String>.from(v.map((e) => e.toString()));
+        }
+      });
+    } else if (d['options'] is List) {
+      parsedOptions['en'] = List<String>.from((d['options'] as List).map((e) => e.toString()));
+    }
+
     return QuestionModel(
       id: doc.id,
       text: Map<String, String>.from(d['text'] ?? {}),
-      options: (d['options'] as Map<String, dynamic>).map(
-        (k, v) => MapEntry(k, List<String>.from(v)),
-      ),
+      options: parsedOptions,
       correctIndex: d['correct_index'] ?? 0,
       explanation: Map<String, String>.from(d['explanation'] ?? {}),
       category: d['category'] ?? 'general',

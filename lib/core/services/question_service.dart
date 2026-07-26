@@ -201,17 +201,6 @@ class QuestionService {
 
   // Get available exam modes from Firestore
   Future<List<String>> getAvailableExamModes() async {
-    try {
-      final snapshot = await _db.collection('quizzes').get();
-      final modes = <String>{};
-      for (final doc in snapshot.docs) {
-        final mode = doc.data()['exam_mode'] as String?;
-        if (mode != null) modes.add(mode);
-      }
-      if (modes.isEmpty) return ['GENERAL', 'UPSC', 'BANK'];
-      return modes.toList();
-    } catch (e) {
-      return ['GENERAL', 'UPSC', 'BANK'];
-    }
+    return ['GENERAL'];
   }
 }

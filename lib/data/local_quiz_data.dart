@@ -22,48 +22,54 @@ class LocalQuizData {
   static Future<void> init() async {
     if (_initialized) return;
 
-    final categories = [
-      'geography', 'science', 'history', 'sports', 'economy', 'current_affairs',
-      'west_bengal_history', 'west_bengal', 'west_bengal_polity', 'west_bengal_culture',
-      'west_bengal_geography', 'west_bengal_economy', 'english', 'mathematics',
-      'general_awareness', 'reasoning', 'general_science', 'polity', 'environment',
-      'science_and_technology', 'banking_awareness'
-    ];
-
     _allQuestions.clear();
     for (final key in _questionsByMode.keys) {
       _questionsByMode[key]!.clear();
     }
 
-    for (final category in categories) {
-      try {
-        final jsonStr = await rootBundle.loadString('assets/questions/$category.json');
-        final List<dynamic> jsonList = jsonDecode(jsonStr);
-        for (final item in jsonList) {
-          final q = QuestionModel(
-            id: item['id'] ?? '',
-            text: Map<String, String>.from(item['text'] ?? {}),
-            options: (item['options'] as Map).map(
-              (k, v) => MapEntry(k as String, List<String>.from(v ?? [])),
-            ),
-            correctIndex: item['correctIndex'] ?? 0,
-            explanation: Map<String, String>.from(item['explanation'] ?? {}),
-            category: item['category'] ?? 'General Knowledge',
-            difficulty: item['difficulty'] ?? 'medium',
-            examTags: List<String>.from(item['examTags'] ?? []),
-            order: item['order'] ?? 0,
-          );
-          _allQuestions.add(q);
+    try {
+      final jsonStr = await rootBundle.loadString('assets/questions/general_practice.json');
+      final List<dynamic> jsonList = jsonDecode(jsonStr);
+      for (final item in jsonList) {
+        final q = QuestionModel(
+          id: item['id'] ?? '',
+          text: Map<String, String>.from(item['text'] ?? {}),
+          options: (item['options'] as Map).map(
+            (k, v) => MapEntry(k as String, List<String>.from(v ?? [])),
+          ),
+          correctIndex: item['correctIndex'] ?? item['correct_index'] ?? 0,
+          explanation: Map<String, String>.from(item['explanation'] ?? {}),
+          category: item['category'] ?? 'General Knowledge',
+          difficulty: item['difficulty'] ?? 'medium',
+          examTags: List<String>.from(item['examTags'] ?? item['exam_tags'] ?? []),
+          order: item['order'] ?? 0,
+        );
 
+        // Strict Validation: Ensure translations are complete and valid
+        final textEn = q.text['en']?.trim() ?? '';
+        final textHi = q.text['hi']?.trim() ?? '';
+        final textBn = q.text['bn']?.trim() ?? '';
+        final optEn = q.options['en'];
+        final optHi = q.options['hi'];
+        final optBn = q.options['bn'];
+
+        if (textEn.isNotEmpty &&
+            textHi.isNotEmpty &&
+            textBn.isNotEmpty &&
+            optEn != null && optEn.length == 4 && !optEn.any((e) => e.trim().isEmpty) &&
+            optHi != null && optHi.length == 4 && !optHi.any((e) => e.trim().isEmpty) &&
+            optBn != null && optBn.length == 4 && !optBn.any((e) => e.trim().isEmpty)) {
+          
+          _allQuestions.add(q);
           for (final tag in q.examTags) {
             if (_questionsByMode.containsKey(tag)) {
               _questionsByMode[tag]!.add(q);
             }
           }
         }
-      } catch (e) {
-        // Fallback or ignore missing category
       }
+    } catch (e) {
+      // Ignore or log error
     }
 
     _initialized = true;

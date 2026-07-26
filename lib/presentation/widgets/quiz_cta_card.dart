@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/services/quiz_scheduler_service.dart';
 import '../../data/models/firestore_models.dart';
+import '../../core/services/quiz/practice_quiz_service.dart';
 import '../providers/app_providers.dart';
 
 class QuizCtaCard extends ConsumerWidget {
@@ -173,14 +173,14 @@ class QuizCtaCard extends ConsumerWidget {
                               }
                             : null,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           decoration: BoxDecoration(
-                            color: isQuizActive ? Colors.white : Colors.grey.shade400,
+                            color: isQuizActive ? Colors.white : Colors.white24,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: isQuizActive ? [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 10,
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 12,
                                 offset: const Offset(0, 4),
                               )
                             ] : null,
@@ -190,16 +190,17 @@ class QuizCtaCard extends ConsumerWidget {
                             children: [
                               Icon(
                                 isQuizActive ? Icons.play_arrow_rounded : Icons.schedule_rounded,
-                                color: isQuizActive ? AppColors.primary : Colors.white,
-                                size: 22,
+                                color: isQuizActive ? AppColors.primary : Colors.white70,
+                                size: 24,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 6),
                               Text(
-                                isBn ? 'শুরু করুন' : isHi ? 'शुरू करें' : 'Start Now',
+                                isBn ? 'কুইজ শুরু করুন' : isHi ? 'क्विज़ शुरू करें' : 'START QUIZ NOW',
                                 style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  color: isQuizActive ? AppColors.primary : Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                  color: isQuizActive ? AppColors.primary : Colors.white70,
                                 ),
                               ),
                             ],
@@ -211,28 +212,28 @@ class QuizCtaCard extends ConsumerWidget {
                     _buildPracticeButton(context, ref, isDark, isBn, isHi),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  _getStatusText(scheduler, isQuizActive, isBn, isHi),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: Text(
-                    isBn
-                        ? '💡 নতুন প্রশ্ন সব সময়!'
-                        : isHi
-                            ? '💡 हमेशा नए प्रश्न!'
-                            : '💡 Always new questions!',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.timer_outlined, color: Colors.white70, size: 14),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _getStatusText(scheduler, isQuizActive, isBn, isHi),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -467,16 +468,16 @@ class QuizCtaCard extends ConsumerWidget {
 
   Future<void> _startPracticeMode(
       BuildContext context, WidgetRef ref, int questionCount, String difficulty) async {
-    final examMode = ref.read(examModeProvider);
-    final quizService = ref.read(quizServiceProvider);
+    // Sync silently in background (non-blocking)
+    PracticeQuizService.instance.syncWithFirestore();
 
-    final practiceQuiz = await quizService.fetchPracticeQuiz(
-      examMode: examMode,
+    // Fetch instantly from the local database using smart weighted selection
+    final practiceQuiz = await PracticeQuizService.instance.fetchPracticeQuiz(
       questionCount: questionCount,
       difficulty: difficulty == 'All' ? null : difficulty.toLowerCase(),
     );
 
-    if (practiceQuiz != null && context.mounted) {
+    if (context.mounted) {
       ref.read(quizSessionProvider.notifier).startQuiz(practiceQuiz);
       Navigator.pushNamed(context, '/quiz');
     }

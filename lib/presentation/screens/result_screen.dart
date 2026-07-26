@@ -17,6 +17,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
+import '../../core/services/quiz/practice_quiz_service.dart';
 import '../../data/models/gamification_models.dart';
 
 class ConfettiOverlay extends StatefulWidget {
@@ -252,6 +253,19 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         // Update mode stats
         await trackingService.updateModeStats(
             examMode, score, total, totalTimeTaken);
+
+        // Update practice question statistics
+        if (session.quiz.quizId.startsWith('practice_')) {
+          for (int i = 0; i < session.quiz.questions.length; i++) {
+            final q = session.quiz.questions[i];
+            final isCorrect = i < session.selectedAnswers.length &&
+                session.selectedAnswers[i] == q.correctIndex;
+            await PracticeQuizService.instance.recordAnswer(
+              questionId: q.id,
+              isCorrect: isCorrect,
+            );
+          }
+        }
 
         // Update achievements
         final streak = await ref.read(localStatsProvider).getStreak();

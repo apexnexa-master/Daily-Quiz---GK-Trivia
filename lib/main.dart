@@ -15,6 +15,8 @@ import 'core/services/question_tracking_service.dart';
 import 'core/services/gamification_service.dart';
 import 'core/services/cloud_sync_service.dart';
 import 'core/services/bookmark_service.dart';
+import 'core/services/quiz_service.dart';
+import 'core/services/quiz/practice_quiz_service.dart';
 import 'core/utils/offline_manager.dart';
 import 'presentation/providers/app_providers.dart';
 import 'routes/app_router.dart';
@@ -35,6 +37,7 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox<String>(AppConstants.hiveBoxQuiz);
   await Hive.openBox<String>(AppConstants.hiveBoxUser);
+  await QuizService.clearAllCachedQuizzes();
 
   OfflineManager.instance.init();
 
@@ -46,6 +49,7 @@ void main() async {
     CloudSyncService.instance.init(),
     BookmarkService().init(),
     LocalQuizData.init(),
+    PracticeQuizService.instance.init(),
   ]);
 
   runApp(

@@ -1,0 +1,2551 @@
+// scratch/generate_practice_questions.dart
+import 'dart:convert';
+import 'dart:io';
+
+void main() {
+  final List<Map<String, dynamic>> rawQuestions = [
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of France?", "hi": "फ्रांस की राजधानी क्या है?", "bn": "ফ্রান্সের রাজধানী কী?"},
+      "options": {
+        "en": ["Paris","London","Berlin","Rome"],
+        "hi": ["पेरिस","लंदन","बर्लिन","रोम"],
+        "bn": ["প্যারিস","লন্ডন","বার্লিন","রোম"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Paris is the capital and most populous city of France.", "hi": "पेरिस फ्रांस की राजधानी और सबसे अधिक आबादी वाला शहर है।", "bn": "প্যারিস হলো ফ্রান্সের রাজধানী এবং সবচেয়ে জনবহুল শহর।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Japan?", "hi": "जापान की राजधानी क्या है?", "bn": "জাপানের রাজধানী কী?"},
+      "options": {
+        "en": ["Tokyo","Kyoto","Osaka","Seoul"],
+        "hi": ["टोक्यो","क्योटो","ओसाका","सियोल"],
+        "bn": ["টোকিও","কিয়োটো","ওসাকা","সিউল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Tokyo is the capital of Japan and the center of the Greater Tokyo Area.", "hi": "टोक्यो जापान की राजधानी और वृहत्तर टोक्यो क्षेत्र का केंद्र है।", "bn": "টোকিও হলো জাপানের রাজধানী এবং বৃহত্তর টোকিও অঞ্চলের কেন্দ্র।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Italy?", "hi": "इटली की राजधानी क्या है?", "bn": "ইতালির রাজধানী কী?"},
+      "options": {
+        "en": ["Rome","Milan","Venice","Madrid"],
+        "hi": ["रोम","मिलान","वेनिस","मैड्रिड"],
+        "bn": ["রোম","মিলান","ভেনিস","মাদ্রিদ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Rome is the capital city of Italy and a special commune named Comune di Roma Capitale.", "hi": "रोम इटली की राजधानी है।", "bn": "রোম হলো ইতালির রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Australia?", "hi": "ऑस्ट्रेलिया की राजधानी क्या है?", "bn": "অস্ট্রেলিয়ার রাজধানী কী?"},
+      "options": {
+        "en": ["Canberra","Sydney","Melbourne","Brisbane"],
+        "hi": ["कैनबरा","सिडनी","मेलबर्न","ब्रिस्बेन"],
+        "bn": ["ক্যানবেরা","সিডনি","মেলবোর্ন","ব্রিসবেন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Canberra was selected as the capital in 1908 as a compromise between rivals Sydney and Melbourne.", "hi": "कैनबरा को 1908 में सिडनी और मेलबर्न के बीच समझौते के रूप में राजधानी चुना गया था।", "bn": "ক্যানবেরাকে ১৯০৮ সালে সিডনি ও মেলবোর্নের মধ্যে আপস হিসেবে রাজধানী নির্বাচিত করা হয়।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Canada?", "hi": "कनाडा की राजधानी क्या है?", "bn": "কানাডার রাজধানী কী?"},
+      "options": {
+        "en": ["Ottawa","Toronto","Vancouver","Montreal"],
+        "hi": ["ओटावा","टोरंटो","वैंकूवर","मॉन्ट्रियल"],
+        "bn": ["অটোয়া","টরন্টো","ভ্যাঙ্কুভার","মন্ট্রিল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Ottawa is the capital city of Canada, located on the south bank of the Ottawa River.", "hi": "ओटावा कनाडा की राजधानी है।", "bn": "অটোয়া হলো কানাডার রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of the United Kingdom?", "hi": "यूनाइटेड किंगडम की राजधानी क्या है?", "bn": "যুক্তরাজ্যের রাজধানী কী?"},
+      "options": {
+        "en": ["London","Edinburgh","Dublin","Cardiff"],
+        "hi": ["लंदन","एडिनबर्ग","डबलिन","कार्डिफ़"],
+        "bn": ["লন্ডন","এডিনবরা","ডাবলিন","কার্ডিফ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "London is the capital of both England and the United Kingdom.", "hi": "लंदन इंग्लैंड और यूनाइटेड किंगडम दोनों की राजधानी है।", "bn": "লন্ডন হলো ইংল্যান্ড ও যুক্তরাজ্য উভয়েরই রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Germany?", "hi": "जर्मनी की राजधानी क्या है?", "bn": "জার্মানির রাজধানী কী?"},
+      "options": {
+        "en": ["Berlin","Munich","Frankfurt","Hamburg"],
+        "hi": ["बर्लिन","म्यूनिख","फ्रैंकफर्ट","हैम्बर्ग"],
+        "bn": ["বার্লিন","মিউনিখ","ফ্রাঙ্কফুর্ট","হামবুর্গ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Berlin is the capital and largest city of Germany by both area and population.", "hi": "बर्लिन जर्मनी की राजधानी और सबसे बड़ा शहर है।", "bn": "বার্লিন হলো জার্মানির রাজধানী এবং বৃহত্তম শহর।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Russia?", "hi": "रूस की राजधानी क्या है?", "bn": "রাশিয়ার রাজধানী কী?"},
+      "options": {
+        "en": ["Moscow","Saint Petersburg","Novosibirsk","Kiev"],
+        "hi": ["मास्को","सेंट पीटर्सबर्ग","नोवोसिबिर्स्क","कीव"],
+        "bn": ["মস্কো","সেন্ট পিটার্সবার্গ","নোভোসিবিরস্ক","কিয়েভ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Moscow is the capital and largest city of Russia, situated on the Moskva River.", "hi": "मास्को रूस की राजधानी और सबसे बड़ा शहर है।", "bn": "মস্কো হলো রাশিয়ার রাজধানী এবং বৃহত্তম শহর।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of China?", "hi": "चीन की राजधानी क्या है?", "bn": "চীনের রাজধানী কী?"},
+      "options": {
+        "en": ["Beijing","Shanghai","Hong Kong","Guangzhou"],
+        "hi": ["बीजिंग","शंघाई","हांगकांग","ग्वांगझू"],
+        "bn": ["বেইজিং","সাংহাই","হংকং","গুয়াংজু"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Beijing is the capital of the People's Republic of China.", "hi": "बीजिंग जनवादी गणराज्य चीन की राजधानी है।", "bn": "বেইজিং হলো গণপ্রজাতন্ত্রী চীনের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Egypt?", "hi": "मिस्र की राजधानी क्या है?", "bn": "মিশরের রাজধানী কী?"},
+      "options": {
+        "en": ["Cairo","Alexandria","Giza","Luxor"],
+        "hi": ["काहिरा","सिकंदरिया","गीज़ा","लक्सर"],
+        "bn": ["কায়রো","আলেকজান্দ্রিয়া","গিজা","লাক্সর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Cairo is the capital of Egypt and the largest city in the Arab world.", "hi": "काहिरा मिस्र की राजधानी और अरब दुनिया का सबसे बड़ा शहर है।", "bn": "কায়রো হলো মিশরের রাজধানী এবং আরব বিশ্বের বৃহত্তম শহর।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Spain?", "hi": "स्पेन की राजधानी क्या है?", "bn": "স্পেনের রাজধানী কী?"},
+      "options": {
+        "en": ["Madrid","Barcelona","Seville","Valencia"],
+        "hi": ["मैड्रिड","बार्सिलोना","सेविले","वेलेंसिया"],
+        "bn": ["মাদ্রিদ","বার্সেলোনা","সেভিল","ভ্যালেন্সিয়া"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Madrid is the capital and largest municipality of Spain.", "hi": "मैड्रिड स्पेन की राजधानी है।", "bn": "মাদ্রিদ হলো স্পেনের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Brazil?", "hi": "ब्राजील की राजधानी क्या है?", "bn": "ব্রাজিলের রাজধানী কী?"},
+      "options": {
+        "en": ["Brasilia","Rio de Janeiro","Sao Paulo","Salvador"],
+        "hi": ["ब्रासीलिया","रियो डी जनेरियो","साओ पाउलो","सैलवाडोर"],
+        "bn": ["ব্রাসিলিয়া","রিও ডি জেনিরো","সাও পাওলো","সালভাদর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Brasilia is a planned city, inaugurated in 1960 to serve as the new capital.", "hi": "ब्रासीलिया एक नियोजित शहर है जिसे 1960 में नई राजधानी के रूप में शुरू किया गया था।", "bn": "ব্রাসিলিয়া একটি পরিকল্পিত শহর, যা ১৯৬০ সালে নতুন রাজধানী হিসেবে উদ্বোধন করা হয়।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Argentina?", "hi": "अर्जेंटीना की राजधानी क्या है?", "bn": "আর্জেন্টিনার রাজধানী কী?"},
+      "options": {
+        "en": ["Buenos Aires","Cordoba","Rosario","Santiago"],
+        "hi": ["ब्यूनस आयर्स","कॉर्डोबा","रोजारियो","सैंटियागो"],
+        "bn": ["বুয়েনস আইরেস","কর্ডোবা","রোজারিও","সান্তিয়াগো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Buenos Aires is the capital and largest city of Argentina, located on the Rio de la Plata.", "hi": "ब्यूनस आयर्स अर्जेंटीना की राजधानी है।", "bn": "বুয়েনস আইরেস হলো আর্জেন্টিনার রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of South Africa?", "hi": "दक्षिण अफ्रीका की प्रशासनिक राजधानी क्या है?", "bn": "দক্ষিণ আফ্রিকার প্রশাসনিক রাজধানী কী?"},
+      "options": {
+        "en": ["Pretoria","Cape Town","Johannesburg","Durban"],
+        "hi": ["प्रिटोरिया","केप टाउन","जोहान्सबर्ग","डरबन"],
+        "bn": ["প্রিটোরিয়া","কেপ টাউন","জোহানেসবার্গ","ডারবান"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "South Africa has three capitals: Pretoria (executive), Cape Town (legislative), and Bloemfontein (judicial).", "hi": "दक्षिण अफ्रीका की तीन राजधानियां हैं: प्रिटोरिया (कार्यकारी), केप टाउन (विधायी), और ब्लोमफ़ोन्टेन (न्यायिक)।", "bn": "দক্ষিণ আফ্রিকার তিনটি রাজধানী: প্রিটোরিয়া (প্রশাসনিক), কেপ টাউন (আইনসভা) এবং ব্লুমফন্টেইন (বিচার বিভাগীয়)।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Greece?", "hi": "यूनान (ग्रीस) की राजधानी क्या है?", "bn": "গ্রিসের রাজধানী কী?"},
+      "options": {
+        "en": ["Athens","Sparta","Thessaloniki","Rome"],
+        "hi": ["एथेंस","स्पार्टा","थेसालोनिकी","रोम"],
+        "bn": ["এথেন্স","স্পার্টা","থেসালোনিকি","রোম"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Athens is the capital and largest city of Greece, and one of the world's oldest cities.", "hi": "एथेंस ग्रीस की राजधानी और सबसे बड़ा शहर है।", "bn": "এথেন্স হলো গ্রিসের রাজধানী এবং বৃহত্তম শহর।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of South Korea?", "hi": "दक्षिण कोरिया की राजधानी क्या है?", "bn": "দক্ষিণ কোরিয়ার রাজধানী কী?"},
+      "options": {
+        "en": ["Seoul","Busan","Incheon","Pyongyang"],
+        "hi": ["सियोल","बुसान","इंचियोन","प्योंगयांग"],
+        "bn": ["সিউল","বুসান","ইনছন","পিয়ংইয়ং"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Seoul is the capital and largest metropolis of South Korea.", "hi": "सियोल दक्षिण कोरिया की राजधानी है।", "bn": "সিউল হলো দক্ষিণ কোরিয়ার রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Portugal?", "hi": "पुर्तगाल की राजधानी क्या है?", "bn": "পর্তুগালের রাজধানী কী?"},
+      "options": {
+        "en": ["Lisbon","Porto","Madrid","Faro"],
+        "hi": ["लिस्बन","पोर्टो","मैड्रिड","फ़ारो"],
+        "bn": ["লিসবন","পোর্তো","মাদ্রিদ","ফারো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Lisbon is the capital and the largest city of Portugal.", "hi": "लिस्बन पुर्तगाल की राजधानी और सबसे बड़ा शहर है।", "bn": "লিসবন হলো পর্তুগালের রাজধানী এবং বৃহত্তম শহর।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Turkey?", "hi": "तुर्की (तुर्किये) की राजधानी क्या है?", "bn": "তুরস্কের রাজধানী কী?"},
+      "options": {
+        "en": ["Ankara","Istanbul","Izmir","Antalya"],
+        "hi": ["अंकारा","इस्तांबुल","इज़मिर","अंताल्या"],
+        "bn": ["আঙ্কারা","ইস্তাম্বুল","ইজমির","আনাতালিয়া"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Ankara is the capital of Turkey, though Istanbul is its largest city.", "hi": "अंकारा तुर्की की राजधानी है, हालांकि इस्तांबुल इसका सबसे बड़ा शहर है।", "bn": "আঙ্কারা হলো তুরস্কের রাজধানী, যদিও ইস্তাম্বুল এর বৃহত্তম শহর।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Switzerland?", "hi": "सिट्ज़रलैंड की वास्तविक राजधानी (संघीय शहर) कौन सी है?", "bn": "সুইজারল্যান্ডের রাজধানী (ফেডারেল শহর) কোনটি?"},
+      "options": {
+        "en": ["Bern","Zurich","Geneva","Basel"],
+        "hi": ["बर्न","ज्यूरिख","जेनेवा","बेसल"],
+        "bn": ["বের্ন","জুরিখ","জেনেভা","বাসেল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Bern is the federal city (de facto capital) of Switzerland.", "hi": "बर्न स्विट्जरलैंड की वास्तविक राजधानी है।", "bn": "বের্ন হলো সুইজারল্যান্ডের কার্যত রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Mexico?", "hi": "मेक्सिको की राजधानी क्या है?", "bn": "মেক্সিকোর রাজধানী কী?"},
+      "options": {
+        "en": ["Mexico City","Guadalajara","Monterrey","Cancun"],
+        "hi": ["मेक्सिको सिटी","ग्वाडलजारा","मोंटेरे","कैनकन"],
+        "bn": ["মেক্সিকো সিটি","গুয়াদালাহারা","মন্টেরি","কানকুন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Mexico City is the capital and largest city of Mexico.", "hi": "मेक्सिको सिटी मेक्सिको की राजधानी है।", "bn": "মেক্সিকো সিটি হলো মেক্সিকোর রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Thailand?", "hi": "थाईलैंड की राजधानी क्या है?", "bn": "থাইল্যান্ডের রাজধানী কী?"},
+      "options": {
+        "en": ["Bangkok","Phuket","Chiang Mai","Pattaya"],
+        "hi": ["बैंकॉक","फुकेत","चियांग माई","पटाया"],
+        "bn": ["ব্যাংকক","ফুকেট","চিয়াং মাই","পাতায়া"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Bangkok is the capital and most populous city of Thailand.", "hi": "बैंकॉक थाईलैंड की राजधानी है।", "bn": "ব্যাংকক হলো থাইল্যান্ডের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of New Zealand?", "hi": "न्यूजीलैंड की राजधानी क्या है?", "bn": "নিউজিল্যান্ডের রাজধানী কী?"},
+      "options": {
+        "en": ["Wellington","Auckland","Christchurch","Queenstown"],
+        "hi": ["वेलिंगटन","ऑकलैंड","क्राइस्टचर्च","क्वीन्सटाउन"],
+        "bn": ["ওয়েলিংটন","অকল্যান্ড","ক্রাইস্টচার্চ","কুইন্সটাউন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Wellington is the capital of New Zealand, located at the southern tip of the North Island.", "hi": "वेलिंगटन न्यूजीलैंड की राजधानी है।", "bn": "ওয়েলিংটন হলো নিউজিল্যান্ডের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of the Netherlands?", "hi": "नीदरलैंड की आधिकारिक राजधानी क्या है?", "bn": "নেদারল্যান্ডসের সরকারি রাজধানী কোনটি?"},
+      "options": {
+        "en": ["Amsterdam","The Hague","Rotterdam","Utrecht"],
+        "hi": ["एम्स्टर्डम","द हेग","रॉटरडैम","यूट्रेक्ट"],
+        "bn": ["অ্যামস্টারডাম","দ্য হেগ","রোটারডাম","ইউট্রেখট"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Amsterdam is the official capital, though the parliament and government are in The Hague.", "hi": "नीदरलैंड की आधिकारिक राजधानी एम्स्टर्डम है।", "bn": "অ্যামস্টারডাম হলো সরকারি রাজধানী, যদিও সংসদ ও সরকার দ্য হেগ শহরে অবস্থিত।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Belgium?", "hi": "बेल्जियम की राजधानी क्या है?", "bn": "বেলজিয়ামের রাজধানী কী?"},
+      "options": {
+        "en": ["Brussels","Antwerp","Ghent","Bruges"],
+        "hi": ["ब्रसेल्स","एंटवर्प","घेंट","ब्रूज"],
+        "bn": ["ব্রাসেলস","অ্যান্টওয়ার্প","ঘেন্ট","ব্রুজ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Brussels is the capital of Belgium and the de facto capital of the European Union.", "hi": "ब्रसेल्स बेल्जियम की राजधानी है।", "bn": "ব্রাসেলস হলো বেলজিয়ামের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Sweden?", "hi": "स्वीडन की राजधानी क्या है?", "bn": "সুইডেনের রাজধানী কী?"},
+      "options": {
+        "en": ["Stockholm","Gothenburg","Malmo","Oslo"],
+        "hi": ["स्टॉकहोम","गोथेनबर्ग","माल्मो","ऑस्लो"],
+        "bn": ["স্টকহোম","গোথেনবার্গ","মালমো","অসলো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Stockholm is the capital and largest city of Sweden.", "hi": "स्टॉकहोम स्वीडन की राजधानी है।", "bn": "স্টকহোম হলো সুইডেনের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Norway?", "hi": "नॉर्वे की राजधानी क्या है?", "bn": "নরওয়ের রাজধানী কী?"},
+      "options": {
+        "en": ["Oslo","Bergen","Trondheim","Stockholm"],
+        "hi": ["ऑस्लो","बर्गन","ट्रॉनहैम","स्टॉकहोम"],
+        "bn": ["অসলো","বার্গেন","ট্রনহেইম","স্টকহোম"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Oslo is the capital and most populous city of Norway.", "hi": "ऑस्लो नॉर्वे की राजधानी है।", "bn": "অসলো হলো নরওয়ের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Austria?", "hi": "ऑस्ट्रिया की राजधानी क्या है?", "bn": "অস্ট্রিয়ার রাজধানী কী?"},
+      "options": {
+        "en": ["Vienna","Salzburg","Graz","Innsbruck"],
+        "hi": ["वियना","साल्ज़बर्ग","ग्राज़","इंसब्रुक"],
+        "bn": ["ভিয়েনা","সালজবার্গ","গ্রাজ","ইন্সব্রুক"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Vienna is the capital and largest city of Austria.", "hi": "वियना ऑस्ट्रिया की राजधानी है।", "bn": "ভিয়েনা হলো অস্ট্রিয়ার রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Saudi Arabia?", "hi": "सऊदी अरब की राजधानी क्या है?", "bn": "সৌদি আরবের রাজধানী কী?"},
+      "options": {
+        "en": ["Riyadh","Jeddah","Mecca","Medina"],
+        "hi": ["रियाद","जेद्दा","मक्का","मदीना"],
+        "bn": ["রিয়াদ","জেদ্দা","মক্কা","মদিনা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Riyadh is the capital and largest city of Saudi Arabia.", "hi": "रियाद सऊदी अरब की राजधानी है।", "bn": "রিয়াদ হলো সৌদি আরবের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Singapore?", "hi": "सिंगापुर की राजधानी क्या है?", "bn": "সিঙ্গাপুরের রাজধানী কী?"},
+      "options": {
+        "en": ["Singapore","Kuala Lumpur","Jakarta","Manila"],
+        "hi": ["सिंगापुर","कुआलालंपुर","जकार्ता","मनीला"],
+        "bn": ["সিঙ্গাপুর","কুয়ালালামপুর","জাকার্তা","ম্যানিলা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Singapore is a city-state; therefore, Singapore is its own capital.", "hi": "सिंगापुर एक नगर-राज्य है; इसलिए सिंगापुर खुद इसकी राजधानी है।", "bn": "সিঙ্গাপুর একটি নগর-রাষ্ট্র; তাই সিঙ্গাপুর শহরটি নিজেই নিজের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Malaysia?", "hi": "मलेशिया की आधिकारिक राजधानी क्या है?", "bn": "মালয়েশিয়ার সরকারি রাজধানী কোনটি?"},
+      "options": {
+        "en": ["Kuala Lumpur","Putrajaya","Penang","Singapore"],
+        "hi": ["कुआलालंपुर","पुत्रजया","पेनांग","सिंगापुर"],
+        "bn": ["কুয়ালালামপুর","পুত্রাজায়া","পেনাং","সিঙ্গাপুর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Kuala Lumpur is the official capital, while Putrajaya is the administrative center.", "hi": "कुआलालंपुर मलेशिया की आधिकारिक राजधानी है।", "bn": "কুয়ালালামপুর হলো মালয়েশিয়ার সরকারি রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Vietnam?", "hi": "वियतनाम की राजधानी क्या है?", "bn": "ভিয়েতনামের রাজধানী কী?"},
+      "options": {
+        "en": ["Hanoi","Ho Chi Minh City","Da Nang","Hue"],
+        "hi": ["हनोई","हो ची मिन्ह सिटी","दा नांग","ह्यू"],
+        "bn": ["হ্যানয়","হো চি মিন সিটি","দা নাং","হুয়ে"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Hanoi is the capital of Vietnam, while Ho Chi Minh City is its largest city.", "hi": "हनोई वियतनाम की राजधानी है।", "bn": "হ্যানয় হলো ভিয়েতনামের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Ireland?", "hi": "आयरलैंड की राजधानी क्या है?", "bn": "আয়ারল্যান্ডের রাজধানী কী?"},
+      "options": {
+        "en": ["Dublin","Belfast","Cork","Galway"],
+        "hi": ["डबलिन","बेलफास्ट","कॉर्क","गॉलवे"],
+        "bn": ["ডাবলিন","বেলফাস্ট","কর্ক","গালওয়ে"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Dublin is the capital and largest city of the Republic of Ireland.", "hi": "डबलिन आयरलैंड की राजधानी है।", "bn": "ডাবলিন হলো আয়ারল্যান্ডের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Denmark?", "hi": "डेनमार्क की राजधानी क्या है?", "bn": "ডেনমার্কের রাজধানী কী?"},
+      "options": {
+        "en": ["Copenhagen","Aarhus","Odense","Oslo"],
+        "hi": ["कोपेनहेगन","आरहूस","ओडेंस","ऑस्लो"],
+        "bn": ["কোপেনহেগেন","আরহাস","ওডেন্স","অসলো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Copenhagen is the capital and largest city of Denmark.", "hi": "कोपेनहेगन डेनमार्क की राजधानी है।", "bn": "কোপেনহেগেন হলো ডেনমার্কের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Finland?", "hi": "फिनलैंड की राजधानी क्या है?", "bn": "ফিনল্যান্ডের রাজধানী কী?"},
+      "options": {
+        "en": ["Helsinki","Tampere","Turku","Stockholm"],
+        "hi": ["हेलसिंकी","टैम्पियर","तुर्कू","स्टॉकहोम"],
+        "bn": ["হেলসিঙ্কি","তাম্পেরে","তুর্কু","স্টকহোম"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Helsinki is the capital and largest city of Finland.", "hi": "हेलसिंकी फिनलैंड की राजधानी है।", "bn": "হেলসিঙ্কি হলো ফিনল্যান্ডের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Poland?", "hi": "पोलैंड की राजधानी क्या है?", "bn": "পোল্যান্ডের রাজধানী কী?"},
+      "options": {
+        "en": ["Warsaw","Krakow","Gdansk","Prague"],
+        "hi": ["वारसॉ","क्राको","डांस्क","प्राग"],
+        "bn": ["ওয়ারশ","ক্রাকোও","গডানস্ক","প্রাগ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Warsaw is the capital and largest city of Poland.", "hi": "वारसॉ पोलैंड की राजधानी है।", "bn": "ওয়ারশ হলো পোল্যান্ডের রাজধানী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "What is the capital of Ukraine?", "hi": "यूक्रेन की राजधानी क्या है?", "bn": "ইউক্রেনের রাজধানী কী?"},
+      "options": {
+        "en": ["Kyiv","Lviv","Odesa","Kharkiv"],
+        "hi": ["कीव","लविवि","ओडेसा","खारकीव"],
+        "bn": ["কিয়েভ","লভিভ","ওডেসা","খারকিভ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Kyiv is the capital and most populous city of Ukraine.", "hi": "कीव यूक्रेन की राजधानी है।", "bn": "কিয়েভ হলো ইউক্রেনের রাজধানী।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Japan?", "hi": "जापान की मुद्रा क्या है?", "bn": "জাপানের মুদ্রা কী?"},
+      "options": {
+        "en": ["Yen","Yuan","Won","Ringgit"],
+        "hi": ["येन","युआन","वॉन","रिंगिट"],
+        "bn": ["ইয়েন","ইউয়ান","ওন","রিঙ্গিত"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Japanese Yen (JPY) is the official currency of Japan.", "hi": "जापानी येन (JPY) जापान की आधिकारिक मुद्रा है।", "bn": "জাপানি ইয়েন (JPY) হলো জাপানের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of the United Kingdom?", "hi": "यूनाइटेड किंगडम की मुद्रा क्या है?", "bn": "যুক্তরাজ্যের মুদ্রা কী?"},
+      "options": {
+        "en": ["Pound Sterling","Euro","Dollar","Franc"],
+        "hi": ["पाउंड स्टर्लिंग","यूरो","डॉलर","फ्रैंक"],
+        "bn": ["পাউন্ড স্টার্লিং","ইউরো","ডলার","ফ্রাঙ্ক"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The British Pound Sterling (GBP) is the official currency of the UK.", "hi": "ब्रिटिश पाउंड स्टर्लिंग (GBP) यूनाइटेड किंगडम की आधिकारिक मुद्रा है।", "bn": "ব্রিটিশ পাউন্ড স্টার্লিং (GBP) হলো যুক্তরাজ্যের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "What is the currency used in Germany?", "hi": "जर्मनी में किस मुद्रा का उपयोग किया जाता है?", "bn": "জার্মানিতে কোন মুদ্রা ব্যবহৃত হয়?"},
+      "options": {
+        "en": ["Euro","Deutsche Mark","Pound","Franc"],
+        "hi": ["यूरो","ड्यूश मार्क","पाउंड","फ्रैंक"],
+        "bn": ["ইউরো","ডয়চে মার্ক","পাউন্ড","ফ্রাঙ্ক"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Germany adopted the Euro (EUR) as its official currency in 1999.", "hi": "जर्मनी ने 1999 में यूरो को अपनी आधिकारिक मुद्रा के रूप में अपनाया।", "bn": "জার্মানি ১৯৯৯ সালে ইউরোকে (EUR) তাদের সরকারি মুদ্রা হিসেবে গ্রহণ করে।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of South Africa?", "hi": "दक्षिण अफ्रीका की मुद्रा क्या है?", "bn": "দক্ষিণ আফ্রিকার মুদ্রা কী?"},
+      "options": {
+        "en": ["Rand","Shilling","Dinar","Kwacha"],
+        "hi": ["रैंड","शिलिंग","दीनार","क्वाचा"],
+        "bn": ["র্যান্ড","শিলিং","ডিনার","কোয়াচা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The South African Rand (ZAR) is the official currency of South Africa.", "hi": "दक्षिण अफ्रीकी रैंड (ZAR) दक्षिण अफ्रीका की आधिकारिक मुद्रा है।", "bn": "দক্ষিণ আফ্রিকান র্যান্ড (ZAR) হলো দক্ষিণ আফ্রিকার সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Russia?", "hi": "रूस की मुद्रा क्या है?", "bn": "রাশিয়ার মুদ্রা কী?"},
+      "options": {
+        "en": ["Ruble","Rupiah","Real","Lira"],
+        "hi": ["रूबल","रुपया","रियाल","लीरा"],
+        "bn": ["রবল","রুপিয়া","রিয়াল","লিরা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Russian Ruble (RUB) is the currency of the Russian Federation.", "hi": "रूसी रूबल (RUB) रूसी संघ की मुद्रा है।", "bn": "রাশিয়ান রবল (RUB) হলো রাশিয়ার সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Brazil?", "hi": "ब्राजील की मुद्रा क्या है?", "bn": "ব্রাজিলের মুদ্রা কী?"},
+      "options": {
+        "en": ["Real","Peso","Bolivar","Sol"],
+        "hi": ["रियाल","पेसो","बोलिवर","सोल"],
+        "bn": ["রিয়াল","পেসো","বলিভার","সল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Brazilian Real (BRL) is the official currency of Brazil.", "hi": "ब्राजीलियाई रियल (BRL) ब्राजील की आधिकारिक मुद्रा है।", "bn": "ব্রাজিলিয়ান রিয়াল (BRL) হলো ব্রাজিলের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of China?", "hi": "चीन की आधिकारिक मुद्रा क्या है?", "bn": "চীনের সরকারি মুদ্রা কী?"},
+      "options": {
+        "en": ["Renminbi (Yuan)","Yen","Won","Dong"],
+        "hi": ["रेनमिनबी (युआन)","येन","वॉन","डोंग"],
+        "bn": ["রেনমিনবি (ইউয়ান)","ইয়েন","ওন","ডং"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Renminbi is the official currency of China; the Yuan is its basic unit.", "hi": "रेनमिनबी चीन की आधिकारिक मुद्रा है; युआन इसकी बुनियादी इकाई है।", "bn": "রেনমিনবি হলো চীনের সরকারি মুদ্রা; ইউয়ান হলো এর প্রাথমিক একক।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of South Korea?", "hi": "दक्षिण कोरिया की मुद्रा क्या है?", "bn": "দক্ষিণ কোরিয়ার মুদ্রা কী?"},
+      "options": {
+        "en": ["Won","Yen","Yuan","Ringgit"],
+        "hi": ["वॉन","येन","युआन","रिंगिट"],
+        "bn": ["ওন","ইয়েন","ইউয়ান","রিঙ্গিত"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The South Korean Won (KRW) is the currency of South Korea.", "hi": "दक्षिण कोरियाई वॉन (KRW) दक्षिण कोरिया की मुद्रा है।", "bn": "দক্ষিণ কোরিয়ান ওন (KRW) হলো দক্ষিণ কোরিয়ার সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Switzerland?", "hi": "स्विट्जरलैंड की मुद्रा क्या है?", "bn": "সুইজারল্যান্ডের মুদ্রা কী?"},
+      "options": {
+        "en": ["Swiss Franc","Euro","Pound","Krona"],
+        "hi": ["स्विस फ्रैंक","यूरो","पाउंड","क्रोना"],
+        "bn": ["সুইস ফ্রাঙ্ক","ইউরো","পাউন্ড","ক্রোনা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Swiss Franc (CHF) is the currency and legal tender of Switzerland and Liechtenstein.", "hi": "स्विस फ्रैंक (CHF) स्विट्जरलैंड की मुद्रा है।", "bn": "সুইস ফ্রাঙ্ক (CHF) হলো সুইজারল্যান্ডের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Turkey?", "hi": "तुर्की की मुद्रा क्या है?", "bn": "তুরস্কের মুদ্রা কী?"},
+      "options": {
+        "en": ["Turkish Lira","Dinar","Euro","Rial"],
+        "hi": ["तुर्की लीरा","दीनार","यूरो","रियाल"],
+        "bn": ["তুর্কি লিরা","ডিনার","ইউরো","রিয়াল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Turkish Lira (TRY) is the official currency of Turkey.", "hi": "तुर्की लीरा (TRY) तुर्की की आधिकारिक मुद्रा है।", "bn": "তুর্কি লিরা (TRY) হলো তুরস্কের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Mexico?", "hi": "मेक्सिको की मुद्रा क्या है?", "bn": "মেক্সিকোর মুদ্রা কী?"},
+      "options": {
+        "en": ["Mexican Peso","Real","Dollar","Bolivar"],
+        "hi": ["मेक्सिकन पेसो","रियाल","डॉलर","बोलिवर"],
+        "bn": ["মেক্সিকান পেসো","রিয়াল","ডলার","বলিভার"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Mexican Peso (MXN) is the official currency of Mexico.", "hi": "मेक्सिकन पेसो (MXN) मेक्सिको की आधिकारिक मुद्रा है।", "bn": "মেক্সিকান পেসো (MXN) হলো মেক্সিকোর সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of India?", "hi": "भारत की मुद्रा क्या है?", "bn": "ভারতের মুদ্রা কী?"},
+      "options": {
+        "en": ["Indian Rupee","Taka","Rupiah","Dinar"],
+        "hi": ["भारतीय रुपया","टका","रुपया","दीनार"],
+        "bn": ["ভারতীয় রুপি","টাকা","রুপিয়া","ডিনার"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Indian Rupee (INR) is the official currency of India.", "hi": "भारतीय रुपया (INR) भारत की आधिकारिक मुद्रा है।", "bn": "ভারতীয় রুপি (INR) হলো ভারতের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Saudi Arabia?", "hi": "सऊदी अरब की मुद्रा क्या है?", "bn": "সৌদি আরবের মুদ্রা কী?"},
+      "options": {
+        "en": ["Saudi Riyal","Dinar","Dirham","Lira"],
+        "hi": ["सऊदी रियाल","दीनार","दरहम","लीरा"],
+        "bn": ["সৌদি রিয়াল","ডিনার","দিরহাম","লিরা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Saudi Riyal (SAR) is the official currency of Saudi Arabia.", "hi": "सऊदी रियाल (SAR) सऊदी अरब की आधिकारिक मुद्रा है।", "bn": "সৌদি রিয়াল (SAR) হলো সৌদি আরবের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Indonesia?", "hi": "इंडोनेशिया की मुद्रा क्या है?", "bn": "ইন্দোনেশিয়ার মুদ্রা কী?"},
+      "options": {
+        "en": ["Rupiah","Ringgit","Peso","Baht"],
+        "hi": ["रुपया","रिंगिट","पेसो","बाह्त"],
+        "bn": ["রুপিয়া","রিঙ্গিত","পেসো","বাথ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Indonesian Rupiah (IDR) is the official currency of Indonesia.", "hi": "इंडोनेशियाई रुपिया (IDR) इंडोनेशिया की आधिकारिक मुद्रा है।", "bn": "ইন্দোনেশিয়ান রুপিয়া (IDR) হলো ইন্দোনেশিয়ার সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Thailand?", "hi": "थाईलैंड की मुद्रा क्या है?", "bn": "থাইল্যান্ডের মুদ্রা কী?"},
+      "options": {
+        "en": ["Baht","Ringgit","Dong","Rupiah"],
+        "hi": ["बाह्त","रिंगिट","डोंग","रुपया"],
+        "bn": ["বাথ","রিঙ্গিত","ডং","রুপিয়া"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Thai Baht (THB) is the official currency of Thailand.", "hi": "थाई बाह्त (THB) थाईलैंड की आधिकारिक मुद्रा है।", "bn": "থাই বাথ (THB) হলো থাইল্যান্ডের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Vietnam?", "hi": "वियतनाम की मुद्रा क्या है?", "bn": "ভিয়েতনামের মুদ্রা কী?"},
+      "options": {
+        "en": ["Dong","Baht","Kyat","Riel"],
+        "hi": ["डोंग","बाह्त","क्यत","रिएल"],
+        "bn": ["ডং","বাথ","কিয়াট","রিয়েল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Vietnamese Dong (VND) is the currency of Vietnam.", "hi": "वियतनामी डोंग (VND) वियतनाम की मुद्रा है।", "bn": "ভিয়েতনামী ডং (VND) হলো ভিয়েতনামের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Sweden?", "hi": "स्वीडन की मुद्रा क्या है?", "bn": "সুইডেনের মুদ্রা কী?"},
+      "options": {
+        "en": ["Swedish Krona","Euro","Pound","Franc"],
+        "hi": ["स्वीडिश क्रोना","यूरो","पाउंड","फ्रैंक"],
+        "bn": ["সুইডিশ ক্রোনা","ইউরো","পাউন্ড","ফ্রাঙ্ক"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Swedish Krona (SEK) is the official currency of Sweden.", "hi": "स्वीडिश क्रोना (SEK) स्वीडन की आधिकारिक मुद्रा है।", "bn": "সুইডিশ ক্রোনা (SEK) হলো সুইডেনের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Norway?", "hi": "नॉर्वे की मुद्रा क्या है?", "bn": "নরওয়ের মুদ্রা কী?"},
+      "options": {
+        "en": ["Norwegian Krone","Euro","Krona","Ruble"],
+        "hi": ["नॉर्वेजियन क्रोन","यूरो","क्रोना","रूबल"],
+        "bn": ["নরওয়েজিয়ান ক্রোন","ইউরো","ক্রোনা","রবল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Norwegian Krone (NOK) is the official currency of Norway.", "hi": "नॉर्वेजियन क्रोन (NOK) नॉर्वे की आधिकारिक मुद्रा है।", "bn": "নরওয়েজিয়ান ক্রোন (NOK) হলো নরওয়ের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Denmark?", "hi": "डेनमार्क की मुद्रा क्या है?", "bn": "ডেনমার্কের মুদ্রা কী?"},
+      "options": {
+        "en": ["Danish Krone","Euro","Krona","Mark"],
+        "hi": ["डेनिश क्रोन","यूरो","क्रोना","मार्क"],
+        "bn": ["ড্যানিশ ক্রোন","ইউরো","ক্রোনা","মার্ক"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Danish Krone (DKK) is the official currency of Denmark.", "hi": "डेनिश क्रोन (DKK) डेनमार्क की आधिकारिक मुद्रा है।", "bn": "ড্যানিশ ক্রোন (DKK) হলো ডেনমার্কের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Canada?", "hi": "कनाडा की मुद्रा क्या है?", "bn": "কানাডার মুদ্রা কী?"},
+      "options": {
+        "en": ["Canadian Dollar","US Dollar","Pound","Euro"],
+        "hi": ["कनाडाई डॉलर","अमेरिकी डॉलर","पाउंड","यूरो"],
+        "bn": ["কানাডিয়ান ডলার","মার্কিন ডলার","পাউন্ড","ইউরো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Canadian Dollar (CAD) is the currency of Canada.", "hi": "कनाडाई डॉलर (CAD) कनाडा की मुद्रा है।", "bn": "কানাডিয়ান ডলার (CAD) হলো কানাডার সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Australia?", "hi": "ऑस्ट्रेलिया की मुद्रा क्या है?", "bn": "অস্ট্রেলিয়ার মুদ্রা কী?"},
+      "options": {
+        "en": ["Australian Dollar","US Dollar","New Zealand Dollar","Pound"],
+        "hi": ["ऑस्ट्रेलियाई डॉलर","अमेरिकी डॉलर","न्यूजीलैंड डॉलर","पाउंड"],
+        "bn": ["অস্ট্রেলিয়ান ডলার","মার্কিন ডলার","নিউজিল্যান্ড ডলার","পাউন্ড"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Australian Dollar (AUD) is the official currency of Australia.", "hi": "ऑस्ट्रेलियाई डॉलर (AUD) ऑस्ट्रेलिया की आधिकारिक मुद्रा है।", "bn": "অস্ট্রেলিয়ান ডলার (AUD) হলো অস্ট্রেলিয়ার সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Singapore?", "hi": "सिंगापुर की मुद्रा क्या है?", "bn": "সিঙ্গাপুরের মুদ্রা কী?"},
+      "options": {
+        "en": ["Singapore Dollar","US Dollar","Ringgit","Rupiah"],
+        "hi": ["सिंगापुर डॉलर","अमेरिकी डॉलर","रिंगिट","रुपया"],
+        "bn": ["সিঙ্গাপুর ডলার","মার্কিন ডলার","রিঙ্গিত","রুপিয়া"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Singapore Dollar (SGD) is the official currency of Singapore.", "hi": "सिंगापुर डॉलर (SGD) सिंगापुर की आधिकारिक मुद्रा है।", "bn": "সিঙ্গাপুর ডলার (SGD) হলো সিঙ্গাপুরের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of New Zealand?", "hi": "न्यूजीलैंड की मुद्रा क्या है?", "bn": "নিউজিল্যান্ডের মুদ্রা কী?"},
+      "options": {
+        "en": ["New Zealand Dollar","Australian Dollar","Pound","US Dollar"],
+        "hi": ["न्यूजीलैंड डॉलर","ऑस्ट्रेलियाई डॉलर","पाउंड","अमेरिकी डॉलर"],
+        "bn": ["নিউজিল্যান্ড ডলার","অস্ট্রেলিয়ান ডলার","পাউন্ড","মার্কিন ডলার"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The New Zealand Dollar (NZD) is the official currency of New Zealand.", "hi": "न्यूजीलैंड डॉलर (NZD) न्यूजीलैंड की आधिकारिक मुद्रा है।", "bn": "নিউজিল্যান্ড ডলার (NZD) হলো নিউজিল্যান্ডের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Egypt?", "hi": "मिस्र की मुद्रा क्या है?", "bn": "মিশরের মুদ্রা কী?"},
+      "options": {
+        "en": ["Egyptian Pound","Dinar","Dirham","Rial"],
+        "hi": ["मिस्र का पाउंड","दीनार","दरहम","रियाल"],
+        "bn": ["মিশরীয় পাউন্ড","ডিনার","দিরহাম","রিয়াল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Egyptian Pound (EGP) is the official currency of Egypt.", "hi": "मिस्र का पाउंड (EGP) मिस्र की आधिकारिक मुद्रा है।", "bn": "মিশরীয় পাউন্ড (EGP) হলো মিশরের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Israel?", "hi": "इजरायल की मुद्रा क्या है?", "bn": "ইসরায়েলের মুদ্রা কী?"},
+      "options": {
+        "en": ["New Shekel","Dinar","Euro","Riyal"],
+        "hi": ["न्यू शेकेल","दीनार","यूरो","रियाल"],
+        "bn": ["নিউ শেকেল","ডিনার","ইউরো","রিয়াল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Israeli New Shekel (ILS) is the official currency of Israel.", "hi": "इजरायली न्यू शेकेल (ILS) इजरायल की आधिकारिक मुद्रा है।", "bn": "ইসরায়েলি নিউ শেকেল (ILS) হলো ইসরায়েলের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Argentina?", "hi": "अर्जेंटीना की मुद्रा क्या है?", "bn": "আর্জেন্টিনার মুদ্রা কী?"},
+      "options": {
+        "en": ["Argentine Peso","Real","Sol","Bolivar"],
+        "hi": ["अर्जेंटीना पेसो","रियाल","सोल","बोलिवर"],
+        "bn": ["আর্জেন্টাইন পেসো","রিয়াল","সল","বলিভার"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Argentine Peso (ARS) is the official currency of Argentina.", "hi": "अर्जेंटीना पेसो (ARS) अर्जेंटीना की आधिकारिक मुद्रा है।", "bn": "আর্জেন্টাইন পেসো (ARS) হলো আর্জেন্টিনার সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Colombia?", "hi": "कोलंबिया की मुद्रा क्या है?", "bn": "কলম্বিয়ার মুদ্রা কী?"},
+      "options": {
+        "en": ["Colombian Peso","Real","Bolivar","Sucre"],
+        "hi": ["कोलम्बियाई पेसो","रियाल","बोलिवर","सुक्रे"],
+        "bn": ["কলম্বিয়ান পেসো","রিয়াল","বলিভার","সুক্রে"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Colombian Peso (COP) is the official currency of Colombia.", "hi": "कोलम्बियाई पेसो (COP) कोलंबिया की आधिकारिक मुद्रा है।", "bn": "কলম্বিয়ান পেসো (COP) হলো কলম্বিয়ার সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of Malaysia?", "hi": "मलेशिया की मुद्रा क्या है?", "bn": "মালয়েশিয়ার মুদ্রা কী?"},
+      "options": {
+        "en": ["Ringgit","Dollar","Baht","Rupiah"],
+        "hi": ["रिंगिट","डॉलर","बाह्त","रुपया"],
+        "bn": ["রিঙ্গিত","ডলার","বাথ","রুপিয়া"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Malaysian Ringgit (MYR) is the official currency of Malaysia.", "hi": "मलेशियाई रिंगिट (MYR) मलेशिया की आधिकारिक मुद्रा है।", "bn": "মালয়েশিয়ান রিঙ্গিত (MYR) হলো মালয়েশিয়ার সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the currency of the Philippines?", "hi": "फिलीपींस की मुद्रा क्या है?", "bn": "ফিলিপাইনের মুদ্রা কী?"},
+      "options": {
+        "en": ["Philippine Peso","Dollar","Ringgit","Rupiah"],
+        "hi": ["फिलीपीन पेसो","डॉलर","रिंगिट","रुपया"],
+        "bn": ["ফিলিপাইন পেসো","ডলার","রিঙ্গিত","রুপিয়া"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Philippine Peso (PHP) is the official currency of the Philippines.", "hi": "फिलीपीन पेसो (PHP) फिलीपींस की आधिकारिक मुद्रा है।", "bn": "ফিলিপাইন পেসো (PHP) হলো ফিলিপাইনের সরকারি মুদ্রা।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "Which planet is closest to the Sun?", "hi": "सूर्य के सबसे निकट कौन सा ग्रह है?", "bn": "সূর্যের সবচেয়ে কাছের গ্রহ কোনটি?"},
+      "options": {
+        "en": ["Mercury","Venus","Earth","Mars"],
+        "hi": ["बुध","शुक्र","पृथ्वी","मंगल"],
+        "bn": ["বুধ","শুক্র","পৃথিবী","মঙ্গল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Mercury is the smallest and closest planet to the Sun in our solar system.", "hi": "बुध हमारे सौरमंडल का सबसे छोटा और सूर्य के सबसे निकट का ग्रह है।", "bn": "বুধ হলো আমাদের সৌরজগতের ক্ষুদ্রতম এবং সূর্যের সবচেয়ে কাছের গ্রহ।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "Which planet is the hottest in our solar system?", "hi": "हमारे सौरमंडल का सबसे गर्म ग्रह कौन सा है?", "bn": "আমাদের সৌরজগতের সবচেয়ে উষ্ণ গ্রহ কোনটি?"},
+      "options": {
+        "en": ["Venus","Mercury","Mars","Jupiter"],
+        "hi": ["शुक्र","बुध","मंगल","बृहस्पति"],
+        "bn": ["শুক্র","বুধ","মঙ্গল","বৃহস্পতি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Venus is the hottest planet due to its dense greenhouse-gas atmosphere.", "hi": "घने ग्रीनहाउस गैस वायुमंडल के कारण शुक्र सबसे गर्म ग्रह है।", "bn": "বায়ুমণ্ডলে ঘন গ্রিনহাউস গ্যাসের উপস্থিতির কারণে শুক্র সবচেয়ে উষ্ণ গ্রহ।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "Which planet is known as the Gas Giant and is the largest in our solar system?", "hi": "सौरमंडल के सबसे बड़े गैस विशाल ग्रह का नाम क्या है?", "bn": "আমাদের সৌরজগতের বৃহত্তম গ্যাস দানব গ্রহটির নাম কী?"},
+      "options": {
+        "en": ["Jupiter","Saturn","Uranus","Neptune"],
+        "hi": ["बृहस्पति","शनि","यूरेनस","नेपच्यून"],
+        "bn": ["বৃহস্পতি","শনি","ইউরেনাস","নেপচুন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Jupiter is the largest planet in our solar system, with a mass more than double of all other planets combined.", "hi": "बृहस्पति हमारे सौरमंडल का सबसे बड़ा ग्रह है।", "bn": "বৃহস্পতি হলো আমাদের সৌরজগতের বৃহত্তম গ্রহ।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "Which planet is famous for its prominent ring system?", "hi": "कौन सा ग्रह अपने प्रसिद्ध वलय प्रणाली (रिंग्स) के लिए जाना जाता है?", "bn": "কোন গ্রহটি তার সুপরিচিত বলয় সিস্টেমের জন্য বিখ্যাত?"},
+      "options": {
+        "en": ["Saturn","Jupiter","Uranus","Neptune"],
+        "hi": ["शनि","बृहस्पति","यूरेनस","नेपच्यून"],
+        "bn": ["শনি","বৃহস্পতি","ইউরেনাস","নেপচুন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Saturn has the most extensive and visible ring system in our solar system.", "hi": "शनि के पास हमारे सौरमंडल में सबसे व्यापक और दिखाई देने वाली वलय प्रणाली है।", "bn": "শনির বলয় সিস্টেম আমাদের সৌরজগতের মধ্যে সবচেয়ে বিস্তৃত ও স্পষ্ট।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What is the name of our home galaxy?", "hi": "हमारी आकाशगंगा का नाम क्या है?", "bn": "আমাদের ছায়াপথটির নাম কী?"},
+      "options": {
+        "en": ["Milky Way","Andromeda","Triangulum","Sombrero"],
+        "hi": ["मिल्की वे (आकाशगंगा)","एंड्रोमेडा","त्रिकोणीय","सॉम्ब्रेरो"],
+        "bn": ["মিল্কিওয়ে (ছায়াপথ)","অ্যান্ড্রোমিডা","ট্রায়াঙ্গুলাম","সমব্রেরো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Milky Way is the barred spiral galaxy containing our Solar System.", "hi": "मिल्की वे वह सर्पिल आकाशगंगा है जिसमें हमारा सौरमंडल स्थित है।", "bn": "মিল্কিওয়ে হলো একটি সর্পিল ছায়াপথ যার মধ্যে আমাদের সৌরজগৎ অবস্থিত।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who was the first person to walk on the Moon?", "hi": "चाँद पर कदम रखने वाले पहले व्यक्ति कौन थे?", "bn": "চাঁদে পা রাখা প্রথম ব্যক্তি কে ছিলেন?"},
+      "options": {
+        "en": ["Neil Armstrong","Buzz Aldrin","Yuri Gagarin","Alan Shepard"],
+        "hi": ["नील आर्मस्ट्रांग","बज़ एल्ड्रिन","यूरी गागरिन","एलन शेपहार्ड"],
+        "bn": ["নীল আর্মস্ট্রং","বাজ অলড্রিন","ইউরি গ্যাগারিন","অ্যালান শেপার্ড"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Neil Armstrong walked on the Moon on 21 July 1969 during the Apollo 11 mission.", "hi": "नील आर्मस्ट्रांग ने अपोलो 11 मिशन के दौरान 21 जुलाई 1969 को चंद्रमा पर चहलकदमी की।", "bn": "নীল আর্মস্ট্রং ১৯৬৯ সালের ২১ জুলাই অ্যাপোলো ১১ মিশনের সময় চাঁদে প্রথম পদার্পণ করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who was the first human to travel into outer space?", "hi": "बाहरी अंतरिक्ष में यात्रा करने वाले पहले मानव कौन थे?", "bn": "মহাকাশে ভ্রমণকারী প্রথম মানুষ কে ছিলেন?"},
+      "options": {
+        "en": ["Yuri Gagarin","Alan Shepard","John Glenn","Neil Armstrong"],
+        "hi": ["यूरी गागरिन","एलन शेपहार्ड","जॉन ग्लेन","नील आर्मस्ट्रांग"],
+        "bn": ["ইউরি গ্যাগারিন","অ্যালান শেপার্ড","জন গ্লেন","নীল আর্মস্ট্রং"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Yuri Gagarin of the Soviet Union completed a single orbit of Earth on 12 April 1961.", "hi": "सोवियत संघ के यूरी गागरिन ने 12 अप्रैल 1961 को वोस्तोक 1 अंतरिक्ष यान में पृथ्वी की परिक्रमा की।", "bn": "সোভিয়েত ইউনিয়নের ইউরি গ্যাগারিন ১৯৬১ সালের ১২ এপ্রিল ভস্তক ১ মহাকাশযানে পৃথিবীর কক্ষপথ সফলভাবে প্রদক্ষিণ করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "What is the closest star to Earth?", "hi": "पृथ्वी का सबसे निकटतम तारा कौन सा है?", "bn": "পৃথিবীর সবচেয়ে কাছের নক্ষত্র কোনটি?"},
+      "options": {
+        "en": ["The Sun","Proxima Centauri","Sirius","Alpha Centauri"],
+        "hi": ["सूर्य","प्रॉक्सिमा सेंटौरी","सीरियस","अल्फा सेंटौरी"],
+        "bn": ["সূর্য","প্রক্সিমা সেন্টরি","সিরিয়াস","আলফা সেন্টরি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Sun is the closest star to Earth, at an average distance of 149.6 million kilometers.", "hi": "सूर्य पृथ्वी का सबसे निकटतम तारा है।", "bn": "সূর্য হলো পৃথিবীর সবচেয়ে কাছের নক্ষত্র।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Which planet is also known as the Morning Star or Evening Star?", "hi": "किस ग्रह को भोर का तारा या सांझ का तारा भी कहा जाता है?", "bn": "কোন গ্রহটি ভোরবেলা বা সন্ধ্যার সময় আকাশে সবচেয়ে উজ্জ্বল দেখায় বলে তাকে 'শুকতারা' বলা হয়?"},
+      "options": {
+        "en": ["Venus","Mars","Mercury","Jupiter"],
+        "hi": ["शुक्र","मंगल","बुध","बृहस्पति"],
+        "bn": ["শুক্র","মঙ্গল","বুধ","বৃহস্পতি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Venus is highly reflective and is visible shortly before sunrise or after sunset.", "hi": "शुक्र को अपनी चमक के कारण भोर या सांझ का तारा कहा जाता है।", "bn": "শুক্রকে তার উজ্জ্বলতার কারণে ভোর বা সন্ধ্যার নক্ষত্র বা শুকতারা বলা হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "How many planets are there in our Solar System?", "hi": "हमारे सौरमंडल में कितने ग्रह हैं?", "bn": "আমাদের সৌরজগতে কয়টি গ্রহ রয়েছে?"},
+      "options": {
+        "en": ["8","9","7","10"],
+        "hi": ["8","9","7","10"],
+        "bn": ["৮","৯","৭","১০"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "There are eight planets in our solar system since Pluto was reclassified as a dwarf planet in 2006.", "hi": "हमारे सौरमंडल में 8 मुख्य ग्रह हैं (प्लूटो को 2006 में बौने ग्रह की श्रेणी में रख दिया गया था)।", "bn": "আমাদের সৌরজগতে ৮টি গ্রহ রয়েছে (২০০৬ সালে প্লুটোকে বামন গ্রহ হিসেবে পুনঃশ্রেণীবদ্ধ করা হয়েছে)।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "What is the name of the largest moon of Saturn?", "hi": "शनि के सबसे बड़े उपग्रह (चंद्रमा) का नाम क्या है?", "bn": "শনির বৃহত্তম উপগ্রহের (চাঁদ) নাম কী?"},
+      "options": {
+        "en": ["Titan","Ganymede","Europa","Callisto"],
+        "hi": ["टाइटन","गैनीमीड","यूरोपा","कैलिस्टो"],
+        "bn": ["টাইটান","গ্যানিমেড","ইউরোপা","ক্যালিস্টো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Titan is the largest moon of Saturn and the second-largest natural satellite in the Solar System.", "hi": "टाइटन शनि का सबसे बड़ा चंद्रमा है।", "bn": "টাইটান হলো শনির বৃহত্তম এবং সৌরজগতের দ্বিতীয় বৃহত্তম উপগ্রহ।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Which planet has the shortest day in our Solar System?", "hi": "हमारे सौरमंडल में किस ग्रह का दिन सबसे छोटा होता है?", "bn": "আমাদের সৌরজগতে কোন গ্রহের দিন সবচেয়ে ছোট?"},
+      "options": {
+        "en": ["Jupiter","Saturn","Mercury","Earth"],
+        "hi": ["बृहस्पति","शनि","बुध","पृथ्वी"],
+        "bn": ["বৃহস্পতি","শনি","বুধ","পৃথিবী"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Jupiter rotates once in just under 10 hours, making its day the shortest of all planets.", "hi": "बृहस्पति केवल 10 घंटे में एक चक्कर पूरा कर लेता है, जिससे इसका दिन सबसे छोटा होता है।", "bn": "বৃহস্পতি মাত্র ১০ ঘণ্টারও কম সময়ে অক্ষের চারপাশে একবার আবর্তন করে, ফলে এর দিন সবচেয়ে ছোট হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Which space agency launched the Hubble Space Telescope?", "hi": "किस अंतरिक्ष एजेंसी ने हबल स्पेस टेलीस्कॉप लॉन्च किया था?", "bn": "কোন মহাকাশ সংস্থা হাবল স্পেস টেলিস্কোপ উৎক্ষেপণ করেছিল?"},
+      "options": {
+        "en": ["NASA","ESA","Roscosmos","JAXA"],
+        "hi": ["नासा (NASA)","ईएसए (ESA)","रॉसकॉस्मॉस","जाक्सा"],
+        "bn": ["নাসা (NASA)","ইএসএ (ESA)","রসকসমস","জাক্সা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Hubble was launched by NASA in 1990 with contributions from the European Space Agency.", "hi": "हबल टेलीस्कॉप को नासा द्वारा 1990 में अंतरिक्ष में स्थापित किया गया था।", "bn": "হাবল টেলিস্কোপটি ১৯৯০ সালে মার্কিন মহাকাশ সংস্থা নাসা (NASA) উৎক্ষেপণ করে।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Which planet is often referred to as Earth's twin?", "hi": "किस ग्रह को अक्सर पृथ्वी का जुड़वां ग्रह कहा जाता है?", "bn": "কোন গ্রহটিকে প্রায়শই পৃথিবীর যমজ গ্রহ বলা হয়?"},
+      "options": {
+        "en": ["Venus","Mars","Mercury","Neptune"],
+        "hi": ["शुक्र","मंगल","बुध","नेपच्यून"],
+        "bn": ["শুক্র","মঙ্গল","বুধ","নেপচুন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Venus is called Earth's twin due to its similar size, mass, and bulk composition.", "hi": "शुक्र को आकार और संरचना में समानता के कारण पृथ्वी का जुड़वां कहा जाता है।", "bn": "আকার, ভর এবং উপাদানের মিল থাকার কারণে শুক্রকে পৃথিবীর যমজ গ্রহ বলা হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "What is the boundary surrounding a black hole from which nothing can escape?", "hi": "ब्लैक होल के चारों ओर की वह सीमा क्या कहलाती है जिससे कुछ भी बच नहीं सकता?", "bn": "ব্ল্যাক হোলের চারপাশের শেষ সীমানাটিকে কী বলা হয় যেখান থেকে আলোও পালাতে পারে না?"},
+      "options": {
+        "en": ["Event Horizon","Singularity","Accretion Disk","Schwarzschild Radius"],
+        "hi": ["घटना क्षितिज (इवेंट होराइजन)","विलक्षणता (सिंगुलैरिटी)","अभिवृद्धि चक्र","श्वार्जस्चिल्ड त्रिज्या"],
+        "bn": ["ইভেন্ট হরাইজন","সিঙ্গুলারিটি","অ্যাক্রিশন ডিস্ক","শোয়ার্জশিল্ড ব্যাসার্ধ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The event horizon is the threshold where the escape velocity exceeds the speed of light.", "hi": "घटना क्षितिज ब्लैक होल के बाहरी किनारे की सीमा है।", "bn": "ইভেন্ট হরাইজন হলো ব্ল্যাক হোলের চারপাশের সেই শেষ সীমানা যার ভেতরে প্রবেশ করলে আর ফিরে আসা যায় না।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What is the main component of the Sun?", "hi": "सूर्य का मुख्य घटक कौन सा तत्व है?", "bn": "সূর্যের প্রধান উপাদান উপাদান কোনটি?"},
+      "options": {
+        "en": ["Hydrogen","Helium","Oxygen","Carbon"],
+        "hi": ["हाइड्रोजन","हीलियम","ऑक्सीजन","कार्बन"],
+        "bn": ["হাইড্রোজেন","হিলিয়াম","অক্সিজেন","কার্বন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Hydrogen makes up about 73% of the Sun's mass, with helium making up around 25%.", "hi": "सूर्य के द्रव्यमान का लगभग 73% भाग हाइड्रोजन से और 25% हीलियम से बना है।", "bn": "সূর্যের ভরের প্রায় ৭৩% হাইড্রোজেন এবং ২৫% হিলিয়াম দ্বারা গঠিত।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Which planet is the farthest from the Sun in our Solar System?", "hi": "हमारे सौरमंडल में सूर्य से सबसे दूर कौन सा ग्रह है?", "bn": "আমাদের সৌরজগতে সূর্য থেকে সবচেয়ে দূরে অবস্থিত গ্রহ কোনটি?"},
+      "options": {
+        "en": ["Neptune","Uranus","Saturn","Pluto"],
+        "hi": ["नेपच्यून","यूरेनस","शनि","प्लूटो"],
+        "bn": ["নেপচুন","ইউরেনাস","শনি","প্লুটো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Neptune is the eighth and farthest planet from the Sun in our Solar System.", "hi": "नेपच्यून हमारे सौरमंडल का आठवां और सूर्य से सबसे दूर का ग्रह है।", "bn": "নেপচুন হলো আমাদের সৌরজগতের অষ্টম এবং সূর্য থেকে সবচেয়ে দূরে অবস্থিত গ্রহ।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Which planet has the highest number of moons?", "hi": "हमारे सौरमंडल में किस ग्रह के पास सबसे अधिक चंद्रमा (उपग्रह) हैं?", "bn": "আমাদের সৌরজগতে কোন গ্রহের সবচেয়ে বেশি উপগ্রহ (চাঁদ) রয়েছে?"},
+      "options": {
+        "en": ["Saturn","Jupiter","Uranus","Neptune"],
+        "hi": ["शनि","बृहस्पति","यूरेनस","नेपच्यून"],
+        "bn": ["শনি","বৃহস্পতি","ইউরেনাস","নেপচুন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Saturn has over 140 confirmed moons, surpassing Jupiter.", "hi": "शनि के पास 140 से अधिक पुष्ट उपग्रह हैं, जो बृहस्पति से अधिक हैं।", "bn": "শনির ১৪০টিরও বেশি প্রমাণিত উপগ্রহ রয়েছে, যা সৌরজগতের মধ্যে সর্বাধিক।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What protects the Earth from harmful solar winds and radiation?", "hi": "हानिकारक सौर हवाओं और विकिरण से पृथ्वी की रक्षा कौन करता है?", "bn": "ক্ষতিকারক সৌর বায়ু এবং বিকিরণ থেকে পৃথিবীকে রক্ষা করে কোনটি?"},
+      "options": {
+        "en": ["Magnetic Field","Ozone Layer","Atmosphere","Ionosphere"],
+        "hi": ["चुंबकीय क्षेत्र","ओजोन परत","वायुमंडल","आयनमंडल"],
+        "bn": ["চৌম্বক ক্ষেত্র","ওজোন স্তর","বায়ুমণ্ডল","আয়নমণ্ডল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Earth's geomagnetic field deflects most solar wind particles and cosmic rays.", "hi": "पृथ्वी का चुंबकीय क्षेत्र सौर हवाओं के हानिकारक कणों को विक्षेपित कर देता है।", "bn": "পৃথিবীর ভূ-চৌম্বকীয় ক্ষেত্র অধিকাংশ ক্ষতিকারক সৌর বায়ুর কণাকে বিচ্যুত করে দেয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What is the name of the first artificial satellite launched into space?", "hi": "अंतरिक्ष में प्रक्षेपित किए गए पहले कृत्रिम उपग्रह का नाम क्या था?", "bn": "মহাকাশে পাঠানো প্রথম কৃত্রিম উপগ্রহের নাম কী ছিল?"},
+      "options": {
+        "en": ["Sputnik 1","Explorer 1","Vanguard 1","Apollo 11"],
+        "hi": ["स्पुतनिक 1","एक्सप्लोरर 1","वेनगार्ड 1","अपोलो 11"],
+        "bn": ["স্পুটনিক ১","এক্সপ্লোরার ১","ভ্যানগার্ড ১","অ্যাপোলো ১১"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Sputnik 1 was launched by the Soviet Union on 4 October 1957.", "hi": "सोवियत संघ ने 4 अक्टूबर 1957 को पहला कृत्रिम उपग्रह स्पुतनिक 1 लॉन्च किया था।", "bn": "সোভিয়েত ইউনিয়ন ১৯৫৭ সালের ৪ অক্টোবর প্রথম কৃত্রিম উপগ্রহ স্পুটনিক ১ মহাকাশে পাঠায়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "What is the approximate speed of light?", "hi": "प्रकाश की अनुमानित गति क्या है?", "bn": "আলোর আনুমানিক গতিবেগ কত?"},
+      "options": {
+        "en": ["300,000 km/s","150,000 km/s","500,000 km/s","30,000 km/s"],
+        "hi": ["3,00,000 किमी/सेकंड","1,50,000 किमी/सेकंड","5,00,000 किमी/सेकंड","30,000 किमी/सेकंड"],
+        "bn": ["৩,০০,০০০ কিমি/সেকেন্ড","১,৫০,০০০ কিমি/সেকেন্ড","৫,০০,০০০ কিমি/সেকেন্ড","৩০,০০০ কিমি/সেকেন্ড"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The speed of light in a vacuum is exactly 299,792,458 meters per second (approx. 300,000 km/s).", "hi": "निर्वात में प्रकाश की गति लगभग 3 लाख किलोमीटर प्रति सेकंड होती है।", "bn": "শূন্যস্থানে আলোর গতিবেগ প্রতি সেকেন্ডে প্রায় ৩,০০,০০০ কিলোমিটার।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "How long does it take for light from the Sun to reach Earth?", "hi": "सूर्य का प्रकाश पृथ्वी तक पहुँचने में लगभग कितना समय लेता है?", "bn": "সূর্যের আলো পৃথিবীতে পৌঁছাতে আনুমানিক কত সময় নেয়?"},
+      "options": {
+        "en": ["8 minutes","8 seconds","8 hours","8 days"],
+        "hi": ["8 मिनट","8 सेकंड","8 घंटे","8 दिन"],
+        "bn": ["৮ মিনিট","৮ সেকেন্ড","৮ ঘণ্টা","৮ দিন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Sunlight takes about 8 minutes and 20 seconds to reach the Earth.", "hi": "सूर्य का प्रकाश पृथ्वी तक पहुँचने में लगभग 8 मिनट और 20 सेकंड का समय लेता है।", "bn": "সূর্যের আলো পৃথিবীতে পৌঁছাতে প্রায় ৮ মিনিট ২০ সেকেন্ড সময় নেয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "What is the name of the largest volcano in the Solar System?", "hi": "सौरमंडल के सबसे बड़े ज्वालामुखी का नाम क्या है?", "bn": "সৌরজগতের বৃহত্তম আগ্নেয়গিরির নাম কী?"},
+      "options": {
+        "en": ["Olympus Mons","Mauna Loa","Mount Vesuvius","Mount Etna"],
+        "hi": ["ओलंपस मॉन्स","मौन लोआ","माउंट विसुवियस","माउंट एटना"],
+        "bn": ["অলিম্পাস মন্স","মনা লোয়া","মাউন্ট ভিসুভিয়াস","মাউন্ট এটনা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Olympus Mons is a giant shield volcano located on Mars, standing about 22 km high.", "hi": "ओलंपस मॉन्स मंगल ग्रह पर स्थित एक विशाल ज्वालामुखी है, जो लगभग 22 किमी ऊंचा है।", "bn": "অলিম্পাস মন্স হলো মঙ্গল গ্রহে অবস্থিত একটি বিশাল আগ্নেয়গিরি, যা প্রায় ২২ কিমি উঁচু।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Which gas is most abundant in the Earth's atmosphere?", "hi": "पृथ्वी के वायुमंडल में सबसे प्रचुर मात्रा में कौन सी गैस है?", "bn": "পৃথিবীর বায়ুমণ্ডলে কোন গ্যাসটি সবচেয়ে বেশি পরিমাণে থাকে?"},
+      "options": {
+        "en": ["Nitrogen","Oxygen","Argon","Carbon Dioxide"],
+        "hi": ["नाइट्रोजन","ऑक्सीजन","आर्गन","कार्बन डाइऑक्साइड"],
+        "bn": ["নাইট্রোজেন","অক্সিজেন","আর্গন","কার্বন ডাই অক্সাইড"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Nitrogen makes up about 78% of Earth's atmosphere, followed by oxygen at 21%.", "hi": "वायुमंडल का लगभग 78% भाग नाइट्रोजन है, जबकि ऑक्सीजन 21% है।", "bn": "পৃথিবীর বায়ুমণ্ডলের প্রায় ৭৮% নাইট্রোজেন এবং ২১% অক্সিজেন দ্বারা গঠিত।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What is the force that pulls objects toward each other?", "hi": "वस्तुओं को एक-दूसरे की ओर खींचने वाले बल को क्या कहते हैं?", "bn": "বস্তুসমূহকে একে অপরের দিকে আকর্ষণকারী বলকে কী বলা হয়?"},
+      "options": {
+        "en": ["Gravity","Friction","Magnetism","Inertia"],
+        "hi": ["गुरुत्वाकर्षण","घर्षण","चुंबकत्व","जड़त्व"],
+        "bn": ["মহাকর্ষ","ঘর্ষণ","চৌম্বকত্ব","জাড্য"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Gravity is the fundamental force of attraction between any two masses.", "hi": "गुरुत्वाकर्षण द्रव्यमान वाली वस्तुओं के बीच का प्राकृतिक आकर्षण बल है।", "bn": "মহাকর্ষ হলো যেকোনো দুটি ভরের মধ্যে পারস্পরিক আকর্ষণ বল।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who developed the theory of relativity?", "hi": "सापेक्षता का सिद्धांत किसने विकसित किया था?", "bn": "আপেক্ষিকতার তত্ত্ব কে প্রবর্তন করেছিলেন?"},
+      "options": {
+        "en": ["Albert Einstein","Isaac Newton","Galileo Galilei","Stephen Hawking"],
+        "hi": ["अल्बर्ट आइंस्टीन","आइज़ैक न्यूटन","गैलीलियो गैलीली","स्टीफन हॉकिंग"],
+        "bn": ["অ্যালবার্ট আইনস্টাইন","আইজ্যাক নিউটন","গ্যালিলিও গ্যালিলি","স্টিফেন হকিং"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Albert Einstein developed the theories of special and general relativity.", "hi": "अल्बर्ट आइंस्टीन ने सापेक्षता के सिद्धांत को प्रतिपादित किया था।", "bn": "অ্যালবার্ট আইনস্টাইন আপেক্ষিকতার সাধারণ ও বিশেষ তত্ত্ব প্রবর্তন করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Which planet is the smallest in our Solar System?", "hi": "हमारे सौरमंडल का सबसे छोटा ग्रह कौन सा है?", "bn": "আমাদের সৌরজগতের ক্ষুদ্রতম গ্রহ কোনটি?"},
+      "options": {
+        "en": ["Mercury","Mars","Venus","Neptune"],
+        "hi": ["बुध","मंगल","शुक्र","नेपच्यून"],
+        "bn": ["বুধ","মঙ্গল","শুক্র","নেপচুন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Mercury is both the smallest planet and the closest to the Sun.", "hi": "बुध सौरमंडल का सबसे छोटा और सूर्य के सबसे निकट का ग्रह है।", "bn": "বুধ হলো সৌরজগতের ক্ষুদ্রতম এবং সূর্যের সবচেয়ে কাছের গ্রহ।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "What is the name of the first space telescope launched into space?", "hi": "अंतरिक्ष में भेजे गए पहले स्पेस टेलीस्कॉप का नाम क्या है?", "bn": "মহাকাশে উৎক্ষেপণ করা প্রথম স্পেস টেলিস্কোপের নাম কী?"},
+      "options": {
+        "en": ["Hubble Space Telescope","James Webb Space Telescope","Kepler","Spitzer"],
+        "hi": ["हबल स्पेस टेलीस्कॉप","जेम्स वेब स्पेस टेलीस्कॉप","केपलर","स्पिट्जर"],
+        "bn": ["হাবল স্পেস টেলিস্কোপ","জেমস ওয়েব স্পেস টেলিস্কোপ","কেপলার","স্পিৎজার"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Hubble Space Telescope was launched in 1990 and remains operational.", "hi": "हबल स्पेस टेलीस्कॉप 1990 में अंतरिक्ष में स्थापित किया गया था।", "bn": "হাবল স্পেস টেলিস্কোপটি ১৯৯০ সালে মহাকাশে উৎক্ষেপণ করা হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Which planet rotates on its side, with its axis tilted nearly 98 degrees?", "hi": "कौन सा ग्रह अपनी धुरी पर लगभग 98 डिग्री झुका हुआ है?", "bn": "কোন গ্রহটি তার কক্ষপথের সাথে প্রায় ৯৮ ডিগ্রি কোণে কাত হয়ে আবর্তন করে?"},
+      "options": {
+        "en": ["Uranus","Neptune","Saturn","Jupiter"],
+        "hi": ["यूरेनस","नेपच्यून","शनि","बृहस्पति"],
+        "bn": ["ইউরেনাস","নেপচুন","শনি","বৃহস্পতি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Uranus' unique sideways rotation makes it look like a rolling ball.", "hi": "यूरेनस का अक्षीय झुकाव अत्यधिक (98 डिग्री) है, जिससे यह लेटा हुआ प्रतीत होता है।", "bn": "ইউরেনাসের অক্ষীয় কাত প্রায় ৯৮ ডিগ্রি হওয়ার কারণে এটিকে কাত হয়ে ঘুরতে দেখা যায়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What type of star is our Sun?", "hi": "हमारा सूर्य किस प्रकार का तारा है?", "bn": "আমাদের সূর্য কোন শ্রেণীর নক্ষত্র?"},
+      "options": {
+        "en": ["Yellow Dwarf","Red Giant","White Dwarf","Blue Supergiant"],
+        "hi": ["पीला बौना तारा (येलो ड्वार्फ)","लाल विशाल तारा (रेड जाइंट)","सफेद बौना तारा","नीला महादानव तारा"],
+        "bn": ["হলুদ বামন নক্ষত্র","লাল দানব নক্ষত্র","শ্বেত বামন নক্ষত্র","নীল দানব নক্ষত্র"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Sun is a G-type main-sequence star, informally called a yellow dwarf.", "hi": "सूर्य एक मुख्य अनुक्रम पीला बौना तारा है।", "bn": "সূর্য হলো জি-টাইপ প্রধান ধারার নক্ষত্র, যা হলুদ বামন নামে পরিচিত।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "Who invented the telephone?", "hi": "टेलीफोन का आविष्कार किसने किया था?", "bn": "টেলিফোন কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Alexander Graham Bell","Thomas Edison","Nikola Tesla","Guglielmo Marconi"],
+        "hi": ["अलेक्जेंडर ग्राहम बेल","थॉमस एडिसन","निकोला टेस्ला","गुग्लिएल्मो मार्कोनी"],
+        "bn": ["আলেকজান্ডার গ্রাহাম বেল","থমাস এডিসন","নিকোলা টেসলা","গুগ্লিয়েলমো মার্কোনি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Alexander Graham Bell was awarded the first US patent for the telephone in 1876.", "hi": "अलेक्जेंडर ग्राहम बेल को 1876 में टेलीफोन के आविष्कार का पेटेंट मिला था।", "bn": "আলেকজান্ডার গ্রাহাম বেল ১৮৭৬ সালে টেলিফোন আবিষ্কারের জন্য প্রথম পেটেন্ট লাভ করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "Who invented the practical incandescent light bulb?", "hi": "व्यावहारिक तापदीप्त प्रकाश बल्ब का आविष्कार किसने किया?", "bn": "ব্যবহারিক বৈদ্যুতিক লাইট বাল্ব কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Thomas Edison","Nikola Tesla","Benjamin Franklin","Alexander Graham Bell"],
+        "hi": ["थॉमस एडिसन","निकोला टेस्ला","बेंजामिन फ्रैंकलिन","अलेक्जेंडर ग्राहम बेल"],
+        "bn": ["থমাস এডিসন","নিকোলা টেসলা","বেঞ্জামিন ফ্র্যাঙ্কলিন","আলেকজান্ডার গ্রাহাম বেল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Thomas Edison created the first commercially practical incandescent light bulb in 1879.", "hi": "थॉमस एडिसन ने 1879 में पहले व्यावसायिक रूप से व्यावहारिक प्रकाश बल्ब का निर्माण किया।", "bn": "থমাস এডিসন ১৮৭৯ সালে প্রথম বাণিজ্যিকভাবে ব্যবহারযোগ্য বৈদ্যুতিক লাইট বাল্ব তৈরি করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who discovered penicillin?", "hi": "पेनिसिलिन की खोज किसने की थी?", "bn": "পেনিসিলিন কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Alexander Fleming","Louis Pasteur","Robert Koch","Marie Curie"],
+        "hi": ["अलेक्जेंडर फ्लेमिंग","लुई पाश्चर","रॉबर्ट कोच","मैरी क्यूरी"],
+        "bn": ["আলেকজান্ডার ফ্লেমিং","লুই পাস্তুর","রবার্ট কখ","মেরি কুরি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Alexander Fleming discovered penicillin, the first true antibiotic, in 1928.", "hi": "अलेक्जेंडर फ्लेमिंग ने 1928 में पहले एंटीबायोटिक पेनिसिलिन की खोज की थी।", "bn": "আলেকজান্ডার ফ্লেমিং ১৯২৮ সালে প্রথম অ্যান্টিবায়োটিক পেনিসিলিন আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who is credited with inventing the World Wide Web?", "hi": "वर्ल्ड वाइड वेब (WWW) के आविष्कार का श्रेय किसे दिया जाता है?", "bn": "ওয়ার্ল্ড ওয়াইড ওয়েব (WWW) কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Tim Berners-Lee","Bill Gates","Steve Jobs","Alan Turing"],
+        "hi": ["टिम बर्नर्स-ली","बिल गेट्स","स्टीव जॉब्स","एलन ट्यूरिंग"],
+        "bn": ["টিম বার্নার্স-লি","বিল গেটস","স্টিভ জবস","অ্যালান টুরিং"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Tim Berners-Lee invented the World Wide Web in 1989 while working at CERN.", "hi": "टिम बर्नर्स-ली ने 1989 में सर्न (CERN) में काम करते हुए वर्ल्ड वाइड वेब का आविष्कार किया।", "bn": "টিম বার্নার্স-লি ১৯৮৯ সালে সার্ন-এ (CERN) কর্মরত অবস্থায় ওয়ার্ল্ড ওয়াইড ওয়েব আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who discovered gravity when an apple fell on his head?", "hi": "किस वैज्ञानिक ने सेब गिरने पर गुरुत्वाकर्षण की खोज की थी?", "bn": "কোন বিজ্ঞানী আপেল পড়ার ঘটনা থেকে মহাকর্ষ সূত্র আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Isaac Newton","Albert Einstein","Galileo Galilei","Nicolaus Copernicus"],
+        "hi": ["आइज़ैक न्यूटन","अल्बर्ट आइंस्टीन","गैलीलियो गैलीली","निकोलास कोपरनिकस"],
+        "bn": ["আইজ্যাক নিউটন","অ্যালবার্ট আইনস্টাইন","গ্যালিলিও গ্যালিলি","নিকোলাস কোপারনিকাস"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Sir Isaac Newton formulated the laws of motion and universal gravitation.", "hi": "सर आइज़ैक न्यूटन ने गति और सार्वभौमिक गुरुत्वाकर्षण के नियमों को प्रतिपादित किया था।", "bn": "স্যার আইজ্যাক নিউটন গতির সূত্র এবং সার্বজনীন মহাকর্ষ সূত্র প্রবর্তন করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who invented the radio?", "hi": "रेडियो का आविष्कार किसने किया था?", "bn": "রেডিও কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Guglielmo Marconi","Nikola Tesla","Thomas Edison","Alexander Graham Bell"],
+        "hi": ["गुग्लिएल्मो मार्कोनी","निकोला टेस्ला","थॉमस एडिसन","अलेक्जेंडर ग्राहम बेल"],
+        "bn": ["গুগ্লিয়েলমো মার্কোনি","নিকোলা টেসলা","থমাস এডিসন","আলেকজান্ডার গ্রাহাম বেল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Guglielmo Marconi is credited with the invention of the radio and wireless telegraphy.", "hi": "गुग्लिएल्मो मार्कोनी को रेडियो और वायरलेस टेलीग्राफी के आविष्कार का श्रेय दिया जाता है।", "bn": "গুগ্লিয়েলমো মার্কোনি বেতার তরঙ্গ ও রেডিও যোগাযোগের অন্যতম পথপ্রদর্শক ও আবিষ্কারক।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who invented the printing press?", "hi": "प्रिंटिंग प्रेस (मुद्रण यंत्र) का आविष्कार किसने किया था?", "bn": "ছাপাখানা বা প্রিন্টিং প্রেস কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Johannes Gutenberg","William Caxton","Leonardo da Vinci","Benjamin Franklin"],
+        "hi": ["जोहान्स गुटेनबर्ग","विलियम कैक्सटन","लियोनार्डो दा विंची","बेंजामिन फ्रैंकलिन"],
+        "bn": ["জোহানেস গুটেনবার্গ","উইলিয়াম ক্যাক্সটন","লিওনার্দো দা ভিঞ্চি","বেঞ্জামিন ফ্র্যাঙ্কলিন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Johannes Gutenberg introduced printing to Europe with the printing press in the 1440s.", "hi": "जोहान्स गुटेनबर्ग ने 1440 के दशक में प्रिंटिंग प्रेस का आविष्कार किया था।", "bn": "জোহানেস গুটেনবার্গ ১৪৪০-এর দশকে ইউরোপে প্রথম চলমান টাইপসহ ছাপাখানা প্রবর্তন করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who discovered Radium and Polonium?", "hi": "रेडियम और पोलोनियम की खोज किसने की थी?", "bn": "রেডিয়াম এবং পোলোনিয়াম কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Marie Curie","Albert Einstein","Ernest Rutherford","Dmitri Mendeleev"],
+        "hi": ["मैरी क्यूरी","अल्बर्ट आइंस्टीन","अर्नेस्ट रदरफोर्ड","दिमित्री मेंडेलीव"],
+        "bn": ["মেরি কুরি","অ্যালবার্ট আইনস্টাইন","আর্নেস্ট রাদারফোর্ড","দিমিত্রি মেন্দেলিভ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Marie Curie, along with her husband Pierre, discovered Radium and Polonium in 1898.", "hi": "मैरी क्यूरी ने अपने पति पियरे के साथ मिलकर 1898 में रेडियम और पोलोनियम की खोज की थी।", "bn": "মেরি কুরি ও তাঁর স্বামী পিয়েরে কুরি ১৮৯৮ সালে তেজস্ক্রিয় মৌল রেডিয়াম এবং পোলোনিয়াম আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who invented the steam engine?", "hi": "भाप के इंजन (स्टीम इंजन) का आविष्कार किसने किया था?", "bn": "বাষ্পীয় ইঞ্জিন কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["James Watt","George Stephenson","Thomas Newcomen","Robert Fulton"],
+        "hi": ["जेम्स वाट","जॉर्ज स्टीफनसन","थॉमस न्यूकोमेन","रॉबर्ट फुल्टन"],
+        "bn": ["জেমস ওয়াট","জর্জ স্টিফেনসন","থমাস নিউকোমেন","রবার্ট ফুলটন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "James Watt radically improved Newcomen's design, making the steam engine practical for industry.", "hi": "जेम्स वाट ने भाप के इंजन को औद्योगिक उपयोग के लिए व्यावहारिक बनाया।", "bn": "জেমস ওয়াট নিউকোমেনের বাষ্পীয় ইঞ্জিনের আমূল পরিবর্তন করে এটিকে ব্যবহারিক রূপ দেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who invented the first successful motor-operated airplane?", "hi": "पहले सफल मोटर-चालित हवाई जहाज का आविष्कार किसने किया था?", "bn": "মোটরচালিত উড়োজাহাজ কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Wright Brothers","Alexander Graham Bell","Thomas Edison","Henry Ford"],
+        "hi": ["राइट ब्रदर्स (बंधु)","अलेक्जेंडर ग्राहम बेल","थॉमस एडिसन","हेनरी फोर्ड"],
+        "bn": ["রাইট ব্রাদার্স (ভ্রাতৃদ্বয়)","আলেকজান্ডার গ্রাহাম বেল","থমাস এডিসন","হেনরি ফোর্ড"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Orville and Wilbur Wright made the first controlled, sustained flight of a powered aircraft in 1903.", "hi": "ऑर्विले और विल्बर राइट ने 1903 में पहली नियंत्रित और निरंतर हवाई उड़ान भरी थी।", "bn": "অরভিল ও উইলবার রাইট ১৯০৩ সালে প্রথম নিয়ন্ত্রিত ও চালিত বিমান উড্ডয়ন সফলভাবে সম্পন্ন করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who invented the barometer?", "hi": "बैरोमीटर का आविष्कार किसने किया था?", "bn": "ব্যারোমিটার কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Evangelista Torricelli","Blaise Pascal","Galileo Galilei","Isaac Newton"],
+        "hi": ["इवेंजेलिस्टा टॉरसिली","ब्लेज पास्कल","गैलीलियो गैलीली","आइज़ैक न्यूटन"],
+        "bn": ["ইভানজেলিস্তা টরিসেলি","ব্লেইজ পাস্কাল","গ্যালিলিও গ্যালিলি","আইজ্যাক নিউটন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Evangelista Torricelli, an Italian physicist, invented the barometer in 1643.", "hi": "इवेंजेलिस्टा टॉरसिली ने 1643 में वायुमंडलीय दबाव मापने के लिए बैरोमीटर का आविष्कार किया था।", "bn": "ইতালীয় পদার্থবিজ্ঞানী ইভানজেলিস্তা টরিসেলি ১৬৪৩ সালে বায়ুমণ্ডলের চাপ মাপার যন্ত্র ব্যারোমিটার আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who is credited with the invention of the lightning rod?", "hi": "तड़ित चालक (लाइटनिंग रॉड) के आविष्कार का श्रेय किसे दिया जाता है?", "bn": "বজ্রবহ শলাকা বা লাইটনিং রড কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Benjamin Franklin","Thomas Edison","Nikola Tesla","Michael Faraday"],
+        "hi": ["बेंजामिन फ्रैंकलिन","थॉमस एडिसन","निकोला टेस्ला","माइकल फैराडे"],
+        "bn": ["বেঞ্জামিন ফ্র্যাঙ্কলিন","থমাস এডিসন","নিকোলা টেসলা","মাইকেল ফ্যারাডে"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Benjamin Franklin invented the lightning rod in 1752 to protect buildings from lightning strikes.", "hi": "बेंजामिन फ्रैंकलिन ने 1752 में तड़ित चालक का आविष्कार किया था।", "bn": "বেঞ্জামিন ফ্র্যাঙ্কলিন ১৭৫২ সালে বজ্রপাত থেকে ভবন রক্ষা করার জন্য এই শলাকা আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who invented the vaccine for smallpox?", "hi": "चेचक (स्मॉलपॉक्स) के टीके का आविष्कार किसने किया था?", "bn": "বসন্ত রোগের (স্মলপক্স) টিকা কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Edward Jenner","Louis Pasteur","Jonas Salk","Alexander Fleming"],
+        "hi": ["एडवर्ड जेनर","लुई पाश्चर","जोनास साल्क","अलेक्जेंडर फ्लेमिंग"],
+        "bn": ["এডওয়ার্ড জেনার","লুই পাস্তুর","জোনাস সাল্ক","আলেকজান্ডার ফ্লেমিং"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Edward Jenner introduced the smallpox vaccine in 1796, pioneering the field of vaccinology.", "hi": "एडवर्ड जेनर ने 1796 में चेचक के टीके का आविष्कार किया था।", "bn": "এডওয়ার্ড জেনার ১৭৯৬ সালে কাউপক্স ব্যবহার করে বিশ্বের প্রথম সফল বসন্তের টিকা তৈরি করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who invented the modern safety elevator?", "hi": "आधुनिक सुरक्षित लिफ्ट (एलिवेटर) का आविष्कार किसने किया था?", "bn": "নিরাপদ আধুনিক লিফট বা এলিভেটর কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Elisha Otis","James Watt","Henry Ford","Nikola Tesla"],
+        "hi": ["एलीशा ओटिस","जेम्स वाट","हेनरी फोर्ड","निकोला टेस्ला"],
+        "bn": ["এলিশা ওটিস","জেমস ওয়াট","হেনরি ফোর্ড","নিকোলা টেসলা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Elisha Otis invented a safety device in 1852 that prevented elevators from falling if the cable broke.", "hi": "एलीशा ओटिस ने 1852 में सुरक्षा लिफ्ट का आविष्कार किया था।", "bn": "এলিশা ওটিস ১৮৫২ সালে লিফট ছিঁড়ে নিচে পড়ে যাওয়া রোধ করার জন্য নিরাপত্তা ব্রেক আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who discovered the structure of DNA?", "hi": "डीएनए (DNA) की संरचना की खोज किसने की थी?", "bn": "ডিএনএ-র (DNA) দ্বিসূত্রক কাঠামো কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Watson and Crick","Gregor Mendel","Charles Darwin","Louis Pasteur"],
+        "hi": ["वाटसन और क्रिक","ग्रेगर मेंडल","चार्ल्स डार्विन","लुई पाश्चर"],
+        "bn": ["ওয়াটসন এবং ক্রিক","গ্রেগর মেন্ডেল","চার্লস ডারউইন","লুই পাস্তুর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "James Watson and Francis Crick proposed the double helix structure of DNA in 1953.", "hi": "जेम्स वाटसन और फ्रांसिस क्रिक ने 1953 में डीएनए की दोहरी कुंडली संरचना का प्रस्ताव दिया था।", "bn": "জেমস ওয়াটসন ও ফ্রান্সিস ক্রিক ১৯৫৩ সালে ডিএনএ-র ডাবল হেলিক্স বা দ্বিসূত্রক কাঠামো আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who is the inventor of the electric battery?", "hi": "विद्युत बैटरी का आविष्कारक कौन है?", "bn": "বৈদ্যুতিক ব্যাটারি কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Alessandro Volta","Michael Faraday","Nikola Tesla","Thomas Edison"],
+        "hi": ["अलेक्जेंड्रो वोल्टा","माइकल फैराडे","निकोला टेस्ला","थॉमस एडिसन"],
+        "bn": ["আলেসান্দ্রো ভোল্টা","মাইকেল ফ্যারাডে","নিকোলা টেসলা","থমাস এডিসন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Alessandro Volta invented the Voltaic pile in 1800, the first electrical battery.", "hi": "अलेक्जेंड्रो वोल्टा ने 1800 में पहली विद्युत बैटरी 'वोल्टेइक पाइल' का आविष्कार किया था।", "bn": "আলেসান্দ্রো ভোল্টা ১৮০০ সালে বিশ্বের প্রথম রাসায়নিক ব্যাটারি ভোল্টাইক পাইল আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who invented the mercury thermometer?", "hi": "पारा थर्मामीटर (मरकरी थर्मामीटर) का आविष्कार किसने किया था?", "bn": "পারদ থার্মোমিটার কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Daniel Gabriel Fahrenheit","Anders Celsius","Galileo Galilei","Isaac Newton"],
+        "hi": ["डैनियल गेब्रियल फारेनहाइट","एंडर्स सेल्सियस","गैलीलियो गैलीली","आइज़ैक न्यूटन"],
+        "bn": ["ড্যানিয়েল গ্যাব্রিয়েল ফারেনহাইট","আন্দ্রে সেলসিয়াস","গ্যালিলিও গ্যালিলি","আইজ্যাক নিউটন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Daniel Gabriel Fahrenheit invented the mercury-in-glass thermometer in 1714.", "hi": "डैनियल गेब्रियल फारेनहाइट ने 1714 में पारा थर्मामीटर का आविष्कार किया था।", "bn": "জার্মান পদার্থবিজ্ঞানী ড্যানিয়েল গ্যাব্রিয়েল ফারেনহাইট ১৭১৪ সালে পারদ থার্মোমিটার আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who discovered the electron?", "hi": "इलेक्ट्रॉन की खोज किसने की थी?", "bn": "ইলেকট্রন কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["J.J. Thomson","Ernest Rutherford","John Dalton","Niels Bohr"],
+        "hi": ["जे. जे. थॉमसन","अर्नेस्ट रदरफोर्ड","जॉन डाल्टन","नील्स बोर"],
+        "bn": ["জে. জে. থমসন","আর্নেস্ট রাদারফোর্ড","জন ডাল্টন","নীলস বোর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "J.J. Thomson discovered the electron in 1897 through experiments with cathode ray tubes.", "hi": "जे. जे. थॉमसन ने 1897 में कैथोड किरण नलिकाओं के साथ प्रयोगों के माध्यम से इलेक्ट्रॉन की खोज की थी।", "bn": "জে. জে. থমসন ১৮৯৭ সালে ক্যাথোড রশ্মি নল নিয়ে কাজ করার সময় ইলেকট্রন আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who developed the first successful polio vaccine?", "hi": "पोलियो के पहले सफल टीके का विकास किसने किया था?", "bn": "পোলিও রোগের প্রথম সফল প্রতিষেধক টিকা কে তৈরি করেছিলেন?"},
+      "options": {
+        "en": ["Jonas Salk","Albert Sabin","Edward Jenner","Louis Pasteur"],
+        "hi": ["जोनास साल्क","अल्बर्ट साबिन","एडवर्ड जेनर","लुई पाश्चर"],
+        "bn": ["জোনাস সাল্ক","অ্যালবার্ট সাবিন","এডওয়ার্ড জেনার","লুই পাস্তুর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Jonas Salk developed the first inactivated polio vaccine, which came into use in 1955.", "hi": "जोनास साल्क ने 1955 में पहले सुरक्षित और प्रभावी निष्क्रिय पोलियो टीके का विकास किया था।", "bn": "জোনাস সাল্ক ১৯৫২ সালে পোলিওর প্রথম সফল টিকা তৈরি করেন যা ১৯৫৫ সালে ব্যবহার করা হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Who invented the telescope?", "hi": "दूरबीन (टेलीस्कोप) का आविष्कार किसने किया था?", "bn": "দূরবীক্ষণ যন্ত্র বা টেলিস্কোপ কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Hans Lippershey","Galileo Galilei","Isaac Newton","Johannes Kepler"],
+        "hi": ["हंस लिपरशी","गैलीलियो गैलीली","आइज़ैक न्यूटन","जोहान्स केप्लर"],
+        "bn": ["হ্যান্স লিপারশে","গ্যালিলিও গ্যালিলি","আইজ্যাক নিউটন","জোহানেস কেপলার"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Hans Lippershey, a Dutch spectacle maker, filed the first patent for a telescope in 1608.", "hi": "डच चश्मा निर्माता हंस लिपरशी ने 1608 में दूरबीन का पहला पेटेंट आवेदन किया था।", "bn": "ডাচ চশমা প্রস্তুতকারক হ্যান্স লিপারশে ১৬০৮ সালে প্রথম প্রতিসরণকারী টেলিস্কোপের পেটেন্ট আবেদন করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who formulated the law of buoyancy?", "hi": "उत्प्लावकता (बायोन्सी) का सिद्धांत किसने प्रतिपादित किया था?", "bn": "প্লবতার সূত্র কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Archimedes","Galileo Galilei","Isaac Newton","Blaise Pascal"],
+        "hi": ["आर्किमिडीज","गैलीलियो गैलीली","आइज़ैक न्यूटन","ब्लेज पास्कल"],
+        "bn": ["আর্কিমিডিস","গ্যালিলিও গ্যালিলি","আইজ্যাক নিউটন","ব্লেইজ পাস্কাল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Archimedes formulated the principle that the upward buoyant force is equal to the weight of the fluid displaced.", "hi": "आर्किमिडीज ने उत्प्लावकता का सिद्धांत दिया, जिसे 'आर्किमिडीज का सिद्धांत' कहा जाता है।", "bn": "আর্কিমিডিস প্লবতার বিখ্যাত সূত্রটি আবিষ্কার করেন, যা আর্কিমিডিসের নীতি নামে পরিচিত।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who discovered cells in living organisms?", "hi": "सजीवों में कोशिकाओं (सेल्स) की खोज सर्वप्रथम किसने की थी?", "bn": "জীবদেহে কোশ (Cell) কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Robert Hooke","Anton van Leeuwenhoek","Robert Brown","Theodor Schwann"],
+        "hi": ["रॉबर्ट हुक","एंटोन वैन ल्यूवेनहुक","रॉबर्ट ब्राउन","थियोडोर श्वान"],
+        "bn": ["রবার্ট হুক","অ্যান্টনি ভ্যান লিউয়েনহুক","রবার্ট ব্রাউন","থিওডোর সোয়ান"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Robert Hooke discovered plant cells in cork sections under a microscope in 1665.", "hi": "रॉबर्ट हुक ने 1665 में काग के टुकड़े में कोशिकाओं को देखा और उन्हें नाम दिया।", "bn": "রবার্ট হুক ১৬৬৫ সালে একটি মাইক্রোস্কোপের নিচে কর্কের টুকরো পর্যবেক্ষণ করে প্রথম কোশ আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who invented the vaccine for rabies?", "hi": "रेबीज (कुत्ते के काटने की बीमारी) के टीके की खोज किसने की थी?", "bn": "জলাতঙ্ক বা রেবিস রোগের টিকা কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Louis Pasteur","Edward Jenner","Jonas Salk","Robert Koch"],
+        "hi": ["लुई पाश्चर","एडवर्ड जेनर","जोनास साल्क","रॉबर्ट कोच"],
+        "bn": ["লুই পাস্তুর","এডওয়ার্ড জেনার","জোনাস সাল্ক","রবার্ট কখ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Louis Pasteur developed the first rabies vaccine in 1885 by treating a young boy bitten by a rabid dog.", "hi": "लुई पाश्चर ने 1885 में रेबीज के पहले टीके का विकास किया था।", "bn": "লুই পাস্তুর ১৮৮৫ সালে প্রথম সফল জলাতঙ্কের বা রেবিস রোগের প্রতিষেধক টিকা তৈরি করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who discovered the blood groups of humans?", "hi": "मानव रक्त समूहों (ब्लड ग्रुप्स) की खोज किसने की थी?", "bn": "মানুষের রক্তের বিভিন্ন গ্রুপ (Blood Group) কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Karl Landsteiner","William Harvey","Robert Koch","Gregor Mendel"],
+        "hi": ["कार्ल लैंडस्टीनर","विलियम हार्वे","रॉबर्ट कोच","ग्रेगर मेंडल"],
+        "bn": ["কার্ল ল্যান্ডস্টেইনার","উইলিয়াম হার্ভে","রবার্ট কখ","গ্রেগর মেন্ডেল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Karl Landsteiner discovered the ABO blood groups in 1900, winning a Nobel Prize.", "hi": "कार्ल लैंडस्टीनर ने 1900 में ABO रक्त समूहों की खोज की थी।", "bn": "অস্ট্রীয় বিজ্ঞানী কার্ল ল্যান্ডস্টেইনার ১৯০০ সালে রক্তের প্রধান গ্রুপগুলো (ABO) আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who invented dynamite?", "hi": "डायनामाइट का आविष्कार किसने किया था?", "bn": "ডিনামাইট কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Alfred Nobel","Thomas Edison","Albert Einstein","Nikola Tesla"],
+        "hi": ["अल्फ्रेड नोबेल","थॉमस एडिसन","अल्बर्ट आइंस्टीन","निकोला टेस्ला"],
+        "bn": ["আলফ্রেড নোবেল","থমাস এডিসন","অ্যালবার্ট আইনস্টাইন","নিকোলা টেসলা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Alfred Nobel, a Swedish chemist, patented dynamite in 1867.", "hi": "अल्फ्रेड नोबेल ने 1867 में डायनामाइट का आविष्कार किया था।", "bn": "সুইডিশ রসায়নবিদ আলফ্রেড নোবেল ১৮৬৭ সালে ডিনামাইট আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who discovered radioactivity?", "hi": "रेडियोधर्मिता (रेडियोएक्टिविटी) की खोज सर्वप्रथम किसने की थी?", "bn": "তেজস্ক্রিয়তা (Radioactivity) কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Henri Becquerel","Marie Curie","Pierre Curie","Ernest Rutherford"],
+        "hi": ["हेनरी बेकरेल","मैरी क्यूरी","पियरे क्यूरी","अर्नेस्ट रदरफोर्ड"],
+        "bn": ["হেনরি বেকেরেল","মেরি কুরি","পিয়েরে কুরি","আর্নেস্ট রাদারফোর্ড"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Henri Becquerel discovered radioactivity in uranium salts in 1896.", "hi": "हेनरी बेकरेल ने 1896 में यूरेनियम लवणों में प्राकृतिक रेडियोधर्मिता की खोज की थी।", "bn": "ফরাসি বিজ্ঞানী হেনরি বেকেরেল ১৮৯৬ সালে ইউরেনিয়াম সল্টে প্রাকৃতিক তেজস্ক্রিয়তা আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who discovered the law of planetary motion?", "hi": "ग्रहों की गति के नियमों की खोज किसने की थी?", "bn": "গ্রহের গতি সংক্রান্ত সূত্রসমূহ কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Johannes Kepler","Nicolaus Copernicus","Galileo Galilei","Isaac Newton"],
+        "hi": ["जोहान्स केप्लर","निकोलास कोपरनिकस","गैलीलियो गैलीली","आइज़ैक न्यूटन"],
+        "bn": ["জোহানেস কেপলার","নিকোলাস কোপারনিকাস","গ্যালিলিও গ্যালিলি","আইজ্যাক নিউটন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Johannes Kepler published three laws of planetary motion between 1609 and 1619.", "hi": "जोहान्स केप्लर ने ग्रहों की गति के तीन प्रसिद्ध नियम प्रतिपादित किए थे।", "bn": "জোহানেস কেপলার গ্রহের উপবৃত্তাকার কক্ষপথ ও গতির তিনটি সূত্র প্রকাশ করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who invented the hot air balloon?", "hi": "गर्म हवा के गुब्बारे (हॉट एयर बलून) का आविष्कार किसने किया था?", "bn": "গরম বাতাসের বেলুন বা হট এয়ার বেলুন কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Montgolfier Brothers","Wright Brothers","Zeppelin","Charles Lindbergh"],
+        "hi": ["मोंटगोल्फियर ब्रदर्स","राइट ब्रदर्स","ज़ेपेलिन","चार्ल्स लिंडबर्ग"],
+        "bn": ["মন্টগলফিয়ার ব্রাদার্স","রাইট ব্রাদার্স","জেপেলিন","চার্লস লিন্ডবার্গ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Montgolfier brothers, Joseph-Michel and Jacques-Étienne, made the first public balloon flight in 1783.", "hi": "मोंटगोल्फियर भाइयों ने 1783 में गर्म हवा के गुब्बारे की पहली मानव रहित उड़ान का प्रदर्शन किया था।", "bn": "মন্টগলফিয়ার ভাইয়েরা ১৭৮৩ সালে বিশ্বের প্রথম সফল গরম বাতাসের বেলুনের উড্ডয়ন সম্পন্ন করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who discovered oxygen?", "hi": "ऑक्सीजन की खोज किसने की थी?", "bn": "অক্সিজেন কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["Joseph Priestley","Antoine Lavoisier","Carl Wilhelm Scheele","Henry Cavendish"],
+        "hi": ["जोसेफ प्रीस्टले","एंटोनी लेवोज़ियर","कार्ल विल्हेम शेले","हेनरी कैवेंडिश"],
+        "bn": ["জোসেফ প্রিস্টলি","অ্যান্টোইন ল্যাভয়সিয়ে","কার্ল উইলহেম শেলে","হেনরি ক্যাভেন্ডিশ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Joseph Priestley discovered oxygen in 1774 by heating mercuric oxide.", "hi": "जोसेफ प्रीस्टले को स्वतंत्र रूप से ऑक्सीजन की खोज का मुख्य श्रेय दिया जाता है।", "bn": "জোসেফ প্রিস্টলি ১৭৭৪ সালে পারদ অক্সাইড গরম করে প্রথম গ্যাসীয় অক্সিজেন আলাদা করেন।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Who discovered the neutron?", "hi": "न्यूट्रॉन की खोज किसने की थी?", "bn": "নিউট্রন কে আবিষ্কার করেছিলেন?"},
+      "options": {
+        "en": ["James Chadwick","J.J. Thomson","Ernest Rutherford","Niels Bohr"],
+        "hi": ["जेम्स चैडविक","जे. जे. थॉमसन","अर्नेस्ट रदरफोर्ड","नील्स बोर"],
+        "bn": ["জেমস চ্যাডউইক","জে. জে. থমসন","আর্নেস্ট রাদারফোর্ড","নীলস বোর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "James Chadwick discovered the neutron in 1932, which earned him the Nobel Prize in Physics.", "hi": "जेम्स चैडविक ने 1932 में परमाणु के नाभिक में उदासीन कण न्यूट्रॉन की खोज की थी।", "bn": "জেমস চ্যাডউইক ১৯৩২ সালে পরমাণুর নিউক্লিয়াসে চার্জহীন কণা নিউট্রন আবিষ্কার করেন।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which ocean is the deepest?", "hi": "विश्व का सबसे गहरा महासागर कौन सा है?", "bn": "বিশ্বের গভীরতম মহাসাগর কোনটি?"},
+      "options": {
+        "en": ["Pacific Ocean","Atlantic Ocean","Indian Ocean","Southern Ocean"],
+        "hi": ["प्रशांत महासागर","अटलांटिक महासागर","हिंद महासागर","दक्षिणी महासागर"],
+        "bn": ["প্রশান্ত মহাসাগর","আটলান্টিক মহাসাগর","ভারত মহাসাগর","দক্ষিণ মহাসাগর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Pacific Ocean is the deepest, containing the Mariana Trench which reaches nearly 11 km down.", "hi": "प्रशांत महासागर सबसे गहरा है, जिसमें मारियाना गर्त (लगभग 11 किमी गहरा) स्थित है।", "bn": "প্রশান্ত মহাসাগর হলো গভীরতম মহাসাগর, যার মারিয়ানা খাদের গভীরতা প্রায় ১১ কিলোমিটার।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which is the largest continent on Earth by both land area and population?", "hi": "क्षेत्रफल और जनसंख्या दोनों की दृष्टि से पृथ्वी का सबसे बड़ा महाद्वीप कौन सा है?", "bn": "আয়তন এবং জনসংখ্যা উভয় দিক থেকেই পৃথিবীর বৃহত্তম মহাদেশ কোনটি?"},
+      "options": {
+        "en": ["Asia","Africa","North America","Europe"],
+        "hi": ["एशिया","अफ़्रीका","उत्तरी अमेरिका","यूरोप"],
+        "bn": ["এশিয়া","আফ্রিকা","উত্তর আমেরিকা","ইউরোপ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Asia covers about 30% of Earth's land area and is home to nearly 60% of the human population.", "hi": "एशिया पृथ्वी के कुल भूमि क्षेत्र का लगभग 30% हिस्सा कवर करता है।", "bn": "এশিয়া পৃথিবীর মোট স্থলভাগের প্রায় ৩০% দখল করে এবং এখানে বিশ্বের প্রায় ৬০% মানুষ বাস করে।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which is the smallest continent by land area?", "hi": "क्षेत्रफल के हिसाब से सबसे छोटा महाद्वीप कौन सा है?", "bn": "আয়তনের দিক থেকে পৃথিবীর ক্ষুদ্রতম মহাদেশ কোনটি?"},
+      "options": {
+        "en": ["Australia","Europe","Antarctica","South America"],
+        "hi": ["ऑस्ट्रेलिया","यूरोप","अंटार्कटिका","दक्षिण अमेरिका"],
+        "bn": ["অস্ট্রেলিয়া","ইউরোপ","অ্যান্টার্কটিকা","দক্ষিণ আমেরিকা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Australia is the smallest continent, often referred to as an island continent.", "hi": "ऑस्ट्रेलिया दुनिया का सबसे छोटा महाद्वीप है, जिसे द्वीप महाद्वीप भी कहा जाता है।", "bn": "অস্ট্রেলিয়া হলো পৃথিবীর ক্ষুদ্রতম মহাদেশ, যা দ্বীপ মহাদেশ হিসেবেও পরিচিত।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which is the coldest and windiest continent on Earth?", "hi": "पृथ्वी का सबसे ठंडा और सबसे अधिक हवाओं वाला महाद्वीप कौन सा है?", "bn": "পৃথিবীর সবচেয়ে শীতলতম এবং সবচেয়ে ঝড়ো বাতাসের মহাদেশ কোনটি?"},
+      "options": {
+        "en": ["Antarctica","Asia","Europe","North America"],
+        "hi": ["अंटार्कटिका","एशिया","यूरोप","उत्तरी अमेरिका"],
+        "bn": ["অ্যান্টার্কটিকা","এশিয়া","ইউরোপ","উত্তর আমেরিকা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Antarctica is the coldest, driest, and windiest continent, covered mostly by ice.", "hi": "अंटार्कटिका सबसे ठंडा, शुष्क और तेज हवाओं वाला महाद्वीप है जो बर्फ की मोटी चादर से ढका है।", "bn": "অ্যান্টার্কটিকা হলো পৃথিবীর সবচেয়ে শীতলতম ও শুষ্কতম মহাদেশ, যা প্রায় পুরোটাই বরফে ঢাকা।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which continent contains the Sahara Desert?", "hi": "सहारा मरुस्थल किस महाद्वीप में स्थित है?", "bn": "সাহারা মরুভূমি কোন মহাদেশে অবস্থিত?"},
+      "options": {
+        "en": ["Africa","Asia","Australia","South America"],
+        "hi": ["अफ़्रीका","एशिया","ऑस्ट्रेलिया","दक्षिण अमेरिका"],
+        "bn": ["আফ্রিকা","এশিয়া","অস্ট্রেলিয়া","দক্ষিণ আমেরিকা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Sahara Desert is the largest hot desert in the world, covering much of North Africa.", "hi": "सहारा मरुस्थल उत्तरी अफ्रीका में स्थित है, जो दुनिया का सबसे बड़ा गर्म मरुस्थल है।", "bn": "সাহারা মরুভূমি উত্তর আফ্রিকায় অবস্থিত, যা পৃথিবীর বৃহত্তম উষ্ণ মরুভূমি।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "What is the longest river in South America?", "hi": "दक्षिण अमेरिका की सबसे लंबी नदी कौन सी है?", "bn": "দক্ষিণ আমেরিকার দীর্ঘতম নদী কোনটি?"},
+      "options": {
+        "en": ["Amazon","Nile","Orinoco","Parana"],
+        "hi": ["अमेज़न","नील","ओरिनोको","पराना"],
+        "bn": ["আমাজন","নীল","অরিনোকো","পারানা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Amazon River is the longest river in South America and the largest in the world by water volume.", "hi": "अमेज़न नदी दक्षिण अमेरिका की सबसे लंबी और पानी के बहाव के मामले में दुनिया की सबसे बड़ी नदी है।", "bn": "আমাজন নদী হলো দক্ষিণ আমেরিকার দীর্ঘতম এবং জলপ্রবাহের দিক থেকে বিশ্বের বৃহত্তম নদী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which mountain range is the longest above water in the world?", "hi": "दुनिया की सबसे लंबी जमीनी पर्वत श्रृंखला कौन सी है?", "bn": "বিশ্বের দীর্ঘতম স্থল পর্বতমালা কোনটি?"},
+      "options": {
+        "en": ["Andes","Himalayas","Rocky Mountains","Alps"],
+        "hi": ["एंडीज (Andes)","हिमालय","रॉकी पर्वत","आ Alps"],
+        "bn": ["আন্দিজ","হিমালয়","রকি পর্বতমালা","আল্পস"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Andes mountain range stretches along the western coast of South Africa for about 7,000 km.", "hi": "एंडीज पर्वत श्रृंखला दक्षिण अमेरिका के पश्चिमी तट पर लगभग 7,000 किमी लंबी है।", "bn": "আন্দিজ পর্বতমালা দক্ষিণ আমেরিকার পশ্চিম উপকূল বরাবর প্রায় ৭,০০০ কিলোমিটার দীর্ঘ।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "hard",
+      "text": {"en": "What is the deepest lake in the world?", "hi": "विश्व की सबसे गहरी झील कौन सी है?", "bn": "বিশ্বের গভীরতম হ্রদ কোনটি?"},
+      "options": {
+        "en": ["Lake Baikal","Lake Tanganyika","Caspian Sea","Lake Superior"],
+        "hi": ["बैकाल झील","तांगानिका झील","कैस्पियन सागर","सुपीरियर झील"],
+        "bn": ["বৈকাল হ্রদ","ট্যাঙ্গানিকা হ্রদ","কাস্পিয়ান সাগর","সুপিরিয়র হ্রদ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Lake Baikal in Siberia, Russia, is the deepest lake in the world at 1,642 meters deep.", "hi": "रूस के साइबेरिया में स्थित बैकाल झील 1,642 मीटर की गहराई के साथ दुनिया की सबसे गहरी झील है।", "bn": "রাশিয়ার সাইবেরিয়ায় অবস্থিত বৈকাল হ্রদ বিশ্বের গভীরতম হ্রদ (১,৬৪২ মিটার গভীর)।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "hard",
+      "text": {"en": "Which is the largest lake in the world by surface area?", "hi": "सतह क्षेत्रफल के हिसाब से विश्व की सबसे बड़ी झील कौन सी है?", "bn": "পৃষ্ঠভাগের ক্ষেত্রফল অনুযায়ী বিশ্বের বৃহত্তম হ্রদ কোনটি?"},
+      "options": {
+        "en": ["Caspian Sea","Lake Superior","Lake Victoria","Lake Huron"],
+        "hi": ["कैसपियन सागर","सुपीरियर झील","विक्टोरिया झील","ह्यूरन झील"],
+        "bn": ["কাস্পিয়ান সাগর","সুপিরিয়র হ্রদ","ভিক্টোরিয়া হ্রদ","হিউরন হ্রদ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Caspian Sea is the world's largest inland body of water, classified as a lake or full sea.", "hi": "कैस्पियन सागर दुनिया की सबसे बड़ी अंतर्देशीय जल निकाय है, जिसे झील के रूप में वर्गीकृत किया गया है।", "bn": "কাস্পিয়ান সাগর হলো বিশ্বের বৃহত্তম আবদ্ধ জলাশয়, যা হ্রদ হিসেবে বিবেচিত।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "hard",
+      "text": {"en": "What is the highest uninterrupted waterfall in the world?", "hi": "दुनिया का सबसे ऊंचा निर्बाध जलप्रपात कौन सा है?", "bn": "বিশ্বের উচ্চতম অবিচ্ছিন্ন জলপ্রপাত কোনটি?"},
+      "options": {
+        "en": ["Angel Falls","Niagara Falls","Victoria Falls","Yosemite Falls"],
+        "hi": ["एंजेल फॉल्स","नियाग्रा फॉल्स","विक्टोरिया फॉल्स","योसेमाइट फॉल्स"],
+        "bn": ["অ্যাঞ্জেল জলপ্রপাত","নায়াগ্রা জলপ্রপাত","ভিক্টোরিয়া জলপ্রপাত","ইয়োসেমাইট জলপ্রপাত"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Angel Falls in Venezuela is the highest waterfall, dropping 979 meters.", "hi": "वेनेजुएला में स्थित एंजेल फॉल्स दुनिया का सबसे ऊंचा जलप्रपात है, जिसकी ऊंचाई 979 मीटर है।", "bn": "ভেনিজুয়েলায় অবস্থিত অ্যাঞ্জেল জলপ্রপাত বিশ্বের উচ্চতম জলপ্রপাত (৯৭৯ মিটার উঁচু)।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "What is the chemical symbol of Gold?", "hi": "सोने का रासायनिक प्रतीक क्या है?", "bn": "সোনার রাসায়নিক প্রতীক কী?"},
+      "options": {
+        "en": ["Au","Ag","Fe","Gd"],
+        "hi": ["Au","Ag","Fe","Gd"],
+        "bn": ["Au","Ag","Fe","Gd"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The symbol Au comes from the Latin word for gold, 'aurum'.", "hi": "सोने का प्रतीक Au लैटिन शब्द 'ऑरम' (aurum) से लिया गया है।", "bn": "সোনার প্রতীক Au এসেছে ল্যাটিন শব্দ 'Aurum' থেকে।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "What is the chemical symbol of Silver?", "hi": "चांदी का रासायनिक प्रतीक क्या है?", "bn": "রুপোর রাসায়নিক প্রতীক কী?"},
+      "options": {
+        "en": ["Ag","Au","Sl","Si"],
+        "hi": ["Ag","Au","Sl","Si"],
+        "bn": ["Ag","Au","Sl","Si"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The symbol Ag comes from the Latin word for silver, 'argentum'.", "hi": "चांदी का प्रतीक Ag लैटिन शब्द 'अर्जेंटम' (argentum) से लिया गया है।", "bn": "রুপোর প্রতীক Ag এসেছে ল্যাটিন শব্দ 'Argentum' থেকে।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What is the atomic number of Hydrogen?", "hi": "हाइड्रोजन की परमाणु संख्या क्या है?", "bn": "হাইড্রোজেনের পারমাণবিক সংখ্যা কত?"},
+      "options": {
+        "en": ["1","2","6","8"],
+        "hi": ["1","2","6","8"],
+        "bn": ["১","২","৬","৮"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Hydrogen is the first element in the periodic table, with a single proton.", "hi": "हाइड्रोजन आवर्त सारणी का पहला तत्व है, जिसमें केवल एक प्रोटॉन होता है।", "bn": "হাইড্রোজেন পর্যায় সারণীর প্রথম মৌল, এর নিউক্লিয়াসে ১টি প্রোটন থাকে।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "Which vitamin is synthesized in the human body when exposed to sunlight?", "hi": "धूप के संपर्क में आने पर मानव शरीर में किस विटामिन का संश्लेषण होता है?", "bn": "সূর্যালোকের সংস্পর্শে এলে মানবদেহে কোন ভিটামিন সংশ্লেষিত হয়?"},
+      "options": {
+        "en": ["Vitamin D","Vitamin C","Vitamin A","Vitamin B12"],
+        "hi": ["विटामिन डी","विटामिन सी","विटामिन ए","विटामिन बी12"],
+        "bn": ["ভিটামিন ডি","ভিটামিন সি","ভিটামিন এ","ভিটামিন বি১২"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Vitamin D is produced in the skin when exposed to ultraviolet B radiation from sunlight.", "hi": "सूर्य के प्रकाश के संपर्क में आने पर त्वचा में विटामिन डी का निर्माण होता है।", "bn": "সূর্যালোকের অতিবেগুনী রশ্মির সংস্পর্শে এলে মানুষের ত্বকে ভিটামিন ডি তৈরি হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What is the hardest natural substance on Earth?", "hi": "पृथ्वी पर सबसे कठोर प्राकृतिक पदार्थ कौन सा है?", "bn": "পৃথিবীর সবচেয়ে কঠিন প্রাকৃতিক পদার্থ কোনটি?"},
+      "options": {
+        "en": ["Diamond","Steel","Quartz","Corundum"],
+        "hi": ["हीरा","इस्पात","क्वार्ट्ज","कोरंडम"],
+        "bn": ["হীরা","ইস্পাত","কোয়ার্টজ","করান্ডাম"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Diamond is a crystalline allotrope of carbon, representing the hardest mineral.", "hi": "हीरा कार्बन का एक अपररूप है, जो सबसे कठोर प्राकृतिक खनिज पदार्थ है।", "bn": "হীরা হলো কার্বনের একটি রূপভেদ এবং সবচেয়ে কঠিন প্রাকৃতিক খনিজ পদার্থ।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "What acid is found in lemons?", "hi": "नींबू में कौन सा अम्ल (एसिड) पाया जाता है?", "bn": "লেবুতে কোন অ্যাসিড পাওয়া যায়?"},
+      "options": {
+        "en": ["Citric Acid","Acetic Acid","Lactic Acid","Malic Acid"],
+        "hi": ["साइट्रिक एसिड","एसिटिक एसिड","लैक्टिक एसिड","मैलिक एसिड"],
+        "bn": ["সাইট্রিক অ্যাসিড","অ্যাসিটিক অ্যাসিড","ল্যাকটিক অ্যাসিড","ম্যালিক অ্যাসিড"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Lemons contain a high amount of citric acid, which gives them their sour taste.", "hi": "नींबू में प्रचुर मात्रा में साइट्रिक एसिड होता है, जिससे इसका स्वाद खट्टा होता है।", "bn": "লেবুতে প্রচুর পরিমাণে সাইট্রিক অ্যাসিড থাকে, যার ফলে এটি স্বাদে টক হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What gas is produced during cellular respiration and breathed out by humans?", "hi": "श्वसन के दौरान कौन सी गैस उत्पन्न होती है जिसे मनुष्य बाहर छोड़ता है?", "bn": "শ্বসন প্রক্রিয়ায় কোন গ্যাস উৎপাদিত হয় যা মানুষ নিশ্বাসের সাথে ত্যাগ করে?"},
+      "options": {
+        "en": ["Carbon Dioxide","Oxygen","Nitrogen","Carbon Monoxide"],
+        "hi": ["कार्बन डाइऑक्साइड","ऑक्सीजन","नाइट्रोजन","कार्बन मोनोऑक्साइड"],
+        "bn": ["কার্বন ডাই অক্সাইড","অক্সিজেন","নাইট্রোজেন","কার্বন মনোক্সাইড"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Cellular respiration produces Carbon Dioxide (CO2) as a metabolic waste product.", "hi": "कोशिकीय श्वसन के दौरान अपशिष्ट पदार्थ के रूप में कार्बन डाइऑक्साइड (CO2) बनती है।", "bn": "কোশীয় শ্বসনের ফলে কার্বন ডাই অক্সাইড (CO2) উপজাত পদার্থ হিসেবে উৎপন্ন হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "What is the primary gas that makes up the sun?", "hi": "सूर्य में मुख्य रूप से कौन सी गैस पाई जाती है?", "bn": "সূর্যের মধ্যে প্রধানত কোন গ্যাস থাকে?"},
+      "options": {
+        "en": ["Hydrogen","Helium","Oxygen","Nitrogen"],
+        "hi": ["हाइड्रोजन","हीलियम","ऑक्सीजन","नाइट्रोजन"],
+        "bn": ["হাইড্রোজেন","হিলিয়াম","অক্সিজেন","নাইট্রোজেন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Sun consists of about 73% hydrogen and 25% helium.", "hi": "सूर्य का लगभग 73% द्रव्यमान हाइड्रोजन से बना है।", "bn": "সূর্যের ভরের প্রায় ৭৩% হাইড্রোজেন দ্বারা গঠিত।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "Which blood cells are responsible for carrying oxygen throughout the body?", "hi": "शरीर में ऑक्सीजन ले जाने के लिए कौन सी रक्त कोशिकाएं जिम्मेदार हैं?", "bn": "শরীরে অক্সিজেন পরিবহনের জন্য কোন রক্তকণিকা দায়ী?"},
+      "options": {
+        "en": ["Red Blood Cells","White Blood Cells","Platelets","Plasma"],
+        "hi": ["लाल रक्त कोशिकाएं","सफेद रक्त कोशिकाएं","प्लेटलेट्स","प्लाज्मा"],
+        "bn": ["লোহিত রক্তকণিকা","শ্বেত রক্তকণিকা","অণুচক্রিকা","প্লাজমা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Red Blood Cells contain hemoglobin, a protein that binds to oxygen.", "hi": "लाल रक्त कोशिकाओं में हीमोग्लोबिन होता है जो ऑक्सीजन का वहन करता है।", "bn": "লোহিত রক্তকণিকায় হিমোগ্লোবিন থাকে যা অক্সিজেনের সাথে যুক্ত হয়ে সারা শরীরে পরিবাহিত হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "hard",
+      "text": {"en": "What is the chemical symbol for Iron?", "hi": "लोहे का रासायनिक प्रतीक क्या है?", "bn": "লোহার রাসায়নিক প্রতীক কী?"},
+      "options": {
+        "en": ["Fe","Ir","In","Io"],
+        "hi": ["Fe","Ir","In","Io"],
+        "bn": ["Fe","Ir","In","Io"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The symbol Fe comes from the Latin word for iron, 'ferrum'.", "hi": "लोहे का प्रतीक Fe लैटिन शब्द 'फेरम' (ferrum) से लिया गया है।", "bn": "লোহার প্রতীক Fe এসেছে ল্যাটিন শব্দ 'Ferrum' থেকে।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "Which country has won the most FIFA World Cups?", "hi": "किस देश ने सबसे अधिक फीफा विश्व कप जीते हैं?", "bn": "কোন দেশ সবচেয়ে বেশিবার ফিফা বিশ্বকাপ জিতেছে?"},
+      "options": {
+        "en": ["Brazil","Germany","Italy","Argentina"],
+        "hi": ["ब्राजील","जर्मनी","इटली","अर्जेंटीना"],
+        "bn": ["ব্রাজিল","জার্মানি","ইতালি","আর্জেন্টিনা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Brazil has won the FIFA World Cup five times (1958, 1962, 1970, 1994, 2002).", "hi": "ब्राजील ने पांच बार फीफा विश्व कप का खिताब जीता है।", "bn": "ব্রাজিল মোট ৫ বার (১৯৫৮, ১৯৬২, ১৯৭০, ১৯৯৪, ২০০২) ফিফা বিশ্বকাপ জিতেছে।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "How many players are on the field for one team in a soccer match?", "hi": "फुटबॉल मैच में एक टीम में मैदान पर कितने खिलाड़ी होते हैं?", "bn": "একটি ফুটবল ম্যাচে এক দলের পক্ষে মাঠে কতজন খেলোয়াড় থাকে?"},
+      "options": {
+        "en": ["11","10","12","9"],
+        "hi": ["11","10","12","9"],
+        "bn": ["১১","১০","১২","৯"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "A soccer match is played by two teams, each containing 11 players including a goalkeeper.", "hi": "एक फुटबॉल मैच में प्रत्येक टीम में मैदान पर 11 खिलाड़ी होते हैं।", "bn": "ফুটবল খেলায় গোলরক্ষকসহ প্রতিটি দলে মাঠে ১১ জন খেলোয়াড় থাকে।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "Which sport uses a shuttlecock?", "hi": "शटलकॉक का उपयोग किस खेल में किया जाता है?", "bn": "কোন খেলায় শাটলকক ব্যবহার করা হয়?"},
+      "options": {
+        "en": ["Badminton","Tennis","Table Tennis","Squash"],
+        "hi": ["बैडमिंटन","टेनिस","टेबल टेनिस","स्कवैश"],
+        "bn": ["ব্যাডমিন্টন","টেনিস","টেবিল টেনিস","স্কোয়াশ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Badminton is played using rackets to hit a shuttlecock across a net.", "hi": "बैडमिंटन खेल में शटलकॉक का उपयोग किया जाता है।", "bn": "ব্যাডমিন্টন খেলায় শাটলকক নেটের ওপর দিয়ে পার করার জন্য র্যাকেট ব্যবহৃত হয়।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "How often are the Summer Olympic Games held?", "hi": "ग्रीष्मकालीन ओलंपिक खेल कितने वर्षों के अंतराल पर आयोजित किए जाते हैं?", "bn": "গ্রীষ্মকালীন অলিম্পিক গেমস কত বছর পর পর অনুষ্ঠিত হয়?"},
+      "options": {
+        "en": ["Every 4 years","Every 2 years","Every 5 years","Every 3 years"],
+        "hi": ["हर 4 साल में","हर 2 साल में","हर 5 साल में","हर 3 साल में"],
+        "bn": ["প্রতি ৪ বছর পর","প্রতি ২ বছর পর","প্রতি ৫ বছর পর","প্রতি ৩ বছর পর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Olympic Games are held every four years, promoting international sports cooperation.", "hi": "ओलंपिक खेल प्रत्येक चार वर्ष में एक बार आयोजित किए जाते हैं।", "bn": "অলিম্পিক গেমস প্রতি চার বছর পর পর অনুষ্ঠিত হয়।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "Which Grand Slam tennis tournament is played on clay courts?", "hi": "कौन सा ग्रैंड स्लैम टेनिस टूर्नामेंट क्ले (मिट्टी) कोर्ट पर खेला जाता है?", "bn": "কোন গ্র্যান্ড স্ল্যাম টেনিস টুর্নামেন্টটি লাল মাটির বা ক্লে কোর্টে খেলা হয়?"},
+      "options": {
+        "en": ["French Open","Wimbledon","US Open","Australian Open"],
+        "hi": ["फ्रेंच ओपन","विंबलडन","यूएस ओपन","ऑस्ट्रेलियन ओपन"],
+        "bn": ["ফ্রেঞ্চ ওপেন","উইম্বলডন","ইউএস ওপেন","অস্ট্রেলিয়ান ওপেন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The French Open (Roland Garros) is the only Grand Slam tournament played on clay courts.", "hi": "फ्रेंच ओपन एकमात्र ऐसा ग्रैंड स्लैम है जो लाल मिट्टी (क्ले कोर्ट) पर खेला जाता है।", "bn": "ফ্রেঞ্চ ওপেন হলো একমাত্র গ্র্যান্ড স্ল্যাম টুর্নামেন্ট যা ক্লে বা লাল মাটির কোর্টে খেলা হয়।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the shortest sprint event in the Olympic Games?", "hi": "ओलंपिक खेलों में सबसे छोटी दौड़ स्पर्धा कौन सी है?", "bn": "অলিম্পিক গেমসের সবচেয়ে ছোট ট্র্যাক দৌড় প্রতিযোগিতা কোনটি?"},
+      "options": {
+        "en": ["100 meters","200 meters","60 meters","400 meters"],
+        "hi": ["100 मीटर","200 मीटर","60 मीटर","400 मीटर"],
+        "bn": ["১০০ মিটার","২০০ মিটার","৬০ মিটার","৪০০ মিটার"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The 100 meters sprint is the shortest outdoor track event in the Olympics.", "hi": "100 मीटर दौड़ ओलंपिक की सबसे छोटी आउटडोर धावक स्पर्धा है।", "bn": "১০০ মিটার দৌড় অলিম্পিকের সবচেয়ে ছোট আউটডোর স্প্রিন্ট বা দৌড় প্রতিযোগিতা।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "With which sport is Usain Bolt associated?", "hi": "उसैन बोल्ट का संबंध किस खेल से है?", "bn": "উসেইন বোল্ট কোন খেলার সাথে যুক্ত?"},
+      "options": {
+        "en": ["Sprinting/Athletics","Swimming","Gymnastics","Football"],
+        "hi": ["दौड़ (एथलेटिक्स)","तैराकी","जिम्नास्टिक","फुटबॉल"],
+        "bn": ["দৌড় (অ্যাথলেটিক্স)","সাঁতার","জিমন্যাস্টিকস","ফুটবল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Usain Bolt is a legendary Jamaican sprinter holding world records in 100m and 200m.", "hi": "उसैन बोल्ट जमैका के महान धावक हैं जिन्होंने 100 मीटर और 200 मीटर में विश्व रिकॉर्ड बनाए हैं।", "bn": "উসেইন বোল্ট জ্যামাইকার একজন কিংবদন্তি স্প্রিন্টার বা দৌড়বিদ।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "With which sport is Michael Phelps associated?", "hi": "माइकल फेल्प्स किस खेल से जुड़े हैं?", "bn": "মাইকেল ফেলপস কোন খেলার সাথে যুক্ত?"},
+      "options": {
+        "en": ["Swimming","Athletics","Rowing","Cycling"],
+        "hi": ["तैराकी","एथलेटिक्स","रोइंग","साइकिल चलाना"],
+        "bn": ["সাঁতার","অ্যাথলেটিক্স","রোয়িং","সাইক্লিং"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Michael Phelps is the most decorated Olympian of all time, with 28 medals in swimming.", "hi": "माइकल फेल्प्स इतिहास के सबसे सफल ओलंपियन तैराक हैं जिन्होंने कुल 28 पदक जीते हैं।", "bn": "মাইকেল ফেলপস ইতিহাসের সফলতম অলিম্পিয়ান সাঁতারু, যিনি মোট ২৮টি অলিম্পিক পদক জিতেছেন।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "With which sport is Roger Federer associated?", "hi": "रोजर फेडरर का संबंध किस खेल से है?", "bn": "রজার ফেদেরার কোন খেলার সাথে যুক্ত?"},
+      "options": {
+        "en": ["Tennis","Golf","Formula 1","Cricket"],
+        "hi": ["टेनिस","गोल्फ","फार्मूला 1","क्रिकेट"],
+        "bn": ["টেনিস","গলফ","ফর্মুলা ১","ক্রিকেট"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Roger Federer is a Swiss professional tennis player who won 20 Grand Slam men's singles titles.", "hi": "रोजर फेडरर स्विट्जरलैंड के महान टेनिस खिलाड़ी हैं जिन्होंने 20 ग्रैंड स्लैम जीते हैं।", "bn": "রজার ফেদেরার সুইজারল্যান্ডের একজন কিংবদন্তি টেনিস খেলোয়াড়, যিনি ২০টি গ্র্যান্ড স্ল্যাম জিতেছেন।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "The NBA is the professional league of which sport?", "hi": "एनबीए (NBA) किस खेल की पेशेवर लीग है?", "bn": "NBA কোন খেলার পেশাদার লীগ?"},
+      "options": {
+        "en": ["Basketball","Baseball","American Football","Ice Hockey"],
+        "hi": ["बास्केटबॉल","बेसबॉल","अमेरिकी फुटबॉल","आइस हॉकी"],
+        "bn": ["বাস্কেটবল","বেসবল","আমেরিকান ফুটবল","আইস হকি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The National Basketball Association (NBA) is the premier professional basketball league in North America.", "hi": "एनबीए (NBA) उत्तरी अमेरिका की पेशेवर बास्केटबॉल लीग है।", "bn": "ন্যাশনাল বাস্কেটবল অ্যাসোসিয়েশন (NBA) হলো উত্তর আমেরিকার অন্যতম প্রধান পেশাদার বাস্কেটবল লীগ।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "Which country is the home of the Kangaroo?", "hi": "कंगारू किस देश का राष्ट्रीय पशु है?", "bn": "ক্যাঙ্গারু কোন দেশের জাতীয় প্রতীক বা প্রাণী?"},
+      "options": {
+        "en": ["Australia","New Zealand","South Africa","Kenya"],
+        "hi": ["ऑस्ट्रेलिया","न्यूजीलैंड","दक्षिण अफ्रीका","केन्या"],
+        "bn": ["অস্ট্রেলিয়া","নিউজিল্যান্ড","দক্ষিণ আফ্রিকা","কেনিয়া"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Kangaroos are native to Australia and are featured on the country's coat of arms.", "hi": "कंगारू केवल ऑस्ट्रेलिया में पाए जाते हैं और वहां के राष्ट्रीय प्रतीक हैं।", "bn": "ক্যাঙ্গারু মূলত অস্ট্রেলিয়ার আদিম স্তন্যপায়ী প্রাণী।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "Which country has the largest population in the world?", "hi": "विश्व में सर्वाधिक जनसंख्या वाला देश कौन सा है?", "bn": "বিশ্বে সবচেয়ে বেশি জনসংখ্যার দেশ কোনটি?"},
+      "options": {
+        "en": ["India","China","United States","Indonesia"],
+        "hi": ["भारत","चीन","संयुक्त राज्य अमेरिका","इंडोनेशिया"],
+        "bn": ["ভারত","চীন","মার্কিন যুক্তরাষ্ট্র","ইন্দোনেশিয়া"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "India surpassed China as the most populous country in the world in 2023.", "hi": "भारत 2023 में चीन को पछाड़कर दुनिया का सबसे अधिक आबादी वाला देश बन गया।", "bn": "ভারত ২০২৩ সালে চীনকে অতিক্রম করে বিশ্বের সবচেয়ে জনবহুল দেশ হিসেবে আত্মপ্রকাশ করে।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which is the longest wall in the world?", "hi": "विश्व की सबसे लंबी दीवार कौन सी है?", "bn": "বিশ্বের দীর্ঘতম প্রাচীর কোনটি?"},
+      "options": {
+        "en": ["Great Wall of China","Berlin Wall","Western Wall","Hadrian's Wall"],
+        "hi": ["चीन की विशाल दीवार (ग्रेट वॉल)","बर्लिन की दीवार","पश्चिमी दीवार","हैड्रियन की दीवार"],
+        "bn": ["চীনের মহাপ্রাচীর","বার্লিন প্রাচীর","পশ্চিম প্রাচীর","হ্যাড্রিয়ানের প্রাচীর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Great Wall of China is the longest man-made structure, stretching over 21,196 km.", "hi": "चीन की विशाल दीवार दुनिया की सबसे लंबी मानव निर्मित संरचना है।", "bn": "চীনের মহাপ্রাচীর হলো মানুষের তৈরি বিশ্বের দীর্ঘতম কাঠামো, যা প্রায় ২১,১৯৬ কিমি দীর্ঘ।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which country is shaped like a boot?", "hi": "किस देश का नक्शा एक बूट (जूते) के आकार जैसा दिखता है?", "bn": "কোন দেশটির মানচিত্র দেখতে একটি বুট জুতোর মতো?"},
+      "options": {
+        "en": ["Italy","Greece","Spain","Portugal"],
+        "hi": ["इटली","ग्रीस","स्पेन","पुर्तगाल"],
+        "bn": ["ইতালি","গ্রিস","স্পেন","পর্তুগাল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Italy's peninsula on the map resembles a high-heeled boot kicking Sicily.", "hi": "इटली का आकार मानचित्र पर एक लंबे बूट (जूते) जैसा दिखता है।", "bn": "মানচিত্রে ইতালির উপদ্বীপীয় অঞ্চলের আকার অনেকটা হাই-হিল বুট জুতোর মতো দেখায়।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which ocean lies between Europe and North America?", "hi": "यूरोप और उत्तरी अमेरिका के बीच कौन सा महासागर स्थित है?", "bn": "ইউরোপ এবং উত্তর আমেরিকার মধ্যে কোন মহাসাগরটি অবস্থিত?"},
+      "options": {
+        "en": ["Atlantic Ocean","Pacific Ocean","Indian Ocean","Arctic Ocean"],
+        "hi": ["अटलांटिक महासागर","प्रशांत महासागर","हिंद महासागर","आर्कटिक महासागर"],
+        "bn": ["আটলান্টিক মহাসাগর","প্রশান্ত মহাসাগর","ভারত মহাসাগর","উত্তর মহাসাগর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Atlantic Ocean separates North and South America from Europe and Africa.", "hi": "अटलांटिक महासागर अमेरिका को यूरोप और अफ्रीका से अलग करता है।", "bn": "আটলান্টিক মহাসাগর আমেরিকা মহাদেশকে ইউরোপ ও আফ্রিকা মহাদেশ থেকে পৃথক করেছে।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "What is the tallest building in the world?", "hi": "विश्व की सबसे ऊंची इमारत कौन सी है?", "bn": "বিশ্বের উচ্চতম ভবন কোনটি?"},
+      "options": {
+        "en": ["Burj Khalifa","Shanghai Tower","Empire State Building","One World Trade Center"],
+        "hi": ["बुर्ज खलीफा","शंघाई टॉवर","एम्पायर स्टेट बिल्डिंग","वन वर्ल्ड ट्रेड सेंटर"],
+        "bn": ["বুর্জ খলিফা","সাংহাই টাওয়ার","এম্পায়ার স্টেট বিল্ডিং","ওয়ান ওয়ার্ল্ড ট্রেড সেন্টার"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Burj Khalifa in Dubai, United Arab Emirates, stands at 828 meters tall.", "hi": "दुबई का बुर्ज खलीफा 828 मीटर की ऊंचाई के साथ दुनिया की सबसे ऊंची इमारत है।", "bn": "সংযুক্ত আরব আমিরাতের দুবাইয়ে অবস্থিত বুর্জ খলিফা বিশ্বের উচ্চতম ভবন (৮২৮ মিটার উঁচু)।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "How many teeth does an adult human typically have?", "hi": "एक वयस्क मानव के आमतौर पर कितने दांत होते हैं?", "bn": "একজন প্রাপ্তবয়স্ক মানুষের সাধারণত কতগুলি দাঁত থাকে?"},
+      "options": {
+        "en": ["32","30","28","34"],
+        "hi": ["32","30","28","34"],
+        "bn": ["৩২","৩০","২৮","৩৪"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "An adult human typically has 32 permanent teeth, including wisdom teeth.", "hi": "एक पूर्ण विकसित वयस्क मनुष्य के मुंह में सामान्यतः 32 दांत होते हैं।", "bn": "একজন প্রাপ্তবয়স্ক মানুষের সাধারণত ৩২টি স্থায়ী দাঁত থাকে (আক্কেল দাঁত সহ)।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "What is the name of the green pigment in plants?", "hi": "पौधों में हरे रंग के वर्णक (पिगमेंट) का नाम क्या है?", "bn": "উদ্ভিদের সবুজ রঞ্জক পদার্থটির নাম কী?"},
+      "options": {
+        "en": ["Chlorophyll","Carotenoid","Anthocyanin","Hemoglobin"],
+        "hi": ["क्लोरोफिल (पर्णहरित)","कैरोटीनॉयड","एंथोसायनिन","हीमोग्लोबिन"],
+        "bn": ["ক্লোরোফিল","ক্যারোটিনয়েড","অ্যান্থোসায়ানিন","হিমোগ্লোবিন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Chlorophyll absorbs light energy during photosynthesis, giving plants their green color.", "hi": "क्लोरोफिल पौधों में भोजन बनाने में मदद करता है और उन्हें हरा रंग देता है।", "bn": "ক্লোরোফিল সালোকসংশ্লেষের সময় আলোক শক্তি শোষণ করে এবং উদ্ভিদের সবুজ রঙের জন্য দায়ী।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Which organ is responsible for pumping blood throughout the human body?", "hi": "मानव शरीर में रक्त को पंप करने के लिए कौन सा अंग जिम्मेदार है?", "bn": "মানবদেহে রক্ত পাম্প করার জন্য কোন অঙ্গটি দায়ী?"},
+      "options": {
+        "en": ["Heart","Lungs","Brain","Liver"],
+        "hi": ["हृदय (दिल)","फेफड़े","मस्तिष्क","यकृत"],
+        "bn": ["হৃদপিণ্ড","ফুসফুস","মস্তিষ্ক","যকৃৎ"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The heart pumps oxygenated blood to the body and deoxygenated blood to the lungs.", "hi": "हृदय मानव शरीर में रक्त संचार प्रणाली का मुख्य अंग है जो रक्त पंप करता है।", "bn": "হৃদপিণ্ড মানুষের শরীরে রক্ত সঞ্চালনের জন্য পাম্প হিসেবে কাজ করে।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "Which country is home to the Pyramids of Giza?", "hi": "गीज़ा के पिरामिड किस देश में स्थित हैं?", "bn": "গিজার পিরামিড কোন দেশে অবস্থিত?"},
+      "options": {
+        "en": ["Egypt","Mexico","Peru","Greece"],
+        "hi": ["मिस्र","मेक्सिको","पेरू","ग्रीस"],
+        "bn": ["মিশর","মেক্সিকো","পেরু","গ্রিস"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Great Pyramids of Giza are located on the outskirts of Cairo, Egypt.", "hi": "मिस्र में काहिरा के पास गीज़ा के प्रसिद्ध पिरामिड स्थित हैं।", "bn": "গিজার বিখ্যাত পিরামিডগুলি মিশরের কায়রো শহরের অদূরে অবস্থিত।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "Who painted the Mona Lisa?", "hi": "मोना लिसा की पेंटिंग किसने बनाई थी?", "bn": "মোনালিসা ছবিটি কে এঁকেছেন?"},
+      "options": {
+        "en": ["Leonardo da Vinci","Pablo Picasso","Vincent van Gogh","Michelangelo"],
+        "hi": ["लियोनार्डो दा विंची","पाब्लो पिकासो","विन्सेंट वैन गॉग","माइकल एंजेलो"],
+        "bn": ["লিওনার্দো দা ভিঞ্চি","পাবলো পিকাসো","ভিনসেন্ট ভ্যান গখ","মাইকেল এঞ্জেলো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Leonardo da Vinci painted the Mona Lisa in Florence, Italy, in the early 16th century.", "hi": "लियोनार्डो दा विंची ने 16वीं सदी की शुरुआत में मोना लिसा की पेंटिंग बनाई थी।", "bn": "লিওনার্দো দা ভিঞ্চি ১৬ শতকের শুরুতে মোনালিসা ছবিটি আঁকেন।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "Who wrote 'Romeo and Juliet'?", "hi": "'रोमियो और जूलियट' किसने लिखा था?", "bn": "'রোমিও অ্যান্ড জুলিয়েট' কার লেখা?"},
+      "options": {
+        "en": ["William Shakespeare","Charles Dickens","Mark Twain","Jane Austen"],
+        "hi": ["विलियम शेक्सपियर","चार्ल्स डिकेंस","मार्क ट्वेन","जेन ऑस्टिन"],
+        "bn": ["উইলিয়াম শেক্সপিয়র","চার্লস ডিকেন্স","মার্ক টোয়েন","জেন অস্টিন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "William Shakespeare wrote the tragedy 'Romeo and Juliet' early in his career.", "hi": "विलियम शेक्सपियर ने प्रसिद्ध tragedy 'रोमियो और जूलियट' की रचना की थी।", "bn": "উইলিয়াম শেক্সপিয়র তাঁর সাহিত্যজীবনের শুরুর দিকে এই বিখ্যাত ট্র্যাজেডিটি রচনা করেন।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "hard",
+      "text": {"en": "In which country was the famous writer Franz Kafka born?", "hi": "प्रसिद्ध लेखक फ्रांज काफ्का का जन्म किस देश में हुआ था?", "bn": "বিখ্যাত লেখক ফ্রাঞ্জ কাফকা কোন দেশে জন্মগ্রহণ করেছিলেন?"},
+      "options": {
+        "en": ["Czech Republic","Austria","Germany","Hungary"],
+        "hi": ["चेक गणराज्य","ऑस्ट्रिया","जर्मनी","हंगरी"],
+        "bn": ["চেক প্রজাতন্ত্র","অস্ট্রিয়া","জার্মানি","হাঙ্গেরি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Franz Kafka was born in Prague, which was then part of the Austro-Hungarian Empire, now Czech Republic.", "hi": "फ्रांज काफ्का का जन्म प्राग में हुआ था, जो अब चेक गणराज्य का हिस्सा है।", "bn": "ফ্রাঞ্জ কাফকা প্রাগে জন্মগ্রহণ করেন, যা বর্তমানে চেক প্রজাতন্ত্রের অন্তর্গত।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "Who wrote the epic ancient Greek poem 'The Odyssey'?", "hi": "प्राचीन ग्रीक महाकाव्य 'द ओडिसी' के रचयिता कौन हैं?", "bn": "প্রাচীন গ্রীক মহাকাব্য 'দ্য ওডিসি' কে রচনা করেছিলেন?"},
+      "options": {
+        "en": ["Homer","Virgil","Socrates","Plato"],
+        "hi": ["होमर","वर्जिल","सुकरात","प्लेटो"],
+        "bn": ["হোমার","ভার্জিল","সক্রেটিস","প্লেটো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Homer is traditionally considered the author of the Iliad and the Odyssey.", "hi": "होमर को प्राचीन यूनानी महाकाव्य इलियड और ओडिसी का रचयिता माना जाता है।", "bn": "হোমারকে ঐতিহ্যগতভাবে ইলিয়াড এবং ওডিসি মহাকাব্যের রচয়িতা মনে করা হয়।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "Which artist is famous for co-founding the Cubist movement?", "hi": "कौन सा कलाकार क्यूबिज़्म (घनवाद) आंदोलन के सह-संस्थापक के रूप में प्रसिद्ध है?", "bn": "কোন শিল্পী কিউবিজমের অন্যতম প্রতিষ্ঠাতা হিসেবে বিখ্যাত?"},
+      "options": {
+        "en": ["Pablo Picasso","Vincent van Gogh","Claude Monet","Salvador Dali"],
+        "hi": ["पाब्लो पिकासो","विन्सेंट वैन गॉग","क्लाउड मोनेट","साल्वाडोर डाली"],
+        "bn": ["পাবলো পিকাসো","ভিনসেন্ট ভ্যান গখ","ক্লদ মনে","সালভাদর দালি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Pablo Picasso co-founded Cubism and is one of the most influential artists of the 20th century.", "hi": "पाब्लो पिकासो ने क्यूबिज़्म आंदोलन की सह-स्थापना की थी।", "bn": "পাবলো পিকাসো ২০ শতকের অন্যতম প্রভাবশালী শিল্পী এবং কিউবিজমের সহ-প্রতিষ্ঠাতা।"}
+    },
+    {
+      "category": "History",
+      "difficulty": "easy",
+      "text": {"en": "In which year did World War I begin?", "hi": "प्रथम विश्व युद्ध किस वर्ष शुरू हुआ था?", "bn": "প্রথম বিশ্বযুদ্ধ কোন বছর শুরু হয়েছিল?"},
+      "options": {
+        "en": ["1914","1918","1939","1912"],
+        "hi": ["1914","1918","1939","1912"],
+        "bn": ["১৯১৪","১৯১৮","১৯৩৯","১৯১২"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "World War I began on 28 July 1914 following the assassination of Archduke Franz Ferdinand.", "hi": "प्रथम विश्व युद्ध 1914 में शुरू हुआ और 1918 तक चला।", "bn": "আর্চডিউক ফ্রাঞ্জ ফার্দিনান্দের হত্যাকাণ্ডের পর ১৯১৪ সালের ২৮ জুলাই প্রথম বিশ্বযুদ্ধ শুরু হয়।"}
+    },
+    {
+      "category": "History",
+      "difficulty": "easy",
+      "text": {"en": "In which year did World War II end?", "hi": "द्वितीय विश्व युद्ध किस वर्ष समाप्त हुआ था?", "bn": "দ্বীতিয় বিশ্বযুদ্ধ কোন বছর শেষ হয়েছিল?"},
+      "options": {
+        "en": ["1945","1939","1942","1950"],
+        "hi": ["1945","1939","1942","1950"],
+        "bn": ["১৯৪৫","১৯৩৯","১৯৪২","১৯৫০"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "World War II ended in 1945 with the unconditional surrender of the Axis powers.", "hi": "द्वितीय विश्व युद्ध 1945 में मित्र राष्ट्रों की विजय के साथ समाप्त हुआ।", "bn": "অক্ষশক্তির নিঃশর্ত আত্মসমর্পণের মাধ্যমে ১৯৪৫ সালে দ্বিতীয় বিশ্বযুদ্ধ শেষ হয়।"}
+    },
+    {
+      "category": "History",
+      "difficulty": "easy",
+      "text": {"en": "Who was the first President of the United States?", "hi": "संयुक्त राज्य अमेरिका के पहले राष्ट्रपति कौन थे?", "bn": "মার্কিন যুক্তরাষ্ট্রের প্রথম রাষ্ট্রপতি কে ছিলেন?"},
+      "options": {
+        "en": ["George Washington","Thomas Jefferson","John Adams","Abraham Lincoln"],
+        "hi": ["जॉर्ज वाशिंगटन","थॉमस जेफरसन","जॉन एडम्स","अब्राहम लिंकन"],
+        "bn": ["জর্জ ওয়াশিংটন","থমাস জেফারসন","জন অ্যাডামস","আব্রাহাম লিঙ্কন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "George Washington served as US President from 1789 to 1797.", "hi": "जॉर्ज वाशिंगटन 1789 से 1797 तक संयुक्त राज्य अमेरिका के पहले राष्ट्रपति थे।", "bn": "জর্জ ওয়াশিংটন ১৭৮৯ থেকে ১৭৯৭ সাল পর্যন্ত মার্কিন যুক্তরাষ্ট্রের প্রথম রাষ্ট্রপতির দায়িত্ব পালন করেন।"}
+    },
+    {
+      "category": "History",
+      "difficulty": "medium",
+      "text": {"en": "Which ancient civilization built the famous Colosseum in Rome?", "hi": "रोम के प्रसिद्ध कोलोसियम का निर्माण किस प्राचीन सभ्यता ने किया था?", "bn": "রোমের বিখ্যাত কলোসিয়াম কোন প্রাচীন সভ্যতা তৈরি করেছিল?"},
+      "options": {
+        "en": ["Roman Empire","Ancient Greece","Egyptians","Persian Empire"],
+        "hi": ["रोमन साम्राज्य","प्राचीन ग्रीस","मिस्र वासी","फारसी साम्राज्य"],
+        "bn": ["রোমান সাম্রাজ্য","প্রাচীন গ্রিস","মিশরীয়","পারস্য সাম্রাজ্য"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Colosseum was built by the Flavian dynasty of the Roman Empire between 72 AD and 80 AD.", "hi": "कोलोसियम का निर्माण रोमन साम्राज्य के दौरान पहली शताब्दी में किया गया था।", "bn": "কলোসিয়াম রোমান সাম্রাজ্যের ফ্ল্যাভিয়ান রাজবংশ দ্বারা নির্মিত একটি বিশাল অ্যাম্পিথিয়েটার।"}
+    },
+    {
+      "category": "History",
+      "difficulty": "medium",
+      "text": {"en": "Which French Queen is famously associated with the phrase 'Let them eat cake'?", "hi": "किस फ्रांसीसी रानी को 'उन्हें केक खाने दो' कथन से जोड़ा जाता है?", "bn": "কোন ফরাসি রানীকে 'তাহলে তারা কেক খায় না কেন' এই বিখ্যাত উক্তির সাথে জড়ানো হয়?"},
+      "options": {
+        "en": ["Marie Antoinette","Catherine de' Medici","Eleanor of Aquitaine","Mary, Queen of Scots"],
+        "hi": ["मैरी एंटोनेट","कैथरीन डी मेडिसी","एलनोर ऑफ एक्विटेन","मैरी, क्वीन ऑफ स्कॉट्स"],
+        "bn": ["মেরি অ্যান্টোয়েনেট","ক্যাথরিন ডি' মেডিসি","এলেনর অফ অ্যাকুইটেইন","মেরি, কুইন অফ স্কটস"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The phrase is widely attributed to Marie Antoinette during the French Revolution, though no proof exists.", "hi": "यह प्रसिद्ध कथन फ्रांस की रानी मैरी एंटोनेट के नाम से प्रचलित है।", "bn": "এই উক্তিটি মেরি অ্যান্টোয়েনেটের নামে বা তাদের সম্পর্কিত বলে প্রচলিত।"}
+    },
+    {
+      "category": "History",
+      "difficulty": "medium",
+      "text": {"en": "In which country did the Industrial Revolution begin?", "hi": "औद्योगिक क्रांति किस देश में शुरू हुई थी?", "bn": "শিল্প বিপ্লব কোন দেশে প্রথম শুরু হয়েছিল?"},
+      "options": {
+        "en": ["Great Britain","France","Germany","United States"],
+        "hi": ["ग्रेट ब्रिटेन","फ्रांस","जर्मनी","संयुक्त राज्य अमेरिका"],
+        "bn": ["গ্রেট ব্রিটেন","ফ্রান্স","জার্মানি","মার্কিন যুক্তরাষ্ট্র"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Industrial Revolution began in Great Britain in the mid-18th century, transitioning to new manufacturing processes.", "hi": "औद्योगिक क्रांति 18वीं शताब्दी के मध्य में ग्रेट ब्रिटेन में शुरू हुई थी।", "bn": "১৮ শতকের মাঝামাঝি সময়ে গ্রেট ব্রিটেনে প্রথম শিল্প বিপ্লবের সূচনা হয়।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which country has the most natural lakes in the world?", "hi": "विश्व में सबसे अधिक प्राकृतिक झीलें किस देश में हैं?", "bn": "বিশ্বের কোন দেশে সবচেয়ে বেশি প্রাকৃতিক হ্রদ রয়েছে?"},
+      "options": {
+        "en": ["Canada","Russia","United States","Brazil"],
+        "hi": ["कनाडा","रूस","संयुक्त राज्य अमेरिका","ब्राजील"],
+        "bn": ["কানাডা","রাশিয়া","মার্কিন যুক্তরাষ্ট্র","ব্রাজিল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Canada has over 2 million lakes, containing more than half of the world's natural lakes.", "hi": "कनाडा में दुनिया की आधे से अधिक प्राकृतिक झीलें हैं।", "bn": "কানাডায় ২ মিলিয়নেরও বেশি হ্রদ রয়েছে, যা বিশ্বের মোট হ্রদের অর্ধেকের বেশি।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which is the longest mountain range in Europe?", "hi": "यूरोप की सबसे लंबी पर्वत श्रृंखला कौन सी है?", "bn": "ইউরোপের দীর্ঘতম পর্বতমালা কোনটি?"},
+      "options": {
+        "en": ["Alps","Pyrenees","Scandinavian Mountains","Ural Mountains"],
+        "hi": ["आल्प्स","पायरेनीज़","स्कैंडिनेवियन पर्वत","यूराल पर्वत"],
+        "bn": ["আল্পস","পিরেনিজ","স্ক্যান্ডিনেভিয়ান পর্বতমালা","ইউরাল পর্বতমালা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Scandinavian Mountains are the longest in Europe, though the Urals form the boundary with Asia.", "hi": "स्कैंडिनेवियन पर्वत यूरोप की सबसे लंबी श्रृंखला है।", "bn": "স্ক্যান্ডিনেভিয়ান পর্বতমালা ইউরোপের দীর্ঘতম পর্বতমালা।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which canal connects the Mediterranean Sea to the Red Sea?", "hi": "कौन सी नहर भूमध्य सागर को लाल सागर से जोड़ती है?", "bn": "কোন খাল ভূমধ্যসাগরকে লোহিত সাগরের সাথে যুক্ত করেছে?"},
+      "options": {
+        "en": ["Suez Canal","Panama Canal","Erie Canal","Kiel Canal"],
+        "hi": ["स्वेज नहर","पनामा नहर","एरी नहर","कील नहर"],
+        "bn": ["সুয়েজ খাল","পানামা খাল","ইরি খাল","কিল খাল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Suez Canal was opened in 1869, providing a direct water route between Europe and Asia.", "hi": "स्वेज नहर भूमध्य सागर और लाल सागर को जोड़ती है, जिससे यूरोप-एशिया व्यापार सुगम हुआ।", "bn": "১৮৬৯ সালে উন্মুক্ত হওয়া সুয়েজ খাল ভূমধ্যসাগর ও লোহিত সাগরকে সরাসরি সংযুক্ত করেছে।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which canal connects the Atlantic Ocean to the Pacific Ocean?", "hi": "कौन सी नहर अटलांटिक महासागर को प्रशांत महासागर से जोड़ती है?", "bn": "কোন খাল আটলান্টিক মহাসাগরকে প্রশান্ত মহাসাগরের সাথে যুক্ত করেছে?"},
+      "options": {
+        "en": ["Panama Canal","Suez Canal","Kiel Canal","Welland Canal"],
+        "hi": ["पनामा नहर","स्वेज नहर","कील नहर","वेलैंड नहर"],
+        "bn": ["পানামা খাল","সুয়েজ খাল","কিল খাল","ওয়েল্যান্ড খাল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Panama Canal, opened in 1914, cuts across the Isthmus of Panama, saving ships a long detour.", "hi": "पनामा नहर अटलांटिक और प्रशांत महासागर को जोड़कर समुद्री यात्रा की दूरी कम करती है।", "bn": "১৯১৪ সালে চালু হওয়া পানামা খালটি উত্তর ও দক্ষিণ আমেরিকার সংযোগস্থলে অবস্থিত।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "hard",
+      "text": {"en": "Which is the highest capital city in the world?", "hi": "विश्व की सबसे ऊंचाई पर स्थित राजधानी कौन सी है?", "bn": "বিশ্বের সবচেয়ে উঁচুতে অবস্থিত রাজধানী শহর কোনটি?"},
+      "options": {
+        "en": ["La Paz","Quito","Bogota","Lhasa"],
+        "hi": ["ला पाज़ (बोलीविया)","क्विटो","बोगोटा","ल्हासा"],
+        "bn": ["লা পাজ","কুইটো","বোগোটা","লাসা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "La Paz, the administrative capital of Bolivia, sits at 3,650 meters above sea level.", "hi": "बोलीविया की प्रशासनिक राजधानी ला पाज़ विश्व की सबसे ऊंचाई पर स्थित राजधानी है।", "bn": "বলিভিয়ার প্রশাসনিক রাজধানী লা পাজ সমুদ্রপৃষ্ঠ থেকে প্রায় ৩,৬৫০ মিটার উঁচুতে অবস্থিত।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "hard",
+      "text": {"en": "Which European river flows through ten countries, including Germany and Austria?", "hi": "कौन सी यूरोपीय नदी जर्मनी और ऑस्ट्रिया सहित दस देशों से होकर बहती है?", "bn": "ইউরোপের কোন নদীটি জার্মানি ও অস্ট্রিয়াসহ মোট ১০টি দেশের ওপর দিয়ে প্রবাহিত হয়েছে?"},
+      "options": {
+        "en": ["Danube","Rhine","Volga","Seine"],
+        "hi": ["डेन्यूब","राइन","वोल्गा","सीन"],
+        "bn": ["ড্যানিয়ুব","রাইন","ভলগা","সেন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Danube is Europe's second-longest river, flowing from the Black Forest to the Black Sea.", "hi": "डेन्यूब नदी यूरोप की दूसरी सबसे लंबी नदी है जो 10 देशों से गुजरती है।", "bn": "ড্যানিয়ুব নদী ইউরোপের দ্বিতীয় দীর্ঘতম নদী যা জার্মানির ব্ল্যাক ফরেস্ট থেকে লোহিত সাগরে প্রবাহিত।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which island is the largest in the world?", "hi": "विश्व का सबसे बड़ा द्वीप कौन सा है?", "bn": "বিশ্বের বৃহত্তম দ্বীপ কোনটি?"},
+      "options": {
+        "en": ["Greenland","New Guinea","Borneo","Madagascar"],
+        "hi": ["ग्रीनलैंड","न्यू गिनी","बोर्नियो","मेडागास्कर"],
+        "bn": ["গ্রিনল্যান্ড","নিউ গিনি","বোর্নিও","মাদাগাস্কার"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Greenland is the world's largest island, covering over 2.1 million square kilometers.", "hi": "ग्रीन लैंड विश्व का सबसे बड़ा द्वीप है।", "bn": "গ্রিনল্যান্ড হলো বিশ্বের বৃহত্তম দ্বীপ (অস্ট্রেলিয়াকে মহাদেশ হিসেবে ধরা হয়)।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "Which country has the most volcanoes?", "hi": "विश्व में सबसे अधिक ज्वालामुखी किस देश में हैं?", "bn": "বিশ্বের কোন দেশে সবচেয়ে বেশি আগ্নেয়গিরি রয়েছে?"},
+      "options": {
+        "en": ["Indonesia","Japan","United States","Iceland"],
+        "hi": ["इंडोनेशिया","जापान","संयुक्त राज्य अमेरिका","आइसलैंड"],
+        "bn": ["ইন্দোনেশিয়া","জাপান","মার্কিন যুক্তরাষ্ট্র","আইসল্যান্ড"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Indonesia has the highest number of active volcanoes in the world, sitting on the Ring of Fire.", "hi": "इंडोनेशिया पैसिफिक रिंग ऑफ फायर पर स्थित होने के कारण सबसे अधिक ज्वालामुखियों वाला देश है।", "bn": "ইন্দোনেশিয়া প্রশান্ত মহাসাগরীয় 'রিং অব ফায়ার'-এ অবস্থিত হওয়ায় এখানে সবচেয়ে বেশি সক্রিয় আগ্নেয়গিরি রয়েছে।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "In which ocean is the island country of Madagascar located?", "hi": "मेडागास्कर द्वीप देश किस महासागर में स्थित है?", "bn": "মাদাগাস্কার দ্বীপ রাষ্ট্রটি কোন মহাসাগরে অবস্থিত?"},
+      "options": {
+        "en": ["Indian Ocean","Atlantic Ocean","Pacific Ocean","Southern Ocean"],
+        "hi": ["हिंद महासागर","अटलांटिक महासागर","प्रशांत महासागर","दक्षिणी महासागर"],
+        "bn": ["ভারত মহাসাগর","আটলান্টিক মহাসাগর","প্রশান্ত মহাসাগর","দক্ষিণ মহাসাগর"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Madagascar is an island nation located in the Indian Ocean off the coast of East Africa.", "hi": "मेडागास्कर हिंद महासागर में अफ्रीका के पूर्वी तट पर स्थित एक द्वीप राष्ट्र है।", "bn": "মাদাগাস্কার হলো পূর্ব আফ্রিকা উপকূলের নিকটে ভারত মহাসাগরে অবস্থিত একটি দ্বীপ রাষ্ট্র।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "What is the chemical formula of Table Salt?", "hi": "साधारण नमक का रासायनिक सूत्र क्या है?", "bn": "খাবার লবণের রাসায়নিক সংকেত কী?"},
+      "options": {
+        "en": ["NaCl","HCl","NaOH","KOH"],
+        "hi": ["NaCl","HCl","NaOH","KOH"],
+        "bn": ["NaCl","HCl","NaOH","KOH"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Table salt is Sodium Chloride, chemically represented as NaCl.", "hi": "साधारण नमक सोडियम क्लोराइड है, जिसका सूत्र NaCl है।", "bn": "খাবার লবণ হলো সোডিয়াম ক্লোরাইড, যা রাসায়নিকভাবে NaCl সংকেত দ্বারা প্রকাশ করা হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "What is the main gas in the air we breathe on Earth?", "hi": "हवा में मुख्य रूप से कौन सी गैस मौजूद है जो हम सांस लेते हैं?", "bn": "পৃথিবীতে আমরা যে বাতাস নিই তার প্রধান গ্যাস কোনটি?"},
+      "options": {
+        "en": ["Nitrogen","Oxygen","Carbon Dioxide","Argon"],
+        "hi": ["नाइट्रोजन","ऑक्सीजन","कार्बन डाइऑक्साइड","आर्गन"],
+        "bn": ["নাইট্রোজেন","অক্সিজেন","কার্বন ডাই অক্সাইড","আর্গন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Nitrogen makes up roughly 78% of Earth's atmospheric volume.", "hi": "वायुमंडल का लगभग 78% भाग नाइट्रोजन गैस है।", "bn": "পৃথিবীর বায়ুমণ্ডলের প্রায় ৭৮% নাইট্রোজেন গ্যাস।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What is the only bird that can fly backward?", "hi": "पीछे की ओर उड़ने वाला एकमात्र पक्षी कौन सा है?", "bn": "পেছনের দিকে উড়তে পারে এমন একমাত্র পাখি কোনটি?"},
+      "options": {
+        "en": ["Hummingbird","Sparrow","Swallow","Eagle"],
+        "hi": ["हंपिंगबर्ड (गुंजन पक्षी)","गौरैया","अबाबील","चील"],
+        "bn": ["হামিংবার্ড","চড়ুই","বাবুই","ঈগল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Hummingbirds can fly forward, backward, upside down, and hover in mid-air.", "hi": "गुंजन पक्षी (Hummingbird) एकमात्र ऐसा पक्षी है जो पीछे की ओर भी उड़ सकता है।", "bn": "হামিংবার্ড হলো একমাত্র পাখি যা পেছনের দিকে উড়তে পারে এবং শূন্যে স্থির থাকতে পারে।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Which organ filters waste from the blood in the human body?", "hi": "मानव शरीर में रक्त से अपशिष्ट पदार्थों को छानने वाला अंग कौन सा है?", "bn": "মানবদেহে রক্ত থেকে বর্জ্য পদার্থ ফিল্টার করার জন্য কোন অঙ্গটি দায়ী?"},
+      "options": {
+        "en": ["Kidneys","Liver","Spleen","Lungs"],
+        "hi": ["गुर्दे (किडनी)","यकृत","प्लीहा","फेफड़े"],
+        "bn": ["বৃক্ক (কিডনি)","যকৃৎ","প্লীহা","ফুসফুস"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The kidneys filter extra water and toxins from the blood, producing urine.", "hi": "गुर्दे रक्त को छानकर मूत्र के रूप में अपशिष्ट को बाहर निकालते हैं।", "bn": "বৃক্ক বা কিডনি রক্ত পরিশোধনের মাধ্যমে বর্জ্য পদার্থ মূত্র হিসেবে নিষ্কাশন করে।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "What is the scientific study of plants called?", "hi": "पौधों के वैज्ञानिक अध्ययन को क्या कहा जाता है?", "bn": "উদ্ভিদ সংক্রান্ত বৈজ্ঞানিক অধ্যয়নকে কী বলা হয়?"},
+      "options": {
+        "en": ["Botany","Zoology","Geology","Ecology"],
+        "hi": ["वनस्पति विज्ञान","जंतु विज्ञान","भूविज्ञान","पारिस्थितिकी"],
+        "bn": ["উদ্ভিদবিজ্ঞান","প্রাণীবিজ্ঞান","ভূতত্ত্ব","বাস্তুবিদ্যা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Botany is a branch of biology dealing with plant life, structure, and growth.", "hi": "वनस्पति विज्ञान जीव विज्ञान की वह शाखा है जो पेड़-पौधों के अध्ययन से संबंधित है।", "bn": "বোটানি বা উদ্ভিদবিজ্ঞান হলো জীববিজ্ঞানের একটি শাখা যা উদ্ভিদের জীবন নিয়ে আলোচনা করে।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "What is the process by which plants make their own food?", "hi": "पौधे किस प्रक्रिया द्वारा अपना भोजन स्वयं बनाते हैं?", "bn": "উদ্ভিদ কোন প্রক্রিয়ার মাধ্যমে নিজের খাদ্য নিজে তৈরি করে?"},
+      "options": {
+        "en": ["Photosynthesis","Respiration","Transpiration","Fermentation"],
+        "hi": ["प्रकाश संश्लेषण","श्वसन","वाष्पोत्सर्जन","किण्वन"],
+        "bn": ["সালোকসংশ্লেষ","শ্বসন","প্রস্বেদন","সন্ধান"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Photosynthesis uses sunlight, carbon dioxide, and water to synthesize glucose.", "hi": "प्रकाश संश्लेषण सूर्य के प्रकाश की उपस्थिति में भोजन बनाने की प्रक्रिया है।", "bn": "সালোকসংশ্লেষ প্রক্রিয়ায় ক্লোরোফিল ও সূর্যালোকের সাহায্যে উদ্ভিদ গ্লুকোজ তৈরি করে।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Which gas is commonly known as Laughing Gas?", "hi": "किस गैस को आमतौर पर 'लाफिंग गैस' कहा जाता है?", "bn": "কোন গ্যাসটিকে সাধারণত লাফিং গ্যাস বলা হয়?"},
+      "options": {
+        "en": ["Nitrous Oxide","Carbon Monoxide","Nitric Oxide","Sulfur Dioxide"],
+        "hi": ["नाइट्रस ऑक्साइड","कार्बन मोनोऑक्साइड","नाइट्रिक ऑक्साइड","सल्फर डाइऑक्साइड"],
+        "bn": ["নাইট্রাস অক্সাইড","কার্বন মনোক্সাইড","নাইট্রিক অক্সাইড","সালফার ডাই অক্সাইড"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Nitrous oxide (N2O) is used in dentistry and surgery for its anesthetic effects.", "hi": "नाइट्रस ऑक्साइड को लाफिंग गैस के रूप में जाना जाता है।", "bn": "নাইট্রাস অক্সাইড (N2O) গ্যাসটিকে লাফিং গ্যাস বলা হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "What temperature does water boil at in Celsius?", "hi": "पानी सेल्सियस में कितने तापमान पर उबलता है?", "bn": "জল সেলসিয়াস স্কেলে কত ডিগ্রি তাপমাত্রায় ফোটে?"},
+      "options": {
+        "en": ["100°C","0°C","50°C","212°C"],
+        "hi": ["100°C","0°C","50°C","212°C"],
+        "bn": ["১০০°C","০°C","৫০°C","২১২°C"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Water boils at 100 degrees Celsius under standard atmospheric pressure.", "hi": "सामान्य वायुमंडलीय दबाव पर पानी 100 डिग्री सेल्सियस पर उबलता है।", "bn": "স্বাভাবিক বায়ুমণ্ডলীয় চাপে জল ১০০ ডিগ্রি সেলসিয়াস তাপমাত্রায় ফুটতে শুরু করে।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "medium",
+      "text": {"en": "Which planet is the closest to Earth in terms of size?", "hi": "आकार में पृथ्वी के सबसे निकट कौन सा ग्रह है?", "bn": "আকারের দিক থেকে পৃথিবীর সবচেয়ে কাছাকাছি গ্রহ কোনটি?"},
+      "options": {
+        "en": ["Venus","Mars","Mercury","Neptune"],
+        "hi": ["शुक्र","मंगल","बुध","नेपच्यून"],
+        "bn": ["শুক্র","মঙ্গল","বুধ","নেপচুন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Venus is very close to Earth in diameter, mass, and density, earning it the name twin planet.", "hi": "शुक्र आकार और व्यास में लगभग पृथ्वी के बराबर है।", "bn": "শুক্রের ব্যাস ও ভর পৃথিবীর প্রায় সমান হওয়ায় একে পৃথিবীর বোন বা যমজ বলা হয়।"}
+    },
+    {
+      "category": "Science",
+      "difficulty": "easy",
+      "text": {"en": "What is the primary source of energy for life on Earth?", "hi": "पृथ्वी पर जीवन के लिए ऊर्जा का मुख्य स्रोत क्या है?", "bn": "পৃথিবীতে প্রাণের জন্য শক্তির প্রধান উৎস কী?"},
+      "options": {
+        "en": ["The Sun","The Moon","Geothermal Energy","Wind"],
+        "hi": ["सूर्य","चंद्रमा","भू-तापीय ऊर्जा","हवा"],
+        "bn": ["সূর্য","চাঁদ","ভূ-তাপীয় শক্তি","বায়ু"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Sun provides light and heat that drives climate, plant growth, and ecosystems.", "hi": "सूर्य पृथ्वी के पारिस्थितिकी तंत्र के लिए ऊर्जा का प्राथमिक स्रोत है।", "bn": "সূর্য পৃথিবীর জলবায়ু ও জীবমণ্ডলের জন্য শক্তির মূল ও প্রধান উৎস।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "Which company created the iPhone?", "hi": "आईफोन किस कंपनी ने बनाया था?", "bn": "আইফোন কোন কোম্পানি তৈরি করেছে?"},
+      "options": {
+        "en": ["Apple","Samsung","Google","Microsoft"],
+        "hi": ["एप्पल","सैमसंग","गूगल","माइक्रोसॉफ्ट"],
+        "bn": ["অ্যাপল","স্যামসাং","গুগল","মাইক্রোসফট"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Apple Inc. released the first iPhone in 2007, revolutionising smartphones.", "hi": "एप्पल ने 2007 में पहला आईफोन लॉन्च किया था।", "bn": "অ্যাপল ইনকর্পোরেটেড ২০০৭ সালে প্রথম আইফোন বাজারে ছাড়ে।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "text": {"en": "Which country does the car brand BMW originate from?", "hi": "कार ब्रांड बीएमडब्ल्यू किस देश से संबंधित है?", "bn": "গাড়ির ব্র্যান্ড বিএমডব্লিউ কোন দেশের কোম্পানি?"},
+      "options": {
+        "en": ["Germany","Japan","United States","Italy"],
+        "hi": ["जर्मनी","जापान","संयुक्त राज्य अमेरिका","इटली"],
+        "bn": ["জার্মানি","জাপান","মার্কিন যুক্তরাষ্ট্র","ইতালি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "BMW stands for Bayerische Motoren Werke, founded in Munich, Germany.", "hi": "बीएमडब्ल्यू जर्मनी की एक प्रसिद्ध बहुराष्ट्रीय वाहन निर्माता कंपनी है।", "bn": "বিএমডব্লিউ হলো জার্মানির একটি বিখ্যাত বিলাসবহুল মোটর গাড়ি প্রস্তুতকারক প্রতিষ্ঠান।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "What is the name of the search engine launched in 1998 by Larry Page and Sergey Brin?", "hi": "लैरी पेज और सर्गेई ब्रिन द्वारा 1998 में शुरू किए गए सर्च इंजन का नाम क्या है?", "bn": "১৯৯৮ সালে ল্যারি পেজ এবং সের্গেই ব্রিন যে সার্চ ইঞ্জিনটি চালু করেছিলেন তার নাম কী?"},
+      "options": {
+        "en": ["Google","Yahoo","Bing","Altavista"],
+        "hi": ["गूगल","याहू","बिंग","अल्टाविस्टा"],
+        "bn": ["গুগল","ইয়াহু","বিং","আল্টাভিস্টা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Google was incorporated as a privately held company in September 1998.", "hi": "गूगल की शुरुआत 1998 में कैलिफोर्निया में एक पीएचडी परियोजना के रूप में हुई थी।", "bn": "ল্যারি পেজ ও সের্গেই ব্রিন ১৯৯৮ সালে ক্যালিফোর্নিয়ার স্ট্যানফোর্ড বিশ্ববিদ্যালয়ে গুগল প্রতিষ্ঠা করেন।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "Which company is known for its Windows operating system?", "hi": "विंडोज ऑपरेटिंग सिस्टम के लिए कौन सी कंपनी जानी जाती है?", "bn": "উইন্ডোজ অপারেটিং সিস্টেমের জন্য কোন কোম্পানি পরিচিত?"},
+      "options": {
+        "en": ["Microsoft","Apple","IBM","Intel"],
+        "hi": ["माइक्रोसॉफ्ट","एप्पल","आईबीएम","इंटेल"],
+        "bn": ["মাইক্রোসফট","অ্যাপল","আইবিএম","ইন্টেল"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Microsoft released the first version of Windows in 1985 as a graphical shell for MS-DOS.", "hi": "माइक्रोसॉफ्ट ने 1985 में पहली बार विंडोज ऑपरेटिंग सिस्टम जारी किया था।", "bn": "মাইক্রোসফট ১৯৮৫ সালে এমএস-ডস (MS-DOS) এর গ্রাফিক্যাল এক্সটেনশন হিসেবে প্রথম উইন্ডোজ রিলিজ করে।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "In which country is the famous Eiffel Tower located?", "hi": "प्रसिद्ध एफिल टॉवर किस देश में स्थित है?", "bn": "বিখ্যাত আইফেল টাওয়ার কোন দেশে অবস্থিত?"},
+      "options": {
+        "en": ["France","United Kingdom","Germany","Italy"],
+        "hi": ["फ्रांस","यूनाइटेड किंगडम","जर्मनी","इटली"],
+        "bn": ["ফ্রান্স","যুক্তরাজ্য","জার্মানি","ইতালি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Eiffel Tower is located in Paris, France, built for the 1889 World's Fair.", "hi": "एफिल टॉवर फ्रांस की राजधानी पेरिस में स्थित है।", "bn": "আইফেল টাওয়ারটি ফ্রান্সের প্যারিস শহরে চ্যাম্প ডি মার্স পার্কে অবস্থিত।"}
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "text": {"en": "In which country is the Taj Mahal located?", "hi": "ताजमहल किस देश में स्थित है?", "bn": "তাজমহল কোন দেশে অবস্থিত?"},
+      "options": {
+        "en": ["India","Pakistan","Bangladesh","Iran"],
+        "hi": ["भारत","पाकिस्तान","बांग्लादेश","ईरान"],
+        "bn": ["ভারত","পাকিস্থান","বাংলাদেশ","ইরান"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Taj Mahal is an ivory-white marble mausoleum on the south bank of the Yamuna river in Agra, India.", "hi": "ताजमहल भारत के आगरा शहर में यमुना नदी के तट पर स्थित एक स्मारक है।", "bn": "তাজমহল ভারতের উত্তর প্রদেশের আগ্রা শহরে যমুনা নদীর তীরে অবস্থিত একটি সাদা মার্বেলের সমাধিস্তম্ভ।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "In which country is the ancient city of Machu Picchu located?", "hi": "माचू पिचू का प्राचीन शहर किस देश में स्थित है?", "bn": "প্রাচীন শহর মাচু পিচু কোন দেশে অবস্থিত?"},
+      "options": {
+        "en": ["Peru","Mexico","Colombia","Chile"],
+        "hi": ["पेरू","मेक्सिको","कोलंबिया","चिली"],
+        "bn": ["পেরু","মেক্সিকো","কলম্বিয়া","চিলি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Machu Picchu is an Incan citadel set high in the Andes Mountains in Peru.", "hi": "माचू पिचू पेरू में एंडीज पर्वतों के बीच स्थित एक प्राचीन इंकान गढ़ है।", "bn": "মাচু পিচু হলো পেরুর আন্দিজ পর্বতমালায় অবস্থিত একটি প্রাচীন ইনকা সভ্যতা।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "In which city is the Statue of Liberty located?", "hi": "स्टैच्यू ऑफ लिबर्टी किस शहर में स्थित है?", "bn": "স্ট্যাচু অফ লিবার্টি কোন শহরে অবস্থিত?"},
+      "options": {
+        "en": ["New York City","Washington D.C.","Los Angeles","Chicago"],
+        "hi": ["न्यूयॉर्क शहर","वाशिंगटन डी.सी.","लॉस एंजिल्स","शिकागो"],
+        "bn": ["নিউ ইয়র্ক শহর","ওয়াশিংটন ডি.সি.","লস অ্যাঞ্জেলেস","শিকাগো"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Statue of Liberty stands on Liberty Island in New York Harbor.", "hi": "स्टैच्यू ऑफ लिबर्टी न्यूयॉर्क के हार्बर पर स्थित है, जो फ्रांस की ओर से एक उपहार था।", "bn": "স্ট্যাচু অফ লিবার্টি মার্কিন যুক্তরাষ্ট্রের নিউ ইয়র্ক হার্বারে অবস্থিত একটি বিখ্যাত ভাস্কর্য।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "In which country is the famous Opera House located in Sydney?", "hi": "सिडनी का प्रसिद्ध ओपेरा हाउस किस देश में स्थित है?", "bn": "বিখ্যাত সিডনি অপেরা হাউস কোন দেশে অবস্থিত?"},
+      "options": {
+        "en": ["Australia","New Zealand","United Kingdom","South Africa"],
+        "hi": ["ऑस्ट्रेलिया","न्यूजीलैंड","यूनाइटेड किंगडम","दक्षिण अफ्रीका"],
+        "bn": ["অস্ট্রেলিয়া","নিউজিল্যান্ড","যুক্তরাজ্য","দক্ষিণ আফ্রিকা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Sydney Opera House is a multi-venue performing arts centre in Sydney, Australia.", "hi": "सिडनी ओपेरा हाउस ऑस्ट्रेलिया की वास्तुकला की एक उत्कृष्ट पहचान है।", "bn": "সিডনি অপেরা হাউস অস্ট্রেলিয়ার সিডনি বন্দরে অবস্থিত একটি বহু-পারফর্মিং আর্টস সেন্টার।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "In which country is the Christ the Redeemer statue located?", "hi": "क्राइस्ट द रिडीमर की विशाल मूर्ति किस देश में स्थित है?", "bn": "ক্রাইস্ট দ্য রিডিমার মূর্তিটি কোন দেশে অবস্থিত?"},
+      "options": {
+        "en": ["Brazil","Argentina","Portugal","Spain"],
+        "hi": ["ब्राजील","अर्जेंटीना","पुर्तगाल","स्पेन"],
+        "bn": ["ব্রাজিল","আর্জেন্টিনা","পর্তুগাল","স্পেন"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Christ the Redeemer is an Art Deco statue of Jesus Christ in Rio de Janeiro, Brazil.", "hi": "क्राइस्ट द रिडीमर की मूर्ति ब्राजील के रियो डी जनेरियो में स्थित है।", "bn": "ক্রাইস্ট দ্য রিডিমার হলো ব্রাজিলের রিও ডি জেনিরো শহরে অবস্থিত যীশু খ্রীষ্টের একটি বিশাল ভাস্কর্য।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "In which city is the ancient Colosseum located?", "hi": "प्राचीन कोलोसियम किस शहर में स्थित है?", "bn": "প্রাচীন কলোসিয়াম কোন শহরে অবস্থিত?"},
+      "options": {
+        "en": ["Rome","Athens","Paris","Vienna"],
+        "hi": ["रोम","एथेंस","पेरिस","वियना"],
+        "bn": ["রোম","এথেন্স","প্যারিস","ভিয়েনা"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Colosseum is an oval amphitheatre in the centre of the city of Rome, Italy.", "hi": "कोलोसियम इटली की राजधानी रोम के केंद्र में स्थित है।", "bn": "কলোসিয়াম হলো ইতালির রোম শহরের কেন্দ্রে অবস্থিত একটি প্রাচীন ডিম্বাকৃতির উন্মুক্ত নাট্যমঞ্চ।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "medium",
+      "text": {"en": "In which country is the mysterious landmark Stonehenge located?", "hi": "रहस्यमयी पाषाण स्मारक स्टोनहेंज किस देश में स्थित है?", "bn": "রহস্যময় পাথরের স্থাপত্য স্টোনহেঞ্জ কোন দেশে অবস্থিত?"},
+      "options": {
+        "en": ["United Kingdom","Ireland","France","Germany"],
+        "hi": ["यूनाइटेड किंगडम (यूके)","आयरलैंड","फ्रांस","जर्मनी"],
+        "bn": ["যুক্তরাজ্য","আয়ারল্যান্ড","ফ্রান্স","জার্মানি"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Stonehenge is a prehistoric monument located in Wiltshire, England.", "hi": "स्टोनहेंज इंग्लैंड के विल्टशायर में स्थित एक प्रागैतिहासिक पाषाण स्मारक है।", "bn": "স্টোনহেঞ্জ হলো প্রাগৈतिहासिक যুগের পাথরের তৈরি একটি স্মারক কাঠামো, যা ইংল্যান্ডের উইল্টশায়ারে অবস্থিত।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "In which country is the Great Sphinx located?", "hi": "ग्रेट स्फिंक्स किस देश में स्थित है?", "bn": "গ্রেট স্ফিংস কোন দেশে অবস্থিত?"},
+      "options": {
+        "en": ["Egypt","Greece","Jordan","Turkey"],
+        "hi": ["मिस्र","ग्रीस","जॉर्डन","तुर्की"],
+        "bn": ["মিশর","গ্রিস","জর্ডান","তুরস্ক"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "The Great Sphinx of Giza is located on the Giza Plateau in Egypt.", "hi": "ग्रेट स्फिंक्स मिस्र में गीज़ा के पिरामिडों के पास स्थित एक प्राचीन विशाल मूर्ति है।", "bn": "গ্রেট স্ফিংস হলো মিশরের গিজা মালভূমিতে অবস্থিত একটি প্রাচীন পৌরাণিক পাথরের মূর্তি।"}
+    },
+    {
+      "category": "Geography",
+      "difficulty": "easy",
+      "text": {"en": "In which country is the famous active volcano Mount Fuji located?", "hi": "प्रसिद्ध ज्वालामुखी पर्वत माउंट फूजी किस देश में स्थित है?", "bn": "বিখ্যাত আগ্নেয়গিরি মাউন্ট ফুজি কোন দেশে অবস্থিত?"},
+      "options": {
+        "en": ["Japan","China","South Korea","Indonesia"],
+        "hi": ["जापान","चीन","दक्षिण कोरिया","इंडोनेशिया"],
+        "bn": ["জাপান","চীন","দক্ষিণ কোরিয়া","ইন্দোনেশিয়া"]
+      },
+      "correctIndex": 0,
+      "explanation": {"en": "Mount Fuji is the tallest mountain in Japan, serving as a famous cultural symbol.", "hi": "माउंट फूजी जापान का सबसे ऊंचा पर्वत और एक सक्रिय ज्वालामुखी है।", "bn": "মাউন্ট ফুজি হলো জাপানের সর্বোচ্চ পর্বতশৃঙ্গ এবং একটি সুপ্ত আগ্নেয়গিরি।"}
+    }
+  ];
+
+  final List<Map<String, dynamic>> finalQuestions = [];
+  final Set<String> seenTextsEn = {};
+
+  int idCounter = 1;
+  for (final q in rawQuestions) {
+    final textEn = q["text"]["en"] as String;
+    if (seenTextsEn.contains(textEn)) {
+      continue;
+    }
+    seenTextsEn.add(textEn);
+
+    final String qId = "gp_${idCounter.toString().padLeft(3, '0')}";
+    finalQuestions.add({
+      "id": qId,
+      "category": q["category"],
+      "difficulty": q["difficulty"],
+      "examTags": ["GENERAL"],
+      "text": q["text"],
+      "options": q["options"],
+      "correctIndex": q["correctIndex"],
+      "explanation": q["explanation"]
+    });
+    idCounter++;
+  }
+
+  final dir = Directory('d:/AndroidStudiosAndFlutterThings/flutterProjects/gk_quiz_app/gk_quiz_app/assets/questions');
+  if (!dir.existsSync()) {
+    dir.createSync(recursive: true);
+  }
+
+  final file = File('${dir.path}/general_practice.json');
+  file.writeAsStringSync(jsonEncode(finalQuestions), flush: true);
+
+  print('Successfully generated ${finalQuestions.length} unique worldwide questions at ${file.path}');
+}

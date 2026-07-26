@@ -10,7 +10,8 @@ class QuizSchedulerService {
   final _timingManager = QuizTimingManager.instance;
   final _quizGenerator = QuizGenerator.instance;
 
-  Future<void> refreshTiming() => _timingManager.refreshTiming();
+  Future<void> refreshTiming({bool force = false}) =>
+      _timingManager.refreshTiming(force: force);
   
   int get quizStartHour => _timingManager.quizStartHour;
   int get quizStartMinute => _timingManager.quizStartMinute;

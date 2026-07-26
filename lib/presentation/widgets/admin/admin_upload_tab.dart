@@ -29,7 +29,7 @@ class _AdminUploadTabState extends State<AdminUploadTab> {
   final _bulkQuestionsController = TextEditingController();
   bool _isLoading = false;
   bool _showGuide = false;
-  final List<String> _examModes = ['GENERAL', 'UPSC', 'BANK'];
+  final List<String> _examModes = ['GENERAL'];
   DateTime _selectedUploadDate = DateTime.now();
 
   @override

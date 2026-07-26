@@ -1,5 +1,6 @@
 // lib/routes/app_router.dart
 import 'package:flutter/material.dart';
+import '../presentation/screens/main_navigation_screen.dart';
 import '../presentation/screens/home_screen.dart';
 import '../presentation/screens/quiz_screen.dart';
 import '../presentation/screens/result_screen.dart';
@@ -40,7 +41,7 @@ class AppRouter {
       case login:
         return _build(const LoginScreen(), settings);
       case home:
-        return _build(const HomeScreen(), settings);
+        return _build(const MainNavigationScreen(), settings);
       case quiz:
         return _build(const QuizScreen(), settings);
       case result:

@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_icons.dart';
 import '../providers/app_providers.dart';
 
 class ExamModeSelector extends ConsumerWidget {
@@ -18,7 +17,6 @@ class ExamModeSelector extends ConsumerWidget {
     final current = ref.watch(examModeProvider);
     final modes = [
       ('GENERAL', '📚'),
-      ('UPSC', '🎯'),
       ('BANK', '💰')
     ];
 

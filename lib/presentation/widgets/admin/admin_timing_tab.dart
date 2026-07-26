@@ -121,7 +121,7 @@ class _AdminTimingTabState extends State<AdminTimingTab> {
         'updated_at': FieldValue.serverTimestamp(),
       });
 
-      await QuizSchedulerService.instance.refreshTiming();
+      await QuizSchedulerService.instance.refreshTiming(force: true);
 
       setState(() {
         _savedStartHour = _quizStartHour;

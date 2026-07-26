@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
+import '../../core/theme/theme_manager.dart';
 import '../providers/app_providers.dart';
 
 class HomeHeader extends ConsumerWidget {
@@ -21,7 +22,7 @@ class HomeHeader extends ConsumerWidget {
     final isHi = lang == 'hi';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Row(
         children: [
           // App Logo container with premium look
@@ -41,7 +42,7 @@ class HomeHeader extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           // App Titles
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,34 +73,48 @@ class HomeHeader extends ConsumerWidget {
           const Spacer(),
           // Language selector button
           _LanguageButton(ref: ref, lang: lang),
-          const SizedBox(width: 10),
-          // Profile avatar button
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/profile'),
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                gradient: isDark
-                    ? AppColors.primaryGradientDark
-                    : AppColors.primaryGradient,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                AppIcons.profile,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
+          const SizedBox(width: 8),
+          // Direct 1-tap Theme Toggle button (Sun / Moon)
+          const _ThemeToggleButton(),
         ],
+      ),
+    );
+  }
+}
+
+class _ThemeToggleButton extends ConsumerWidget {
+  const _ThemeToggleButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: () {
+        final newMode = isDark ? AppThemeMode.light : AppThemeMode.dark;
+        ref.read(themeModeProvider.notifier).setThemeMode(newMode);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.amber.withValues(alpha: 0.15)
+              : AppColors.primary.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isDark
+                ? Colors.amber.withValues(alpha: 0.4)
+                : AppColors.primary.withValues(alpha: 0.3),
+            width: 1.5,
+          ),
+        ),
+        child: Icon(
+          isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
+          color: isDark ? Colors.amber : AppColors.primary,
+          size: 19,
+        ),
       ),
     );
   }
