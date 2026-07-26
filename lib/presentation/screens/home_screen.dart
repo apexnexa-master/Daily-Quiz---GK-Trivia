@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
 import '../widgets/quiz_cta_card.dart';
 import '../widgets/home_header.dart';
-import '../widgets/exam_mode_selector.dart';
+import '../widgets/practice_card.dart';
 import '../widgets/shimmer_loading.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/quiz_scheduler_service.dart';
@@ -89,7 +89,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         sliver: SliverList(
                           delegate: SliverChildListDelegate([
-                            // 1. Focal Hero Quiz Card (Today's Daily Quiz & Practice)
+                            // 1. Focal Hero Quiz Card (Today's Daily Quiz)
                             StaggeredListItem(
                               index: 0,
                               child: quizAsync.when(
@@ -100,9 +100,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             const SizedBox(height: 16),
 
-                            // 2. Performance Stats Row (Accuracy, Best Score, Total Quizzes)
+                            // 2. Practice Arena Card
                             StaggeredListItem(
                               index: 1,
+                              child: PracticeArenaCard(lang: lang),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // 3. Performance Stats Row (Accuracy, Best Score, Total Quizzes)
+                            StaggeredListItem(
+                              index: 2,
                               child: _buildStatsCards(context, ref, isDark, isBn, isHi),
                             ),
                             const SizedBox(height: 32),

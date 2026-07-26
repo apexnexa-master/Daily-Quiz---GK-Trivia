@@ -6,7 +6,6 @@ import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/services/quiz_scheduler_service.dart';
 import '../../data/models/firestore_models.dart';
-import '../../core/services/quiz/practice_quiz_service.dart';
 import '../providers/app_providers.dart';
 
 class QuizCtaCard extends ConsumerWidget {
@@ -28,7 +27,7 @@ class QuizCtaCard extends ConsumerWidget {
     final isQuizActive = scheduler.isQuizActive();
 
     if (quiz == null) {
-      return _buildEmptyState(context, isDark, isBn, isHi, ref);
+      return _buildEmptyState(context, isDark, isBn, isHi);
     }
 
     final qCount = quiz!.questionCount;
@@ -42,204 +41,203 @@ class QuizCtaCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.35),
+            color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.35),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -30,
-            top: -30,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                shape: BoxShape.circle,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Ambient design elements
+            Positioned(
+              right: -30,
+              top: -30,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
-          ),
-          Positioned(
-            right: 20,
-            bottom: -40,
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
+            Positioned(
+              right: 20,
+              bottom: -40,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(22),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: isQuizActive
-                            ? Colors.white.withValues(alpha: 0.2)
-                            : AppColors.warning.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isQuizActive ? Icons.auto_awesome_rounded : Icons.schedule_rounded,
-                            size: 12,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            isQuizActive
-                                ? (isBn ? 'আজকের কুইজ' : isHi ? 'आज का क्विज़' : "Today's Quiz")
-                                : (isBn ? 'কুইজ অপেক্ষায়' : isHi ? 'क्विज़ प्रतीक्षा में' : 'Quiz Pending'),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        quiz!.examMode,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  _getExamTitle(quiz!.examMode, isBn, isHi),
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    height: 1.1,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  isBn
-                      ? '$qCount টি প্রশ্ন · $mins মিনিট'
-                      : isHi
-                          ? '$qCount प्रश्न · $mins मिनट'
-                          : '$qCount Questions · $mins min',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    _buildChip(AppIcons.timer, '$mins min'),
-                    const SizedBox(width: 8),
-                    _buildChip(Icons.help_outline_rounded, '$qCount Q'),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AnimatedScaleButton(
-                        onTap: isQuizActive
-                            ? () {
-                                ref.read(quizSessionProvider.notifier).startQuiz(quiz!);
-                                Navigator.pushNamed(context, '/quiz');
-                              }
-                            : null,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: isQuizActive ? Colors.white : Colors.white24,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: isQuizActive ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.15),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              )
-                            ] : null,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                isQuizActive ? Icons.play_arrow_rounded : Icons.schedule_rounded,
-                                color: isQuizActive ? AppColors.primary : Colors.white70,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                isBn ? 'কুইজ শুরু করুন' : isHi ? 'क्विज़ शुरू करें' : 'START QUIZ NOW',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.5,
-                                  color: isQuizActive ? AppColors.primary : Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    _buildPracticeButton(context, ref, isDark, isBn, isHi),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
+            Padding(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      const Icon(Icons.timer_outlined, color: Colors.white70, size: 14),
-                      const SizedBox(width: 6),
-                      Expanded(
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isQuizActive
+                              ? Colors.white.withValues(alpha: 0.2)
+                              : AppColors.warning.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isQuizActive ? Icons.auto_awesome_rounded : Icons.schedule_rounded,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isQuizActive
+                                  ? (isBn ? 'আজকের চ্যালেঞ্জ' : isHi ? 'आज की चुनौती' : "Today's Challenge")
+                                  : (isBn ? 'চ্যালেঞ্জ অপেক্ষায়' : isHi ? 'चुनौती प्रतीक्षा में' : 'Challenge Pending'),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         child: Text(
-                          _getStatusText(scheduler, isQuizActive, isBn, isHi),
+                          examMode,
                           style: const TextStyle(
                             fontSize: 11,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
+                            color: Colors.white70,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  Text(
+                    _getExamTitle(examMode, isBn, isHi),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      height: 1.1,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    isBn
+                        ? 'প্রতিদিন একটি নতুন কুইজ চ্যালেঞ্জ খেলুন এবং আপনার স্কোর উন্নত করুন।'
+                        : isHi
+                            ? 'हर दिन एक नया क्विज़ खेलें और अपना स्कोर सुधारें।'
+                            : 'Play a fresh daily challenge every day and improve your scores.',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      _buildChip(AppIcons.timer, '$mins min'),
+                      const SizedBox(width: 8),
+                      _buildChip(Icons.help_outline_rounded, '$qCount Q'),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  AnimatedScaleButton(
+                    onTap: isQuizActive
+                        ? () {
+                            ref.read(quizSessionProvider.notifier).startQuiz(quiz!);
+                            Navigator.pushNamed(context, '/quiz');
+                          }
+                        : null,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: isQuizActive ? Colors.white : Colors.white24,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: isQuizActive ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          )
+                        ] : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isQuizActive ? Icons.play_arrow_rounded : Icons.lock_rounded,
+                            color: isQuizActive ? AppColors.primary : Colors.white70,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            isQuizActive 
+                                ? (isBn ? 'চ্যালেঞ্জ শুরু করুন' : isHi ? 'चुनौती शुरू करें' : 'START CHALLENGE NOW')
+                                : (isBn ? 'লক করা আছে' : isHi ? 'लॉक है' : 'LOCKED'),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                              color: isQuizActive ? AppColors.primary : Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.timer_outlined, color: Colors.white70, size: 14),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _getStatusText(scheduler, isQuizActive, isBn, isHi),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -258,19 +256,19 @@ class QuizCtaCard extends ConsumerWidget {
         final mins = remainingMinutes % 60;
         if (hours > 0) {
           return isBn
-              ? 'কুইজ $hours ঘণ্টা $mins মিনিটে শেষ হবে'
+              ? 'চ্যালেঞ্জ $hours ঘণ্টা $mins মিনিটে শেষ হবে'
               : isHi
-                  ? 'क्विज़ $hours घंटे $mins मिनट में समाप्त होगा'
-                  : 'Quiz ends in ${hours}h ${mins}m';
+                  ? 'चुनौती $hours घंटे $mins मिनट में समाप्त होगी'
+                  : 'Challenge ends in ${hours}h ${mins}m';
         } else {
           return isBn
-              ? 'কুইজ $mins মিনিটে শেষ হবে'
+              ? 'চ্যালেঞ্জ $mins মিনিটে শেষ হবে'
               : isHi
-                  ? 'क्विज़ $mins मिनट में समाप्त होगा'
-                  : 'Quiz ends in $mins min';
+                  ? 'चुनौती $mins मिनट में समाप्त होगी'
+                  : 'Challenge ends in $mins min';
         }
       } else {
-        return isBn ? 'কুইজ শেষ হয়ে গেছে' : isHi ? 'क्विज़ समाप्त हो गया' : 'Quiz has ended';
+        return isBn ? 'চ্যালেঞ্জ শেষ হয়ে গেছে' : isHi ? 'चुनौती समाप्त हो गई' : 'Challenge has ended';
       }
     } else {
       if (currentMinutes < startMinutes) {
@@ -279,219 +277,31 @@ class QuizCtaCard extends ConsumerWidget {
         final mins = waitMinutes % 60;
         if (hours > 0) {
           return isBn
-              ? 'দৈনিক কুইজ $hours ঘণ্টা $mins মিনিটে শুরু'
+              ? 'দৈনিক চ্যালেঞ্জ $hours ঘণ্টা $mins মিনিটে শুরু'
               : isHi
-                  ? 'दैनिक क्विज़ $hours घंटे $mins मिनट में शुरू'
-                  : 'Daily quiz starts in ${hours}h ${mins}m';
+                  ? 'दैनिक चुनौती $hours घंटे $mins मिनट में शुरू'
+                  : 'Daily challenge starts in ${hours}h ${mins}m';
         } else {
           return isBn
-              ? 'দৈনিক কুইজ $mins মিনিটে শুরু'
+              ? 'দৈনিক চ্যালেঞ্জ $mins মিনিটে শুরু'
               : isHi
-                  ? 'दैनिक क्विज़ $mins मिनट में शुरू'
-                  : 'Daily quiz starts in $mins min';
+                  ? 'दैनिक चुनौती $mins मिनट में शुरू'
+                  : 'Daily challenge starts in $mins min';
         }
       } else {
-        return isBn ? 'আজকের কুইজ শেষ হয়ে গেছে' : isHi ? 'आज का क्विज़ समाप्त हो गया' : "Today's quiz has ended";
+        return isBn ? 'আজকের চ্যালেঞ্জ শেষ হয়ে গেছে' : isHi ? 'आज की चुनौती समाप्त हो गई' : "Today's challenge has ended";
       }
     }
   }
 
-  Widget _buildPracticeButton(
-      BuildContext context, WidgetRef ref, bool isDark, bool isBn, bool isHi) {
-    return InkWell(
-      onTap: () => _showPracticeBottomSheet(context, ref, isDark, isBn, isHi),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.25),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.school_rounded, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              isBn ? 'অনুশীলন' : isHi ? 'अभ्यास' : 'Practice',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showPracticeBottomSheet(
-      BuildContext context, WidgetRef ref, bool isDark, bool isBn, bool isHi) {
-    int selectedCount = 10;
-    String selectedDifficulty = 'All';
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E2F) : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 15,
-                    offset: const Offset(0, -5),
-                  )
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white24 : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    isBn ? 'অনুশীলন কনফিগার করুন' : isHi ? 'अभ्यास कॉन्फ़िगर करें' : 'Configure Practice',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    isBn ? 'প্রশ্নের সংখ্যা' : isHi ? 'प्रश्नों की संख्या' : 'Number of Questions',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [5, 10, 15, 20].map((count) {
-                      final selected = selectedCount == count;
-                      return ChoiceChip(
-                        label: Text('$count'),
-                        selected: selected,
-                        onSelected: (val) {
-                          if (val) setModalState(() => selectedCount = count);
-                        },
-                        selectedColor: AppColors.primary,
-                        labelStyle: TextStyle(
-                          color: selected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    isBn ? 'অসুবিধা স্তর' : isHi ? 'कठिनाई स्तर' : 'Difficulty Level',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: ['All', 'Easy', 'Medium', 'Hard'].map((diff) {
-                      final selected = selectedDifficulty == diff;
-                      return ChoiceChip(
-                        label: Text(isBn
-                            ? (diff == 'All' ? 'সব' : diff == 'Easy' ? 'সহজ' : diff == 'Medium' ? 'মাঝারি' : 'কঠিন')
-                            : isHi
-                                ? (diff == 'All' ? 'सभी' : diff == 'Easy' ? 'आसान' : diff == 'Medium' ? 'मध्यम' : 'कठिन')
-                                : diff),
-                        selected: selected,
-                        onSelected: (val) {
-                          if (val) setModalState(() => selectedDifficulty = diff);
-                        },
-                        selectedColor: AppColors.primary,
-                        labelStyle: TextStyle(
-                          color: selected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _startPracticeMode(context, ref, selectedCount, selectedDifficulty);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        isBn ? 'অনুশীলন শুরু করুন' : isHi ? 'अभ्यास शुरू करें' : 'Start Practice',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _startPracticeMode(
-      BuildContext context, WidgetRef ref, int questionCount, String difficulty) async {
-    // Sync silently in background (non-blocking)
-    PracticeQuizService.instance.syncWithFirestore();
-
-    // Fetch instantly from the local database using smart weighted selection
-    final practiceQuiz = await PracticeQuizService.instance.fetchPracticeQuiz(
-      questionCount: questionCount,
-      difficulty: difficulty == 'All' ? null : difficulty.toLowerCase(),
-    );
-
-    if (context.mounted) {
-      ref.read(quizSessionProvider.notifier).startQuiz(practiceQuiz);
-      Navigator.pushNamed(context, '/quiz');
-    }
-  }
-
-  Widget _buildEmptyState(
-      BuildContext context, bool isDark, bool isBn, bool isHi, WidgetRef ref) {
+  Widget _buildEmptyState(BuildContext context, bool isDark, bool isBn, bool isHi) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.08),
-            AppColors.level.withValues(alpha: isDark ? 0.15 : 0.04),
+            AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08),
+            AppColors.secondary.withValues(alpha: isDark ? 0.08 : 0.04),
           ],
         ),
         borderRadius: BorderRadius.circular(24),
@@ -508,11 +318,11 @@ class QuizCtaCard extends ConsumerWidget {
               color: AppColors.primary.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.school_rounded, size: 40, color: AppColors.primary),
+            child: const Icon(Icons.stars_rounded, size: 40, color: AppColors.primary),
           ),
           const SizedBox(height: 16),
           Text(
-            isBn ? 'অনুশীলন মোড' : isHi ? 'अभ्यास मोड' : 'Practice Mode',
+            isBn ? 'আজকের চ্যালেঞ্জ নেই' : isHi ? 'आज कोई चुनौती नहीं है' : 'No Challenge Today',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -522,10 +332,10 @@ class QuizCtaCard extends ConsumerWidget {
           const SizedBox(height: 6),
           Text(
             isBn
-                ? 'যেকোনো সময় অনুশীলন করুন'
+                ? 'দৈনিক চ্যালেঞ্জগুলি পরে পরীক্ষা করুন বা অনুশীলন মোড খেলুন।'
                 : isHi
-                    ? 'कभी भी अभ्यास करें'
-                    : 'Practice anytime with new questions',
+                    ? 'दैनिक चुनौती के लिए बाद में देखें या अभ्यास मोड खेलें।'
+                    : 'Check back later for the next daily challenge or practice below.',
             style: TextStyle(
               fontSize: 12,
               color: isDark ? Colors.white54 : Colors.grey[600],
@@ -533,63 +343,7 @@ class QuizCtaCard extends ConsumerWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildPracticeStartButton(context, ref, 5, isDark, isBn, isHi),
-              const SizedBox(width: 10),
-              _buildPracticeStartButton(context, ref, 10, isDark, isBn, isHi),
-              const SizedBox(width: 10),
-              _buildPracticeStartButton(context, ref, 15, isDark, isBn, isHi),
-            ],
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPracticeStartButton(BuildContext context, WidgetRef ref,
-      int count, bool isDark, bool isBn, bool isHi) {
-    return AnimatedScaleButton(
-      onTap: () => _startPracticeMode(context, ref, count, 'All'),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.cardDark : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            )
-          ],
-        ),
-        child: Column(
-          children: [
-            Text(
-              '$count',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: AppColors.primary,
-              ),
-            ),
-            Text(
-              'Q',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white54 : Colors.grey,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -619,16 +373,8 @@ class QuizCtaCard extends ConsumerWidget {
     switch (mode) {
       case 'GENERAL':
         return isBn ? 'সাধারণ জ্ঞান' : isHi ? 'सामान्य ज्ञान' : 'General Knowledge';
-      case 'WBPSC':
-        return 'WBPSC Exam';
-      case 'SSC':
-        return 'SSC Exam';
-      case 'UPSC':
-        return 'UPSC Exam';
-      case 'BANK':
-        return 'Bank PO';
       default:
         return mode;
-      }
+    }
   }
 }
