@@ -133,14 +133,14 @@ class ProfileOverview extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: isDark ? AppColors.primaryGradientDark : AppColors.primaryGradient,
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.4),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -148,11 +148,11 @@ class ProfileOverview extends ConsumerWidget {
         children: [
           // Background decorative circle shapes
           Positioned(
-            top: -40,
-            right: -30,
+            top: -45,
+            right: -25,
             child: Container(
-              width: 120,
-              height: 120,
+              width: 110,
+              height: 110,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withValues(alpha: 0.08),
@@ -160,11 +160,11 @@ class ProfileOverview extends ConsumerWidget {
             ),
           ),
           Positioned(
-            bottom: -20,
-            left: -40,
+            bottom: -25,
+            left: -35,
             child: Container(
-              width: 150,
-              height: 150,
+              width: 130,
+              height: 130,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white.withValues(alpha: 0.05),
@@ -174,26 +174,29 @@ class ProfileOverview extends ConsumerWidget {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
               child: Column(
                 children: [
                   // App Bar / Top Actions
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      const Spacer(),
                       // Premium tier badge
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
+                            horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.workspace_premium_rounded,
-                                color: Colors.amber.shade300, size: 16),
+                                color: Colors.amber.shade300, size: 14),
                             const SizedBox(width: 4),
                             Text(
                               isBn
@@ -202,7 +205,7 @@ class ProfileOverview extends ConsumerWidget {
                                       ? 'मुफ्त'
                                       : 'Free',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white,
                               ),
@@ -212,26 +215,31 @@ class ProfileOverview extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   
                   // User Profile Avatar
                   Stack(
                     alignment: Alignment.bottomRight,
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
+                          gradient: LinearGradient(
+                            colors: [Colors.white, Colors.white.withValues(alpha: 0.4)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 12,
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
                         child: CircleAvatar(
-                          radius: 42,
+                          radius: 38,
                           backgroundImage:
                               user.photoURL != null && user.photoURL!.isNotEmpty
                                   ? NetworkImage(user.photoURL!)
@@ -244,7 +252,7 @@ class ProfileOverview extends ConsumerWidget {
                                           : 'U')[0]
                                       .toUpperCase(),
                                   style: const TextStyle(
-                                    fontSize: 36,
+                                    fontSize: 32,
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
                                   ),
@@ -254,24 +262,24 @@ class ProfileOverview extends ConsumerWidget {
                       ),
                       if (user.isAnonymous)
                         Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(5),
                           decoration: BoxDecoration(
                             color: AppColors.warning,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            border: Border.all(color: Colors.white, width: 1.5),
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.warning.withValues(alpha: 0.4),
-                                blurRadius: 8,
+                                blurRadius: 6,
                               ),
                             ],
                           ),
                           child: const Icon(Icons.person_outline,
-                              color: Colors.white, size: 14),
+                              color: Colors.white, size: 12),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   
                   // User details text with Edit Username icon
                   Row(
@@ -280,23 +288,32 @@ class ProfileOverview extends ConsumerWidget {
                       Text(
                         user.displayName?.isNotEmpty == true ? user.displayName! : 'Quiz Warrior',
                         style: const TextStyle(
-                          fontSize: 22,
+                          fontSize: 20,
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      IconButton(
-                        icon: const Icon(Icons.edit_rounded, color: Colors.white70, size: 18),
-                        onPressed: () => _showEditUsernameDialog(context, ref, user.displayName ?? ''),
-                        tooltip: 'Edit Username',
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(4),
+                      const SizedBox(width: 4),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _showEditUsernameDialog(context, ref, user.displayName ?? ''),
+                          borderRadius: BorderRadius.circular(100),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            child: const Icon(
+                              Icons.edit_rounded, 
+                              color: Colors.white70, 
+                              size: 14,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                   if (user.email != null && user.email.isNotEmpty) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       user.email,
                       style: const TextStyle(
@@ -306,27 +323,31 @@ class ProfileOverview extends ConsumerWidget {
                     ),
                   ],
                   if (user.isAnonymous) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 6),
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                          width: 1.0,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.info_outline,
                               color: Colors.white.withValues(alpha: 0.8),
-                              size: 14),
-                          const SizedBox(width: 6),
+                              size: 12),
+                          const SizedBox(width: 4),
                           Text(
                             isBn ? 'অতিথি ব্যবহারকারী' : 'Guest User',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 10,
                               color: Colors.white.withValues(alpha: 0.9),
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],

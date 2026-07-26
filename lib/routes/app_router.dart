@@ -14,8 +14,6 @@ import '../presentation/screens/onboarding_screen.dart';
 // Premium screen - not used
 // import '../presentation/screens/premium_screen.dart';
 import '../presentation/screens/admin_screen.dart';
-import '../presentation/screens/disclaimer_screen.dart';
-
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
@@ -32,7 +30,6 @@ class AppRouter {
   // Premium route - not used
   // static const String premium = '/premium';
   static const String admin = '/admin';
-  static const String disclaimer = '/disclaimer';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -61,8 +58,6 @@ class AppRouter {
       //   return _build(const PremiumScreen(), settings);
       case admin:
         return _build(const AdminScreen(), settings);
-      case disclaimer:
-        return _build(const DisclaimerAndSourcesScreen(), settings);
       default:
         return _build(const HomeScreen(), settings);
     }
@@ -76,7 +71,7 @@ class AppRouter {
     return MaterialPageRoute(
       builder: (_) => OnboardingScreen(
         onComplete: () {
-          navigatorKey.currentState?.pushReplacementNamed(home);
+          navigatorKey.currentState?.pushReplacementNamed(login);
         },
       ),
       settings: settings,

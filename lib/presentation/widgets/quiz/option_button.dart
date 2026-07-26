@@ -10,6 +10,8 @@ class OptionButton extends StatelessWidget {
   final bool isBengali;
   final bool isDark;
   final VoidCallback? onTap;
+  final bool showAsCorrect;
+  final bool showAsWrong;
   final bool? isCorrectFeedback;
   final AnimationController? correctAnimation;
   final AnimationController? wrongAnimation;
@@ -22,6 +24,8 @@ class OptionButton extends StatelessWidget {
     required this.isBengali,
     required this.isDark,
     this.onTap,
+    this.showAsCorrect = false,
+    this.showAsWrong = false,
     this.isCorrectFeedback,
     this.correctAnimation,
     this.wrongAnimation,
@@ -33,20 +37,47 @@ class OptionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     // Determine clean, non-confusing neutral colors
     final baseBg = isDark ? AppColors.cardDark : Colors.white;
-    final selectedBg = AppColors.primary;
 
     Color tileBgColor;
     Color borderColor;
     Color textColor;
     Color badgeBgColor;
     Color badgeTextColor;
+    Widget? rightIcon;
 
-    if (isSelected) {
-      tileBgColor = selectedBg;
-      borderColor = selectedBg;
+    if (showAsCorrect) {
+      tileBgColor = AppColors.success;
+      borderColor = AppColors.success;
       textColor = Colors.white;
       badgeBgColor = Colors.white.withValues(alpha: 0.25);
       badgeTextColor = Colors.white;
+      rightIcon = const Icon(
+        Icons.check_circle_rounded,
+        color: Colors.white,
+        size: 22,
+      );
+    } else if (showAsWrong) {
+      tileBgColor = AppColors.error;
+      borderColor = AppColors.error;
+      textColor = Colors.white;
+      badgeBgColor = Colors.white.withValues(alpha: 0.25);
+      badgeTextColor = Colors.white;
+      rightIcon = const Icon(
+        Icons.cancel_rounded,
+        color: Colors.white,
+        size: 22,
+      );
+    } else if (isSelected) {
+      tileBgColor = AppColors.primary;
+      borderColor = AppColors.primary;
+      textColor = Colors.white;
+      badgeBgColor = Colors.white.withValues(alpha: 0.25);
+      badgeTextColor = Colors.white;
+      rightIcon = const Icon(
+        Icons.check_circle_rounded,
+        color: Colors.white,
+        size: 22,
+      );
     } else {
       tileBgColor = baseBg;
       borderColor = isDark
@@ -76,12 +107,17 @@ class OptionButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: borderColor,
-              width: isSelected ? 2.0 : 1.5,
+              width: (isSelected || showAsCorrect || showAsWrong) ? 2.0 : 1.5,
             ),
-            boxShadow: isSelected
+            boxShadow: (isSelected || showAsCorrect || showAsWrong)
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.25),
+                      color: (showAsCorrect 
+                              ? AppColors.success 
+                              : showAsWrong 
+                                  ? AppColors.error 
+                                  : AppColors.primary)
+                          .withValues(alpha: 0.25),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -105,7 +141,7 @@ class OptionButton extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: badgeBgColor,
                   border: Border.all(
-                    color: isSelected
+                    color: (isSelected || showAsCorrect || showAsWrong)
                         ? Colors.white.withValues(alpha: 0.4)
                         : AppColors.primary.withValues(alpha: 0.2),
                     width: 1.5,
@@ -133,17 +169,14 @@ class OptionButton extends StatelessWidget {
                         )
                       : Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: textColor,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: (isSelected || showAsCorrect || showAsWrong) 
+                                ? FontWeight.w700 
+                                : FontWeight.w500,
                           ),
                 ),
               ),
-              // Clean selection indicator icon (Checkmark)
-              if (isSelected)
-                const Icon(
-                  Icons.check_circle_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
+              // Clean selection feedback indicator icon
+              if (rightIcon != null) rightIcon,
             ],
           ),
         ),

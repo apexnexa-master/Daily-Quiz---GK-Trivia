@@ -125,73 +125,138 @@ class _LanguageButton extends StatelessWidget {
   final String lang;
   const _LanguageButton({required this.ref, required this.lang});
 
-  @override
-  Widget build(BuildContext context) {
+  void _showLanguageBottomSheet(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isBn = lang == 'bn';
+    final isHi = lang == 'hi';
+
+    final title = isBn ? 'ভাষা নির্বাচন করুন' : isHi ? 'भाषा चुनें' : 'Select Language';
+
     final langs = [
       ('en', 'English'),
       ('hi', 'हिंदी'),
       ('bn', 'বাংলা'),
     ];
-    
-    return PopupMenuButton<String>(
-      initialValue: lang,
-      onSelected: (l) => ref.read(languageProvider.notifier).setLanguage(l),
-      color: isDark ? AppColors.cardDark : Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.primary.withValues(alpha: 0.15),
-              AppColors.secondary.withValues(alpha: 0.15),
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E2F) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 15,
+                offset: const Offset(0, -5),
+              )
             ],
           ),
-          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ...langs.map((l) {
+                final isSelected = lang == l.$1;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: InkWell(
+                    onTap: () {
+                      ref.read(languageProvider.notifier).setLanguage(l.$1);
+                      Navigator.pop(context);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: isSelected 
+                            ? AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected 
+                              ? AppColors.primary.withValues(alpha: 0.3) 
+                              : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15)),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            l.$2,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                              color: isSelected 
+                                  ? AppColors.primary 
+                                  : (isDark ? Colors.white : AppColors.textPrimaryLight),
+                            ),
+                          ),
+                          const Spacer(),
+                          if (isSelected)
+                            Icon(
+                              Icons.check_circle_rounded,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return GestureDetector(
+      onTap: () => _showLanguageBottomSheet(context),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : AppColors.primary.withValues(alpha: 0.08),
+          shape: BoxShape.circle,
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.2),
+            color: isDark ? Colors.white.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.15),
+            width: 1.2,
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.language_rounded,
-              size: 14,
-              color: AppColors.primary,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              lang.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primary,
-              ),
-            ),
-          ],
+        child: Icon(
+          Icons.translate_rounded,
+          size: 18,
+          color: isDark ? Colors.white : AppColors.primary,
         ),
       ),
-      itemBuilder: (_) => langs
-          .map((l) => PopupMenuItem(
-                value: l.$1,
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.language_rounded,
-                      size: 18,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      l.$2,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ))
-          .toList(),
     );
   }
 }

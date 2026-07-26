@@ -19,7 +19,7 @@
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-9016394938646262~3478121675"/>
 
         <property
             android:name="android.adservices.AD_SERVICES_CONFIG"

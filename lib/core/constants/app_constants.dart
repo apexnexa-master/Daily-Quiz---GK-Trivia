@@ -1,5 +1,6 @@
 // lib/core/constants/app_constants.dart
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 class AppConstants {
   AppConstants._();
@@ -38,29 +39,57 @@ class AppConstants {
   // ── AdMob Unit IDs ────────────────────────────────────────
   // IMPORTANT: Replace test IDs with real IDs before release.
   static String get admobAppId {
-    if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544~3347511713'; // TEST
+    if (kDebugMode) {
+      if (Platform.isAndroid) {
+        return 'ca-app-pub-3940256099942544~3347511713'; // TEST Android
+      }
+      return 'ca-app-pub-3940256099942544~1458002511'; // TEST iOS
     }
-    return 'ca-app-pub-3940256099942544~1458002511'; // TEST iOS
+
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-9016394938646262~3478121675'; // Real Production App ID
+    }
+    return 'ca-app-pub-3940256099942544~1458002511';
   }
 
   static String get bannerAdUnitId {
+    if (kDebugMode) {
+      if (Platform.isAndroid) {
+        return 'ca-app-pub-3940256099942544/6300978111'; // TEST banner
+      }
+      return 'ca-app-pub-3940256099942544/2934735716';
+    }
+
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/6300978111'; // TEST banner
+      return 'ca-app-pub-9016394938646262/5178216157'; // Real Production Banner ID
     }
     return 'ca-app-pub-3940256099942544/2934735716';
   }
 
   static String get interstitialAdUnitId {
+    if (kDebugMode) {
+      if (Platform.isAndroid) {
+        return 'ca-app-pub-3940256099942544/1033173712'; // TEST interstitial
+      }
+      return 'ca-app-pub-3940256099942544/4411468910';
+    }
+
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/1033173712'; // TEST interstitial
+      return 'ca-app-pub-9016394938646262/6998684424'; // Real Production Interstitial ID
     }
     return 'ca-app-pub-3940256099942544/4411468910';
   }
 
   static String get rewardedAdUnitId {
+    if (kDebugMode) {
+      if (Platform.isAndroid) {
+        return 'ca-app-pub-3940256099942544/5224354917'; // TEST rewarded
+      }
+      return 'ca-app-pub-3940256099942544/1712485313';
+    }
+
     if (Platform.isAndroid) {
-      return 'ca-app-pub-3940256099942544/5224354917'; // TEST rewarded
+      return 'ca-app-pub-9016394938646262/5685602759'; // Real Production Rewarded ID
     }
     return 'ca-app-pub-3940256099942544/1712485313';
   }

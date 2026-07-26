@@ -70,11 +70,6 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
                     StaggeredListItem(
                       index: 7,
-                      child: _DisclaimerSection(lang: lang, isDark: isDark),
-                    ),
-                    const SizedBox(height: 24),
-                    StaggeredListItem(
-                      index: 8,
                       child: _SignOutSection(lang: lang, ref: ref, isDark: isDark),
                     ),
                     const SizedBox(height: 32),
@@ -420,70 +415,6 @@ class _UpgradePrompt extends StatelessWidget {
   }
 }
 
-class _DisclaimerSection extends StatelessWidget {
-  final String lang;
-  final bool isDark;
-  const _DisclaimerSection({required this.lang, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final isBn = lang == 'bn';
-    final isHi = lang == 'hi';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionHeader(
-          icon: Icons.info_outline_rounded,
-          title: isBn
-              ? 'দাবিত্যাগ ও উৎস'
-              : isHi
-                  ? 'अस्वीकरण और स्रोत'
-                  : 'Disclaimer & Sources',
-          isDark: isDark,
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.cardDark : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: (isDark ? Colors.black : Colors.grey)
-                    .withValues(alpha: 0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 20),
-            ),
-            title: Text(
-              isBn
-                  ? 'দাবিত্যাগ ও উৎস'
-                  : isHi
-                      ? 'अस्वीकरण और स्रोत'
-                      : 'Disclaimer & Sources',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            trailing: Icon(
-              Icons.chevron_right_rounded,
-              color: isDark ? Colors.white38 : Colors.grey.shade400,
-            ),
-            onTap: () => Navigator.pushNamed(context, '/disclaimer'),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _SignOutSection extends StatelessWidget {
   final String lang;

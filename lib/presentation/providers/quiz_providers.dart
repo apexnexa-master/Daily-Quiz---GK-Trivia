@@ -44,15 +44,7 @@ final bookmarksProvider = StateNotifierProvider<BookmarksNotifier, List<Map<Stri
 final todayQuizProvider = FutureProvider.autoDispose<QuizModel?>((ref) async {
   ref.keepAlive();
   final examMode = ref.watch(examModeProvider);
-
-  final scheduler = QuizSchedulerService.instance;
-  final quiz = await scheduler.prepareDailyQuiz(examMode);
-
-  if (quiz != null) {
-    return quiz;
-  }
-
-  return ref.watch(quizServiceProvider).fetchTodayQuiz(examMode: examMode);
+  return QuizSchedulerService.instance.prepareDailyQuiz(examMode);
 });
 
 // ── Quiz Session State ────────────────────────────────────────

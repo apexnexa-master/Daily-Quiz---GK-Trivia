@@ -155,6 +155,10 @@ class QuestionCard extends StatelessWidget {
             }
             final text = entry.value;
             final isSelected = selectedAnswer == i;
+            final hasAnswered = selectedAnswer != null;
+            final showAsCorrect = hasAnswered && (i == question.correctIndex);
+            final showAsWrong = hasAnswered && isSelected && (i != question.correctIndex);
+
             return OptionButton(
               index: i,
               text: text,
@@ -164,6 +168,8 @@ class QuestionCard extends StatelessWidget {
               onTap: selectedAnswer == null
                   ? () => onAnswerSelected(i)
                   : null,
+              showAsCorrect: showAsCorrect,
+              showAsWrong: showAsWrong,
               isCorrectFeedback: selectedForFeedback == i
                   ? isCorrectFeedback
                   : null,

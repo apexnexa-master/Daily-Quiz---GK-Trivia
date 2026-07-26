@@ -149,17 +149,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               icon: Icons.percent_rounded,
               value: '${acc.toInt()}%',
               label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
-              color: AppColors.secondary,
-              isDark: isDark,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shadowColor: const Color(0xFF8B5CF6),
             ),
-            loading: () => const ShimmerBox(height: 80),
+            loading: () => const ShimmerBox(height: 85),
             error: (_, __) => _buildStatCard(
               context,
               icon: Icons.percent_rounded,
               value: '0%',
               label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
-              color: AppColors.secondary,
-              isDark: isDark,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shadowColor: const Color(0xFF8B5CF6),
             ),
           ),
         ),
@@ -171,18 +179,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               context,
               icon: AppIcons.achievement,
               value: b.totalQuestions > 0 ? '${b.percentage.toInt()}%' : '--',
-              label: isBn ? 'সেরা স্কোর' : isHi ? 'সর্বश्रेष्ठ' : 'Best',
-              color: AppColors.primary,
-              isDark: isDark,
+              label: isBn ? 'সেরা স্কোর' : isHi ? 'সর্বশ্রেষ্ঠ' : 'Best',
+              gradient: const LinearGradient(
+                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shadowColor: const Color(0xFF3B82F6),
             ),
-            loading: () => const ShimmerBox(height: 80),
+            loading: () => const ShimmerBox(height: 85),
             error: (_, __) => _buildStatCard(
               context,
               icon: AppIcons.achievement,
               value: '--',
-              label: isBn ? 'সেরা স্কোর' : isHi ? 'সর্বश्रेष्ठ' : 'Best',
-              color: AppColors.primary,
-              isDark: isDark,
+              label: isBn ? 'সেরা স্কোর' : isHi ? 'সর্বশ্রেষ্ঠ' : 'Best',
+              gradient: const LinearGradient(
+                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shadowColor: const Color(0xFF3B82F6),
             ),
           ),
         ),
@@ -196,22 +212,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 icon: Icons.analytics_rounded,
                 value: '$t',
                 label: isBn ? 'কুইজ' : isHi ? 'क्विज़' : 'Quizzes',
-                color: AppColors.success,
-                isDark: isDark,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF047857)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shadowColor: const Color(0xFF10B981),
                 subtitle: '+$s pts',
               ),
-              loading: () => const ShimmerBox(height: 80),
+              loading: () => const ShimmerBox(height: 85),
               error: (_, __) => _buildStatCard(
                 context,
                 icon: Icons.analytics_rounded,
                 value: '$t',
                 label: isBn ? 'কুইজ' : isHi ? 'क्विज़' : 'Quizzes',
-                color: AppColors.success,
-                isDark: isDark,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF047857)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shadowColor: const Color(0xFF10B981),
               ),
             ),
-            loading: () => const ShimmerBox(height: 80),
-            error: (_, __) => const ShimmerBox(height: 80),
+            loading: () => const ShimmerBox(height: 85),
+            error: (_, __) => const ShimmerBox(height: 85),
           ),
         ),
       ],
@@ -222,23 +246,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       {required IconData icon,
       required String value,
       required String label,
-      required Color color,
-      required bool isDark,
+      required LinearGradient gradient,
+      required Color shadowColor,
       String? subtitle}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.cardDark : Colors.white,
+        gradient: gradient,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.grey.withValues(alpha: 0.12),
+          color: Colors.white.withValues(alpha: 0.15),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: isDark ? 0.15 : 0.06),
+            color: shadowColor.withValues(alpha: isDark ? 0.3 : 0.15),
             blurRadius: 12,
             offset: const Offset(0, 4),
           )
@@ -249,18 +272,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: Colors.white.withValues(alpha: 0.18),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 18),
+            child: Icon(icon, color: Colors.white, size: 18),
           ),
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w900,
-              color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 2),
@@ -269,16 +292,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white54 : AppColors.textSecondaryLight,
+              color: Colors.white.withValues(alpha: 0.8),
             ),
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 2),
             Text(
               subtitle,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 9,
-                color: color,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),

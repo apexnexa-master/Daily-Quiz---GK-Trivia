@@ -50,21 +50,6 @@ class SettingsSection extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              // Sound Tile
-              _buildSwitchTile(
-                icon: Icons.volume_up_rounded,
-                iconColor: AppColors.primary,
-                label: isBn
-                    ? 'শব্দ ও ফিডব্যাক'
-                    : isHi
-                        ? 'ध्वनि और फीडबैक'
-                        : 'Sound & Feedback',
-                value: soundSettings.soundEnabled,
-                onChanged: (val) {
-                  ref.read(soundSettingsProvider.notifier).setSoundEnabled(val);
-                },
-              ),
-              _divider(),
               // Dark Mode Tile
               _buildThemeDropdownTile(ref),
               _divider(),

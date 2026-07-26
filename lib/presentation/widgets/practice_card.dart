@@ -38,22 +38,20 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark 
-              ? [const Color(0xFF1E1B4B), const Color(0xFF311042)] 
-              : [const Color(0xFFEEF2FF), const Color(0xFFFCE7F3)],
+              ? [const Color(0xFF1E1B4B), const Color(0xFF4C1D95), const Color(0xFF581C87)] 
+              : [const Color(0xFFEEF2FF), const Color(0xFFFAE8FF), const Color(0xFFE0F7FA)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark 
-              ? Colors.white.withValues(alpha: 0.08) 
-              : AppColors.primary.withValues(alpha: 0.12),
+          color: Colors.white.withValues(alpha: 0.18),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: isDark ? 0.3 : 0.05),
-            blurRadius: 20,
+            color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.35 : 0.15),
+            blurRadius: 24,
             offset: const Offset(0, 8),
           ),
         ],

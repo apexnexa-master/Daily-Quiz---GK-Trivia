@@ -34,14 +34,24 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
   late AnimationController _controller;
   final List<_Confetti> _confetti = [];
   final math.Random _random = math.Random();
+  bool _isCompleted = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 4),
     );
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (mounted) {
+          setState(() {
+            _isCompleted = true;
+          });
+        }
+      }
+    });
     if (widget.show) {
       _initConfetti();
       _controller.forward();
@@ -53,6 +63,9 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
     super.didUpdateWidget(oldWidget);
     if (widget.show && !oldWidget.show) {
       _initConfetti();
+      setState(() {
+        _isCompleted = false;
+      });
       _controller.forward(from: 0);
     }
   }
@@ -87,19 +100,21 @@ class _ConfettiOverlayState extends State<ConfettiOverlay>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.show) return const SizedBox.shrink();
+    if (_isCompleted || !widget.show) return const SizedBox.shrink();
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        return CustomPaint(
-          painter: _ConfettiPainter(
-            confetti: _confetti,
-            progress: _controller.value,
-          ),
-          size: Size.infinite,
-        );
-      },
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return CustomPaint(
+            painter: _ConfettiPainter(
+              confetti: _confetti,
+              progress: _controller.value,
+            ),
+            size: Size.infinite,
+          );
+        },
+      ),
     );
   }
 }
@@ -134,10 +149,10 @@ class _ConfettiPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     for (var c in confetti) {
       final paint = Paint()
-        ..color = c.color.withValues(alpha: 1.0 - progress * 0.5)
+        ..color = c.color.withValues(alpha: (1.0 - progress).clamp(0.0, 1.0))
         ..style = PaintingStyle.fill;
 
-      final y = (c.y + progress * c.speed) * size.height;
+      final y = (c.y + progress * (c.speed * 3.5)) * size.height;
       final x = c.x * size.width + math.sin(y * 0.02 + c.angle) * 30;
 
       canvas.save();
@@ -324,6 +339,30 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDark ? Colors.white : AppColors.textPrimaryLight,
+            size: 20,
+          ),
+          onPressed: () {
+            ref.read(quizSessionProvider.notifier).reset();
+            Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+          },
+        ),
+        title: Text(
+          isBn ? 'ফলাফল' : isHi ? 'परिणाम' : 'Quiz Result',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: isDark ? Colors.white : AppColors.textPrimaryLight,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: Stack(
         children: [
           SafeArea(
@@ -331,25 +370,20 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
               opacity: _entranceFade,
               child: SlideTransition(
                 position: _entranceSlide,
-                child: Column(
-                  children: [
-                    _buildScoreHero(score, total, pct, lang, isDark, isBn, isHi),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: AppSpacing.paddingScreen,
-                        child: Column(
-                          children: [
-                            _buildActionButtons(context, ref, session, score, lang, isDark, isBn, isHi),
-                            const SizedBox(height: 24),
-                            _buildStatsRow(score, total, lang, isDark, isBn, isHi),
-                            const SizedBox(height: 24),
-                            _buildReviewSection(session, lang, isDark, isBn, isHi),
-                            const SizedBox(height: 100),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    children: [
+                      _buildScoreCard(score, total, pct, lang, isDark, isBn, isHi),
+                      const SizedBox(height: 20),
+                      _buildActionButtons(context, ref, session, score, lang, isDark, isBn, isHi),
+                      const SizedBox(height: 20),
+                      _buildStatsRow(score, total, lang, isDark, isBn, isHi),
+                      const SizedBox(height: 24),
+                      _buildReviewSection(session, lang, isDark, isBn, isHi),
+                      const SizedBox(height: 60),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -360,52 +394,64 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     );
   }
 
-  Widget _buildScoreHero(int score, int total, double pct, String lang,
+  Widget _buildScoreCard(int score, int total, double pct, String lang,
       bool isDark, bool isBn, bool isHi) {
     String emoji, message;
-    Color ringColor;
+    Color shadowColor;
 
     if (pct >= 0.9) {
       emoji = '🏆';
       message = isBn ? 'অসাধারণ!' : isHi ? 'शानदार!' : 'Excellent!';
-      ringColor = AppColors.success;
+      shadowColor = AppColors.success;
     } else if (pct >= 0.7) {
       emoji = '🌟';
       message = isBn ? 'দারুণ!' : isHi ? 'बहुत अच्छा!' : 'Great Job!';
-      ringColor = AppColors.primary;
+      shadowColor = AppColors.primary;
     } else if (pct >= 0.5) {
       emoji = '👍';
-      message = isBn ? 'মন্দ নয়!' : isHi ? 'ठीक है!' : 'Good Effort!';
-      ringColor = AppColors.warning;
+      message = isBn ? 'মন্দ নয়!' : isHi ? 'ঠিক है!' : 'Good Effort!';
+      shadowColor = AppColors.warning;
     } else {
       emoji = '💪';
       message = isBn ? 'আরো চেষ্টা করুন!' : isHi ? 'कोशिश जारी रखें!' : 'Keep Trying!';
-      ringColor = AppColors.error;
+      shadowColor = AppColors.error;
     }
+
+    final cardGradient = LinearGradient(
+      colors: isDark 
+          ? [const Color(0xFF1E1B4B), const Color(0xFF3B0764)]
+          : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
-        gradient: isDark ? AppColors.primaryGradientDark : AppColors.primaryGradient,
-        borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(32), bottomRight: Radius.circular(32)),
+        gradient: cardGradient,
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 24,
+              color: shadowColor.withValues(alpha: isDark ? 0.3 : 0.2),
+              blurRadius: 20,
               offset: const Offset(0, 8))
         ],
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+          width: 1.5,
+        ),
       ),
       child: Column(
         children: [
           Text(emoji, style: const TextStyle(fontSize: 48)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Text(message,
               style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
-                  color: Colors.white)),
+                  color: Colors.white,
+                  letterSpacing: -0.5)),
           const SizedBox(height: 24),
           ScoreCircle(
             score: score,
@@ -434,8 +480,14 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             context: context,
             icon: AppIcons.home,
             label: isBn ? 'হোম' : isHi ? 'होम' : 'Home',
-            color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade200,
+            gradient: LinearGradient(
+              colors: isDark 
+                  ? [Colors.white.withValues(alpha: 0.08), Colors.white.withValues(alpha: 0.04)]
+                  : [Colors.white, Colors.grey.shade100],
+            ),
             textColor: isDark ? Colors.white : AppColors.textPrimaryLight,
+            shadowColor: Colors.black.withValues(alpha: 0.05),
+            borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.2),
             onTap: () {
               ref.read(quizSessionProvider.notifier).reset();
               Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
@@ -448,8 +500,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             context: context,
             icon: AppIcons.share,
             label: isBn ? 'শেয়ার করুন' : isHi ? 'शेयर करें' : 'Share',
-            color: AppColors.primary,
+            gradient: AppColors.primaryGradient,
             textColor: Colors.white,
+            shadowColor: AppColors.primary.withValues(alpha: 0.3),
+            borderColor: Colors.transparent,
             onTap: () async {
               final percentage = ((score / session.quiz.questionCount) * 100).round();
               final emoji = percentage >= 80 ? '🌟' : percentage >= 60 ? '👍' : percentage >= 40 ? '💪' : '📚';
@@ -471,16 +525,26 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
       {required BuildContext context,
       required IconData icon,
       required String label,
-      required Color color,
+      required LinearGradient gradient,
       required Color textColor,
+      required Color shadowColor,
+      required Color borderColor,
       required VoidCallback onTap}) {
     return AnimatedScaleButton(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: color,
+          gradient: gradient,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor, width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
         child: Column(
           children: [
@@ -489,7 +553,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             Text(label,
                 style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     color: textColor)),
           ],
         ),
@@ -507,21 +571,36 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             icon: AppIcons.correct,
             value: '$score',
             label: isBn ? 'সঠিক' : 'Correct',
-            color: AppColors.success,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF10B981), Color(0xFF047857)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shadowColor: const Color(0xFF10B981),
             isDark: isDark),
         const SizedBox(width: 10),
         _buildStatPill(
             icon: AppIcons.incorrect,
             value: '$wrong',
             label: isBn ? 'ভুল' : 'Wrong',
-            color: AppColors.error,
+            gradient: const LinearGradient(
+              colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shadowColor: const Color(0xFFEF4444),
             isDark: isDark),
         const SizedBox(width: 10),
         _buildStatPill(
             icon: Icons.percent_rounded,
             value: '$pct%',
             label: isBn ? 'শতাংশ' : 'Percent',
-            color: AppColors.primary,
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            shadowColor: const Color(0xFF3B82F6),
             isDark: isDark),
       ],
     );
@@ -531,27 +610,42 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
       {required IconData icon,
       required String value,
       required String label,
-      required Color color,
+      required LinearGradient gradient,
+      required Color shadowColor,
       required bool isDark}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: isDark ? 0.15 : 0.1),
+          gradient: gradient,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor.withValues(alpha: isDark ? 0.3 : 0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 22),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: Colors.white, size: 16),
+            ),
             const SizedBox(height: 6),
             Text(value,
-                style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.w900, color: color)),
+                style: const TextStyle(
+                    fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
             Text(label,
                 style: TextStyle(
                     fontSize: 10,
-                    color: color.withValues(alpha: 0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w700)),
           ],
         ),
@@ -561,9 +655,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 
   Widget _buildReviewSection(QuizSessionState session, String lang, bool isDark,
       bool isBn, bool isHi) {
-    final scheduler = QuizSchedulerService.instance;
-    final canShowAnswers = scheduler.canShowAnswers() || !scheduler.isQuizActive();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -582,85 +673,28 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                     color: isDark ? Colors.white : AppColors.textPrimaryLight),
               ),
             ),
-            if (!canShowAnswers)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(AppIcons.lock, size: 14, color: AppColors.warning),
-                    SizedBox(width: 4),
-                    Text(
-                      'Locked',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.warning,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
           ],
         ),
         const SizedBox(height: 12),
-        if (!canShowAnswers) ...[
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.warning.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.warning.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(AppIcons.info, color: AppColors.warning, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    isBn
-                        ? 'উত্তর এবং ব্যাখ্যা কুইজ শেষ হওয়ার পরে দেখা যাবে।'
-                        : isHi
-                            ? 'उत्तर और स्पष्टीकरण क्विज़ समाप्त होने के बाद दिखाई देंगे।'
-                            : 'Answers and explanations will be available after the quiz ends.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (canShowAnswers)
-          ...session.quiz.questions.asMap().entries.map((e) {
-            final q = e.value;
-            final i = e.key;
-            final userAnswer = i < session.selectedAnswers.length ? session.selectedAnswers[i] : null;
-            final isCorrect = userAnswer == q.correctIndex;
-            final isSkipped = userAnswer == null || userAnswer == -1;
-            final options = q.getOptions(lang);
+        ...session.quiz.questions.asMap().entries.map((e) {
+          final q = e.value;
+          final i = e.key;
+          final userAnswer = i < session.selectedAnswers.length ? session.selectedAnswers[i] : null;
+          final isCorrect = userAnswer == q.correctIndex;
+          final isSkipped = userAnswer == null || userAnswer == -1;
+          final options = q.getOptions(lang);
 
-            return QuestionReviewCard(
-              question: q,
-              index: i,
-              userAnswer: userAnswer,
-              isCorrect: isCorrect,
-              isSkipped: isSkipped,
-              options: options,
-              lang: lang,
-              isDark: isDark,
-            );
-          }),
+          return QuestionReviewCard(
+            question: q,
+            index: i,
+            userAnswer: userAnswer,
+            isCorrect: isCorrect,
+            isSkipped: isSkipped,
+            options: options,
+            lang: lang,
+            isDark: isDark,
+          );
+        }),
       ],
     );
   }

@@ -33,16 +33,26 @@ class QuizCtaCard extends ConsumerWidget {
     final qCount = quiz!.questionCount;
     final mins = (qCount * 30 / 60).clamp(1, 99).toInt();
     final examMode = quiz!.examMode;
-    final cardGradient = AppColors.examModeGradient(examMode);
+    final cardGradient = LinearGradient(
+      colors: isDark 
+          ? [const Color(0xFF064E3B), const Color(0xFF0F766E), const Color(0xFF0891B2)]
+          : [const Color(0xFF10B981), const Color(0xFF0D9488), const Color(0xFF06B6D4)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
 
     return Container(
       decoration: BoxDecoration(
         gradient: cardGradient,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.18),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.35),
-            blurRadius: 20,
+            color: const Color(0xFF0D9488).withValues(alpha: isDark ? 0.35 : 0.25),
+            blurRadius: 24,
             offset: const Offset(0, 8),
           ),
         ],
@@ -190,7 +200,7 @@ class QuizCtaCard extends ConsumerWidget {
                         children: [
                           Icon(
                             isQuizActive ? Icons.play_arrow_rounded : Icons.lock_rounded,
-                            color: isQuizActive ? AppColors.primary : Colors.white70,
+                            color: isQuizActive ? const Color(0xFF0D9488) : Colors.white70,
                             size: 24,
                           ),
                           const SizedBox(width: 8),
@@ -202,7 +212,7 @@ class QuizCtaCard extends ConsumerWidget {
                               fontSize: 15,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.5,
-                              color: isQuizActive ? AppColors.primary : Colors.white70,
+                              color: isQuizActive ? const Color(0xFF0D9488) : Colors.white70,
                             ),
                           ),
                         ],

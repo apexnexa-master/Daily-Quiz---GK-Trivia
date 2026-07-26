@@ -1,127 +1,111 @@
 // lib/core/services/quiz/quiz_generator.dart
+import 'dart:convert';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../../data/models/firestore_models.dart';
 import '../../../data/local_quiz_data.dart';
+import '../../constants/app_constants.dart';
+import '../question_tracking_service.dart';
 import 'quiz_timing_manager.dart';
+import 'practice_quiz_service.dart';
 
 class QuizGenerator {
   QuizGenerator._();
   static final QuizGenerator instance = QuizGenerator._();
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  static const String _lastQuizDateKey = 'last_quiz_date';
 
   Future<void> init() async {}
 
   Future<QuizModel?> prepareDailyQuiz(String examMode) async {
     QuizTimingManager.instance.ensureTimingFresh();
     final now = DateTime.now();
-    final today =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final today = DateFormat('yyyy-MM-dd').format(now);
+    final cacheKey = 'daily_quiz_${today}_$examMode';
 
-    try {
-      final existingQuiz = await _db
-          .collection('quizzes')
-          .doc('${today}_$examMode')
-          .get()
-          .timeout(const Duration(seconds: 8));
-      if (existingQuiz.exists) {
-        return await _fetchQuiz(examMode, today);
+    // Step 1: Check Hive cache
+    final box = await Hive.openBox<String>(AppConstants.hiveBoxQuiz);
+    final cachedJson = box.get(cacheKey);
+    if (cachedJson != null) {
+      try {
+        final map = jsonDecode(cachedJson) as Map<String, dynamic>;
+        return _deserializeQuizFromMap(map);
+      } catch (_) {
+        // Cache corrupted - proceed to network/generation
       }
-    } catch (_) {}
-
-    final localQuiz = await _createDailyQuizFromLocal(examMode, today);
-    if (localQuiz != null) {
-      return localQuiz;
     }
 
-    try {
-      final practiceQuiz = await _createDailyQuizFromPractice(examMode, today);
-      if (practiceQuiz != null) {
-        return practiceQuiz;
+    // Step 2: Check internet connection
+    final online = await _isOnline();
+
+    if (online) {
+      // Step 3: Fetch today's official quiz from Firestore
+      final officialQuiz = await _fetchOfficialQuizFromFirestore(examMode, today);
+      if (officialQuiz != null) {
+        // Randomize option order for each question
+        final randomizedQuestions = officialQuiz.questions.map((q) => q.shuffleOptions()).toList();
+        final finalQuiz = officialQuiz.copyWithQuestions(randomizedQuestions);
+        
+        // Cache it locally with type "official"
+        final quizMap = _serializeQuizToMap(finalQuiz, type: 'official');
+        await box.put(cacheKey, jsonEncode(quizMap));
+        return finalQuiz;
       }
-    } catch (_) {}
+    }
+
+    // Step 4: Generate local daily quiz if offline or official quiz does not exist
+    final generatedQuiz = await _generateLocalDailyQuiz(examMode, today);
+    if (generatedQuiz != null) {
+      // Cache it locally with type "generated"
+      final quizMap = _serializeQuizToMap(generatedQuiz, type: 'generated');
+      await box.put(cacheKey, jsonEncode(quizMap));
+      return generatedQuiz;
+    }
 
     return null;
   }
 
-  Future<QuizModel?> _createDailyQuizFromLocal(String examMode, String date) async {
+  Future<bool> _isOnline() async {
     try {
-      final availableQuestions = _getLocalFallbackQuestions(examMode);
-      if (availableQuestions.isEmpty) return null;
-
-      final excludedIds = await _getRecentlySeenQuestionIds(5);
-      var filteredQuestions =
-          availableQuestions.where((q) => !excludedIds.contains(q.id)).toList();
-
-      if (filteredQuestions.length < 10) {
-        filteredQuestions = availableQuestions;
-      }
-
-      filteredQuestions.shuffle();
-      final selectedQuestions = filteredQuestions.take(10).toList();
-
-      final orderedQuestions = <QuestionModel>[];
-      for (int i = 0; i < selectedQuestions.length; i++) {
-        orderedQuestions.add(QuestionModel(
-          id: selectedQuestions[i].id,
-          text: selectedQuestions[i].text,
-          options: selectedQuestions[i].options,
-          correctIndex: selectedQuestions[i].correctIndex,
-          explanation: selectedQuestions[i].explanation,
-          category: selectedQuestions[i].category,
-          difficulty: selectedQuestions[i].difficulty,
-          examTags: selectedQuestions[i].examTags,
-          order: i,
-        ));
-      }
-
-      final now = DateTime.now();
-      return QuizModel(
-        quizId: '${date}_$examMode',
-        date: date,
-        examMode: examMode,
-        status: 'active',
-        questionCount: orderedQuestions.length,
-        createdAt: now,
-        expiresAt: now.add(const Duration(days: 1)),
-        totalAttempts: 0,
-        questions: orderedQuestions,
-      );
+      final result = await InternetAddress.lookup('clients3.google.com').timeout(const Duration(seconds: 3));
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (_) {
-      return null;
+      return false;
     }
   }
 
-  Future<QuizModel?> _fetchQuiz(String examMode, String date) async {
+  Future<QuizModel?> _fetchOfficialQuizFromFirestore(String examMode, String date) async {
     try {
-      final quizDoc = await _db.collection('quizzes').doc('${date}_$examMode').get();
-      if (!quizDoc.exists) return null;
+      final doc = await _db.collection('quizzes').doc('${date}_$examMode').get().timeout(const Duration(seconds: 6));
+      if (!doc.exists) return null;
 
       final questionsSnapshot = await _db
           .collection('quizzes')
           .doc('${date}_$examMode')
           .collection('questions')
           .orderBy('order')
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 6));
 
       if (questionsSnapshot.docs.isEmpty) return null;
 
       final questions = questionsSnapshot.docs
-          .map((doc) => QuestionModel.fromFirestore(doc))
+          .map((d) => QuestionModel.fromFirestore(d))
           .toList();
 
-      final data = quizDoc.data()!;
+      final data = doc.data()!;
+      final now = DateTime.now();
       return QuizModel(
         quizId: data['quiz_id'] ?? '${date}_$examMode',
         date: data['date'] ?? date,
         examMode: data['exam_mode'] ?? examMode,
         status: data['status'] ?? 'active',
         questionCount: questions.length,
-        createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
-        expiresAt: (data['expires_at'] as Timestamp?)?.toDate() ??
-            DateTime.now().add(const Duration(days: 1)),
+        createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? now,
+        expiresAt: (data['expires_at'] as Timestamp?)?.toDate() ?? now.add(const Duration(days: 1)),
         totalAttempts: data['total_attempts'] ?? 0,
         questions: questions,
       );
@@ -130,56 +114,129 @@ class QuizGenerator {
     }
   }
 
-  Future<QuizModel?> _createDailyQuizFromPractice(String examMode, String date) async {
+  Future<QuizModel?> _generateLocalDailyQuiz(String examMode, String date) async {
     try {
-      final practiceDoc = await _db.collection('practice').doc(examMode).get();
-      List<QuestionModel> availableQuestions = [];
+      final practiceBox = await Hive.openBox<String>('practice_questions_db');
+      List<QuestionModel> candidates = [];
 
-      if (practiceDoc.exists) {
-        final questionsData = practiceDoc.data()?['questions'] as List?;
-        if (questionsData != null && questionsData.isNotEmpty) {
-          availableQuestions = questionsData
-              .map((e) => _questionModelFromMap(e as Map<String, dynamic>))
-              .toList();
+      if (practiceBox.isNotEmpty) {
+        candidates = practiceBox.values.map((str) {
+          final map = jsonDecode(str) as Map<String, dynamic>;
+          return _questionModelFromMap(map);
+        }).toList();
+      }
+
+      if (candidates.isEmpty) {
+        candidates = LocalQuizData.getAllQuestionsForMode(examMode);
+      }
+
+      if (candidates.isEmpty) {
+        candidates = _getLocalFallbackQuestions(examMode);
+      }
+
+      if (candidates.isEmpty) return null;
+
+      // Filter candidates to match generalized GENERAL mode questions
+      candidates = candidates.where((q) => q.examTags.contains(examMode) || q.examTags.contains('GENERAL')).toList();
+      if (candidates.isEmpty) return null;
+
+      // Get recently seen Daily Quiz question IDs from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final recentIds = prefs.getStringList('recent_daily_quiz_question_ids') ?? [];
+
+      // Get user's answered questions history
+      final tracking = QuestionTrackingService.instance;
+      final answeredIds = tracking.getAnsweredQuestions()[examMode] ?? [];
+
+      // Greedy Selector to pick exactly 10 questions
+      final selectedQuestions = <QuestionModel>[];
+      final selectedCategories = <String, int>{};
+      final selectedDifficulties = <String, int>{};
+
+      final remainingCandidates = List<QuestionModel>.from(candidates);
+
+      for (int slot = 0; slot < 10; slot++) {
+        if (remainingCandidates.isEmpty) break;
+
+        QuestionModel? bestCandidate;
+        double bestCost = double.infinity;
+
+        for (final q in remainingCandidates) {
+          double cost = 0.0;
+
+          // Avoid recently used Daily Quiz questions (recency penalty)
+          if (recentIds.contains(q.id)) {
+            final index = recentIds.indexOf(q.id);
+            final recencyScore = (index + 1) / recentIds.length;
+            cost += 5000.0 * recencyScore;
+          }
+
+          // Prefer unused questions
+          if (answeredIds.contains(q.id)) {
+            cost += 500.0;
+          }
+
+          // Prefer questions answered incorrectly in practice mode
+          final stats = PracticeQuizService.instance.getQuestionStats(q.id);
+          final timesWrong = stats['timesWrong'] as int? ?? 0;
+          if (timesWrong > 0) {
+            cost -= (timesWrong * 30.0).clamp(0.0, 300.0);
+          }
+
+          // Balance categories
+          final catCount = selectedCategories[q.category] ?? 0;
+          cost += catCount * 250.0;
+
+          // Balance difficulties
+          final diffCount = selectedDifficulties[q.difficulty] ?? 0;
+          cost += diffCount * 200.0;
+
+          if (cost < bestCost) {
+            bestCost = cost;
+            bestCandidate = q;
+          }
+        }
+
+        if (bestCandidate != null) {
+          selectedQuestions.add(bestCandidate);
+          selectedCategories[bestCandidate.category] = (selectedCategories[bestCandidate.category] ?? 0) + 1;
+          selectedDifficulties[bestCandidate.difficulty] = (selectedDifficulties[bestCandidate.difficulty] ?? 0) + 1;
+          remainingCandidates.remove(bestCandidate);
         }
       }
 
-      if (availableQuestions.isEmpty) {
-        availableQuestions = _getLocalFallbackQuestions(examMode);
-      }
+      if (selectedQuestions.isEmpty) return null;
 
-      if (availableQuestions.isEmpty) return null;
+      // Randomize options for each question
+      final randomizedQuestions = selectedQuestions.map((q) => q.shuffleOptions()).toList();
 
-      final excludedIds = await _getRecentlySeenQuestionIds(5);
-      var filteredQuestions =
-          availableQuestions.where((q) => !excludedIds.contains(q.id)).toList();
-
-      if (filteredQuestions.length < 10) {
-        filteredQuestions = availableQuestions;
-      }
-
-      filteredQuestions.shuffle();
-      final selectedQuestions = filteredQuestions.take(10).toList();
-
+      // Update order index
       final orderedQuestions = <QuestionModel>[];
-      for (int i = 0; i < selectedQuestions.length; i++) {
+      for (int i = 0; i < randomizedQuestions.length; i++) {
+        final q = randomizedQuestions[i];
         orderedQuestions.add(QuestionModel(
-          id: selectedQuestions[i].id,
-          text: selectedQuestions[i].text,
-          options: selectedQuestions[i].options,
-          correctIndex: selectedQuestions[i].correctIndex,
-          explanation: selectedQuestions[i].explanation,
-          category: selectedQuestions[i].category,
-          difficulty: selectedQuestions[i].difficulty,
-          examTags: selectedQuestions[i].examTags,
+          id: q.id,
+          text: q.text,
+          options: q.options,
+          correctIndex: q.correctIndex,
+          explanation: q.explanation,
+          category: q.category,
+          difficulty: q.difficulty,
+          examTags: q.examTags,
           order: i,
         ));
       }
 
-      await _saveDailyQuiz(examMode, date, orderedQuestions);
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_lastQuizDateKey, date);
+      // Add selected IDs to recent history
+      final newRecentIds = List<String>.from(recentIds);
+      for (final q in orderedQuestions) {
+        newRecentIds.remove(q.id);
+        newRecentIds.add(q.id);
+      }
+      if (newRecentIds.length > 300) {
+        newRecentIds.removeRange(0, newRecentIds.length - 300);
+      }
+      await prefs.setStringList('recent_daily_quiz_question_ids', newRecentIds);
 
       final now = DateTime.now();
       return QuizModel(
@@ -198,36 +255,81 @@ class QuizGenerator {
     }
   }
 
-  Future<void> _saveDailyQuiz(String examMode, String date, List<QuestionModel> questions) async {
-    final quizRef = _db.collection('quizzes').doc('${date}_$examMode');
-    final now = DateTime.now();
+  Map<String, dynamic> _serializeQuizToMap(QuizModel quiz, {required String type}) {
+    return {
+      'quiz_id': quiz.quizId,
+      'date': quiz.date,
+      'exam_mode': quiz.examMode,
+      'status': quiz.status,
+      'question_count': quiz.questionCount,
+      'created_at': quiz.createdAt.toIso8601String(),
+      'expires_at': quiz.expiresAt.toIso8601String(),
+      'total_attempts': quiz.totalAttempts,
+      'type': type,
+      'questions': quiz.questions.map((q) {
+        final map = q.toFirestore();
+        map['id'] = q.id;
+        return map;
+      }).toList(),
+    };
+  }
 
-    await quizRef.set({
-      'quiz_id': '${date}_$examMode',
-      'date': date,
-      'exam_mode': examMode,
-      'status': 'active',
-      'question_count': questions.length,
-      'created_at': Timestamp.fromDate(now),
-      'expires_at': Timestamp.fromDate(now.add(const Duration(days: 1))),
-      'total_attempts': 0,
-    });
+  QuizModel _deserializeQuizFromMap(Map<String, dynamic> map) {
+    final questionsList = map['questions'] as List;
+    final questions = questionsList.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final qMap = Map<String, dynamic>.from(entry.value as Map);
+      final id = qMap['id'] ?? 'q_$idx';
+      
+      Map<String, List<String>> parsedOptions = {};
+      if (qMap['options'] is Map) {
+        (qMap['options'] as Map).forEach((k, v) {
+          if (v is List) {
+            parsedOptions[k.toString()] = List<String>.from(v.map((e) => e.toString()));
+          }
+        });
+      }
 
-    final batch = _db.batch();
-    for (final question in questions) {
-      final qRef = quizRef.collection('questions').doc(question.id);
-      batch.set(qRef, question.toFirestore());
-    }
-    await batch.commit();
+      return QuestionModel(
+        id: id,
+        text: Map<String, String>.from(qMap['text'] ?? {}),
+        options: parsedOptions,
+        correctIndex: qMap['correct_index'] ?? 0,
+        explanation: Map<String, String>.from(qMap['explanation'] ?? {}),
+        category: qMap['category'] ?? 'General',
+        difficulty: qMap['difficulty'] ?? 'medium',
+        examTags: List<String>.from(qMap['exam_tags'] ?? []),
+        order: qMap['order'] ?? idx,
+      );
+    }).toList();
+
+    return QuizModel(
+      quizId: map['quiz_id'] ?? '',
+      date: map['date'] ?? '',
+      examMode: map['exam_mode'] ?? 'GENERAL',
+      status: map['status'] ?? 'active',
+      questionCount: map['question_count'] ?? questions.length,
+      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      expiresAt: DateTime.parse(map['expires_at'] ?? DateTime.now().add(const Duration(days: 1)).toIso8601String()),
+      totalAttempts: map['total_attempts'] ?? 0,
+      questions: questions,
+    );
   }
 
   QuestionModel _questionModelFromMap(Map<String, dynamic> map) {
+    Map<String, List<String>> parsedOptions = {};
+    if (map['options'] is Map) {
+      (map['options'] as Map).forEach((k, v) {
+        if (v is List) {
+          parsedOptions[k.toString()] = List<String>.from(v.map((e) => e.toString()));
+        }
+      });
+    }
+
     return QuestionModel(
       id: map['id'] ?? '',
       text: Map<String, String>.from(map['text'] ?? {}),
-      options: (map['options'] as Map?)
-              ?.map((k, v) => MapEntry(k, List<String>.from(v ?? []))) ??
-          {},
+      options: parsedOptions,
       correctIndex: map['correct_index'] ?? 0,
       explanation: Map<String, String>.from(map['explanation'] ?? {}),
       category: map['category'] ?? 'General',
@@ -235,32 +337,6 @@ class QuizGenerator {
       examTags: List<String>.from(map['exam_tags'] ?? []),
       order: map['order'] ?? 0,
     );
-  }
-
-  Future<Set<String>> _getRecentlySeenQuestionIds(int count) async {
-    final seenIds = <String>{};
-    try {
-      final now = DateTime.now();
-      for (int i = 0; i < count; i++) {
-        final date = now.subtract(Duration(days: i));
-        final dateStr =
-            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-
-        final quizDoc = await _db.collection('quizzes').doc('${dateStr}_GENERAL').get();
-        if (quizDoc.exists) {
-          final questionsSnapshot = await _db
-              .collection('quizzes')
-              .doc('${dateStr}_GENERAL')
-              .collection('questions')
-              .get();
-
-          for (final doc in questionsSnapshot.docs) {
-            seenIds.add(doc.id);
-          }
-        }
-      }
-    } catch (_) {}
-    return seenIds;
   }
 
   List<QuestionModel> _getLocalFallbackQuestions(String examMode) {
