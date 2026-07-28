@@ -107,10 +107,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             const SizedBox(height: 16),
 
-                            // 3. Performance Stats Row (Accuracy, Best Score, Total Quizzes)
+                            // 3. 1v1 Battle Arena Card
                             StaggeredListItem(
                               index: 2,
-                              child: _buildStatsCards(context, ref, isDark, isBn, isHi),
+                              child: _buildBattleCard(context, isDark, isBn, isHi),
                             ),
                             const SizedBox(height: 32),
                           ]),
@@ -132,181 +132,140 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildStatsCards(
-      BuildContext context, WidgetRef ref, bool isDark, bool isBn, bool isHi) {
-    final accuracyAsync = ref.watch(overallAccuracyProvider);
-    final bestAsync = ref.watch(localPersonalBestProvider);
-    final totalAsync = ref.watch(totalQuizzesProvider);
-    final totalScoreAsync = ref.watch(totalScoreProvider);
-
-    return Row(
-      children: [
-        // Accuracy Card
-        Expanded(
-          child: accuracyAsync.when(
-            data: (acc) => _buildStatCard(
-              context,
-              icon: Icons.percent_rounded,
-              value: '${acc.toInt()}%',
-              label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
-              gradient: const LinearGradient(
-                colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shadowColor: const Color(0xFF8B5CF6),
-            ),
-            loading: () => const ShimmerBox(height: 85),
-            error: (_, __) => _buildStatCard(
-              context,
-              icon: Icons.percent_rounded,
-              value: '0%',
-              label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
-              gradient: const LinearGradient(
-                colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shadowColor: const Color(0xFF8B5CF6),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        // Personal Best Card
-        Expanded(
-          child: bestAsync.when(
-            data: (b) => _buildStatCard(
-              context,
-              icon: AppIcons.achievement,
-              value: b.totalQuestions > 0 ? '${b.percentage.toInt()}%' : '--',
-              label: isBn ? 'সেরা স্কোর' : isHi ? 'সর্বশ্রেষ্ঠ' : 'Best',
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shadowColor: const Color(0xFF3B82F6),
-            ),
-            loading: () => const ShimmerBox(height: 85),
-            error: (_, __) => _buildStatCard(
-              context,
-              icon: AppIcons.achievement,
-              value: '--',
-              label: isBn ? 'সেরা স্কোর' : isHi ? 'সর্বশ্রেষ্ঠ' : 'Best',
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shadowColor: const Color(0xFF3B82F6),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        // Total Quizzes Card
-        Expanded(
-          child: totalAsync.when(
-            data: (t) => totalScoreAsync.when(
-              data: (s) => _buildStatCard(
-                context,
-                icon: Icons.analytics_rounded,
-                value: '$t',
-                label: isBn ? 'কুইজ' : isHi ? 'क्विज़' : 'Quizzes',
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF10B981), Color(0xFF047857)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shadowColor: const Color(0xFF10B981),
-                subtitle: '+$s pts',
-              ),
-              loading: () => const ShimmerBox(height: 85),
-              error: (_, __) => _buildStatCard(
-                context,
-                icon: Icons.analytics_rounded,
-                value: '$t',
-                label: isBn ? 'কুইজ' : isHi ? 'क्विज़' : 'Quizzes',
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF10B981), Color(0xFF047857)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shadowColor: const Color(0xFF10B981),
-              ),
-            ),
-            loading: () => const ShimmerBox(height: 85),
-            error: (_, __) => const ShimmerBox(height: 85),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(BuildContext context,
-      {required IconData icon,
-      required String value,
-      required String label,
-      required LinearGradient gradient,
-      required Color shadowColor,
-      String? subtitle}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildBattleCard(
+      BuildContext context, bool isDark, bool isBn, bool isHi) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF0F172A), const Color(0xFF0D9488), const Color(0xFF115E59)]
+              : [const Color(0xFFF0FDFA), const Color(0xFFCCFBF1), const Color(0xFF99F6E4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
+          color: isDark ? Colors.white.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.12),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: shadowColor.withValues(alpha: isDark ? 0.3 : 0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          )
+            color: const Color(0xFF0D9488).withValues(alpha: isDark ? 0.35 : 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              shape: BoxShape.circle,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -25,
+              bottom: -25,
+              child: Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  color: Colors.teal.withValues(alpha: isDark ? 0.08 : 0.04),
+                  shape: BoxShape.circle,
+                ),
+              ),
             ),
-            child: Icon(icon, color: Colors.white, size: 18),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.8),
-            ),
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                fontSize: 9,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isBn ? '১ বনাম ১ কুইজ যুদ্ধ' : isHi ? '1 बनाम 1 क्विज़ युद्ध' : '1v1 Quiz Battle',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              isBn
+                                  ? 'লাইভ কুইজ লড়াইয়ে বন্ধুদের চ্যালেঞ্জ করুন অথবা বটের সাথে অনুশীলন করুন।'
+                                  : isHi
+                                      ? 'लाइव क्विज़ लड़ाई में दोस्तों को चुनौती दें या बॉट के साथ अभ्यास करें।'
+                                      : 'Duel friends in real-time online, or train offline against a bot.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+                                height: 1.3,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.success.withValues(alpha: 0.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.bolt_rounded,
+                          color: AppColors.success,
+                          size: 22,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  AnimatedScaleButton(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/battle');
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0D9488),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.bolt_rounded, color: Colors.white, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            isBn ? 'যুদ্ধ শুরু করুন' : isHi ? 'युद्ध शुरू करें' : 'Play Battle',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }

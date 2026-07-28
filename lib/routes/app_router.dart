@@ -32,6 +32,13 @@ class AppRouter {
   static const String admin = '/admin';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
+    // Intercept deep links of format: /challenge/{roomId}
+    if (settings.name != null && settings.name!.startsWith('/challenge/')) {
+      final parts = settings.name!.split('/');
+      final roomId = parts.length > 2 ? parts[2] : null;
+      return _build(BattleScreen(roomId: roomId), settings);
+    }
+
     switch (settings.name) {
       case splash:
         return _build(const SplashScreen(), settings);

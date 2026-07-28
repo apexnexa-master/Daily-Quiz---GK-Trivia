@@ -87,14 +87,49 @@ class QuizCtaCard extends ConsumerWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(22),
+              padding: const EdgeInsets.all(18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
+                      if (isQuizActive) ...[
+                        PulseWidget(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: AppColors.error,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Text(
+                                  'LIVE',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: isQuizActive
                               ? Colors.white.withValues(alpha: 0.2)
@@ -106,7 +141,7 @@ class QuizCtaCard extends ConsumerWidget {
                           children: [
                             Icon(
                               isQuizActive ? Icons.auto_awesome_rounded : Icons.schedule_rounded,
-                              size: 12,
+                              size: 11,
                               color: Colors.white,
                             ),
                             const SizedBox(width: 4),
@@ -115,7 +150,7 @@ class QuizCtaCard extends ConsumerWidget {
                                   ? (isBn ? 'আজকের চ্যালেঞ্জ' : isHi ? 'आज की चुनौती' : "Today's Challenge")
                                   : (isBn ? 'চ্যালেঞ্জ অপেক্ষায়' : isHi ? 'चुनौती प्रतीक्षा में' : 'Challenge Pending'),
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: 10.5,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -133,7 +168,7 @@ class QuizCtaCard extends ConsumerWidget {
                         child: Text(
                           examMode,
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: 10.5,
                             color: Colors.white70,
                             fontWeight: FontWeight.bold,
                           ),
@@ -141,39 +176,33 @@ class QuizCtaCard extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Text(
                     _getExamTitle(examMode, isBn, isHi),
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                       height: 1.1,
-                      letterSpacing: -0.5,
+                      letterSpacing: -0.4,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    isBn
-                        ? 'প্রতিদিন একটি নতুন কুইজ চ্যালেঞ্জ খেলুন এবং আপনার স্কোর উন্নত করুন।'
-                        : isHi
-                            ? 'हर दिन एक नया क्विज़ खेलें और अपना स्कोर सुधारें।'
-                            : 'Play a fresh daily challenge every day and improve your scores.',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       _buildChip(AppIcons.timer, '$mins min'),
                       const SizedBox(width: 8),
                       _buildChip(Icons.help_outline_rounded, '$qCount Q'),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildChip(
+                          Icons.timer_outlined,
+                          _getStatusText(scheduler, isQuizActive, isBn, isHi),
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
                   AnimatedScaleButton(
                     onTap: isQuizActive
                         ? () {
@@ -183,33 +212,33 @@ class QuizCtaCard extends ConsumerWidget {
                         : null,
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         color: isQuizActive ? Colors.white : Colors.white24,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: isQuizActive ? [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           )
                         ] : null,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                           Icon(
                             isQuizActive ? Icons.play_arrow_rounded : Icons.lock_rounded,
                             color: isQuizActive ? const Color(0xFF0D9488) : Colors.white70,
-                            size: 24,
+                            size: 20,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Text(
                             isQuizActive 
-                                ? (isBn ? 'চ্যালেঞ্জ শুরু করুন' : isHi ? 'चुनौती शुरू करें' : 'START CHALLENGE NOW')
-                                : (isBn ? 'লক করা আছে' : isHi ? 'लॉक है' : 'LOCKED'),
+                                ? (isBn ? 'চ্যালেঞ্জ শুরু করুন' : isHi ? 'চ্যালেঞ্জ শুরু করুন' : 'START CHALLENGE')
+                                : (isBn ? 'লক করা আছে' : isHi ? 'লক করা আছে' : 'LOCKED'),
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: 13.5,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0.5,
                               color: isQuizActive ? const Color(0xFF0D9488) : Colors.white70,
@@ -217,30 +246,6 @@ class QuizCtaCard extends ConsumerWidget {
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.timer_outlined, color: Colors.white70, size: 14),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _getStatusText(scheduler, isQuizActive, isBn, isHi),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
@@ -360,7 +365,7 @@ class QuizCtaCard extends ConsumerWidget {
 
   Widget _buildChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(10),
@@ -370,9 +375,17 @@ class QuizCtaCard extends ConsumerWidget {
         children: [
           Icon(icon, size: 12, color: Colors.white70),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.bold),
+          Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10.5,
+                color: Colors.white70,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

@@ -1,6 +1,7 @@
 // lib/presentation/widgets/quiz/quiz_timer_bar.dart
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_animations.dart';
 
 class QuizTimerBar extends StatelessWidget {
   final AnimationController animation;
@@ -25,6 +26,47 @@ class QuizTimerBar extends StatelessWidget {
     final double progress = remainingSeconds / totalSeconds;
     final isLowTime = remainingSeconds <= 5;
     
+    Widget timerBadge = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isLowTime 
+            ? AppColors.error.withValues(alpha: 0.15)
+            : Theme.of(context).brightness == Brightness.dark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.black.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isLowTime 
+              ? AppColors.error.withValues(alpha: 0.3)
+              : Colors.transparent,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.timer_rounded,
+            size: 14,
+            color: _timerColor(remainingSeconds),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$remainingSeconds',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: _timerColor(remainingSeconds),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (isLowTime) {
+      timerBadge = PulseWidget(child: timerBadge);
+    }
+
     return Row(
       children: [
         Expanded(
@@ -66,43 +108,7 @@ class QuizTimerBar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        // Timer Text Badge
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: isLowTime 
-                ? AppColors.error.withValues(alpha: 0.15)
-                : Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isLowTime 
-                  ? AppColors.error.withValues(alpha: 0.3)
-                  : Colors.transparent,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.timer_rounded,
-                size: 14,
-                color: _timerColor(remainingSeconds),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '$remainingSeconds',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: _timerColor(remainingSeconds),
-                ),
-              ),
-            ],
-          ),
-        ),
+        timerBadge,
       ],
     );
   }

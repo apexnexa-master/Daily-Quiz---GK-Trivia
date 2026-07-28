@@ -152,8 +152,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       _questionFadeController.reset();
       _questionFadeController.forward();
       _timer?.cancel();
-      _lifeline5050Used = false;
-      _lifelineExtraTimeUsed = false;
       _5050VisibleIndices = {};
       _startTimer();
     }
@@ -335,6 +333,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                             selectedAnswer: session.selectedAnswers[session.currentIndex],
                             onAnswerSelected: (i) => _onAnswerSelected(session.currentIndex, i),
                             isDark: _isDark,
+                            isBookmarked: ref.watch(bookmarksProvider).any((b) => b['id'] == question.id),
+                            onBookmarkTapped: () {
+                              final qData = question.toFirestore()..['id'] = question.id;
+                              ref.read(bookmarksProvider.notifier).toggle(question.id, qData);
+                            },
                             visibleOptions: _lifeline5050Used && _5050VisibleIndices.isNotEmpty
                                 ? _5050VisibleIndices
                                 : null,
@@ -543,20 +546,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
             label: '50:50',
             used: _lifeline5050Used,
             onTap: () {
-              final indices = get5050Indices();
-              if (indices.isNotEmpty && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(isBn
-                        ? '২টি ভুল উত্তর সরানো হয়েছে!'
-                        : isHi
-                            ? '2 गलत उत्तर हटाए गए!'
-                            : '2 wrong options removed!'),
-                    backgroundColor: AppColors.success,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
+              get5050Indices();
             },
           ),
           const SizedBox(width: 16),
@@ -571,17 +561,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
             used: _lifelineExtraTimeUsed,
             onTap: () {
               useExtraTime();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(isBn
-                      ? '15 সেকেন্ড যোগ করা হয়েছে!'
-                      : isHi
-                          ? '15 सेकंड जोड़े गए!'
-                      : '15 seconds added!'),
-                  backgroundColor: AppColors.success,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
             },
           ),
         ],

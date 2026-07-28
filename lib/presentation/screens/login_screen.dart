@@ -216,9 +216,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 40),
-                    _buildFooter(isDark),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -492,7 +490,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             color: AppColors.primary.withValues(alpha: 0.08),
           ),
           child: Text(
-            'SSC • UPSC • WBPSC • BANK PO',
+            isBn
+                ? 'ইতিহাস • ভূগোল • বিজ্ঞান • সাধারণ জ্ঞান'
+                : isHi
+                    ? 'इतिहास • भूगोल • विज्ञान • सामान्य ज्ञान'
+                    : 'History • Geography • Science • Trivia',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -679,7 +681,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: fgColor.withValues(alpha: 0.4),
+              color: fgColor.withValues(alpha: 0.65),
             ),
           ),
         ],

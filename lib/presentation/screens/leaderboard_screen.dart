@@ -1,6 +1,7 @@
 // lib/presentation/screens/leaderboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
@@ -8,6 +9,8 @@ import '../../core/theme/app_animations.dart';
 import '../../core/services/local_stats_service.dart';
 import '../providers/app_providers.dart';
 import '../widgets/shimmer_loading.dart';
+
+final leaderboardTabProvider = StateProvider.autoDispose<int>((ref) => 0);
 
 class LeaderboardScreen extends ConsumerWidget {
   const LeaderboardScreen({super.key});
@@ -19,20 +22,39 @@ class LeaderboardScreen extends ConsumerWidget {
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
     final leaderboardAsync = ref.watch(localLeaderboardProvider);
+    final selectedTab = ref.watch(leaderboardTabProvider);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context, lang, isDark, isBn, isHi),
+            _buildHeader(context, ref, lang, isDark, isBn, isHi),
             Expanded(
               child: leaderboardAsync.when(
                 data: (entries) {
-                  if (entries.isEmpty) {
+                  // Filter and aggregate entries based on the selected tab
+                  List<LeaderboardEntryLocal> filteredEntries = [];
+                  final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                  final now = DateTime.now();
+
+                  if (selectedTab == 0) {
+                    filteredEntries = entries.where((e) => e.date == todayStr).toList();
+                  } else if (selectedTab == 1) {
+                    final weeklyRaw = entries.where((e) {
+                      final parsedDate = DateTime.tryParse(e.date);
+                      if (parsedDate == null) return false;
+                      return now.difference(parsedDate).inDays < 7;
+                    }).toList();
+                    filteredEntries = _aggregateEntries(weeklyRaw);
+                  } else {
+                    filteredEntries = _aggregateEntries(entries);
+                  }
+
+                  if (filteredEntries.isEmpty) {
                     return _buildEmptyState(isDark, isBn, isHi);
                   }
-                  return _buildContent(entries, isDark, isBn, isHi);
+                  return _buildContent(filteredEntries, isDark, isBn, isHi);
                 },
                 loading: () => const Padding(
                   padding: EdgeInsets.all(20.0),
@@ -53,7 +75,7 @@ class LeaderboardScreen extends ConsumerWidget {
   }
 
   Widget _buildHeader(
-      BuildContext context, String lang, bool isDark, bool isBn, bool isHi) {
+      BuildContext context, WidgetRef ref, String lang, bool isDark, bool isBn, bool isHi) {
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 8, 20, 16),
       decoration: BoxDecoration(
@@ -105,7 +127,57 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(4),
+            margin: const EdgeInsets.only(left: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                _buildTab(ref, 0, isBn ? 'আজ' : isHi ? 'आज' : 'Today'),
+                _buildTab(ref, 1, isBn ? 'এই সপ্তাহ' : isHi ? 'इस सप्ताह' : 'This Week'),
+                _buildTab(ref, 2, isBn ? 'সর্বকালের' : isHi ? 'ऑल টাইম' : 'All Time'),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTab(WidgetRef ref, int index, String text) {
+    final selectedTab = ref.watch(leaderboardTabProvider);
+    final isSelected = selectedTab == index;
+    return Expanded(
+      child: InkWell(
+        onTap: () => ref.read(leaderboardTabProvider.notifier).state = index,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected ? [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              )
+            ] : null,
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: isSelected ? const Color(0xFF6366F1) : Colors.white.withValues(alpha: 0.9),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -486,5 +558,37 @@ class LeaderboardScreen extends ConsumerWidget {
     if (score >= 8) return AppColors.success;
     if (score >= 5) return AppColors.warning;
     return AppColors.error;
+  }
+
+  List<LeaderboardEntryLocal> _aggregateEntries(List<LeaderboardEntryLocal> rawEntries) {
+    final Map<String, List<LeaderboardEntryLocal>> grouped = {};
+    for (final entry in rawEntries) {
+      grouped.putIfAbsent(entry.playerName, () => []).add(entry);
+    }
+
+    final List<LeaderboardEntryLocal> aggregated = [];
+    grouped.forEach((playerName, playerEntries) {
+      int totalScore = 0;
+      int totalTime = 0;
+      for (final entry in playerEntries) {
+        totalScore += entry.score;
+        totalTime += entry.timeTaken;
+      }
+      aggregated.add(LeaderboardEntryLocal(
+        playerName: playerName,
+        score: totalScore,
+        timeTaken: totalTime,
+        date: playerEntries.first.date,
+      ));
+    });
+
+    // Sort by total score descending, then by total time taken ascending
+    aggregated.sort((a, b) {
+      final scoreCompare = b.score.compareTo(a.score);
+      if (scoreCompare != 0) return scoreCompare;
+      return a.timeTaken.compareTo(b.timeTaken);
+    });
+
+    return aggregated;
   }
 }

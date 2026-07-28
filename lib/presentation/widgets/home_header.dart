@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_icons.dart';
 import '../../core/theme/theme_manager.dart';
 import '../providers/app_providers.dart';
 
@@ -71,6 +70,9 @@ class HomeHeader extends ConsumerWidget {
             ],
           ),
           const Spacer(),
+          // Leaderboard Button 🏆
+          _LeaderboardButton(lang: lang),
+          const SizedBox(width: 8),
           // Language selector button
           _LanguageButton(ref: ref, lang: lang),
           const SizedBox(width: 8),
@@ -255,6 +257,38 @@ class _LanguageButton extends StatelessWidget {
           Icons.translate_rounded,
           size: 18,
           color: isDark ? Colors.white : AppColors.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _LeaderboardButton extends StatelessWidget {
+  final String lang;
+  const _LeaderboardButton({required this.lang});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(context, '/leaderboard');
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.amber.withValues(alpha: 0.1) : Colors.amber.withValues(alpha: 0.12),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.amber.withValues(alpha: 0.4),
+            width: 1.2,
+          ),
+        ),
+        child: const Icon(
+          Icons.emoji_events_rounded,
+          size: 18,
+          color: Colors.amber,
         ),
       ),
     );

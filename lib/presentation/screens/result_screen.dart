@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/app_providers.dart';
+import '../providers/auth_providers.dart';
 import '../widgets/result/score_circle.dart';
 import '../widgets/result/xp_breakdown_card.dart';
 import '../widgets/result/question_review_card.dart';
@@ -223,6 +224,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   Widget build(BuildContext context) {
     final session = ref.watch(quizSessionProvider);
     final lang = ref.watch(languageProvider);
+    final streakAsync = ref.watch(localStreakProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
@@ -237,6 +239,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     final total = session.quiz.questionCount;
     int score = result.score;
     final totalTimeTaken = session.totalTimeTaken > 0 ? session.totalTimeTaken : AppConstants.questionTimerSeconds * total;
+    final streak = streakAsync.value?.currentStreak ?? 0;
 
     // Calculate actual score for local quizzes
     if (session.quiz.quizId.startsWith('local_')) {
@@ -334,6 +337,15 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         ref.invalidate(achievementsProvider);
         ref.invalidate(modeStatsProvider);
         ref.invalidate(userStatsProvider);
+
+        // Prompt guest user to link account on high score (pct >= 0.8) or 3+ day streak
+        try {
+          final authService = ref.read(authServiceProvider);
+          final streakData = await ref.read(localStatsProvider).getStreak();
+          if (authService.isAnonymous && (pct >= 0.8 || streakData.currentStreak >= 3) && mounted) {
+            _showLinkAccountPrompt(context, lang);
+          }
+        } catch (_) {}
       }
     });
 
@@ -378,7 +390,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                       const SizedBox(height: 20),
                       _buildActionButtons(context, ref, session, score, lang, isDark, isBn, isHi),
                       const SizedBox(height: 20),
-                      _buildStatsRow(score, total, lang, isDark, isBn, isHi),
+                      _buildStatsRow(score, total, totalTimeTaken, streak, _rewards, lang, isDark, isBn, isHi),
                       const SizedBox(height: 24),
                       _buildReviewSection(session, lang, isDark, isBn, isHi),
                       const SizedBox(height: 60),
@@ -473,49 +485,127 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
       bool isDark,
       bool isBn,
       bool isHi) {
-    return Row(
+    final isPractice = session.quiz.quizId.startsWith('practice_');
+    final playAgainLabel = isBn
+        ? (isPractice ? 'আবার অনুশীলন করুন' : 'আবার খেলুন')
+        : isHi
+            ? (isPractice ? 'फिर से अभ्यास करें' : 'फिर से खेलें')
+            : (isPractice ? 'Practice Again' : 'Play Again');
+
+    return Column(
       children: [
-        Expanded(
-          child: _buildActionButton(
-            context: context,
-            icon: AppIcons.home,
-            label: isBn ? 'হোম' : isHi ? 'होम' : 'Home',
-            gradient: LinearGradient(
-              colors: isDark 
-                  ? [Colors.white.withValues(alpha: 0.08), Colors.white.withValues(alpha: 0.04)]
-                  : [Colors.white, Colors.grey.shade100],
-            ),
-            textColor: isDark ? Colors.white : AppColors.textPrimaryLight,
-            shadowColor: Colors.black.withValues(alpha: 0.05),
-            borderColor: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.2),
-            onTap: () {
+        // Primary Call-To-Action: Play Again / Practice Again
+        AnimatedScaleButton(
+          onTap: () async {
+            if (isPractice) {
+              final count = session.quiz.questionCount;
+              final difficulty = session.quiz.questions.isNotEmpty 
+                  ? session.quiz.questions.first.difficulty 
+                  : 'medium';
+
               ref.read(quizSessionProvider.notifier).reset();
-              Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
-            },
+
+              try {
+                PracticeQuizService.instance.syncWithFirestore();
+                final practiceQuiz = await PracticeQuizService.instance.fetchPracticeQuiz(
+                  questionCount: count,
+                  difficulty: difficulty == 'All' ? null : difficulty.toLowerCase(),
+                );
+                if (context.mounted) {
+                  ref.read(quizSessionProvider.notifier).startQuiz(practiceQuiz);
+                  Navigator.pushReplacementNamed(context, '/quiz');
+                }
+              } catch (_) {}
+            } else {
+              // Retake daily quiz
+              final originalQuiz = session.quiz;
+              ref.read(quizSessionProvider.notifier).reset();
+              ref.read(quizSessionProvider.notifier).startQuiz(originalQuiz);
+              Navigator.pushReplacementNamed(context, '/quiz');
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: isDark ? 0.35 : 0.2),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.replay_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Play Again / Practice Again',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionButton(
-            context: context,
-            icon: AppIcons.share,
-            label: isBn ? 'শেয়ার করুন' : isHi ? 'शेयर करें' : 'Share',
-            gradient: AppColors.primaryGradient,
-            textColor: Colors.white,
-            shadowColor: AppColors.primary.withValues(alpha: 0.3),
-            borderColor: Colors.transparent,
-            onTap: () async {
-              final percentage = ((score / session.quiz.questionCount) * 100).round();
-              final emoji = percentage >= 80 ? '🌟' : percentage >= 60 ? '👍' : percentage >= 40 ? '💪' : '📚';
-              await Share.share(
-                isBn
-                    ? 'GK Quiz-এ আমি ${score}/${session.quiz.questionCount} ($percentage%) $emoji পেয়েছি! 🎯 তুমি পারবে?\n\n#GKQuiz #DailyQuiz #IndiaQuiz'
-                    : isHi
-                        ? 'मैंने GK Quiz में ${score}/${session.quiz.questionCount} ($percentage%) $emoji स्कोर किया! 🎯 क्या आप कर सकते हैं?\n\n#GKQuiz #DailyQuiz #IndiaQuiz'
-                        : 'I scored ${score}/${session.quiz.questionCount} ($percentage%) $emoji on GK Quiz! 🎯\n\nCan you beat me?\n\n#GKQuiz #DailyQuiz #IndiaQuiz',
-              );
-            },
-          ),
+        const SizedBox(height: 12),
+        // Secondary Row: Home & Share
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionButton(
+                context: context,
+                icon: AppIcons.home,
+                label: isBn ? 'হোম' : isHi ? 'होम' : 'Home',
+                gradient: LinearGradient(
+                  colors: isDark 
+                      ? [Colors.white.withValues(alpha: 0.06), Colors.white.withValues(alpha: 0.03)]
+                      : [Colors.white, Colors.grey.shade50],
+                ),
+                textColor: isDark ? Colors.white70 : AppColors.textPrimaryLight,
+                shadowColor: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                borderColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15),
+                onTap: () {
+                  ref.read(quizSessionProvider.notifier).reset();
+                  Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildActionButton(
+                context: context,
+                icon: AppIcons.share,
+                label: isBn ? 'শেয়ার' : isHi ? 'शेयर' : 'Share',
+                gradient: LinearGradient(
+                  colors: isDark 
+                      ? [Colors.white.withValues(alpha: 0.06), Colors.white.withValues(alpha: 0.03)]
+                      : [Colors.white, Colors.grey.shade50],
+                ),
+                textColor: isDark ? Colors.white70 : AppColors.textPrimaryLight,
+                shadowColor: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                borderColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15),
+                onTap: () async {
+                  final percentage = ((score / session.quiz.questionCount) * 100).round();
+                  final emoji = percentage >= 80 ? '🌟' : percentage >= 60 ? '👍' : percentage >= 40 ? '💪' : '📚';
+                  await Share.share(
+                    isBn
+                        ? 'GK Quiz-এ আমি ${score}/${session.quiz.questionCount} ($percentage%) $emoji পেয়েছি! 🎯 তুমি পারবে?\n\n#GKQuiz #DailyQuiz #IndiaQuiz'
+                        : isHi
+                            ? 'मैंने GK Quiz में ${score}/${session.quiz.questionCount} ($percentage%) $emoji स्कोर किया! 🎯 क्या आप कर सकते हैं?\n\n#GKQuiz #DailyQuiz #IndiaQuiz'
+                            : 'I scored ${score}/${session.quiz.questionCount} ($percentage%) $emoji on GK Quiz! 🎯\n\nCan you beat me?\n\n#GKQuiz #DailyQuiz #IndiaQuiz',
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -533,28 +623,32 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     return AnimatedScaleButton(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: borderColor, width: 1.2),
           boxShadow: [
             BoxShadow(
               color: shadowColor,
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             )
           ],
         ),
-        child: Column(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: textColor, size: 22),
-            const SizedBox(height: 4),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: textColor)),
+            Icon(icon, color: textColor, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: textColor,
+              ),
+            ),
           ],
         ),
       ),
@@ -562,91 +656,199 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   }
 
   Widget _buildStatsRow(
-      int score, int total, String lang, bool isDark, bool isBn, bool isHi) {
+      int score,
+      int total,
+      int timeTaken,
+      int streak,
+      QuizRewards? rewards,
+      String lang,
+      bool isDark,
+      bool isBn,
+      bool isHi) {
     final wrong = total - score;
     final pct = total > 0 ? (score / total * 100).round() : 0;
+
+    final min = timeTaken ~/ 60;
+    final sec = timeTaken % 60;
+    final timeStr = min > 0 ? '${min}m ${sec}s' : '${sec}s';
+
+    final accuracyColor = pct >= 80
+        ? AppColors.success
+        : pct >= 50
+            ? AppColors.primary
+            : AppColors.error;
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStatPill(
-            icon: AppIcons.correct,
-            value: '$score',
-            label: isBn ? 'সঠিক' : 'Correct',
-            gradient: const LinearGradient(
-              colors: [Color(0xFF10B981), Color(0xFF047857)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        // Left: Accuracy Circular Card
+        Expanded(
+          flex: 12,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            height: 165,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF151D30) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.02),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            shadowColor: const Color(0xFF10B981),
-            isDark: isDark),
-        const SizedBox(width: 10),
-        _buildStatPill(
-            icon: AppIcons.incorrect,
-            value: '$wrong',
-            label: isBn ? 'ভুল' : 'Wrong',
-            gradient: const LinearGradient(
-              colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 76,
+                  height: 76,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: 1.0,
+                        strokeWidth: 8,
+                        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100,
+                      ),
+                      CircularProgressIndicator(
+                        value: pct / 100,
+                        strokeWidth: 8,
+                        color: accuracyColor,
+                        strokeCap: StrokeCap.round,
+                      ),
+                      Text(
+                        '$pct%',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isBn ? '$score সঠিক • $wrong ভুল' : isHi ? '$score सही • $wrong गलत' : '$score Correct • $wrong Incorrect',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white30 : Colors.grey.shade400,
+                  ),
+                ),
+              ],
             ),
-            shadowColor: const Color(0xFFEF4444),
-            isDark: isDark),
-        const SizedBox(width: 10),
-        _buildStatPill(
-            icon: Icons.percent_rounded,
-            value: '$pct%',
-            label: isBn ? 'শতাংশ' : 'Percent',
-            gradient: const LinearGradient(
-              colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Right: Mini Stat Pills
+        Expanded(
+          flex: 13,
+          child: SizedBox(
+            height: 165,
+            child: Column(
+              children: [
+                _buildMiniStatPill(
+                  icon: AppIcons.xp,
+                  iconColor: Colors.amber,
+                  value: '+${rewards?.xp ?? (score * 10)} XP',
+                  label: isBn ? 'অর্জিত এক্সপি' : isHi ? 'एक्सपी प्राप्त' : 'XP Gained',
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 8),
+                _buildMiniStatPill(
+                  icon: AppIcons.streak,
+                  iconColor: Colors.orange,
+                  value: '$streak Days',
+                  label: isBn ? 'বর্তমান স্ট্রিক' : isHi ? 'दैनिक स्ट्रीक' : 'Current Streak',
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 8),
+                _buildMiniStatPill(
+                  icon: Icons.timer_outlined,
+                  iconColor: Colors.cyan,
+                  value: timeStr,
+                  label: isBn ? 'সময় লেগেছে' : isHi ? 'कुल समय' : 'Time Taken',
+                  isDark: isDark,
+                ),
+              ],
             ),
-            shadowColor: const Color(0xFF3B82F6),
-            isDark: isDark),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildStatPill(
-      {required IconData icon,
-      required String value,
-      required String label,
-      required LinearGradient gradient,
-      required Color shadowColor,
-      required bool isDark}) {
+  Widget _buildMiniStatPill({
+    required IconData icon,
+    required Color iconColor,
+    required String value,
+    required String label,
+    required bool isDark,
+  }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          gradient: gradient,
+          color: isDark ? const Color(0xFF151D30) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.2),
+          border: Border.all(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
+            width: 1.2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: shadowColor.withValues(alpha: isDark ? 0.3 : 0.15),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            )
+              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.01),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
-        child: Column(
+        child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                shape: BoxShape.circle,
+            Icon(icon, color: iconColor, size: 16),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                      height: 1.1,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white30 : Colors.grey.shade400,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: Colors.white, size: 16),
             ),
-            const SizedBox(height: 6),
-            Text(value,
-                style: const TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -696,6 +898,129 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
           );
         }),
       ],
+    );
+  }
+
+  Future<void> _showLinkAccountPrompt(BuildContext context, String lang) async {
+    final isBn = lang == 'bn';
+    final isHi = lang == 'hi';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.cloud_upload_rounded,
+                  color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              isBn
+                  ? 'আপনার প্রগতি সংরক্ষণ করুন!'
+                  : isHi
+                      ? 'अपनी प्रगति सहेजें!'
+                      : 'Save Your Progress!',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          isBn
+              ? 'বিশ্বব্যাপী লিডারবোর্ডে আপনার স্থান সংরক্ষণ করতে এখনই আপনার গুগল অ্যাকাউন্টটি যুক্ত করুন।'
+              : isHi
+                  ? 'वैश्विक लीडरबोर्ड पर अपना रैंक सुरक्षित करने के लिए अभी अपना Google खाता लिंक करें।'
+                  : 'Link your Google account now to save your achievements and rank on the global leaderboard permanently!',
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.4,
+            color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              isBn ? 'পরে' : isHi ? 'बाद में' : 'Later',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white54 : Colors.grey.shade600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              // Show loading HUD
+              showDialog<void>(
+                context: context,
+                barrierDismissible: false,
+                builder: (loadingContext) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+              try {
+                await ref.read(authServiceProvider).upgradeAnonymousAccount();
+                if (context.mounted) {
+                  Navigator.pop(context); // Pop loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isBn
+                          ? 'অ্যাকাউন্ট সফলভাবে যুক্ত করা হয়েছে!'
+                          : isHi
+                              ? 'खाता सफलतापूर्वक लिंक किया गया!'
+                              : 'Account linked successfully!'),
+                      backgroundColor: AppColors.success,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.pop(context); // Pop loading
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString()),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              isBn
+                  ? 'যুক্ত করুন'
+                  : isHi
+                      ? 'लिंक करें'
+                      : 'Link Account',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

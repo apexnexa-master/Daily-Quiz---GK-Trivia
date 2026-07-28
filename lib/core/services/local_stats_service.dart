@@ -102,14 +102,21 @@ class LocalStatsService {
   Future<List<LeaderboardEntryLocal>> getLocalLeaderboard() async {
     final data = _box.get(_keyLeaderboard);
     if (data == null) {
-      // Return demo leaderboard data
       return _getDemoLeaderboard();
     }
     try {
       final list = jsonDecode(data) as List;
-      return list
+      final parsed = list
           .map((e) => LeaderboardEntryLocal.fromJson(e as Map<String, dynamic>))
           .toList();
+      // Check if Vikram R is recorded with 9 points today (our new dataset signature). If not, force a database reset!
+      final hasNewSeeding = parsed.any((e) => e.playerName == 'Vikram R' && e.score == 9);
+      if (!hasNewSeeding) {
+        final newDemo = _getDemoLeaderboard();
+        await _box.put(_keyLeaderboard, jsonEncode(newDemo.map((e) => e.toJson()).toList()));
+        return newDemo;
+      }
+      return parsed;
     } catch (_) {
       return _getDemoLeaderboard();
     }
@@ -159,23 +166,42 @@ class LocalStatsService {
 
   List<LeaderboardEntryLocal> _getDemoLeaderboard() {
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final yesterday = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 1)));
+    final twoDaysAgo = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 2)));
+    final threeDaysAgo = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 3)));
+    final fourDaysAgo = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 4)));
+    final fiveDaysAgo = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 5)));
+    final sixDaysAgo = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 6)));
+    final nineDaysAgo = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 9)));
+    final twelveDaysAgo = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 12)));
+
     return [
-      LeaderboardEntryLocal(
-          playerName: 'Rahim Sk', score: 10, timeTaken: 180, date: today),
-      LeaderboardEntryLocal(
-          playerName: 'Priya M', score: 9, timeTaken: 200, date: today),
-      LeaderboardEntryLocal(
-          playerName: 'Amit K', score: 9, timeTaken: 240, date: today),
-      LeaderboardEntryLocal(
-          playerName: 'Sneha D', score: 8, timeTaken: 210, date: today),
-      LeaderboardEntryLocal(
-          playerName: 'Ravi T', score: 8, timeTaken: 250, date: today),
-      LeaderboardEntryLocal(
-          playerName: 'Anita S', score: 7, timeTaken: 190, date: today),
-      LeaderboardEntryLocal(
-          playerName: 'Vikram R', score: 7, timeTaken: 220, date: today),
-      LeaderboardEntryLocal(
-          playerName: 'Meena K', score: 6, timeTaken: 200, date: today),
+      // Today entries (small scores, Vikram R 1st, Amit K 3rd, Rahim Sk 4th)
+      LeaderboardEntryLocal(playerName: 'Vikram R', score: 9, timeTaken: 150, date: today),
+      LeaderboardEntryLocal(playerName: 'Priya M', score: 7, timeTaken: 170, date: today),
+      LeaderboardEntryLocal(playerName: 'Amit K', score: 6, timeTaken: 180, date: today),
+      LeaderboardEntryLocal(playerName: 'Rahim Sk', score: 5, timeTaken: 190, date: today),
+      LeaderboardEntryLocal(playerName: 'Sneha D', score: 4, timeTaken: 200, date: today),
+
+      // Yesterday/This Week entries (To sum up to > 10 distinct people with little big numbers)
+      LeaderboardEntryLocal(playerName: 'Vikram R', score: 210, timeTaken: 160, date: yesterday),
+      LeaderboardEntryLocal(playerName: 'Priya M', score: 190, timeTaken: 180, date: yesterday),
+      LeaderboardEntryLocal(playerName: 'Amit K', score: 175, timeTaken: 210, date: threeDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Rahim Sk', score: 160, timeTaken: 220, date: threeDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Sneha D', score: 140, timeTaken: 230, date: fourDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Anita S', score: 120, timeTaken: 240, date: yesterday),
+      LeaderboardEntryLocal(playerName: 'Ravi T', score: 105, timeTaken: 250, date: twoDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Meena K', score: 90, timeTaken: 200, date: threeDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Vikram S', score: 75, timeTaken: 210, date: fourDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Kabir J', score: 60, timeTaken: 220, date: fiveDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Neha G', score: 45, timeTaken: 230, date: sixDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Rohan B', score: 30, timeTaken: 240, date: sixDaysAgo),
+
+      // Older entries (All Time only - to push Vikram R's all-time score > 500)
+      LeaderboardEntryLocal(playerName: 'Vikram R', score: 300, timeTaken: 140, date: nineDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Priya M', score: 250, timeTaken: 160, date: nineDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Amit K', score: 200, timeTaken: 190, date: twelveDaysAgo),
+      LeaderboardEntryLocal(playerName: 'Rahim Sk', score: 180, timeTaken: 200, date: twelveDaysAgo),
     ];
   }
 }

@@ -16,33 +16,35 @@ class BookmarkService {
     _box = await Hive.openBox(_boxName);
   }
 
+  Map<String, dynamic> _getBookmarksMap() {
+    final raw = _box?.get('questions');
+    if (raw == null) return <String, dynamic>{};
+    return Map<String, dynamic>.from(raw as Map);
+  }
+
   Future<void> addBookmark(
       String questionId, Map<String, dynamic> questionData) async {
-    final bookmarks = _box?.get('questions', defaultValue: <String, dynamic>{})
-        as Map<String, dynamic>;
+    final bookmarks = _getBookmarksMap();
     bookmarks[questionId] = questionData;
     await _box?.put('questions', bookmarks);
     await CloudSyncService.instance.syncBookmarkAdded(questionId, questionData);
   }
 
   Future<void> removeBookmark(String questionId) async {
-    final bookmarks = _box?.get('questions', defaultValue: <String, dynamic>{})
-        as Map<String, dynamic>;
+    final bookmarks = _getBookmarksMap();
     bookmarks.remove(questionId);
     await _box?.put('questions', bookmarks);
     await CloudSyncService.instance.syncBookmarkRemoved(questionId);
   }
 
   bool isBookmarked(String questionId) {
-    final bookmarks = _box?.get('questions', defaultValue: <String, dynamic>{})
-        as Map<String, dynamic>;
+    final bookmarks = _getBookmarksMap();
     return bookmarks.containsKey(questionId);
   }
 
   List<Map<String, dynamic>> getAllBookmarks() {
-    final bookmarks = _box?.get('questions', defaultValue: <String, dynamic>{})
-        as Map<String, dynamic>;
-    return bookmarks.values.map((e) => Map<String, dynamic>.from(e)).toList();
+    final bookmarks = _getBookmarksMap();
+    return bookmarks.values.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
   Future<void> toggleBookmark(

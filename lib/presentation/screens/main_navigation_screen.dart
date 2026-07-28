@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
-import 'leaderboard_screen.dart';
+import 'play_zone_screen.dart';
 import 'profile_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
@@ -20,7 +20,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    LeaderboardScreen(),
+    PlayZoneScreen(),
     ProfileScreen(),
   ];
 
@@ -66,9 +66,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 ),
                 _buildNavItem(
                   index: 1,
-                  icon: AppIcons.leaderboard,
-                  activeIcon: AppIcons.leaderboard,
-                  label: 'Ranks',
+                  icon: Icons.sports_esports_rounded,
+                  activeIcon: Icons.sports_esports_rounded,
+                  label: 'Play Zone',
                   isDark: isDark,
                 ),
                 _buildNavItem(

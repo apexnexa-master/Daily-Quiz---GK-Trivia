@@ -38,8 +38,8 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark 
-              ? [const Color(0xFF1E1B4B), const Color(0xFF4C1D95), const Color(0xFF581C87)] 
-              : [const Color(0xFFEEF2FF), const Color(0xFFFAE8FF), const Color(0xFFE0F7FA)],
+              ? [const Color(0xFF1E1B4B), const Color(0xFF312E81), const Color(0xFF4C1D95)] 
+              : [const Color(0xFF4F46E5), const Color(0xFF6366F1), const Color(0xFF7C3AED)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -50,7 +50,7 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.35 : 0.15),
+            color: const Color(0xFF6366F1).withValues(alpha: isDark ? 0.35 : 0.25),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -86,66 +86,52 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title and Subtitle Row
+                  // Title and Custom Config Icon Row
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              subtitle,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark ? Colors.white54 : AppColors.textSecondaryLight,
-                                fontWeight: FontWeight.w500,
-                                height: 1.2,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.3,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: isDark 
-                              ? Colors.white.withValues(alpha: 0.06) 
-                              : AppColors.primary.withValues(alpha: 0.08),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.school_rounded,
-                          color: isDark ? AppColors.secondary : AppColors.primary,
-                          size: 22,
+                      // Custom Config Icon
+                      InkWell(
+                        onTap: () => _showPracticeBottomSheet(context, isDark, isBn, isHi),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.tune_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   
                   // Difficulty Selector Label
                   Text(
                     diffLabel,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white70 : AppColors.textPrimaryLight,
+                      color: Colors.white70,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -172,15 +158,14 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                gradient: isSelected ? AppColors.primaryGradient : null,
                                 color: isSelected 
-                                    ? null 
-                                    : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white),
+                                    ? Colors.white 
+                                    : Colors.white.withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: isSelected 
                                       ? Colors.transparent 
-                                      : (isDark ? Colors.white10 : Colors.grey.withValues(alpha: 0.15)),
+                                      : Colors.white.withValues(alpha: 0.15),
                                   width: 1,
                                 ),
                               ),
@@ -190,8 +175,8 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color: isSelected 
-                                      ? Colors.white 
-                                      : (isDark ? Colors.white70 : AppColors.textSecondaryLight),
+                                      ? const Color(0xFF4F46E5) 
+                                      : Colors.white.withValues(alpha: 0.9),
                                 ),
                               ),
                             ),
@@ -200,15 +185,15 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
 
                   // Quick Play Label
                   Text(
                     quickPlayLabel,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white70 : AppColors.textPrimaryLight,
+                      color: Colors.white70,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -222,46 +207,6 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
                       const SizedBox(width: 8),
                       _buildQuickStartButton(context, 20, '🔥'),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Custom Config button
-                  InkWell(
-                    onTap: () => _showPracticeBottomSheet(context, isDark, isBn, isHi),
-                    borderRadius: BorderRadius.circular(14),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: isDark 
-                              ? Colors.white.withValues(alpha: 0.1) 
-                              : AppColors.primary.withValues(alpha: 0.2),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.tune_rounded,
-                            size: 16,
-                            color: isDark ? AppColors.secondary : AppColors.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            customLabel,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -283,7 +228,7 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
             color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE0E7FF),
             ),
             boxShadow: [
               BoxShadow(
@@ -306,7 +251,7 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
-                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                  color: isDark ? Colors.white : const Color(0xFF4F46E5),
                 ),
               ),
             ],

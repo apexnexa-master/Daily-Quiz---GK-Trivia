@@ -359,6 +359,31 @@ class QuestionModel extends Equatable {
     );
   }
 
+  factory QuestionModel.fromMap(Map<String, dynamic> map) {
+    Map<String, List<String>> parsedOptions = {};
+    if (map['options'] is Map) {
+      (map['options'] as Map).forEach((k, v) {
+        if (v is List) {
+          parsedOptions[k.toString()] = List<String>.from(v.map((e) => e.toString()));
+        }
+      });
+    } else if (map['options'] is List) {
+      parsedOptions['en'] = List<String>.from((map['options'] as List).map((e) => e.toString()));
+    }
+
+    return QuestionModel(
+      id: map['id'] ?? '',
+      text: Map<String, String>.from(map['text'] ?? {}),
+      options: parsedOptions,
+      correctIndex: map['correct_index'] ?? 0,
+      explanation: Map<String, String>.from(map['explanation'] ?? {}),
+      category: map['category'] ?? 'general',
+      difficulty: map['difficulty'] ?? 'medium',
+      examTags: List<String>.from(map['exam_tags'] ?? []),
+      order: map['order'] ?? 0,
+    );
+  }
+
   Map<String, dynamic> toFirestore() => {
         'text': text,
         'options': options,

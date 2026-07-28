@@ -48,12 +48,12 @@ class AppColors {
   static const Color textTertiaryLight = Color(0xFF94A3B8);
 
   // Dark Mode Surfaces
-  static const Color bgDark = Color(0xFF0F172A);
-  static const Color cardDark = Color(0xFF1E293B);
-  static const Color surfaceElevatedDark = Color(0xFF334155);
+  static const Color bgDark = Color(0xFF0B0F19);
+  static const Color cardDark = Color(0xFF151D30);
+  static const Color surfaceElevatedDark = Color(0xFF1E293B);
   static const Color textPrimaryDark = Color(0xFFF8FAFC);
-  static const Color textSecondaryDark = Color(0xFFCBD5E1);
-  static const Color textTertiaryDark = Color(0xFF64748B);
+  static const Color textSecondaryDark = Color(0xFFE2E8F0);
+  static const Color textTertiaryDark = Color(0xFF94A3B8);
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
@@ -119,9 +119,9 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF0F172A),
-      Color(0xFF1E1B4B),
-      Color(0xFF0C4A6E),
+      Color(0xFF0B0F19), // Deep slate-900
+      Color(0xFF131A2B), // Mid dark blue-grey
+      Color(0xFF1E293B), // Soft slate-800
     ],
     stops: [0.0, 0.5, 1.0],
   );
