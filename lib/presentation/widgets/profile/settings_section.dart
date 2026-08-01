@@ -59,6 +59,9 @@ class SettingsSection extends ConsumerWidget {
               _divider(),
               // Saved Questions Tile
               _buildSavedQuestionsTile(context, ref),
+              _divider(),
+              // Achievements Option Tile
+              _buildAchievementsTile(context),
             ],
           ),
         ),
@@ -236,6 +239,38 @@ class SettingsSection extends ConsumerWidget {
           context,
           MaterialPageRoute(builder: (_) => const BookmarksScreen()),
         );
+      },
+    );
+  }
+
+  Widget _buildAchievementsTile(BuildContext context) {
+    final isBn = lang == 'bn';
+    final isHi = lang == 'hi';
+
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.xp.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.emoji_events_rounded, color: AppColors.xp, size: 20),
+      ),
+      title: Text(
+        isBn
+            ? 'অর্জনসমূহ'
+            : isHi
+                ? 'उपलब्धियां'
+                : 'Achievements',
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+      trailing: Icon(
+        Icons.arrow_forward_ios_rounded,
+        size: 14,
+        color: isDark ? Colors.white30 : Colors.grey.shade400,
+      ),
+      onTap: () {
+        Navigator.pushNamed(context, '/achievements');
       },
     );
   }

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
 import 'play_zone_screen.dart';
-import 'profile_screen.dart';
+import 'leaderboard_screen.dart';
+import 'battle_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 
@@ -21,7 +22,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   final List<Widget> _screens = const [
     HomeScreen(),
     PlayZoneScreen(),
-    ProfileScreen(),
+    BattleScreen(isTab: true),
   ];
 
   @override
@@ -41,19 +42,25 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.cardDark : Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
+          color: isDark ? AppColors.bgDark : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? AppColors.outlineVariant.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.05),
+              width: 1,
             ),
+          ),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
           ],
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -73,9 +80,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 ),
                 _buildNavItem(
                   index: 2,
-                  icon: AppIcons.profile,
-                  activeIcon: AppIcons.profile,
-                  label: 'Profile',
+                  icon: AppIcons.battle,
+                  activeIcon: AppIcons.battle,
+                  label: 'Battle',
                   isDark: isDark,
                 ),
               ],
@@ -94,8 +101,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     required bool isDark,
   }) {
     final isSelected = _currentIndex == index;
-    final activeColor = AppColors.primary;
-    final inactiveColor = isDark ? Colors.white54 : AppColors.textSecondaryLight;
+    final activeColor = isDark ? AppColors.primary : AppColors.primaryDark;
+    final inactiveColor = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     return GestureDetector(
       onTap: () {
@@ -107,14 +114,20 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? activeColor.withValues(alpha: 0.12)
+              ? activeColor.withValues(alpha: isDark ? 0.12 : 0.08)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(9999),
+          border: Border.all(
+            color: isSelected
+                ? activeColor.withValues(alpha: 0.25)
+                : Colors.transparent,
+            width: 1,
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -122,16 +135,17 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             Icon(
               isSelected ? activeIcon : icon,
               color: isSelected ? activeColor : inactiveColor,
-              size: 22,
+              size: 20,
             ),
             if (isSelected) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
                   color: activeColor,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  letterSpacing: -0.2,
                 ),
               ),
             ],

@@ -49,15 +49,15 @@ class AppTheme {
       ];
 
   static TextTheme _buildTextTheme(Brightness brightness) {
-    final base = GoogleFonts.notoSansTextTheme();
+    final base = GoogleFonts.interTextTheme();
     final bool isDark = brightness == Brightness.dark;
-    final color = isDark ? Colors.white : AppColors.textPrimaryLight;
+    final color = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     
     return base.copyWith(
       displayLarge: base.displayLarge?.copyWith(color: color, fontWeight: FontWeight.w800, letterSpacing: -1.0),
       displayMedium: base.displayMedium?.copyWith(color: color, fontWeight: FontWeight.w700, letterSpacing: -0.5),
       displaySmall: base.displaySmall?.copyWith(color: color, fontWeight: FontWeight.w700),
-      headlineLarge: base.headlineLarge?.copyWith(color: color, fontWeight: FontWeight.w700),
+      headlineLarge: base.headlineLarge?.copyWith(color: color, fontWeight: FontWeight.w700, letterSpacing: -0.5),
       headlineMedium: base.headlineMedium?.copyWith(color: color, fontWeight: FontWeight.w600),
       headlineSmall: base.headlineSmall?.copyWith(color: color, fontWeight: FontWeight.w600),
       titleLarge: base.titleLarge?.copyWith(color: color, fontWeight: FontWeight.w600),
@@ -93,7 +93,7 @@ class AppTheme {
       backgroundColor: AppColors.bgLight,
       foregroundColor: AppColors.textPrimaryLight,
       surfaceTintColor: Colors.transparent,
-      titleTextStyle: GoogleFonts.notoSans(
+      titleTextStyle: GoogleFonts.inter(
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimaryLight,
@@ -108,11 +108,11 @@ class AppTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        textStyle: GoogleFonts.notoSans(fontSize: 15, fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -120,32 +120,32 @@ class AppTheme {
         foregroundColor: AppColors.primary,
         side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
     chipTheme: ChipThemeData(
       selectedColor: AppColors.primary,
-      labelStyle: GoogleFonts.notoSans(fontWeight: FontWeight.w600),
+      labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: const Color(0xFFF1F5F9),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -206,7 +206,7 @@ class AppTheme {
       backgroundColor: AppColors.bgDark,
       foregroundColor: AppColors.textPrimaryDark,
       surfaceTintColor: Colors.transparent,
-      titleTextStyle: GoogleFonts.notoSans(
+      titleTextStyle: GoogleFonts.inter(
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimaryDark,
@@ -221,51 +221,51 @@ class AppTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        textStyle: GoogleFonts.notoSans(fontSize: 15, fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primaryLight,
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.15), width: 1.5),
+        side: BorderSide(color: AppColors.outlineVariant, width: 1.5),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     ),
     chipTheme: ChipThemeData(
       selectedColor: AppColors.primary,
-      labelStyle: GoogleFonts.notoSans(fontWeight: FontWeight.w600),
+      labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: AppColors.cardDark,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.primary, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
     scaffoldBackgroundColor: AppColors.bgDark,
     dividerTheme: DividerThemeData(
-        color: Colors.white.withValues(alpha: 0.08), thickness: 1),
+        color: AppColors.outlineVariant, thickness: 1),
     bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: AppColors.cardDark,
       surfaceTintColor: Colors.transparent,

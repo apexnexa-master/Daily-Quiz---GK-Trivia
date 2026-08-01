@@ -179,8 +179,14 @@ class ProfileOverview extends ConsumerWidget {
                 children: [
                   // App Bar / Top Actions
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      IconButton(
+                        onPressed: () => Navigator.maybePop(context),
+                        icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 24),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
                       // Premium tier badge
                       Container(
                         padding: const EdgeInsets.symmetric(

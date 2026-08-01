@@ -203,4 +203,40 @@ class QuestionService {
   Future<List<String>> getAvailableExamModes() async {
     return ['GENERAL'];
   }
+  // Fetch combined list of Firebase practice questions and local questions
+  Future<List<QuestionModel>> fetchCombinedQuestions({
+    required String examMode,
+  }) async {
+    final List<QuestionModel> combined = [];
+    
+    // 1. Get local questions
+    final local = _getLocalQuestions(examMode);
+    combined.addAll(local);
+    
+    // 2. Fetch Firebase practice questions
+    try {
+      final practiceDoc = await _db.collection('practice').doc(examMode).get();
+      if (practiceDoc.exists) {
+        final questionsData = practiceDoc.data()?['questions'] as List?;
+        if (questionsData != null && questionsData.isNotEmpty) {
+          final firebaseQs = questionsData
+              .map((e) => _questionModelFromMap(e as Map<String, dynamic>))
+              .toList();
+          
+          // Add unique Firebase questions by checking ID
+          final existingIds = local.map((q) => q.id).toSet();
+          for (final q in firebaseQs) {
+            if (!existingIds.contains(q.id) && q.id.isNotEmpty) {
+              combined.add(q);
+              existingIds.add(q.id);
+            }
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore firebase fetching errors and fallback to local only
+    }
+    
+    return combined;
+  }
 }

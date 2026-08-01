@@ -9,8 +9,8 @@ class AppIcons {
   static const IconData leaderboard = Icons.leaderboard_rounded;
   static const IconData profile = Icons.person_rounded;
   static const IconData settings = Icons.settings_rounded;
-  static const IconData battle = Icons.sports_kabaddi_rounded;
-  static const IconData challenge = Icons.sports_kabaddi_rounded;
+  static const IconData battle = Icons.sports_martial_arts_rounded;
+  static const IconData challenge = Icons.sports_martial_arts_rounded;
   static const IconData fight = Icons.flash_on_rounded;
 
   // Alternate for battle if swords is not available in basic material:

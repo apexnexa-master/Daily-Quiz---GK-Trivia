@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/app_providers.dart';
+import '../providers/auth_providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
@@ -16,9 +17,12 @@ import '../../core/theme/app_animations.dart';
 import '../../data/models/firestore_models.dart';
 import '../../data/local_quiz_data.dart';
 import '../../core/services/battle_service.dart';
+import '../../core/services/question_service.dart';
 
 enum BattleArenaState {
   selectMode,
+  selectGame,
+  configureGame,
   searchingOffline,
   lobbyWaiting,
   joinRoom,
@@ -28,7 +32,8 @@ enum BattleArenaState {
 
 class BattleScreen extends ConsumerStatefulWidget {
   final String? roomId;
-  const BattleScreen({super.key, this.roomId});
+  final bool isTab;
+  const BattleScreen({super.key, this.roomId, this.isTab = false});
 
   @override
   ConsumerState<BattleScreen> createState() => _BattleScreenState();
@@ -45,6 +50,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
   List<QuestionModel> _questions = [];
   int _currentQuestion = 0;
   int _totalQuestions = 5;
+  String _selectedGame = 'TRIVIA';
+  int _selectedQuestionCount = 5;
+  int _mySeriesWins = 0;
+  int _opponentSeriesWins = 0;
   int? _selectedAnswer;
   bool _isAnswered = false;
 
@@ -75,6 +84,11 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
   Timer? _heartbeatTimer;
   Timer? _connectionMonitorTimer;
   Timer? _disconnectCountdownTimer;
+  Timer? _matchTimer;
+  Timer? _idleTimer;
+  int _matchTimeRemaining = 120; // 120 seconds (2 mins)
+  int _idleSecondsElapsed = 0;
+  bool _showIdleWarning = false;
 
   // Controllers
   final TextEditingController _codeController = TextEditingController();
@@ -115,11 +129,22 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
     _heartbeatTimer?.cancel();
     _connectionMonitorTimer?.cancel();
     _disconnectCountdownTimer?.cancel();
+    _matchTimer?.cancel();
+    _idleTimer?.cancel();
     _codeController.dispose();
     super.dispose();
   }
 
   // --- Actions & Handlers ---
+
+  void _navigateToSelectGame(bool isOnline) {
+    setState(() {
+      _isOnlineMode = isOnline;
+      _arenaState = BattleArenaState.selectGame;
+      _selectedGame = 'TRIVIA';
+      _selectedQuestionCount = 5;
+    });
+  }
 
   void _startOfflineMode() {
     setState(() {
@@ -138,16 +163,22 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
       _isResultDialogOpen = false;
     });
 
-    _searchTimer = Timer(const Duration(seconds: 2), () {
+    _searchTimer = Timer(const Duration(seconds: 2), () async {
       if (mounted) {
-        setState(() {
-          _arenaState = BattleArenaState.battleActive;
-          _questions = LocalQuizData.getAllQuestionsForMode('GENERAL');
-          _questions.shuffle();
-          _questions = _questions.take(5).toList();
-          _totalQuestions = _questions.length;
-        });
-        _startOfflineOpponentSimulation();
+        final list = await QuestionService.instance.fetchCombinedQuestions(examMode: 'GENERAL');
+        list.shuffle();
+        if (mounted) {
+          setState(() {
+            _arenaState = BattleArenaState.battleActive;
+            _questions = list
+                .take(_selectedQuestionCount)
+                .map((q) => q.shuffleOptions())
+                .toList();
+            _totalQuestions = _questions.length;
+          });
+          _startOfflineOpponentSimulation();
+          _startMatchTimers();
+        }
       }
     });
   }
@@ -156,7 +187,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
     _opponentSimTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted && _arenaState == BattleArenaState.battleActive && !_isAnswered) {
         setState(() {
-          _opponentScore += Random().nextInt(2);
+          _opponentScore = min(_opponentScore + Random().nextInt(2), _totalQuestions);
           _opponentCurrentQuestion = min(_currentQuestion + 1, _totalQuestions - 1);
         });
       }
@@ -185,6 +216,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
         playerNickname: user.displayName,
         playerId: user.uid,
         avatarUrl: user.photoUrl ?? '',
+        questionCount: _selectedQuestionCount,
       );
 
       setState(() {
@@ -326,7 +358,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                       if (_roomId != null) {
                         final newQs = LocalQuizData.getAllQuestionsForMode('GENERAL');
                         newQs.shuffle();
-                        final questionsToSet = newQs.take(5).toList();
+                        final questionsToSet = newQs
+                            .take(_totalQuestions)
+                            .map((q) => q.shuffleOptions())
+                            .toList();
                         BattleService().acceptRematch(_roomId!, questionsToSet);
                       }
                     },
@@ -418,6 +453,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
         }
 
         _startConnectionMonitoring(roomId, myUid);
+        _startMatchTimers();
       }
 
       // If status transitions to finished, or opponent scores exceed
@@ -464,6 +500,8 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
             _currentQuestion++;
             _selectedAnswer = null;
             _isAnswered = false;
+            _idleSecondsElapsed = 0;
+            _showIdleWarning = false;
           });
         } else {
           if (!_isOnlineMode) {
@@ -485,14 +523,22 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
   }
 
   void _endBattle() {
+    if (_isBattleOver) return;
     _opponentSimTimer?.cancel();
     _heartbeatTimer?.cancel();
     _connectionMonitorTimer?.cancel();
     _disconnectCountdownTimer?.cancel();
+    _matchTimer?.cancel();
+    _idleTimer?.cancel();
     _clearActiveBattleRoom();
     setState(() {
       _isBattleOver = true;
       _arenaState = BattleArenaState.results;
+      if (_playerScore > _opponentScore) {
+        _mySeriesWins++;
+      } else if (_opponentScore > _playerScore) {
+        _opponentSeriesWins++;
+      }
     });
 
     // Check if opponent already requested a rematch before we finished
@@ -517,7 +563,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                   if (_roomId != null) {
                     final newQs = LocalQuizData.getAllQuestionsForMode('GENERAL');
                     newQs.shuffle();
-                    final questionsToSet = newQs.take(5).toList();
+                    final questionsToSet = newQs
+                        .take(_totalQuestions)
+                        .map((q) => q.shuffleOptions())
+                        .toList();
                     BattleService().acceptRematch(_roomId!, questionsToSet);
                   }
                 },
@@ -528,6 +577,98 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
         }
       });
     }
+  }
+
+  void _startMatchTimers() {
+    _matchTimer?.cancel();
+    _idleTimer?.cancel();
+    
+    _matchTimeRemaining = 120; // 120 seconds (2 mins)
+    _idleSecondsElapsed = 0;
+    _showIdleWarning = false;
+    
+    _matchTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _arenaState != BattleArenaState.battleActive || _isBattleOver) {
+        timer.cancel();
+        return;
+      }
+      
+      setState(() {
+        if (_matchTimeRemaining > 0) {
+          _matchTimeRemaining--;
+        } else {
+          timer.cancel();
+          _endBattleDueToTimeout();
+        }
+      });
+    });
+
+    _idleTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || _arenaState != BattleArenaState.battleActive || _isBattleOver) {
+        timer.cancel();
+        return;
+      }
+      
+      if (!_isAnswered) {
+        setState(() {
+          _idleSecondsElapsed++;
+          if (_idleSecondsElapsed >= 30) {
+            _showIdleWarning = true;
+          }
+          if (_idleSecondsElapsed >= 40) {
+            timer.cancel();
+            _endBattleDueToIdleTimeout();
+          }
+        });
+      } else {
+        if (_idleSecondsElapsed > 0 || _showIdleWarning) {
+          setState(() {
+            _idleSecondsElapsed = 0;
+            _showIdleWarning = false;
+          });
+        }
+      }
+    });
+  }
+
+  void _endBattleDueToTimeout() {
+    _matchTimer?.cancel();
+    _idleTimer?.cancel();
+    if (_isOnlineMode) {
+      final user = ref.read(currentUserProvider).value;
+      if (user != null && _roomId != null) {
+        BattleService().updateProgress(
+          roomId: _roomId!,
+          playerId: user.uid,
+          score: _playerScore,
+          currentQuestion: _currentQuestion,
+          isFinished: true,
+        );
+      }
+    }
+    _endBattle();
+  }
+
+  void _endBattleDueToIdleTimeout() {
+    _matchTimer?.cancel();
+    _idleTimer?.cancel();
+    if (_isOnlineMode) {
+      final user = ref.read(currentUserProvider).value;
+      if (user != null && _roomId != null) {
+        BattleService().updateProgress(
+          roomId: _roomId!,
+          playerId: user.uid,
+          score: _playerScore,
+          currentQuestion: _currentQuestion,
+          isFinished: true,
+          hasForfeited: true,
+        );
+      }
+    }
+    setState(() {
+      _opponentForfeited = false; // player themselves forfeited
+    });
+    _endBattle();
   }
 
   void _leaveRoom({bool deleteDoc = true}) {
@@ -551,6 +692,8 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
       _showDisconnectOverlay = false;
       _opponentLeftResults = false;
       _opponentId = null;
+      _mySeriesWins = 0;
+      _opponentSeriesWins = 0;
     });
   }
 
@@ -949,6 +1092,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
     switch (_arenaState) {
       case BattleArenaState.selectMode:
         return _buildSelectModeView(isDark, isBn, isHi, user);
+      case BattleArenaState.selectGame:
+        return _buildSelectGameView(isDark, isBn, isHi, user);
+      case BattleArenaState.configureGame:
+        return _buildConfigureGameView(isDark, isBn, isHi, user);
       case BattleArenaState.searchingOffline:
         return _buildSearchingState(isDark, isBn, isHi);
       case BattleArenaState.lobbyWaiting:
@@ -971,12 +1118,14 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           padding: AppSpacing.paddingCardCondensed,
           child: Row(
             children: [
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.arrow_back_rounded,
-                    color: isDark ? Colors.white : AppColors.textPrimaryLight),
-              ),
-              const SizedBox(width: 4),
+              if (widget.isTab != true) ...[
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.arrow_back_rounded,
+                      color: isDark ? Colors.white : AppColors.textPrimaryLight),
+                ),
+                const SizedBox(width: 4),
+              ],
               Text(
                 isBn ? 'কুইজ যুদ্ধ' : isHi ? 'क्विज़ युद्ध' : 'Quiz Battle Arena',
                 style: TextStyle(
@@ -989,8 +1138,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           ),
         ),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1024,7 +1174,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                           : 'Test your speed and precision against a training bot offline.',
                   gradient: AppColors.primaryGradient,
                   icon: Icons.psychology_rounded,
-                  onTap: _startOfflineMode,
+                  onTap: () => _navigateToSelectGame(false),
                   isDark: isDark,
                 ),
 
@@ -1057,6 +1207,416 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
     );
   }
 
+  Widget _buildSelectGameView(bool isDark, bool isBn, bool isHi, UserModel? user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: AppSpacing.paddingCardCondensed,
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () {
+                  setState(() {
+                    _arenaState = BattleArenaState.selectMode;
+                  });
+                },
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isBn ? 'খেলা নির্বাচন করুন' : isHi ? 'खेल का चयन करें' : 'Select Game Mode',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildGameCard(
+                  title: isBn ? 'ট্রিভিয়া কুইজ' : isHi ? 'त्रिविया क्विज़' : 'Trivia Duel',
+                  subtitle: isBn 
+                      ? 'সাধারণ জ্ঞান এবং গতি পরীক্ষা করে আপনার প্রতিপক্ষকে হারান।'
+                      : isHi 
+                          ? 'सामान्य ज्ञान और गति का परीक्षण करके प्रतिद्वंद्वी को हराएं।'
+                          : 'Duel your opponent in a fast-paced General Knowledge quiz.',
+                  icon: Icons.quiz_rounded,
+                  color: AppColors.primary,
+                  isLocked: false,
+                  onTap: () {
+                    setState(() {
+                      _selectedGame = 'TRIVIA';
+                      _arenaState = BattleArenaState.configureGame;
+                    });
+                  },
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: isBn ? 'অ্যারো পাথ মেজ' : isHi ? 'एरो पाथ भूलभुलैया' : 'Arrow Path Maze',
+                  subtitle: isBn 
+                      ? 'গতিপথ মনে রেখে গোলকধাঁধা সমাধান করুন। (শীঘ্রই আসছে)'
+                      : isHi 
+                          ? 'रास्ता याद रखकर भूलभुलैया हल करें। (जल्द ही आ रहा है)'
+                          : 'Solve the arrow maze to test memory & logic. (Coming Soon)',
+                  icon: Icons.alt_route_rounded,
+                  color: Colors.grey,
+                  isLocked: true,
+                  onTap: () {},
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: isBn ? 'সিন্যাপ্স রিকল' : isHi ? 'सिनैप्स रिकॉल' : 'Synapse Recall',
+                  subtitle: isBn 
+                      ? 'অল্প সময়ে ছবি ও প্যাটার্ন মনে রাখার ক্ষমতা যাচাই করুন। (শীঘ্রই আসছে)'
+                      : isHi 
+                          ? 'कम समय में चित्र और पैटर्न याद रखने की क्षमता का परीक्षण करें। (जल्द ही आ रहा है)'
+                          : 'Test visual recall under strict timing. (Coming Soon)',
+                  icon: Icons.memory_rounded,
+                  color: Colors.grey,
+                  isLocked: true,
+                  onTap: () {},
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 16),
+                _buildGameCard(
+                  title: isBn ? 'ম্যাথ স্পিড স্প্রিন্ট' : isHi ? 'गणित स्पीड स्प्रिंट' : 'Math Speed Sprint',
+                  subtitle: isBn 
+                      ? 'দ্রুত গতিতে গণিত ধাঁধার সমাধান করুন। (শীঘ্রই আসছে)'
+                      : isHi 
+                          ? 'तेजी से गणित की समस्याओं को हल करें। (जल्द ही आ रहा है)'
+                          : 'Race against time solving fast math calculations. (Coming Soon)',
+                  icon: Icons.calculate_rounded,
+                  color: Colors.grey,
+                  isLocked: true,
+                  onTap: () {},
+                  isDark: isDark,
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGameCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required bool isLocked,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isLocked
+              ? Colors.transparent
+              : isDark
+                  ? AppColors.primary.withValues(alpha: 0.2)
+                  : AppColors.primary.withValues(alpha: 0.1),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: isLocked ? null : onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isLocked 
+                        ? Colors.grey.withValues(alpha: 0.1)
+                        : color.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isLocked ? Colors.grey : color,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isLocked
+                                    ? (isDark ? Colors.white38 : Colors.grey.shade500)
+                                    : (isDark ? Colors.white : AppColors.textPrimaryLight),
+                              ),
+                            ),
+                          ),
+                          if (isLocked)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.lock_rounded, size: 10, color: Colors.grey),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'LOCKED',
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: isDark ? Colors.white54 : Colors.grey.shade600,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfigureGameView(bool isDark, bool isBn, bool isHi, UserModel? user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: AppSpacing.paddingCardCondensed,
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () {
+                  setState(() {
+                    _arenaState = BattleArenaState.selectGame;
+                  });
+                },
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isBn ? 'যুদ্ধ কাস্টমাইজ করুন' : isHi ? 'युद्ध अनुकूलित करें' : 'Configure Duel',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.cardDark : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.quiz_rounded, color: AppColors.primary, size: 24),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isBn ? 'ট্রিভিয়া কুইজ' : isHi ? 'त्रिविया क्विज़' : 'Trivia Duel',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isBn ? 'সাধারণ জ্ঞান ও বুদ্ধিমত্তা' : isHi ? 'सामान्य ज्ञान और बुद्धि' : 'General Knowledge & Intellect',
+                              style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  isBn 
+                      ? 'প্রশ্নের সংখ্যা নির্বাচন করুন' 
+                      : isHi 
+                          ? 'प्रश्नों की संख्या चुनें' 
+                          : 'Choose Number of Questions',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(child: _buildCountButton(5)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildCountButton(10)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: _buildCountButton(15)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildCountButton(20)),
+                  ],
+                ),
+                const SizedBox(height: 48),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_isOnlineMode) {
+                      _createOnlineRoom(user);
+                    } else {
+                      _startOfflineMode();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    isBn 
+                        ? 'যুদ্ধ শুরু করুন' 
+                        : isHi 
+                            ? 'युद्ध शुरू करें' 
+                            : 'START BATTLE',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCountButton(int count) {
+    final isSelected = _selectedQuestionCount == count;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return AnimatedScaleButton(
+      onTap: () {
+        setState(() {
+          _selectedQuestionCount = count;
+        });
+      },
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withValues(alpha: 0.15)
+              : isDark
+                  ? AppColors.cardDark
+                  : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : isDark
+                    ? Colors.white10
+                    : Colors.black.withValues(alpha: 0.05),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '$count',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
+            color: isSelected
+                ? AppColors.primary
+                : isDark
+                    ? Colors.white
+                    : AppColors.textPrimaryLight,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showAnonymousWarning(bool isBn, bool isHi) {
     showDialog(
       context: context,
@@ -1074,6 +1634,27 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(isBn ? 'বন্ধ করুন' : isHi ? 'बंद करें' : 'Close'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              await ref.read(authServiceProvider).upgradeAnonymousAccount();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              isBn
+                  ? 'অ্যাকাউন্ট সংযুক্ত করুন'
+                  : isHi
+                      ? 'खाता लिंक करें'
+                      : 'Link Account',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -1097,7 +1678,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           SimpleDialogOption(
             onPressed: () {
               Navigator.pop(context);
-              _createOnlineRoom(user);
+              _navigateToSelectGame(true);
             },
             child: Row(
               children: [
@@ -1300,8 +1881,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           ),
         ),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1480,8 +2062,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           ),
         ),
         Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1577,57 +2160,274 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                isBn ? 'লাইভ কুইজ যুদ্ধ' : isHi ? 'लाइव क्विज़ युद्ध' : 'Live Quiz Battle',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey),
+              Row(
+                children: [
+                  const Icon(Icons.bolt_rounded, color: AppColors.primary, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    isBn ? 'অ্যারেনা' : isHi ? 'एरिना' : 'ARENA',
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: AppColors.primary, letterSpacing: 0.5),
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.grey),
-                onPressed: () => _showExitDialog(context),
+              Row(
+                children: [
+                  // Global Match Timer Countdown Capsule
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.timer_rounded, color: AppColors.error, size: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${_matchTimeRemaining ~/ 60}:${(_matchTimeRemaining % 60).toString().padLeft(2, '0')}',
+                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: AppColors.error),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      isBn 
+                          ? 'প্রশ্ন ${_currentQuestion + 1}/$_totalQuestions' 
+                          : isHi 
+                              ? 'प्रश्न ${_currentQuestion + 1}/$_totalQuestions' 
+                              : 'QUESTION ${_currentQuestion + 1}/$_totalQuestions',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: AppColors.primary),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                    onPressed: () => _showExitDialog(context),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        // Battle Header Progress Row
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              // Player Score Slot
-              Expanded(
-                child: _BattleScoreBar(
-                  label: user?.displayName ?? 'You',
-                  score: _playerScore,
-                  color: AppColors.primary,
-                  isDark: isDark,
-                  avatarUrl: user?.photoUrl ?? '',
-                  currentProgress: '${_currentQuestion + 1}/${_totalQuestions}',
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.cardDark,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.outlineVariant, width: 1),
+            ),
+            child: Row(
+              children: [
+                // Me / Player A
+                Expanded(
+                  child: Column(
+                    children: [
+                      Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.primary, width: 2),
+                                image: (user?.photoUrl ?? '').isNotEmpty
+                                    ? DecorationImage(
+                                        image: NetworkImage(user!.photoUrl!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: (user?.photoUrl ?? '').isEmpty
+                                  ? const Icon(Icons.person_rounded, color: AppColors.primary, size: 32)
+                                  : null,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'YOU',
+                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.black),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        user?.displayName ?? 'You',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$_playerScore',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
+                // VS Divider
+                Column(
+                  children: [
+                    const Text(
+                      'VS',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.white24,
+                      ),
+                    ),
+                    if (_mySeriesWins > 0 || _opponentSeriesWins > 0) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '$_mySeriesWins - $_opponentSeriesWins',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Container(width: 32, height: 1, color: AppColors.outlineVariant),
+                  ],
                 ),
-                child: const Icon(Icons.bolt_rounded, color: AppColors.warning, size: 20),
-              ),
-              const SizedBox(width: 8),
-              // Opponent Score Slot
-              Expanded(
-                child: _BattleScoreBar(
-                  label: _opponentName,
-                  score: _opponentScore,
-                  color: AppColors.error,
-                  isDark: isDark,
-                  avatarUrl: _opponentAvatar,
-                  currentProgress: '${min(_opponentCurrentQuestion + 1, _totalQuestions)}/${_totalQuestions}',
+                // Opponent / Player B
+                Expanded(
+                  child: Column(
+                    children: [
+                      Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.outlineVariant, width: 2),
+                                image: _opponentAvatar.isNotEmpty
+                                    ? DecorationImage(
+                                        image: NetworkImage(_opponentAvatar),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: _opponentAvatar.isEmpty
+                                  ? const Icon(Icons.person_rounded, color: Colors.white24, size: 32)
+                                  : null,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.outlineVariant,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'OPP',
+                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white70),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _opponentName,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white70),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$_opponentScore',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white70),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+
+        // Linear Progress Timer Bar
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Container(
+            height: 4,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceElevatedDark,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: ((_currentQuestion + 1) / _totalQuestions).clamp(0.0, 1.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_showIdleWarning)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: PulseWidget(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.error, width: 1.5),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      isBn 
+                          ? 'জলদি উত্তর দিন! ${40 - _idleSecondsElapsed} সেকেন্ডে শেষ হবে'
+                          : isHi 
+                              ? 'जल्दी उत्तर दें! ${40 - _idleSecondsElapsed} सेकंड में समाप्त होगा'
+                              : 'Hurry! Battle ends in ${40 - _idleSecondsElapsed}s if no response',
+                      style: const TextStyle(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 12),
 
         // Live Question / Wait block
         Expanded(
@@ -1642,29 +2442,24 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                         width: double.infinity,
                         padding: const EdgeInsets.all(22),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.cardDark : Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.08)
-                                : Colors.black.withValues(alpha: 0.05),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.06),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
+                          color: AppColors.surfaceElevatedDark,
+                          borderRadius: BorderRadius.circular(16),
+                          border: const Border(
+                            bottom: BorderSide(
+                              color: AppColors.secondaryDark, // Indigo bottom accent
+                              width: 4,
                             ),
-                          ],
+                          ),
                         ),
                         child: Text(
                           questionText,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            height: 1.5,
-                            color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                          style: const TextStyle(
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w600,
+                            height: 1.45,
+                            color: Colors.white,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -1834,7 +2629,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                           if (_roomId != null) {
                             final newQs = LocalQuizData.getAllQuestionsForMode('GENERAL');
                             newQs.shuffle();
-                            final questionsToSet = newQs.take(5).toList();
+                            final questionsToSet = newQs
+                                .take(_totalQuestions)
+                                .map((q) => q.shuffleOptions())
+                                .toList();
                             BattleService().acceptRematch(_roomId!, questionsToSet);
                           }
                         },
@@ -1943,7 +2741,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           if (_roomId != null) {
             final newQs = LocalQuizData.getAllQuestionsForMode('GENERAL');
             newQs.shuffle();
-            final questionsToSet = newQs.take(5).toList();
+            final questionsToSet = newQs
+                .take(_totalQuestions)
+                .map((q) => q.shuffleOptions())
+                .toList();
             BattleService().acceptRematch(_roomId!, questionsToSet);
           }
         },
@@ -1961,8 +2762,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
 
   Widget _buildWaitingForOpponentView(bool isDark, bool isBn, bool isHi) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -1977,6 +2779,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
             const SizedBox(height: 24),
             Text(
               isBn ? 'প্রতিপক্ষের জন্য অপেক্ষা করা হচ্ছে...' : isHi ? 'प्रतिद्वंद्वी की प्रतीक्षा कर रहा है...' : 'Waiting for opponent...',
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -2360,44 +3163,43 @@ class _BattleOptionTile extends StatelessWidget {
     this.onTap,
   });
 
-  static const _labels = ['A', 'B', 'C', 'D'];
-  static const _colors = [
-    Color(0xFF6366F1),
-    Color(0xFF10B981),
-    Color(0xFFF59E0B),
-    Color(0xFFEF4444),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    Color getColor() {
-      if (isCorrect) return AppColors.success;
-      if (isWrong) return AppColors.error;
-      if (isSelected) return _colors[index % _colors.length];
-      return isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white;
+    Color getBgColor() {
+      if (isCorrect) return const Color(0xFF047857); // emerald dark
+      if (isWrong) return const Color(0xFFB91C1C); // red dark
+      if (isSelected) return AppColors.primary.withValues(alpha: 0.15);
+      return isDark ? AppColors.cardDark : Colors.white;
+    }
+
+    Color getBorderColor() {
+      if (isCorrect) return const Color(0xFF10B981);
+      if (isWrong) return const Color(0xFFEF4444);
+      if (isSelected) return AppColors.primary;
+      return isDark ? AppColors.outlineVariant : Colors.black12;
+    }
+
+    Color getTextColor() {
+      if (isCorrect || isWrong) return Colors.white;
+      if (isSelected) return AppColors.primary;
+      return isDark ? Colors.white : AppColors.textPrimaryLight;
     }
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          color: isSelected || isCorrect || isWrong
-              ? getColor().withValues(alpha: 0.15)
-              : (isDark ? AppColors.cardDark : Colors.white),
-          borderRadius: BorderRadius.circular(16),
+          color: getBgColor(),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected || isCorrect || isWrong
-                ? getColor()
-                : (isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : Colors.grey.withValues(alpha: 0.15)),
-            width: isSelected || isCorrect || isWrong ? 2 : 1.5,
+            color: getBorderColor(),
+            width: isSelected || isCorrect || isWrong ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.02),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -2405,43 +3207,27 @@ class _BattleOptionTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Prefix badge
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: isSelected || isCorrect || isWrong
-                    ? getColor()
-                    : _colors[index % _colors.length].withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                _labels[index % _labels.length],
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                  color: isSelected || isCorrect || isWrong
-                      ? Colors.white
-                      : _colors[index % _colors.length],
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 text,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                  fontSize: 14.5,
+                  color: getTextColor(),
                 ),
               ),
             ),
+            const SizedBox(width: 8),
             if (isCorrect)
-              const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
-            if (isWrong)
-              const Icon(Icons.cancel_rounded, color: AppColors.error, size: 20),
+              const Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 20)
+            else if (isWrong)
+              const Icon(Icons.cancel_outlined, color: Colors.white, size: 20)
+            else
+              Icon(
+                Icons.chevron_right_rounded,
+                color: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.3),
+                size: 20,
+              ),
           ],
         ),
       ),

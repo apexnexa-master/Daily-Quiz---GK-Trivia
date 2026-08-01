@@ -14,6 +14,7 @@ import '../presentation/screens/onboarding_screen.dart';
 // Premium screen - not used
 // import '../presentation/screens/premium_screen.dart';
 import '../presentation/screens/admin_screen.dart';
+import '../presentation/screens/games/game_placeholder_screen.dart';
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
@@ -63,6 +64,15 @@ class AppRouter {
       // Premium route - commented out as not required
       // case premium:
       //   return _build(const PremiumScreen(), settings);
+      case '/game-placeholder':
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        return _build(
+          GamePlaceholderScreen(
+            title: args['title'] ?? 'Game Mode',
+            description: args['description'] ?? 'Coming soon!',
+          ),
+          settings,
+        );
       case admin:
         return _build(const AdminScreen(), settings);
       default:

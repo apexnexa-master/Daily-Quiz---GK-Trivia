@@ -13,7 +13,8 @@ import '../widgets/shimmer_loading.dart';
 final leaderboardTabProvider = StateProvider.autoDispose<int>((ref) => 0);
 
 class LeaderboardScreen extends ConsumerWidget {
-  const LeaderboardScreen({super.key});
+  final bool isTab;
+  const LeaderboardScreen({super.key, this.isTab = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,11 +90,13 @@ class LeaderboardScreen extends ConsumerWidget {
         children: [
           Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const SizedBox(width: 4),
+              if (isTab != true) ...[
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 4),
+              ],
               Text(
                 isBn ? 'লিডারবোর্ড' : isHi ? 'लीडरबोर्ड' : 'Leaderboard',
                 style: const TextStyle(

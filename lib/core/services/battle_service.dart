@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/firestore_models.dart';
 import '../../data/local_quiz_data.dart';
+import 'question_service.dart';
 
 class BattleService {
   static final BattleService _instance = BattleService._internal();
@@ -16,20 +17,21 @@ class BattleService {
     return _firestore.collection('battle_rooms').doc(roomId).snapshots();
   }
 
-  // Create a room
   Future<String> createRoom({
     required String playerNickname,
     required String playerId,
     required String avatarUrl,
+    int questionCount = 5,
   }) async {
     final random = Random();
     final roomId = (100000 + random.nextInt(900000)).toString();
 
-    // Select 5 random questions from general quiz mode
-    final localQuestions = LocalQuizData.getAllQuestionsForMode('GENERAL');
-    localQuestions.shuffle();
-    final selectedQuestions = localQuestions
-        .take(5)
+    // Fetch combined questions from Firebase practice questions + local questions
+    final questionsList = await QuestionService.instance.fetchCombinedQuestions(examMode: 'GENERAL');
+    questionsList.shuffle();
+    final selectedQuestions = questionsList
+        .take(questionCount)
+        .map((q) => q.shuffleOptions())
         .map((q) => q.toFirestore()..['id'] = q.id)
         .toList();
 
