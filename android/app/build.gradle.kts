@@ -7,6 +7,13 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
 
@@ -35,8 +42,8 @@ android {
         applicationId = "com.nexasoft.dailyquiz"
         minSdk = 23
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 4
+        versionName = localProperties.getProperty("flutter.versionName") ?: "1.2.0"
         multiDexEnabled = true
     }
 

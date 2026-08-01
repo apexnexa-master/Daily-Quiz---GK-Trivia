@@ -54,7 +54,7 @@ class LeaderboardScreen extends ConsumerWidget {
                   if (filteredEntries.isEmpty) {
                     return _buildEmptyState(isDark, isBn, isHi);
                   }
-                  return _buildContent(filteredEntries, isDark, isBn, isHi);
+                  return _buildContent(filteredEntries, isDark, isBn, isHi, selectedTab != 0);
                 },
                 loading: () => const Padding(
                   padding: EdgeInsets.all(20.0),
@@ -235,7 +235,7 @@ class LeaderboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(List<LeaderboardEntryLocal> entries, bool isDark, bool isBn, bool isHi) {
+  Widget _buildContent(List<LeaderboardEntryLocal> entries, bool isDark, bool isBn, bool isHi, bool isCumulative) {
     final podiumEntries = entries.take(3).toList();
     final listEntries = entries.skip(3).toList();
 
@@ -246,7 +246,7 @@ class LeaderboardScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-              child: _buildPodium(podiumEntries, isDark, isBn, isHi),
+              child: _buildPodium(podiumEntries, isDark, isBn, isHi, isCumulative),
             ),
           ),
         // List entries
@@ -259,7 +259,7 @@ class LeaderboardScreen extends ConsumerWidget {
                 final rank = index + 4;
                 return StaggeredListItem(
                   index: index,
-                  child: _buildListEntry(entry, rank, isDark),
+                  child: _buildListEntry(entry, rank, isDark, isCumulative),
                 );
               },
               childCount: listEntries.length,
@@ -271,7 +271,7 @@ class LeaderboardScreen extends ConsumerWidget {
   }
 
   Widget _buildPodium(
-      List<LeaderboardEntryLocal> podium, bool isDark, bool isBn, bool isHi) {
+      List<LeaderboardEntryLocal> podium, bool isDark, bool isBn, bool isHi, bool isCumulative) {
     // Re-order podium for left-middle-right display: Rank 2, Rank 1, Rank 3
     LeaderboardEntryLocal? rank1 = podium.isNotEmpty ? podium[0] : null;
     LeaderboardEntryLocal? rank2 = podium.length > 1 ? podium[1] : null;
@@ -291,6 +291,7 @@ class LeaderboardScreen extends ConsumerWidget {
               color: const Color(0xFF94A3B8), // Slate
               avatarSize: 56,
               isDark: isDark,
+              isCumulative: isCumulative,
             ),
           )
         else
@@ -307,6 +308,7 @@ class LeaderboardScreen extends ConsumerWidget {
               color: const Color(0xFFFBBF24), // Amber/Gold
               avatarSize: 72,
               isDark: isDark,
+              isCumulative: isCumulative,
             ),
           )
         else
@@ -323,6 +325,7 @@ class LeaderboardScreen extends ConsumerWidget {
               color: const Color(0xFFCD7F32), // Bronze
               avatarSize: 52,
               isDark: isDark,
+              isCumulative: isCumulative,
             ),
           )
         else
@@ -338,6 +341,7 @@ class LeaderboardScreen extends ConsumerWidget {
     required Color color,
     required double avatarSize,
     required bool isDark,
+    required bool isCumulative,
   }) {
     final initials = entry.playerName.isNotEmpty ? entry.playerName[0].toUpperCase() : 'U';
 
@@ -401,7 +405,7 @@ class LeaderboardScreen extends ConsumerWidget {
         
         // Score
         Text(
-          '${entry.score}/10',
+          isCumulative ? '${entry.score} pts' : '${entry.score}/10',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
@@ -446,7 +450,7 @@ class LeaderboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildListEntry(LeaderboardEntryLocal entry, int rank, bool isDark) {
+  Widget _buildListEntry(LeaderboardEntryLocal entry, int rank, bool isDark, bool isCumulative) {
     final initials = entry.playerName.isNotEmpty ? entry.playerName[0].toUpperCase() : 'U';
 
     return Container(
@@ -541,7 +545,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
             ),
             child: Text(
-              '${entry.score}/10',
+              isCumulative ? '${entry.score} pts' : '${entry.score}/10',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,

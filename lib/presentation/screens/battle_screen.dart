@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/app_providers.dart';
 import '../../core/theme/app_colors.dart';
@@ -22,6 +23,7 @@ enum BattleArenaState {
   lobbyWaiting,
   joinRoom,
   battleActive,
+  results,
 }
 
 class BattleScreen extends ConsumerStatefulWidget {
@@ -32,7 +34,7 @@ class BattleScreen extends ConsumerStatefulWidget {
   ConsumerState<BattleScreen> createState() => _BattleScreenState();
 }
 
-class _BattleScreenState extends ConsumerState<BattleScreen> {
+class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBindingObserver {
   // Screen States
   BattleArenaState _arenaState = BattleArenaState.selectMode;
   bool _isOnlineMode = false;
@@ -54,9 +56,25 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
   int _opponentCurrentQuestion = 0;
   bool _opponentFinished = false;
 
+  // Connection & Heartbeat states
+  int? _opponentLastActive;
+  bool _opponentDisconnectedFlag = false;
+  bool _showDisconnectOverlay = false;
+  int _disconnectCountdown = 10;
+  int _lastOpponentUpdateLocalTime = DateTime.now().millisecondsSinceEpoch;
+  bool _isBattleOver = false;
+  bool _opponentForfeited = false;
+  String? _rematchRequestedBy;
+  bool _opponentLeftResults = false;
+  bool _isResultDialogOpen = false;
+  String? _opponentId;
+
   // Timers
   Timer? _searchTimer;
   Timer? _opponentSimTimer;
+  Timer? _heartbeatTimer;
+  Timer? _connectionMonitorTimer;
+  Timer? _disconnectCountdownTimer;
 
   // Controllers
   final TextEditingController _codeController = TextEditingController();
@@ -65,6 +83,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     if (widget.roomId != null) {
       Future.microtask(() async {
         final user = await ref.read(currentUserProvider.future);
@@ -79,14 +98,23 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
           _showLobbyAuthRequiredDialog(lang);
         }
       });
+    } else {
+      Future.microtask(() async {
+        final user = await ref.read(currentUserProvider.future);
+        _checkActiveBattleRoom(user);
+      });
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _roomSubscription?.cancel();
     _searchTimer?.cancel();
     _opponentSimTimer?.cancel();
+    _heartbeatTimer?.cancel();
+    _connectionMonitorTimer?.cancel();
+    _disconnectCountdownTimer?.cancel();
     _codeController.dispose();
     super.dispose();
   }
@@ -100,9 +128,14 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
       _playerScore = 0;
       _opponentScore = 0;
       _opponentName = 'Training Bot';
+      _opponentId = null;
       _currentQuestion = 0;
       _selectedAnswer = null;
       _isAnswered = false;
+      _isBattleOver = false;
+      _opponentForfeited = false;
+      _rematchRequestedBy = null;
+      _isResultDialogOpen = false;
     });
 
     _searchTimer = Timer(const Duration(seconds: 2), () {
@@ -137,9 +170,14 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
       _isOnlineMode = true;
       _playerScore = 0;
       _opponentScore = 0;
+      _opponentId = null;
       _currentQuestion = 0;
       _selectedAnswer = null;
       _isAnswered = false;
+      _isBattleOver = false;
+      _opponentForfeited = false;
+      _rematchRequestedBy = null;
+      _isResultDialogOpen = false;
     });
 
     try {
@@ -152,6 +190,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
       setState(() {
         _roomId = roomId;
       });
+      await _saveActiveBattleRoom(roomId);
 
       _subscribeToRoom(roomId, user.uid);
     } catch (e, stack) {
@@ -195,12 +234,18 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
           _isOnlineMode = true;
           _playerScore = 0;
           _opponentScore = 0;
+          _opponentId = null;
           _currentQuestion = 0;
           _selectedAnswer = null;
           _isAnswered = false;
           _arenaState = BattleArenaState.battleActive;
           _isJoining = false;
+          _isBattleOver = false;
+          _opponentForfeited = false;
+          _rematchRequestedBy = null;
+          _isResultDialogOpen = false;
         });
+        await _saveActiveBattleRoom(code);
 
         _subscribeToRoom(code, user?.uid ?? 'guest_uid');
       } else {
@@ -225,13 +270,78 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
   void _subscribeToRoom(String roomId, String myUid) {
     _roomSubscription?.cancel();
     _roomSubscription = BattleService().watchRoom(roomId).listen((snapshot) {
-      if (!snapshot.exists || !mounted) return;
+      if (!mounted) return;
+      if (!snapshot.exists) {
+        if (_arenaState == BattleArenaState.battleActive) {
+          // Room deleted / Opponent forfeited during battle -> Declare forfeit victory
+          _endBattle();
+        } else if (_arenaState == BattleArenaState.lobbyWaiting) {
+          // Room deleted / Host left during lobby
+          setState(() {
+            _arenaState = BattleArenaState.selectMode;
+            _roomId = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('The host closed the room or left.')),
+          );
+        } else if (_arenaState == BattleArenaState.results) {
+          setState(() {
+            _opponentLeftResults = true;
+          });
+        }
+        return;
+      }
 
       final data = snapshot.data();
       if (data == null) return;
 
       final status = data['status'];
       final players = Map<String, dynamic>.from(data['players'] ?? {});
+      final rematchReq = data['rematchRequestedBy'] as String?;
+
+      if (rematchReq != null && rematchReq != myUid && _rematchRequestedBy != rematchReq) {
+        if (_arenaState == BattleArenaState.results) {
+          final lang = ref.read(languageProvider);
+          final isBn = lang == 'bn';
+          final isHi = lang == 'hi';
+          
+          // Find opponent name
+          String? oppId;
+          players.forEach((key, val) {
+            if (key != myUid) oppId = key;
+          });
+          final oppName = oppId != null ? (players[oppId]['name'] ?? 'Opponent') : 'Opponent';
+          
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(isBn ? '$oppName রিম্যাচ খেলতে চায়!' : isHi ? '$oppName रीमैच खेलना चाहता है!' : '$oppName wants a rematch!'),
+                  backgroundColor: AppColors.primary,
+                  behavior: SnackBarBehavior.floating,
+                  action: SnackBarAction(
+                    label: isBn ? 'খেলুন' : isHi ? 'स्वीकारें' : 'Accept',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      if (_roomId != null) {
+                        final newQs = LocalQuizData.getAllQuestionsForMode('GENERAL');
+                        newQs.shuffle();
+                        final questionsToSet = newQs.take(5).toList();
+                        BattleService().acceptRematch(_roomId!, questionsToSet);
+                      }
+                    },
+                  ),
+                  duration: const Duration(seconds: 8),
+                ),
+              );
+            }
+          });
+        }
+      }
+
+      setState(() {
+        _rematchRequestedBy = rematchReq;
+      });
 
       // Parse opponent info
       String? oppId;
@@ -243,24 +353,71 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
 
       if (oppId != null) {
         final oppData = players[oppId];
+        final newLastActive = oppData['lastActive'];
+        final newIsDisconnected = oppData['isDisconnected'] ?? false;
+        final newScore = oppData['score'] ?? 0;
+        final newQuestion = oppData['currentQuestion'] ?? 0;
+        final newForfeited = oppData['hasForfeited'] ?? false;
+        final newLeft = oppData['hasLeft'] ?? false;
+        
+        final hasChanged = _opponentLastActive != newLastActive ||
+            _opponentDisconnectedFlag != newIsDisconnected ||
+            _opponentScore != newScore ||
+            _opponentCurrentQuestion != newQuestion ||
+            _opponentLeftResults != newLeft ||
+            _opponentForfeited != newForfeited;
+
         setState(() {
+          _opponentId = oppId;
           _opponentName = oppData['name'] ?? 'Opponent';
           _opponentAvatar = oppData['avatar'] ?? '';
-          _opponentScore = oppData['score'] ?? 0;
-          _opponentCurrentQuestion = oppData['currentQuestion'] ?? 0;
+          _opponentScore = newScore;
+          _opponentCurrentQuestion = newQuestion;
           _opponentFinished = oppData['isFinished'] ?? false;
+          _opponentLastActive = newLastActive;
+          _opponentDisconnectedFlag = newIsDisconnected;
+          _opponentForfeited = newForfeited;
+          if (newLeft) {
+            _opponentLeftResults = true;
+          }
+          
+          if (hasChanged) {
+            _lastOpponentUpdateLocalTime = DateTime.now().millisecondsSinceEpoch;
+          }
         });
+
+        if (newForfeited && _arenaState == BattleArenaState.battleActive) {
+          _endBattle();
+          return;
+        }
       }
 
       // If status transitions to playing
-      if (status == 'playing' && _arenaState == BattleArenaState.lobbyWaiting) {
+      if (status == 'playing' && (_arenaState == BattleArenaState.lobbyWaiting || _questions.isEmpty || _isBattleOver)) {
         // Parse questions from room
         final list = List<dynamic>.from(data['questions'] ?? []);
         setState(() {
           _questions = list.map((q) => QuestionModel.fromMap(Map<String, dynamic>.from(q))).toList();
           _totalQuestions = _questions.length;
           _arenaState = BattleArenaState.battleActive;
+          _playerScore = 0;
+          _opponentScore = 0;
+          _currentQuestion = 0;
+          _selectedAnswer = null;
+          _isAnswered = false;
+          _isBattleOver = false;
+          _opponentForfeited = false;
+          _opponentFinished = false;
+          _rematchRequestedBy = null;
+          _opponentLeftResults = false;
         });
+
+        if (_isResultDialogOpen && mounted) {
+          Navigator.of(context).pop(); // Close results dialog if somehow open
+          _isResultDialogOpen = false;
+        }
+
+        _startConnectionMonitoring(roomId, myUid);
       }
 
       // If status transitions to finished, or opponent scores exceed
@@ -329,21 +486,357 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
 
   void _endBattle() {
     _opponentSimTimer?.cancel();
-    _roomSubscription?.cancel();
-    if (mounted) {
-      _showResultDialog();
+    _heartbeatTimer?.cancel();
+    _connectionMonitorTimer?.cancel();
+    _disconnectCountdownTimer?.cancel();
+    _clearActiveBattleRoom();
+    setState(() {
+      _isBattleOver = true;
+      _arenaState = BattleArenaState.results;
+    });
+
+    // Check if opponent already requested a rematch before we finished
+    final user = ref.read(currentUserProvider).value;
+    if (user != null && _rematchRequestedBy != null && _rematchRequestedBy != user.uid) {
+      final lang = ref.read(languageProvider);
+      final isBn = lang == 'bn';
+      final isHi = lang == 'hi';
+      final oppName = _opponentName.isNotEmpty ? _opponentName : 'Opponent';
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(isBn ? '$oppName রিম্যাচ খেলতে চায়!' : isHi ? '$oppName रीमैच खेलना चाहता है!' : '$oppName wants a rematch!'),
+              backgroundColor: AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: isBn ? 'খেলুন' : isHi ? 'स्वीकारें' : 'Accept',
+                textColor: Colors.white,
+                onPressed: () {
+                  if (_roomId != null) {
+                    final newQs = LocalQuizData.getAllQuestionsForMode('GENERAL');
+                    newQs.shuffle();
+                    final questionsToSet = newQs.take(5).toList();
+                    BattleService().acceptRematch(_roomId!, questionsToSet);
+                  }
+                },
+              ),
+              duration: const Duration(seconds: 8),
+            ),
+          );
+        }
+      });
     }
   }
 
-  void _leaveRoom() {
+  void _leaveRoom({bool deleteDoc = true}) {
     if (_roomId != null) {
-      BattleService().deleteRoom(_roomId!);
+      if (deleteDoc) {
+        BattleService().deleteRoom(_roomId!);
+      } else {
+        final user = ref.read(currentUserProvider).value;
+        if (user != null) {
+          BattleService().markPlayerLeft(_roomId!, user.uid);
+        }
+      }
     }
     _roomSubscription?.cancel();
+    _heartbeatTimer?.cancel();
+    _connectionMonitorTimer?.cancel();
+    _disconnectCountdownTimer?.cancel();
     setState(() {
       _arenaState = BattleArenaState.selectMode;
       _roomId = null;
+      _showDisconnectOverlay = false;
+      _opponentLeftResults = false;
+      _opponentId = null;
     });
+  }
+
+  // --- Connection Monitoring & Lifecycle Observer ---
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final user = ref.read(currentUserProvider).value;
+    if (user == null || _roomId == null || !_isOnlineMode) return;
+
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      BattleService().updateConnectionStatus(_roomId!, user.uid, false);
+    } else if (state == AppLifecycleState.resumed) {
+      BattleService().updateConnectionStatus(_roomId!, user.uid, true);
+    }
+  }
+
+  void _startConnectionMonitoring(String roomId, String myUid) {
+    _heartbeatTimer?.cancel();
+    _connectionMonitorTimer?.cancel();
+    _disconnectCountdownTimer?.cancel();
+    
+    _lastOpponentUpdateLocalTime = DateTime.now().millisecondsSinceEpoch;
+
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_roomId != null && _isOnlineMode) {
+        BattleService().updateHeartbeat(_roomId!, myUid);
+      }
+    });
+
+    _connectionMonitorTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (!_isOnlineMode || _roomId == null || _arenaState != BattleArenaState.battleActive) return;
+      
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final diff = now - _lastOpponentUpdateLocalTime;
+      final isOppDisconnected = _opponentDisconnectedFlag || diff > 20000;
+      
+      if (isOppDisconnected && !_opponentFinished) {
+        if (!_showDisconnectOverlay) {
+          setState(() {
+            _showDisconnectOverlay = true;
+            _disconnectCountdown = 10;
+          });
+          _startDisconnectCountdown();
+        }
+      } else {
+        if (_showDisconnectOverlay) {
+          setState(() {
+            _showDisconnectOverlay = false;
+          });
+          _disconnectCountdownTimer?.cancel();
+        }
+      }
+    });
+  }
+
+  void _startDisconnectCountdown() {
+    _disconnectCountdownTimer?.cancel();
+    _disconnectCountdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_disconnectCountdown > 1) {
+        setState(() {
+          _disconnectCountdown--;
+        });
+      } else {
+        _handleOpponentForfeit();
+      }
+    });
+  }
+
+  void _handleOpponentForfeit() {
+    _disconnectCountdownTimer?.cancel();
+    _connectionMonitorTimer?.cancel();
+    _heartbeatTimer?.cancel();
+    
+    setState(() {
+      _showDisconnectOverlay = false;
+      _playerScore = _totalQuestions; // Max score for victory
+      _opponentFinished = true;
+      _opponentForfeited = true;
+    });
+    
+    if (_roomId != null && _isOnlineMode && _opponentId != null) {
+      BattleService().updateProgress(
+        roomId: _roomId!,
+        playerId: _opponentId!,
+        score: _opponentScore,
+        currentQuestion: _opponentCurrentQuestion,
+        isFinished: true,
+        hasForfeited: true,
+      );
+    }
+    
+    _endBattle();
+  }
+
+  // --- Active Battle Room Persistence & Rejoin Logic ---
+  Future<void> _saveActiveBattleRoom(String roomId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('active_battle_room_id', roomId);
+  }
+
+  Future<void> _clearActiveBattleRoom() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('active_battle_room_id');
+  }
+
+  Future<void> _checkActiveBattleRoom(UserModel? user) async {
+    if (user == null) return;
+    
+    final prefs = await SharedPreferences.getInstance();
+    final roomId = prefs.getString('active_battle_room_id');
+    
+    if (roomId != null && mounted) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('battle_rooms')
+            .doc(roomId)
+            .get();
+            
+        if (doc.exists) {
+          final data = doc.data()!;
+          final status = data['status'];
+          final players = Map<String, dynamic>.from(data['players'] ?? {});
+          
+          if (status == 'playing' && 
+              players.containsKey(user.uid) && 
+              players[user.uid]['isFinished'] == false) {
+            
+            if (mounted) {
+              _showRejoinDialog(roomId, user, players[user.uid]['score'] ?? 0, players[user.uid]['currentQuestion'] ?? 0);
+            }
+            return;
+          }
+        }
+      } catch (_) {}
+      
+      await _clearActiveBattleRoom();
+    }
+  }
+
+  void _showRejoinDialog(String roomId, UserModel user, int currentScore, int currentQuestion) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+          title: const Text(
+            'Active Battle Found!',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            'You were in the middle of an online match. Would you like to rejoin and continue playing?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                BattleService().updateProgress(
+                  roomId: roomId,
+                  playerId: user.uid,
+                  score: 0,
+                  currentQuestion: 5,
+                  isFinished: true,
+                );
+                _clearActiveBattleRoom();
+              },
+              child: const Text('Forfeit', style: TextStyle(color: Colors.red)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _rejoinMatch(roomId, user, currentScore, currentQuestion);
+              },
+              child: const Text('Rejoin'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _rejoinMatch(String roomId, UserModel user, int currentScore, int currentQuestion) async {
+    setState(() {
+      _roomId = roomId;
+      _isOnlineMode = true;
+      _playerScore = currentScore;
+      _currentQuestion = currentQuestion;
+      _selectedAnswer = null;
+      _isAnswered = false;
+      _isJoining = true;
+      _isBattleOver = false;
+      _opponentForfeited = false;
+      _rematchRequestedBy = null;
+      _isResultDialogOpen = false;
+    });
+
+    try {
+      await BattleService().updateConnectionStatus(roomId, user.uid, true);
+      
+      final doc = await FirebaseFirestore.instance
+          .collection('battle_rooms')
+          .doc(roomId)
+          .get();
+          
+      if (doc.exists) {
+        final data = doc.data()!;
+        final list = List<dynamic>.from(data['questions'] ?? []);
+        setState(() {
+          _questions = list.map((q) => QuestionModel.fromMap(Map<String, dynamic>.from(q))).toList();
+          _totalQuestions = _questions.length;
+          _arenaState = BattleArenaState.battleActive;
+          _isJoining = false;
+        });
+
+        _subscribeToRoom(roomId, user.uid);
+        _startConnectionMonitoring(roomId, user.uid);
+      }
+    } catch (e) {
+      setState(() {
+        _isJoining = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to rejoin: $e')),
+      );
+    }
+  }
+
+  void _showExitDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+          title: const Text(
+            'Quit Battle?',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            'If you quit now, you will forfeit this match, and your opponent will win automatically.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _forfeitMatch();
+              },
+              child: const Text('Quit & Forfeit'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _forfeitMatch() {
+    final user = ref.read(currentUserProvider).value;
+    if (_roomId != null && _isOnlineMode && user != null) {
+      BattleService().updateProgress(
+        roomId: _roomId!,
+        playerId: user.uid,
+        score: 0,
+        currentQuestion: _totalQuestions,
+        isFinished: true,
+        hasForfeited: true,
+      );
+    }
+    _clearActiveBattleRoom();
+    _leaveRoom(deleteDoc: false);
   }
 
   // --- Share Invite link ---
@@ -368,15 +861,84 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
     final isHi = lang == 'hi';
     final user = ref.watch(currentUserProvider).value;
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
+    return PopScope(
+      canPop: !_isOnlineMode || _arenaState == BattleArenaState.selectMode || _isBattleOver,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (!didPop) {
+          _showExitDialog(context);
+        }
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
+          ),
+          child: Stack(
+            children: [
+              SafeArea(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: _buildStateView(isDark, isBn, isHi, user),
+                ),
+              ),
+              if (_showDisconnectOverlay)
+                _buildDisconnectOverlay(isDark, isBn, isHi),
+            ],
+          ),
         ),
-        child: SafeArea(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _buildStateView(isDark, isBn, isHi, user),
+      ),
+    );
+  }
+
+  Widget _buildDisconnectOverlay(bool isDark, bool isBn, bool isHi) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.7),
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.cardDark : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const PulseWidget(
+                child: Icon(Icons.wifi_off_rounded, size: 64, color: AppColors.error),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                isBn ? 'সংযোগ বিচ্ছিন্ন হয়েছে!' : isHi ? 'कनेक्शन टूट गया!' : 'Opponent Disconnected!',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                isBn
+                    ? 'আপনার প্রতিপক্ষ সংযোগ ফিরে পাওয়ার চেষ্টা করছে...\n$_disconnectCountdown সেকেন্ডের মধ্যে খেলা শেষ হবে।'
+                    : isHi
+                        ? 'आपका प्रतिद्वंद्वी पुनः कनेक्ट होने का प्रयास कर रहा है...\n$_disconnectCountdown सेकंड में खेल समाप्त हो जाएगा।'
+                        : 'Your opponent is trying to reconnect...\nDeclaring victory in $_disconnectCountdown seconds.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -395,6 +957,8 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
         return _buildJoinRoomView(isDark, isBn, isHi, user);
       case BattleArenaState.battleActive:
         return _buildBattleState(isDark, isBn, isHi, user);
+      case BattleArenaState.results:
+        return _buildResultsView(isDark, isBn, isHi, user);
     }
   }
 
@@ -1007,9 +1571,26 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
 
     return Column(
       children: [
+        // App Bar Row
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isBn ? 'লাইভ কুইজ যুদ্ধ' : isHi ? 'लाइव क्विज़ युद्ध' : 'Live Quiz Battle',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                onPressed: () => _showExitDialog(context),
+              ),
+            ],
+          ),
+        ),
         // Battle Header Progress Row
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
               // Player Score Slot
@@ -1107,6 +1688,275 @@ class _BattleScreenState extends ConsumerState<BattleScreen> {
         ),
       ],
     );
+  }
+
+  Widget _buildResultsView(bool isDark, bool isBn, bool isHi, UserModel? user) {
+    final isWin = _opponentForfeited || _playerScore > _opponentScore;
+    final isDraw = !_opponentForfeited && _playerScore == _opponentScore;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.cardDark : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animated Emoji/Trophy
+              BounceInWidget(
+                child: Text(
+                  isWin ? '🏆' : isDraw ? '🤝' : '💪',
+                  style: const TextStyle(fontSize: 72),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Status text
+              Text(
+                isWin
+                    ? (isBn ? 'আপনার জয়!' : isHi ? 'आपकी जीत!' : 'Victory!')
+                    : isDraw
+                        ? (isBn ? 'ড্র হয়েছে!' : isHi ? 'मुकाबला बराबरी का!' : 'Draw!')
+                        : (isBn ? 'পরাজয়!' : isHi ? 'पराजय!' : 'Defeat!'),
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: isWin
+                      ? AppColors.success
+                      : isDraw
+                          ? AppColors.warning
+                          : AppColors.error,
+                ),
+              ),
+              
+              // Subtitle (Forfeit / Normal)
+              if (_opponentForfeited) ...[
+                const SizedBox(height: 8),
+                Text(
+                  isBn ? 'প্রতিপক্ষ খেলা ছেড়ে দিয়েছে' : isHi ? 'प्रतिद्वंद्वी ने खेल छोड़ दिया' : 'Opponent Forfeited the Match',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.error.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 28),
+              
+              // Score comparison card
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildScoreColumnDialog(user?.displayName ?? 'You', _playerScore, AppColors.primary),
+                  Text(
+                    'vs',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white54 : Colors.grey,
+                    ),
+                  ),
+                  _buildScoreColumnDialog(_opponentName, _opponentScore, AppColors.error),
+                ],
+              ),
+              const SizedBox(height: 28),
+              
+              // XP Reward indicator
+              if (isWin) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(AppIcons.xp, color: AppColors.xp, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        '+${_playerScore * 20} XP',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 28),
+              ],
+              
+              // Real-Time Rematch Prompts
+              if (_isOnlineMode && !_opponentLeftResults && _rematchRequestedBy != null && _rematchRequestedBy != user?.uid) ...[
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        isBn ? 'প্রতিপক্ষ রিম্যাচ খেলতে চায়!' : isHi ? 'प्रतिद्वंद्वी रीमैच चाहता है!' : 'Opponent wants a rematch!',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: () {
+                          if (_roomId != null) {
+                            final newQs = LocalQuizData.getAllQuestionsForMode('GENERAL');
+                            newQs.shuffle();
+                            final questionsToSet = newQs.take(5).toList();
+                            BattleService().acceptRematch(_roomId!, questionsToSet);
+                          }
+                        },
+                        child: Text(isBn ? 'রিম্যাচ খেলুন' : isHi ? 'रीमैच स्वीकारें' : 'Accept Rematch'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Action buttons row
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => _leaveRoom(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text(isBn ? 'বাহির' : isHi ? 'बाहर' : 'Exit'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // Rematch button logic slot
+                  Expanded(
+                    child: _buildRematchButton(isDark, isBn, isHi, user),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRematchButton(bool isDark, bool isBn, bool isHi, UserModel? user) {
+    if (!_isOnlineMode) {
+      // Offline mode: Instant restart!
+      return ElevatedButton(
+        onPressed: _startOfflineMode,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: Text(isBn ? 'আবার খেলুন' : isHi ? 'पुनः खेलें' : 'Rematch'),
+      );
+    }
+
+    if (_opponentLeftResults || _opponentForfeited) {
+      return ElevatedButton(
+        onPressed: null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
+          disabledForegroundColor: isDark ? Colors.white54 : Colors.grey.shade600,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: Text(isBn ? 'প্রতিপক্ষ চলে গেছে' : isHi ? 'प्रतिद्वंद्वी चला गया' : 'Opponent Left'),
+      );
+    }
+
+    // Online mode buttons:
+    if (_rematchRequestedBy == null) {
+      // Nobody requested rematch yet
+      return ElevatedButton(
+        onPressed: () {
+          if (_roomId != null && user != null) {
+            BattleService().requestRematch(_roomId!, user.uid);
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: Text(isBn ? 'রিম্যাচ অনুরোধ' : isHi ? 'रीमैच अनुरोध' : 'Rematch'),
+      );
+    } else if (_rematchRequestedBy == user?.uid) {
+      // We requested rematch, waiting for opponent
+      return PulseWidget(
+        child: ElevatedButton(
+          onPressed: null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isDark ? Colors.white10 : Colors.grey.shade200,
+            disabledForegroundColor: isDark ? Colors.white54 : Colors.grey.shade600,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+          child: Text(isBn ? 'অপেক্ষমাণ...' : isHi ? 'प्रतीक्षारत...' : 'Waiting...'),
+        ),
+      );
+    } else {
+      // Opponent requested, we show a button to Accept!
+      return ElevatedButton(
+        onPressed: () {
+          if (_roomId != null) {
+            final newQs = LocalQuizData.getAllQuestionsForMode('GENERAL');
+            newQs.shuffle();
+            final questionsToSet = newQs.take(5).toList();
+            BattleService().acceptRematch(_roomId!, questionsToSet);
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.success,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: Text(isBn ? 'রিম্যাচ খেলুন' : isHi ? 'रीमैच स्वीकारें' : 'Accept'),
+      );
+    }
   }
 
   Widget _buildWaitingForOpponentView(bool isDark, bool isBn, bool isHi) {

@@ -9,6 +9,7 @@ import '../../core/constants/app_constants.dart';
 import '../../data/models/firestore_models.dart';
 
 import '../../core/services/analytics_service.dart';
+import 'auth_providers.dart';
 
 final quizServiceProvider = Provider<QuizService>((ref) => QuizService());
 final questionServiceProvider = Provider<QuestionService>((ref) => QuestionService.instance);
@@ -90,13 +91,15 @@ class QuizSessionState {
 }
 
 final quizSessionProvider = StateNotifierProvider<QuizSessionNotifier, QuizSessionState?>((ref) {
-  return QuizSessionNotifier(ref.watch(quizServiceProvider), ref.watch(localStatsProvider));
+  return QuizSessionNotifier(ref);
 });
 
 class QuizSessionNotifier extends StateNotifier<QuizSessionState?> {
-  final QuizService _quizService;
-  final LocalStatsService _localStats;
-  QuizSessionNotifier(this._quizService, this._localStats) : super(null);
+  final Ref _ref;
+  QuizSessionNotifier(this._ref) : super(null);
+
+  QuizService get _quizService => _ref.read(quizServiceProvider);
+  LocalStatsService get _localStats => _ref.read(localStatsProvider);
 
   void startQuiz(QuizModel quiz) {
     state = QuizSessionState(
@@ -148,8 +151,18 @@ class QuizSessionNotifier extends StateNotifier<QuizSessionState?> {
       await _localStats.updatePersonalBestIfNeeded(score, state!.quiz.questionCount);
       await _localStats.addToTotalScore(score);
 
-      const playerName = 'You';
+      final user = _ref.read(authServiceProvider).currentUser;
+      final playerName = user?.displayName ?? 'You';
       await _localStats.addScoreToLeaderboard(playerName, score, totalTimeTaken);
+      
+      // Upload to global Firestore leaderboard if online
+      if (user != null) {
+        await _quizService.submitScoreToLeaderboard(
+          playerName: playerName,
+          score: score,
+          timeTaken: totalTimeTaken,
+        );
+      }
 
       state = state!.copyWith(isSubmitting: false, result: result, totalTimeTaken: totalTimeTaken);
       

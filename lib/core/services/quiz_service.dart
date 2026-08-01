@@ -3,6 +3,7 @@
 // COST OPTIMIZATION: cache-first strategy reduces Firestore reads by ~90%.
 // LOCAL FALLBACK: when Firestore has no quiz, returns bundled local questions.
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -14,6 +15,7 @@ import 'question_tracking_service.dart';
 
 class QuizService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
     region: 'asia-south1',
   );
@@ -222,6 +224,39 @@ class QuizService {
       return snap.docs.map((d) => LeaderboardEntry.fromFirestore(d)).toList();
     } on FirebaseException catch (_) {
       return [];
+    }
+  }
+
+  // ── Submit Score to Global Leaderboard (Firestore) ──────────
+  Future<void> submitScoreToLeaderboard({
+    required String playerName,
+    required int score,
+    required int timeTaken,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final now = DateTime.now();
+    final weekNumber = ((now.difference(DateTime(now.year, 1, 1)).inDays + 1) / 7).ceil();
+    final weekId = '${now.year}-W$weekNumber';
+
+    final entryId = '${user.uid}_$today';
+
+    try {
+      await _db.collection(AppConstants.colLeaderboard).doc(entryId).set({
+        'uid': user.uid,
+        'display_name': playerName.isNotEmpty && playerName != 'You' ? playerName : (user.displayName ?? 'Guest'),
+        'photo_url': user.photoURL,
+        'score': score,
+        'time_taken': timeTaken,
+        'quiz_date': today,
+        'week_id': weekId,
+        'exam_mode': 'GENERAL',
+        'rank': 99,
+      }, SetOptions(merge: true));
+    } catch (_) {
+      // Silently ignore write failures (e.g. offline)
     }
   }
 
