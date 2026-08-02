@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import 'admin_service.dart';
 
@@ -108,24 +109,63 @@ class AuthService {
     }
   }
 
-  Future<UserCredential?> upgradeAnonymousAccount() async {
+  Future<UpgradeResult?> upgradeAnonymousAccount() async {
+    GoogleSignInAccount? account;
     try {
-      final GoogleSignInAccount? account = await _authenticateInteractive();
+      account = await _authenticateInteractive();
       if (account == null) return null;
 
       final credential = _firebaseCredentialFromGoogleAccount(account);
       final userCred = await currentUser!.linkWithCredential(credential);
       await _upsertUserDoc(userCred.user!, isAnonymous: false);
       await _syncLocalToCloud(userCred.user!.uid);
-      return userCred;
+      
+      final needsOnboarding = await _checkNeedsOnboarding(userCred.user!);
+      return UpgradeResult(userCredential: userCred, needsOnboarding: needsOnboarding);
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'credential-already-in-use') {
-        final result = await signInWithGoogle();
-        return result?.credential;
+      if (e.code == 'credential-already-in-use' && account != null) {
+        final credential = _firebaseCredentialFromGoogleAccount(account);
+        final userCred = await _auth.signInWithCredential(credential);
+        await _upsertUserDoc(userCred.user!, isAnonymous: false);
+        await _syncLocalToCloud(userCred.user!.uid);
+        
+        final needsOnboarding = await _checkNeedsOnboarding(userCred.user!);
+        return UpgradeResult(userCredential: userCred, needsOnboarding: needsOnboarding);
       }
       throw AuthException(e.message ?? 'Upgrade failed');
     }
   }
+
+  Future<bool> _checkNeedsOnboarding(User user) async {
+    final snap = await _db.collection(AppConstants.colUsers).doc(user.uid).get();
+    bool needsOnboarding = true;
+    if (snap.exists) {
+      final data = snap.data();
+      if (data != null) {
+        final dispName = data['display_name'] as String? ?? '';
+        final photoUrl = data['photo_url'] as String? ?? '';
+        final onboardingComplete = data['onboarding_complete'] as bool? ?? false;
+        
+        if (onboardingComplete && 
+            dispName != 'Guest' && 
+            !dispName.startsWith('User_') && 
+            photoUrl.isNotEmpty) {
+          needsOnboarding = false;
+        }
+      }
+    }
+    
+    if (needsOnboarding) {
+      await _db.collection(AppConstants.colUsers).doc(user.uid).update({
+        'onboarding_complete': false,
+      });
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_complete', false);
+    }
+    
+    return needsOnboarding;
+  }
+
 
   Future<void> signOut() async {
     await _ensureGoogleSignIn();
@@ -136,6 +176,11 @@ class AuthService {
       await Hive.box<String>(AppConstants.hiveBoxUser).clear();
       final bookmarksBox = await Hive.openBox('bookmarks');
       await bookmarksBox.clear();
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('onboarding_complete');
+      await prefs.remove('temp_username');
+      await prefs.remove('temp_photo_url');
     } catch (_) {}
   }
 
@@ -143,12 +188,16 @@ class AuthService {
     final ref = _db.collection(AppConstants.colUsers).doc(user.uid);
     final snap = await ref.get();
 
+    final prefs = await SharedPreferences.getInstance();
+
     if (!snap.exists) {
+      final defaultName = isAnonymous ? 'Guest' : (user.displayName ?? 'User');
+      final defaultPhoto = user.photoURL ?? '';
       await ref.set({
         'uid': user.uid,
-        'display_name': isAnonymous ? 'Guest' : (user.displayName ?? 'User'),
+        'display_name': defaultName,
         'email': user.email,
-        'photo_url': user.photoURL,
+        'photo_url': defaultPhoto,
         'language': AppConstants.defaultLanguage,
         'is_pro': false,
         'is_anonymous': isAnonymous,
@@ -169,8 +218,23 @@ class AuthService {
         'referral_count': 0,
         'unlocked_achievements': [],
         'last_daily_reward': null,
+        'onboarding_complete': isAnonymous ? true : false,
       });
+
+      await prefs.setBool('onboarding_complete', isAnonymous ? true : false);
+      await prefs.setString('temp_username', defaultName);
+      await prefs.setString('temp_photo_url', defaultPhoto);
     } else {
+      final data = snap.data();
+      if (data != null) {
+        final dispName = data['display_name'] as String? ?? (isAnonymous ? 'Guest' : (user.displayName ?? 'User'));
+        final pUrl = data['photo_url'] as String? ?? user.photoURL ?? '';
+        final onboardingComplete = data['onboarding_complete'] as bool? ?? false;
+
+        await prefs.setString('temp_username', dispName);
+        await prefs.setString('temp_photo_url', pUrl);
+        await prefs.setBool('onboarding_complete', isAnonymous ? true : onboardingComplete);
+      }
       await ref.update({
         'last_seen': FieldValue.serverTimestamp(),
         'is_anonymous': isAnonymous,
@@ -240,4 +304,14 @@ class AuthException implements Exception {
   const AuthException(this.message);
   @override
   String toString() => message;
+}
+
+class UpgradeResult {
+  final UserCredential userCredential;
+  final bool needsOnboarding;
+
+  const UpgradeResult({
+    required this.userCredential,
+    required this.needsOnboarding,
+  });
 }

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_animations.dart';
 
 class OptionButton extends StatelessWidget {
   final int index;
@@ -88,13 +89,13 @@ class OptionButton extends StatelessWidget {
       );
     } else if (isSelected) {
       tileBgColor = isDark ? AppColors.primary.withValues(alpha: 0.15) : AppColors.primary.withValues(alpha: 0.08);
-      borderColor = AppColors.primary;
-      textColor = isDark ? Colors.white : AppColors.primary;
-      badgeBgColor = AppColors.primary;
+      borderColor = isDark ? AppColors.primary : AppColors.primaryDark;
+      textColor = isDark ? Colors.white : AppColors.primaryDark;
+      badgeBgColor = isDark ? AppColors.primary : AppColors.primaryDark;
       badgeTextColor = Colors.white;
-      rightIcon = const Icon(
+      rightIcon = Icon(
         Icons.circle_rounded,
-        color: AppColors.primary,
+        color: isDark ? AppColors.primary : AppColors.primaryDark,
         size: 16,
       );
     } else {
@@ -106,7 +107,7 @@ class OptionButton extends StatelessWidget {
       badgeBgColor = isDark
           ? Colors.white.withValues(alpha: 0.06)
           : const Color(0xFFF1F5F9);
-      badgeTextColor = AppColors.primary;
+      badgeTextColor = isDark ? AppColors.primary : AppColors.primaryDark;
     }
 
     Widget container = Semantics(
@@ -114,7 +115,7 @@ class OptionButton extends StatelessWidget {
       selected: isSelected,
       button: true,
       enabled: onTap != null,
-      child: GestureDetector(
+      child: AnimatedScaleButton(
         onTap: onTap,
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 180),

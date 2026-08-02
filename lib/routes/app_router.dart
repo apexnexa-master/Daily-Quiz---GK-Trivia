@@ -11,6 +11,7 @@ import '../presentation/screens/profile_screen.dart';
 import '../presentation/screens/battle_screen.dart';
 import '../presentation/screens/achievements_screen.dart';
 import '../presentation/screens/onboarding_screen.dart';
+import '../presentation/screens/feedback_screen.dart';
 // Premium screen - not used
 // import '../presentation/screens/premium_screen.dart';
 import '../presentation/screens/admin_screen.dart';
@@ -28,6 +29,7 @@ class AppRouter {
   static const String battle = '/battle';
   static const String achievements = '/achievements';
   static const String onboarding = '/onboarding';
+  static const String feedback = '/feedback';
   // Premium route - not used
   // static const String premium = '/premium';
   static const String admin = '/admin';
@@ -55,6 +57,8 @@ class AppRouter {
         return _build(const LeaderboardScreen(), settings);
       case profile:
         return _build(const ProfileScreen(), settings);
+      case feedback:
+        return _build(const FeedbackScreen(), settings);
       case battle:
         return _build(const BattleScreen(), settings);
       case achievements:
@@ -88,7 +92,7 @@ class AppRouter {
     return MaterialPageRoute(
       builder: (_) => OnboardingScreen(
         onComplete: () {
-          navigatorKey.currentState?.pushReplacementNamed(login);
+          navigatorKey.currentState?.pushReplacementNamed(home);
         },
       ),
       settings: settings,

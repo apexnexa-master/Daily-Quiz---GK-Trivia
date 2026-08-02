@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../providers/app_providers.dart';
 
@@ -17,6 +18,157 @@ class ProfileOverview extends ConsumerWidget {
     required this.lang,
     required this.isDark,
   });
+
+  static final List<Map<String, String>> _avatarOptions = [
+    {'name': 'Scholar', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Buster'},
+    {'name': 'Elite', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Felix'},
+    {'name': 'Boy', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Jack'},
+    {'name': 'Scholar F', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Mia'},
+    {'name': 'Tactician', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Zack'},
+    {'name': 'Zen', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Aneka'},
+    {'name': 'Child', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Liam'},
+    {'name': 'Cyber', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Nico'},
+    {'name': 'Explorer', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=George'},
+    {'name': 'Logic', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Luna'},
+    {'name': 'Girl', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Zoe'},
+    {'name': 'Sage', 'url': 'https://api.dicebear.com/7.x/adventurer/png?seed=Arthur'},
+  ];
+
+  void _showEditAvatarDialog(BuildContext context, WidgetRef ref, String? currentPhotoUrl) {
+    bool isLoading = false;
+    String? errorMsg;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (dialogCtx, setModalState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+            title: Row(
+              children: [
+                const Icon(Icons.face_rounded, color: AppColors.primary, size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  'Choose Avatar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (errorMsg != null) ...[
+                    Text(
+                      errorMsg!,
+                      style: const TextStyle(color: AppColors.error, fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  Flexible(
+                    child: GridView.builder(
+                      shrinkWrap: true,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                      ),
+                      itemCount: _avatarOptions.length,
+                      itemBuilder: (context, index) {
+                        final avatar = _avatarOptions[index];
+                        final url = avatar['url']!;
+                        final name = avatar['name']!;
+                        final isSelected = currentPhotoUrl == url;
+
+                        return GestureDetector(
+                          onTap: isLoading
+                              ? null
+                              : () async {
+                                  setModalState(() {
+                                    isLoading = true;
+                                    errorMsg = null;
+                                  });
+
+                                  try {
+                                    final currentUser = FirebaseAuth.instance.currentUser;
+                                    if (currentUser != null) {
+                                      await currentUser.updatePhotoURL(url);
+                                      await FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(currentUser.uid)
+                                          .update({'photo_url': url});
+                                      
+                                      final prefs = await SharedPreferences.getInstance();
+                                      await prefs.setString('temp_photo_url', url);
+                                    }
+                                    ref.invalidate(authStateProvider);
+                                    if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                                  } catch (e) {
+                                    setModalState(() {
+                                      isLoading = false;
+                                      errorMsg = 'Error: $e';
+                                    });
+                                  }
+                                },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.2),
+                                width: isSelected ? 2.5 : 1,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Stack(
+                                children: [
+                                  Image.network(
+                                    url,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.person)),
+                                  ),
+                                  Positioned(
+                                    bottom: 2,
+                                    left: 4,
+                                    child: Text(
+                                      name,
+                                      style: TextStyle(
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white70 : Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isLoading ? null : () => Navigator.pop(dialogCtx),
+                child: const Text('Cancel'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 
   void _showEditUsernameDialog(BuildContext context, WidgetRef ref, String currentName) {
     final controller = TextEditingController(text: currentName);
@@ -224,66 +376,72 @@ class ProfileOverview extends ConsumerWidget {
                   const SizedBox(height: 8),
                   
                   // User Profile Avatar
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [Colors.white, Colors.white.withValues(alpha: 0.4)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: CircleAvatar(
-                          radius: 38,
-                          backgroundImage:
-                              user.photoURL != null && user.photoURL!.isNotEmpty
-                                  ? NetworkImage(user.photoURL!)
-                                  : null,
-                          backgroundColor: Colors.white.withValues(alpha: 0.2),
-                          child: user.photoURL == null || user.photoURL!.isEmpty
-                              ? Text(
-                                  (user.displayName?.isNotEmpty == true
-                                          ? user.displayName!
-                                          : 'U')[0]
-                                      .toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : null,
-                        ),
-                      ),
-                      if (user.isAnonymous)
+                  GestureDetector(
+                    onTap: user.isAnonymous
+                        ? null
+                        : () => _showEditAvatarDialog(context, ref, user.photoURL),
+                    child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
                         Container(
-                          padding: const EdgeInsets.all(5),
+                          padding: const EdgeInsets.all(3),
                           decoration: BoxDecoration(
-                            color: AppColors.warning,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 1.5),
+                            gradient: LinearGradient(
+                              colors: [Colors.white, Colors.white.withValues(alpha: 0.4)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.warning.withValues(alpha: 0.4),
-                                blurRadius: 6,
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.person_outline,
-                              color: Colors.white, size: 12),
+                          child: CircleAvatar(
+                            radius: 38,
+                            backgroundImage:
+                                user.photoURL != null && user.photoURL!.isNotEmpty
+                                    ? NetworkImage(user.photoURL!)
+                                    : null,
+                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                            child: user.photoURL == null || user.photoURL!.isEmpty
+                                ? Text(
+                                    (user.displayName?.isNotEmpty == true
+                                            ? user.displayName!
+                                            : 'U')[0]
+                                        .toUpperCase(),
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : null,
+                          ),
                         ),
-                    ],
+                        if (!user.isAnonymous)
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(Icons.camera_alt_rounded,
+                                color: Colors.black, size: 12),
+                          ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 12),
                   
@@ -300,22 +458,24 @@ class ProfileOverview extends ConsumerWidget {
                           letterSpacing: -0.2,
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _showEditUsernameDialog(context, ref, user.displayName ?? ''),
-                          borderRadius: BorderRadius.circular(100),
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            child: const Icon(
-                              Icons.edit_rounded, 
-                              color: Colors.white70, 
-                              size: 14,
+                      if (!user.isAnonymous) ...[
+                        const SizedBox(width: 4),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showEditUsernameDialog(context, ref, user.displayName ?? ''),
+                            borderRadius: BorderRadius.circular(100),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              child: const Icon(
+                                Icons.edit_rounded, 
+                                color: Colors.white70, 
+                                size: 14,
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                   if (user.email != null && user.email.isNotEmpty) ...[

@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/app_providers.dart';
 import '../providers/auth_providers.dart';
+import '../utils/account_linker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
@@ -349,11 +350,11 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(isBn ? '$oppName রিম্যাচ খেলতে চায়!' : isHi ? '$oppName रीमैच खेलना चाहता है!' : '$oppName wants a rematch!'),
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.surfaceElevatedDark,
                   behavior: SnackBarBehavior.floating,
                   action: SnackBarAction(
                     label: isBn ? 'খেলুন' : isHi ? 'स्वीकारें' : 'Accept',
-                    textColor: Colors.white,
+                    textColor: AppColors.primary,
                     onPressed: () {
                       if (_roomId != null) {
                         final newQs = LocalQuizData.getAllQuestionsForMode('GENERAL');
@@ -554,11 +555,11 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(isBn ? '$oppName রিম্যাচ খেলতে চায়!' : isHi ? '$oppName रीमैच खेलना चाहता है!' : '$oppName wants a rematch!'),
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.surfaceElevatedDark,
               behavior: SnackBarBehavior.floating,
               action: SnackBarAction(
                 label: isBn ? 'খেলুন' : isHi ? 'स्वीकारें' : 'Accept',
-                textColor: Colors.white,
+                textColor: AppColors.primary,
                 onPressed: () {
                   if (_roomId != null) {
                     final newQs = LocalQuizData.getAllQuestionsForMode('GENERAL');
@@ -867,7 +868,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: Colors.black,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () {
@@ -1140,7 +1141,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1238,7 +1239,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -1356,12 +1357,12 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                   decoration: BoxDecoration(
                     color: isLocked 
                         ? Colors.grey.withValues(alpha: 0.1)
-                        : color.withValues(alpha: 0.15),
+                        : (isDark ? color : (color == AppColors.primary ? AppColors.primaryDark : color)).withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     icon,
-                    color: isLocked ? Colors.grey : color,
+                    color: isLocked ? Colors.grey : (isDark ? color : (color == AppColors.primary ? AppColors.primaryDark : color)),
                     size: 28,
                   ),
                 ),
@@ -1593,7 +1594,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? AppColors.primary
+                ? (isDark ? AppColors.primary : AppColors.primaryDark)
                 : isDark
                     ? Colors.white10
                     : Colors.black.withValues(alpha: 0.05),
@@ -1607,7 +1608,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
             fontSize: 18,
             fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
             color: isSelected
-                ? AppColors.primary
+                ? (isDark ? AppColors.primary : AppColors.primaryDark)
                 : isDark
                     ? Colors.white
                     : AppColors.textPrimaryLight,
@@ -1638,7 +1639,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context); // Close dialog
-              await ref.read(authServiceProvider).upgradeAnonymousAccount();
+              await AccountLinker.linkAccount(context, ref);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -1820,12 +1821,12 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 70,
                   height: 70,
                   child: CircularProgressIndicator(
                     strokeWidth: 4.5,
-                    valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                    valueColor: AlwaysStoppedAnimation(isDark ? AppColors.primary : AppColors.primaryDark),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -1956,7 +1957,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                     ),
                   ),
                 ] else ...[
-                  const CircularProgressIndicator(),
+                  CircularProgressIndicator(color: isDark ? AppColors.primary : AppColors.primaryDark),
                 ],
                 const SizedBox(height: 48),
 
@@ -2122,12 +2123,12 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                     onPressed: _isJoining ? null : () => _submitRoomCode(user),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Colors.black,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 0,
                     ),
                     child: _isJoining
-                        ? const CircularProgressIndicator(color: Colors.white)
+                        ? const CircularProgressIndicator(color: Colors.black)
                         : Text(
                             isBn ? 'জয়েন করুন' : isHi ? 'जुड़ें' : 'Join Match',
                             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -2162,11 +2163,11 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
             children: [
               Row(
                 children: [
-                  const Icon(Icons.bolt_rounded, color: AppColors.primary, size: 18),
+                  Icon(Icons.bolt_rounded, color: isDark ? AppColors.primary : AppColors.primaryDark, size: 18),
                   const SizedBox(width: 8),
                   Text(
                     isBn ? 'অ্যারেনা' : isHi ? 'एरिना' : 'ARENA',
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: AppColors.primary, letterSpacing: 0.5),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: isDark ? AppColors.primary : AppColors.primaryDark, letterSpacing: 0.5),
                   ),
                 ],
               ),
@@ -2195,7 +2196,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: (isDark ? AppColors.primary : AppColors.primaryDark).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -2204,7 +2205,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                           : isHi 
                               ? 'प्रश्न ${_currentQuestion + 1}/$_totalQuestions' 
                               : 'QUESTION ${_currentQuestion + 1}/$_totalQuestions',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: AppColors.primary),
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: isDark ? AppColors.primary : AppColors.primaryDark),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -2222,9 +2223,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.cardDark,
+              color: isDark ? AppColors.cardDark : AppColors.cardLight,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.outlineVariant, width: 1),
+              border: Border.all(color: isDark ? AppColors.outlineVariant : Colors.grey.shade300, width: 1),
             ),
             child: Row(
               children: [
@@ -2242,7 +2243,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                               height: 60,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.primary, width: 2),
+                                border: Border.all(color: isDark ? AppColors.primary : AppColors.primaryDark, width: 2),
                                 image: (user?.photoUrl ?? '').isNotEmpty
                                     ? DecorationImage(
                                         image: NetworkImage(user!.photoUrl!),
@@ -2251,7 +2252,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                                     : null,
                               ),
                               child: (user?.photoUrl ?? '').isEmpty
-                                  ? const Icon(Icons.person_rounded, color: AppColors.primary, size: 32)
+                                  ? Icon(Icons.person_rounded, color: isDark ? AppColors.primary : AppColors.primaryDark, size: 32)
                                   : null,
                             ),
                           ),
@@ -2271,14 +2272,14 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                       const SizedBox(height: 8),
                       Text(
                         user?.displayName ?? 'You',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: isDark ? Colors.white : AppColors.textPrimaryLight),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '$_playerScore',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: isDark ? AppColors.primary : AppColors.primaryDark),
                       ),
                     ],
                   ),
@@ -2286,28 +2287,28 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                 // VS Divider
                 Column(
                   children: [
-                    const Text(
+                    Text(
                       'VS',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                         fontStyle: FontStyle.italic,
-                        color: Colors.white24,
+                        color: isDark ? Colors.white24 : Colors.grey.shade400,
                       ),
                     ),
                     if (_mySeriesWins > 0 || _opponentSeriesWins > 0) ...[
                       const SizedBox(height: 4),
                       Text(
                         '$_mySeriesWins - $_opponentSeriesWins',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.primary,
+                          color: isDark ? AppColors.primary : AppColors.primaryDark,
                         ),
                       ),
                     ],
                     const SizedBox(height: 6),
-                    Container(width: 32, height: 1, color: AppColors.outlineVariant),
+                    Container(width: 32, height: 1, color: isDark ? AppColors.outlineVariant : Colors.grey.shade300),
                   ],
                 ),
                 // Opponent / Player B
@@ -2324,7 +2325,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                               height: 60,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.outlineVariant, width: 2),
+                                border: Border.all(color: isDark ? AppColors.outlineVariant : Colors.grey.shade300, width: 2),
                                 image: _opponentAvatar.isNotEmpty
                                     ? DecorationImage(
                                         image: NetworkImage(_opponentAvatar),
@@ -2333,19 +2334,19 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                                     : null,
                               ),
                               child: _opponentAvatar.isEmpty
-                                  ? const Icon(Icons.person_rounded, color: Colors.white24, size: 32)
+                                  ? Icon(Icons.person_rounded, color: isDark ? Colors.white24 : Colors.grey.shade400, size: 32)
                                   : null,
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.outlineVariant,
+                              color: isDark ? AppColors.outlineVariant : Colors.grey.shade300,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Text(
+                            child: Text(
                               'OPP',
-                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Colors.white70),
+                              style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: isDark ? Colors.white70 : AppColors.textSecondaryLight),
                             ),
                           ),
                         ],
@@ -2353,14 +2354,14 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                       const SizedBox(height: 8),
                       Text(
                         _opponentName,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white70),
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: isDark ? Colors.white70 : AppColors.textSecondaryLight),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '$_opponentScore',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white70),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: isDark ? Colors.white70 : AppColors.textSecondaryLight),
                       ),
                     ],
                   ),
@@ -2377,7 +2378,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
             height: 4,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: AppColors.surfaceElevatedDark,
+              color: isDark ? AppColors.surfaceElevatedDark : Colors.grey.shade200,
               borderRadius: BorderRadius.circular(2),
             ),
             child: Align(
@@ -2386,7 +2387,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                 widthFactor: ((_currentQuestion + 1) / _totalQuestions).clamp(0.0, 1.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: isDark ? AppColors.primary : AppColors.primaryDark,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -2438,26 +2439,26 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                   child: Column(
                     children: [
                       // Question text
-                      Container(
+                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(22),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceElevatedDark,
+                          color: isDark ? AppColors.surfaceElevatedDark : AppColors.surfaceElevatedLight,
                           borderRadius: BorderRadius.circular(16),
-                          border: const Border(
+                          border: Border(
                             bottom: BorderSide(
-                              color: AppColors.secondaryDark, // Indigo bottom accent
+                              color: isDark ? AppColors.secondaryDark : AppColors.secondary, // Indigo bottom accent
                               width: 4,
                             ),
                           ),
                         ),
                         child: Text(
                           questionText,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16.5,
                             fontWeight: FontWeight.w600,
                             height: 1.45,
-                            color: Colors.white,
+                            color: isDark ? Colors.white : AppColors.textPrimaryLight,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -2678,7 +2679,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
         onPressed: _startOfflineMode,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: Colors.black,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -2712,7 +2713,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: Colors.black,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -2768,12 +2769,12 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(
+            SizedBox(
               width: 56,
               height: 56,
               child: CircularProgressIndicator(
                 strokeWidth: 4,
-                valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                valueColor: AlwaysStoppedAnimation(isDark ? AppColors.primary : AppColors.primaryDark),
               ),
             ),
             const SizedBox(height: 24),
@@ -2919,7 +2920,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: Colors.black,
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
@@ -3020,7 +3021,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+              foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
@@ -3175,13 +3176,13 @@ class _BattleOptionTile extends StatelessWidget {
     Color getBorderColor() {
       if (isCorrect) return const Color(0xFF10B981);
       if (isWrong) return const Color(0xFFEF4444);
-      if (isSelected) return AppColors.primary;
+      if (isSelected) return isDark ? AppColors.primary : AppColors.primaryDark;
       return isDark ? AppColors.outlineVariant : Colors.black12;
     }
 
     Color getTextColor() {
       if (isCorrect || isWrong) return Colors.white;
-      if (isSelected) return AppColors.primary;
+      if (isSelected) return isDark ? AppColors.primary : AppColors.primaryDark;
       return isDark ? Colors.white : AppColors.textPrimaryLight;
     }
 
@@ -3225,7 +3226,7 @@ class _BattleOptionTile extends StatelessWidget {
             else
               Icon(
                 Icons.chevron_right_rounded,
-                color: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.3),
+                color: isSelected ? (isDark ? AppColors.primary : AppColors.primaryDark) : Colors.grey.withValues(alpha: 0.3),
                 size: 20,
               ),
           ],

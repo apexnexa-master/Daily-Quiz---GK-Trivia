@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/app_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -42,7 +43,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           _adminEmail = result.credential.user?.email ?? '';
         });
       } else {
-        Navigator.pushReplacementNamed(context, '/home');
+        final prefs = await SharedPreferences.getInstance();
+        final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
+        if (mounted) {
+          Navigator.pushReplacementNamed(
+            context,
+            onboardingComplete ? '/home' : '/onboarding',
+          );
+        }
       }
     } catch (e) {
       setState(() {
@@ -104,7 +112,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     try {
       await ref.read(authServiceProvider).signInAnonymously();
-      if (mounted) Navigator.pushReplacementNamed(context, '/home');
+      if (mounted) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('onboarding_complete', true);
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -496,9 +508,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () {
+                        onPressed: () async {
                           _cancelAdmin();
-                          Navigator.pushReplacementNamed(context, '/home');
+                          final prefs = await SharedPreferences.getInstance();
+                          final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
+                          if (mounted) {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              onboardingComplete ? '/home' : '/onboarding',
+                            );
+                          }
                         },
                         child: Text(
                           'Continue as Normal User',

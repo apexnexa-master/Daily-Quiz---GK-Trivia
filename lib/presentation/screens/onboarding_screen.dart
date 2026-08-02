@@ -1,47 +1,75 @@
 // lib/presentation/screens/onboarding_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../providers/app_providers.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   final VoidCallback onComplete;
 
   const OnboardingScreen({super.key, required this.onComplete});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _usernameController = TextEditingController();
-  int _selectedAvatarIndex = 5; // Default to Avatar 6 ("Prime")
+  int _selectedAvatarIndex = 1; // Default to Felix
   bool _isLoading = false;
 
   final List<AvatarOption> _avatars = [
     AvatarOption(
-      name: 'Elite',
-      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDJwTazYlei65w4uEOjSsNStg-LmPZRp35ymd6lSEAViDTgkyDLuyDMJGSPKx7zBZbbAtUhv_OJnABWKrgrz_KfKqgj6Fu_d5JqOVLjQ84QRETVRIpOKOekM8cB7k7-tCpFANUItkBUfUIWUrlfumfhWzauBr7_f0xJptk00Aw5NjtmseWOUFEiUGquICen-_uLcCsWGYPwB3OZzyCDC503NwmtZg87g6sZFARhffQXw1UrLMaegicnAw',
+      name: 'Scholar',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Buster',
     ),
     AvatarOption(
-      name: 'Scholar',
-      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD2bgZ177KVrJ6BjCpUqOTbazZ_mIAzQUyRj9ltBAixtz3874_u5jD4CtBDLw9nDnxqRsXKTSOAdykJmSc5o24ecixcWHFgSGwJqkFVMQyueV3_g94NlFvYPJSEjt1LKD90GF7-WQlVQRpoZWBM0Z3rmH6yW-BBHqZd5HP1PDqQjOmn4Bl57gE78qr3uVbgG2FURMrtPeoh0lCrfkOYF2wcGLkLurorQoavg8_rCl41vDAVRICiXQWvBQ',
+      name: 'Elite',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Felix',
+    ),
+    AvatarOption(
+      name: 'Boy',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Jack',
+    ),
+    AvatarOption(
+      name: 'Scholar F',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Mia',
     ),
     AvatarOption(
       name: 'Tactician',
-      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDBDRy5TFeOtG4yG5VJwaSlzl0SGbTyo9Yk1-6Tt9RoCaEXoxAA-oz4uPYXQAnAC_45MrX6ea3V4o1fi2_B289DziHX8F0x2ENoatOnK6eZb40Sc1j5qQdIQVuYwe-tgMZI2vWGAmvOOLkqD7inJylHqck1wLEKDFHyuUuuo2NnYKTBWVWAVjSTWSUxzRpolZXhwfU4-3fhA7X_AGBEKSrTQH0w6E0qLJtRRNR9KC6ccGxTlnPJHZp9jQ',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Zack',
     ),
     AvatarOption(
       name: 'Zen',
-      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC9Qf316sjT8E4et5znGbJvSKDo2QCByntrbF2wLqNB7q7pO5QIPdoz0glaUho5Em-WNdNgDpVwKJNvnfTidIZAMNrWnajERQOx_fzD1OuGEmgyZQOmqnZWLMFCpWa5A-zK3Zn2qt3P6ANTlWkOpr9F6BLQpBRHDwtcTMCb9oWA57z6aVrhvdr4cbUNg8BHd4SHwWa17KNEoxgAqyiSjtwHjV3Eo7n0qWQuWJPEYjA3j3qxpJiW_-SzZA',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Aneka',
+    ),
+    AvatarOption(
+      name: 'Child',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Liam',
+    ),
+    AvatarOption(
+      name: 'Cyber',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Nico',
+    ),
+    AvatarOption(
+      name: 'Explorer',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=George',
     ),
     AvatarOption(
       name: 'Logic',
-      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAH2EaqXxPaQ8_9-2MsetPATtji6Lf3aikljo8s5LXQd7fQVR3uWgiV1nbJqYU83jKYk3itIC8N52TbsKVDETVJcqK0WqaGpLGoicCUnEsyjxOTcuGOljLM66fHMnhu4fMvCh4etS87Ln5_rLcrUpjnZRgGAE-GhxLQroZ8Eb09KdfjIY7BLbA6mF7frornHoDnpns8YWjn0qo20jhzLQuu_VEnvsQIFmZaEk69ubcPMTVT1ADa_R1a7Q',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Luna',
     ),
     AvatarOption(
-      name: 'Prime',
-      url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAMqKOrT2GFjwQfNMiSGpWaWoMLncV7Auc98xmRW3lhnJdfX2H8TJBZOkWY_A4FJ2oWmgckfrdu7a2XGSCdUDE45nrqbkunYCwHKlFbfDxT8jpF1U2XjqWAX-zcQR_xRQ4OXxRTSzU8-qb1HkJVPZfN88ZJ-GwOJSmGrxlWugv3fWmHgdL4edqoilFxiYgNNW6n7zjAkR4VnKKmft6GtfRKQJSkEW7K50mnNgVstuUkxvZ_F6JOV2DWCA',
+      name: 'Girl',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Zoe',
+    ),
+    AvatarOption(
+      name: 'Sage',
+      url: 'https://api.dicebear.com/7.x/adventurer/png?seed=Arthur',
     ),
   ];
 
@@ -49,6 +77,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void dispose() {
     _usernameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _skipSetup() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = ref.read(currentUserProvider).value;
+      final username = user?.displayName ?? 'Explorer';
+      final photoUrl = user?.photoUrl ?? '';
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_complete', true);
+      await prefs.setString('temp_username', username);
+      await prefs.setString('temp_photo_url', photoUrl);
+
+      // Save onboarding_complete: true to Firestore
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser.uid)
+              .update({
+            'onboarding_complete': true,
+          });
+        } catch (_) {}
+      }
+
+      widget.onComplete();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Skip failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _completeSetup() async {
@@ -69,8 +134,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('onboarding_complete', true);
       await prefs.setString('temp_username', username);
-      await prefs.setString('temp_photo_url', _avatars[_selectedAvatarIndex].url);
-      
+      final avatarUrl = _avatars[_selectedAvatarIndex].url;
+      await prefs.setString('temp_photo_url', avatarUrl);
+
+      // Update Firebase Auth & Firestore user document if user is logged in
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        try {
+          await currentUser.updateDisplayName(username);
+          await currentUser.updatePhotoURL(avatarUrl);
+        } catch (_) {}
+        try {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser.uid)
+              .update({
+            'display_name': username,
+            'photo_url': avatarUrl,
+            'onboarding_complete': true,
+          });
+        } catch (_) {}
+      }
+
+      ref.invalidate(authStateProvider);
       widget.onComplete();
     } catch (e) {
       if (mounted) {
@@ -82,6 +168,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -133,14 +220,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       children: [
                         const SizedBox(height: 16),
                         // Title Header
-                        Text(
-                          'Create Your Identity',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.primary,
-                            letterSpacing: -0.5,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Create Your Identity',
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.primary,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _isLoading ? null : _skipSetup,
+                              child: const Text(
+                                'Skip',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -204,7 +307,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               ),
                             ),
                             Text(
-                              '6 Styles Available',
+                              '12 Styles Available',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,

@@ -227,7 +227,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
               // Vertically Scrollable List of Cards
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
                   itemCount: filteredChallenges.length,
                   itemBuilder: (context, index) {
                     final challenge = filteredChallenges[index];
@@ -254,16 +254,21 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cardBg,
+        color: isDark 
+            ? AppColors.cardDark.withValues(alpha: 0.55) 
+            : Colors.white.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? AppColors.outlineVariant : Colors.black12,
-          width: 1,
+          color: isDark 
+              ? Colors.white.withValues(alpha: 0.08) 
+              : Colors.black.withValues(alpha: 0.06),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.1 : 0.02),
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.02),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -344,7 +349,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                       const Spacer(),
                       
                       // Play Button
-                      GestureDetector(
+                      AnimatedScaleButton(
                         onTap: data.onTap,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),

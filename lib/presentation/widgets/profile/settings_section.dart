@@ -6,6 +6,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/theme_manager.dart';
 import '../../providers/app_providers.dart';
 import '../../screens/bookmarks_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsSection extends ConsumerWidget {
   final String lang;
@@ -62,6 +63,12 @@ class SettingsSection extends ConsumerWidget {
               _divider(),
               // Achievements Option Tile
               _buildAchievementsTile(context),
+              _divider(),
+              // Rate This App Tile
+              _buildRateAppTile(context),
+              _divider(),
+              // Feedback & Suggestions Tile
+              _buildFeedbackTile(context),
             ],
           ),
         ),
@@ -271,6 +278,67 @@ class SettingsSection extends ConsumerWidget {
       ),
       onTap: () {
         Navigator.pushNamed(context, '/achievements');
+      },
+    );
+  }
+
+  Widget _buildRateAppTile(BuildContext context) {
+    final isBn = lang == 'bn';
+    final isHi = lang == 'hi';
+    final title = isBn ? 'অ্যাপটি মূল্যায়ন করুন' : isHi ? 'ऐप को रेट करें' : 'Rate This App';
+
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.amber.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Icon(Icons.star_rounded, color: Colors.amber, size: 20),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+      trailing: Icon(
+        Icons.arrow_forward_ios_rounded,
+        size: 14,
+        color: isDark ? Colors.white30 : Colors.grey.shade400,
+      ),
+      onTap: () async {
+        final url = Uri.parse('https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz');
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        }
+      },
+    );
+  }
+
+  Widget _buildFeedbackTile(BuildContext context) {
+    final isBn = lang == 'bn';
+    final isHi = lang == 'hi';
+    final title = isBn ? 'মতামত ও পরামর্শ' : isHi ? 'प्रतिक्रिया और सुझाव' : 'Feedback & Suggestions';
+
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(Icons.feedback_rounded, color: isDark ? AppColors.primary : AppColors.primaryDark, size: 18),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      ),
+      trailing: Icon(
+        Icons.arrow_forward_ios_rounded,
+        size: 14,
+        color: isDark ? Colors.white30 : Colors.grey.shade400,
+      ),
+      onTap: () {
+        Navigator.pushNamed(context, '/feedback');
       },
     );
   }

@@ -584,25 +584,25 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
           decoration: BoxDecoration(
             color: used
                 ? (_isDark ? Colors.grey.shade800 : Colors.grey.shade300)
-                : AppColors.primary.withValues(alpha: 0.1),
+                : (_isDark ? AppColors.primary : AppColors.primaryDark).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: used
                   ? Colors.grey
-                  : AppColors.primary.withValues(alpha: 0.3),
+                  : (_isDark ? AppColors.primary : AppColors.primaryDark).withValues(alpha: 0.3),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: used ? Colors.grey : AppColors.primary),
+              Icon(icon, size: 18, color: used ? Colors.grey : (_isDark ? AppColors.primary : AppColors.primaryDark)),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: used ? Colors.grey : AppColors.primary,
+                  color: used ? Colors.grey : (_isDark ? AppColors.primary : AppColors.primaryDark),
                 ),
               ),
             ],
@@ -624,18 +624,18 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
+          color: (_isDark ? AppColors.primary : AppColors.primaryDark).withValues(alpha: 0.1),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: (_isDark ? AppColors.primary : AppColors.primaryDark).withValues(alpha: 0.3),
           ),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               AppIcons.skip,
-              color: AppColors.primary,
+              color: _isDark ? AppColors.primary : AppColors.primaryDark,
               size: 20,
             ),
             const SizedBox(width: 8),
@@ -645,8 +645,8 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                   : isHi
                       ? 'छोड़ें'
                       : 'Skip',
-              style: const TextStyle(
-                color: AppColors.primary,
+              style: TextStyle(
+                color: _isDark ? AppColors.primary : AppColors.primaryDark,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -791,18 +791,18 @@ class _QuizThemeToggleButton extends ConsumerWidget {
         decoration: BoxDecoration(
           color: isDark
               ? Colors.amber.withValues(alpha: 0.15)
-              : AppColors.primary.withValues(alpha: 0.1),
+              : AppColors.primaryDark.withValues(alpha: 0.15),
           shape: BoxShape.circle,
           border: Border.all(
             color: isDark
                 ? Colors.amber.withValues(alpha: 0.4)
-                : AppColors.primary.withValues(alpha: 0.3),
+                : AppColors.primaryDark.withValues(alpha: 0.3),
             width: 1.2,
           ),
         ),
         child: Icon(
           isDark ? Icons.wb_sunny_rounded : Icons.dark_mode_rounded,
-          color: isDark ? Colors.amber : AppColors.primary,
+          color: isDark ? Colors.amber : AppColors.primaryDark,
           size: 15,
         ),
       ),
@@ -831,27 +831,27 @@ class _QuizLanguageButton extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
+          color: (isDark ? AppColors.primary : AppColors.primaryDark).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.2),
+            color: (isDark ? AppColors.primary : AppColors.primaryDark).withValues(alpha: 0.2),
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.language_rounded,
               size: 13,
-              color: AppColors.primary,
+              color: isDark ? AppColors.primary : AppColors.primaryDark,
             ),
             const SizedBox(width: 3),
             Text(
               lang.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
-                color: AppColors.primary,
+                color: isDark ? AppColors.primary : AppColors.primaryDark,
               ),
             ),
           ],
@@ -862,10 +862,10 @@ class _QuizLanguageButton extends ConsumerWidget {
                 value: l.$1,
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.language_rounded,
                       size: 18,
-                      color: AppColors.primary,
+                      color: isDark ? AppColors.primary : AppColors.primaryDark,
                     ),
                     const SizedBox(width: 10),
                     Text(

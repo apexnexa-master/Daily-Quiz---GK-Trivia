@@ -47,13 +47,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
       final user = ref.read(authStateProvider).value;
 
-      if (!onboardingComplete) {
+      if (user == null) {
+        Navigator.pushReplacementNamed(context, AppRouter.login);
+      } else if (!onboardingComplete) {
         Navigator.pushReplacementNamed(context, AppRouter.onboarding);
       } else {
-        Navigator.pushReplacementNamed(
-          context, 
-          user != null ? AppRouter.home : AppRouter.login,
-        );
+        Navigator.pushReplacementNamed(context, AppRouter.home);
       }
     });
   }

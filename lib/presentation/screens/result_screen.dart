@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/app_providers.dart';
 import '../providers/auth_providers.dart';
+import '../utils/account_linker.dart';
 import '../widgets/result/score_circle.dart';
 import '../widgets/result/xp_breakdown_card.dart';
 import '../widgets/result/question_review_card.dart';
@@ -965,42 +966,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              // Show loading HUD
-              showDialog<void>(
-                context: context,
-                barrierDismissible: false,
-                builder: (loadingContext) => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-              try {
-                await ref.read(authServiceProvider).upgradeAnonymousAccount();
-                if (context.mounted) {
-                  Navigator.pop(context); // Pop loading
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(isBn
-                          ? 'অ্যাকাউন্ট সফলভাবে যুক্ত করা হয়েছে!'
-                          : isHi
-                              ? 'खाता सफलतापूर्वक लिंक किया गया!'
-                              : 'Account linked successfully!'),
-                      backgroundColor: AppColors.success,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  Navigator.pop(context); // Pop loading
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString()),
-                      backgroundColor: AppColors.error,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              }
+              await AccountLinker.linkAccount(context, ref);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

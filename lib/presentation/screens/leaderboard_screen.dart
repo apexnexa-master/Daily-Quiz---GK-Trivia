@@ -384,7 +384,7 @@ class LeaderboardScreen extends ConsumerWidget {
             child: Text(
               initials,
               style: TextStyle(
-                color: color,
+                color: isDark ? color : (color == const Color(0xFFFBBF24) ? const Color(0xFFD97706) : color),
                 fontWeight: FontWeight.w900,
                 fontSize: avatarSize * 0.35,
               ),
@@ -499,11 +499,11 @@ class LeaderboardScreen extends ConsumerWidget {
           // User Avatar
           CircleAvatar(
             radius: 18,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+            backgroundColor: (isDark ? AppColors.primary : AppColors.primaryDark).withValues(alpha: 0.15),
             child: Text(
               initials,
-              style: const TextStyle(
-                color: AppColors.primary,
+              style: TextStyle(
+                color: isDark ? AppColors.primary : AppColors.primaryDark,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),

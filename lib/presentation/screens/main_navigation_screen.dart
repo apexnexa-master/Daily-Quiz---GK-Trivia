@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
 import 'play_zone_screen.dart';
-import 'leaderboard_screen.dart';
 import 'battle_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
@@ -36,46 +35,56 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.bgDark : Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: isDark ? AppColors.outlineVariant.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.05),
-              width: 1,
-            ),
-          ),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, -4),
-              ),
-          ],
+        color: Colors.transparent,
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          bottom: 16 + MediaQuery.of(context).padding.bottom,
+          top: 8,
         ),
-        child: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark 
+                ? AppColors.cardDark.withValues(alpha: 0.95) 
+                : Colors.white.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark 
+                  ? AppColors.outlineVariant.withValues(alpha: 0.3) 
+                  : Colors.black.withValues(alpha: 0.05),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildNavItem(
                   index: 0,
-                  icon: Icons.home_rounded,
+                  icon: Icons.home_outlined,
                   activeIcon: Icons.home_rounded,
                   label: 'Home',
                   isDark: isDark,
                 ),
                 _buildNavItem(
                   index: 1,
-                  icon: Icons.sports_esports_rounded,
+                  icon: Icons.sports_esports_outlined,
                   activeIcon: Icons.sports_esports_rounded,
-                  label: 'Play Zone',
+                  label: 'Arena',
                   isDark: isDark,
                 ),
                 _buildNavItem(
@@ -113,42 +122,36 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         }
       },
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? activeColor.withValues(alpha: isDark ? 0.12 : 0.08)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(9999),
-          border: Border.all(
-            color: isSelected
-                ? activeColor.withValues(alpha: 0.25)
-                : Colors.transparent,
-            width: 1,
-          ),
-        ),
-        child: Row(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              color: isSelected ? activeColor : inactiveColor,
-              size: 20,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: activeColor,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
-                  letterSpacing: -0.2,
-                ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              transform: Matrix4.identity()..scale(isSelected ? 1.12 : 1.0),
+              transformAlignment: Alignment.center,
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                color: isSelected ? activeColor : inactiveColor,
+                size: 22,
               ),
-            ],
+            ),
+            const SizedBox(height: 5),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOutCubic,
+              style: TextStyle(
+                color: isSelected ? activeColor : inactiveColor,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                fontSize: isSelected ? 11.5 : 10.5,
+                letterSpacing: isSelected ? -0.1 : -0.2,
+                fontFamily: 'Outfit',
+              ),
+              child: Text(label),
+            ),
           ],
         ),
       ),

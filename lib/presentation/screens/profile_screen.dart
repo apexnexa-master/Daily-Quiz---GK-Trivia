@@ -5,6 +5,7 @@ import '../providers/app_providers.dart';
 import '../widgets/gamification_bar.dart';
 import '../widgets/profile/profile_overview.dart';
 import '../widgets/profile/settings_section.dart';
+import '../utils/account_linker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
@@ -29,7 +30,12 @@ class ProfileScreen extends ConsumerWidget {
       body: authAsync.when(
         data: (user) {
           if (user == null) {
-            return _NotLoggedIn(lang: lang, isDark: isDark);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            });
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            );
           }
 
           return CustomScrollView(
@@ -370,10 +376,10 @@ class _UpgradePrompt extends StatelessWidget {
               children: [
                 Text(
                   isBn ? 'অ্যাকাউন্ট সংযুক্ত করুন' : 'Link Your Account',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.warning,
+                    color: isDark ? AppColors.warning : AppColors.warningDark,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -385,7 +391,7 @@ class _UpgradePrompt extends StatelessWidget {
                           : 'To save your progress permanently',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.warning.withValues(alpha: 0.8),
+                    color: isDark ? AppColors.warning.withValues(alpha: 0.8) : AppColors.warningDark.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -394,11 +400,11 @@ class _UpgradePrompt extends StatelessWidget {
           const SizedBox(width: 8),
           ElevatedButton(
             onPressed: () async {
-              await ref.read(authServiceProvider).upgradeAnonymousAccount();
+              await AccountLinker.linkAccount(context, ref);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.warning,
-              foregroundColor: Colors.white,
+              foregroundColor: Colors.black,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -491,7 +497,7 @@ class _SignOutSection extends StatelessWidget {
           if (confirm == true) {
             await ref.read(authServiceProvider).signOut();
             if (context.mounted) {
-              Navigator.pushReplacementNamed(context, '/login');
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
             }
           }
         },
@@ -698,10 +704,10 @@ class _AchievementsSection extends ConsumerWidget {
                         ),
                         child: Text(
                           '${((unlockedCount / achievements.length) * 100).round()}%',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.warning,
+                            color: isDark ? AppColors.warning : AppColors.warningDark,
                           ),
                         ),
                       ),
