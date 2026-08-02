@@ -91,7 +91,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                       index: 1,
                       icon: Icons.sports_esports_outlined,
                       activeIcon: Icons.sports_esports_rounded,
-                      label: 'Arena',
+                      label: 'Play Zone',
                       isDark: isDark,
                       currentIndex: currentIndex,
                     ),

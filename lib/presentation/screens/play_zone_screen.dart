@@ -43,7 +43,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
 
-    final screenTitle = isBn ? 'অ্যারেনা চ্যালেঞ্জ' : isHi ? 'एरिना चुनौतियाँ' : 'Arena Challenges';
+    final screenTitle = isBn ? 'প্লে জোন' : isHi ? 'प्ले ज़ोन' : 'Play Zone';
     final screenSubtitle = isBn
         ? 'আপনার মানসিক দক্ষতা বৃদ্ধি করতে অংশ নিন দৈনিক অনুশীলনে।'
         : isHi
@@ -160,6 +160,11 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
           c.category.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCategory && matchesQuery;
     }).toList();
+
+    final knowledgeGames = filteredChallenges.where((c) => c.category == 'Knowledge').toList();
+    final logicMemoryGames = filteredChallenges.where((c) => c.category == 'Logic' || c.category == 'Memory').toList();
+    final focusGames = filteredChallenges.where((c) => c.category == 'Focus').toList();
+    final mathGames = filteredChallenges.where((c) => c.category == 'Math').toList();
 
     return Scaffold(
       body: Container(
@@ -344,7 +349,139 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                         physics: const BouncingScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
                         child: Column(
-                          children: _buildBentoSplitGrid(context, filteredChallenges, isDark, isBn, isHi),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Topic 1: Trivia & Knowledge
+                            if (knowledgeGames.isNotEmpty) ...[
+                              _buildTopicHeader(
+                                title: isBn ? 'জ্ঞান ও ট্রিভিয়া' : isHi ? 'ज्ञान और त्रिविया' : 'Knowledge & Trivia',
+                                isDark: isDark,
+                                isBn: isBn,
+                                isHi: isHi,
+                                hasMultiple: knowledgeGames.length > 1,
+                              ),
+                              const SizedBox(height: 10),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                clipBehavior: Clip.none,
+                                child: Row(
+                                  children: knowledgeGames.map((game) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: _buildPlayZoneGameTile(
+                                        context: context,
+                                        isDark: isDark,
+                                        data: game,
+                                        isBn: isBn,
+                                        isHi: isHi,
+                                        imagePath: isDark ? 'assets/icon/gk_mascot_dark.jpg' : 'assets/icon/gk_mascot_light.jpg',
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                            ],
+
+                            // Topic 2: Logic & Memory
+                            if (logicMemoryGames.isNotEmpty) ...[
+                              _buildTopicHeader(
+                                title: isBn ? 'যুক্তি এবং মেমরি' : isHi ? 'तर्क और स्मृति' : 'Logic & Memory',
+                                isDark: isDark,
+                                isBn: isBn,
+                                isHi: isHi,
+                                hasMultiple: logicMemoryGames.length > 1,
+                              ),
+                              const SizedBox(height: 10),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                clipBehavior: Clip.none,
+                                child: Row(
+                                  children: logicMemoryGames.map((game) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: _buildPlayZoneGameTile(
+                                        context: context,
+                                        isDark: isDark,
+                                        data: game,
+                                        isBn: isBn,
+                                        isHi: isHi,
+                                        imagePath: isDark ? 'assets/icon/logic_mascot_dark.jpg' : 'assets/icon/logic_mascot_light.jpg',
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                            ],
+
+                            // Topic 3: Focus & Attention
+                            if (focusGames.isNotEmpty) ...[
+                              _buildTopicHeader(
+                                title: isBn ? 'মনোযোগ ও ফোকাস' : isHi ? 'ध्यान और फोकस' : 'Focus & Attention',
+                                isDark: isDark,
+                                isBn: isBn,
+                                isHi: isHi,
+                                hasMultiple: focusGames.length > 1,
+                              ),
+                              const SizedBox(height: 10),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                clipBehavior: Clip.none,
+                                child: Row(
+                                  children: focusGames.map((game) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: _buildPlayZoneGameTile(
+                                        context: context,
+                                        isDark: isDark,
+                                        data: game,
+                                        isBn: isBn,
+                                        isHi: isHi,
+                                        imagePath: isDark ? 'assets/icon/logic_mascot_dark.jpg' : 'assets/icon/logic_mascot_light.jpg',
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                            ],
+
+                            // Topic 4: Math & Numbers
+                            if (mathGames.isNotEmpty) ...[
+                              _buildTopicHeader(
+                                title: isBn ? 'গণিত ও সংখ্যা' : isHi ? 'गणित और संख्याएँ' : 'Math & Numbers',
+                                isDark: isDark,
+                                isBn: isBn,
+                                isHi: isHi,
+                                hasMultiple: mathGames.length > 1,
+                              ),
+                              const SizedBox(height: 10),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                physics: const BouncingScrollPhysics(),
+                                clipBehavior: Clip.none,
+                                child: Row(
+                                  children: mathGames.map((game) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: _buildPlayZoneGameTile(
+                                        context: context,
+                                        isDark: isDark,
+                                        data: game,
+                                        isBn: isBn,
+                                        isHi: isHi,
+                                        imagePath: isDark ? 'assets/icon/math_mascot_dark.jpg' : 'assets/icon/math_mascot_light.jpg',
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
               ),
@@ -355,456 +492,320 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
     );
   }
 
-  // Generate non-uniform bento grid layout widgets
-  List<Widget> _buildBentoSplitGrid(
-      BuildContext context, List<ChallengeData> list, bool isDark, bool isBn, bool isHi) {
-    final List<Widget> children = [];
-
-    // Slice 0: Large Hero Card (Item 1)
-    if (list.isNotEmpty) {
-      children.add(
-        StaggeredListItem(
-          index: 0,
-          child: _buildBentoHeroCard(context, list[0], isDark, isBn, isHi),
-        ),
-      );
-      children.add(const SizedBox(height: 14));
-    }
-
-    // Slice 1: Row of 2 Split Cards (Item 2 & 3)
-    if (list.length > 1) {
-      final item1 = list[1];
-      final item2 = list.length > 2 ? list[2] : null;
-
-      children.add(
-        Row(
-          children: [
-            Expanded(
-              child: StaggeredListItem(
-                index: 1,
-                child: _buildBentoSplitCard(context, item1, isDark, isBn, isHi),
-              ),
-            ),
-            if (item2 != null) ...[
-              const SizedBox(width: 14),
-              Expanded(
-                child: StaggeredListItem(
-                  index: 2,
-                  child: _buildBentoSplitCard(context, item2, isDark, isBn, isHi),
-                ),
-              ),
-            ] else
-              const Expanded(child: SizedBox.shrink()),
-          ],
-        ),
-      );
-      children.add(const SizedBox(height: 14));
-    }
-
-    // Slice 2: Full-width Landscape Banner Card (Item 4)
-    if (list.length > 3) {
-      children.add(
-        StaggeredListItem(
-          index: 3,
-          child: _buildBentoBannerCard(context, list[3], isDark, isBn, isHi),
-        ),
-      );
-      children.add(const SizedBox(height: 14));
-    }
-
-    // Slice 3: Row of 2 Split Cards (Item 5 & 6)
-    if (list.length > 4) {
-      final item1 = list[4];
-      final item2 = list.length > 5 ? list[5] : null;
-
-      children.add(
-        Row(
-          children: [
-            Expanded(
-              child: StaggeredListItem(
-                index: 4,
-                child: _buildBentoSplitCard(context, item1, isDark, isBn, isHi),
-              ),
-            ),
-            if (item2 != null) ...[
-              const SizedBox(width: 14),
-              Expanded(
-                child: StaggeredListItem(
-                  index: 5,
-                  child: _buildBentoSplitCard(context, item2, isDark, isBn, isHi),
-                ),
-              ),
-            ] else
-              const Expanded(child: SizedBox.shrink()),
-          ],
-        ),
-      );
-      children.add(const SizedBox(height: 14));
-    }
-
-    // Capture remaining items beyond 6 just in case
-    if (list.length > 6) {
-      for (int i = 6; i < list.length; i++) {
-        children.add(
-          StaggeredListItem(
-            index: i,
-            child: _buildBentoBannerCard(context, list[i], isDark, isBn, isHi),
+  Widget _buildTopicHeader({
+    required String title,
+    required bool isDark,
+    required bool isBn,
+    required bool isHi,
+    required bool hasMultiple,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.montserrat(
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            color: isDark ? Colors.white70 : Colors.grey.shade700,
+            letterSpacing: -0.2,
           ),
-        );
-        children.add(const SizedBox(height: 14));
-      }
-    }
-
-    return children;
+        ),
+        if (hasMultiple)
+          Row(
+            children: [
+              Icon(
+                Icons.swipe_left_rounded,
+                size: 13,
+                color: isDark ? Colors.white38 : Colors.grey.shade400,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                isBn ? 'ডানে সোয়াইপ করুন' : isHi ? 'दाएँ स्वाइप करें' : 'Swipe right',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white38 : Colors.grey.shade400,
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
   }
 
-  // 1. Large Bento Hero Card (Spans full width, double height visual detail)
-  Widget _buildBentoHeroCard(
-      BuildContext context, ChallengeData data, bool isDark, bool isBn, bool isHi) {
-    final Color highlightColor = AppColors.primary;
+  Widget _buildPlayZoneGameTile({
+    required BuildContext context,
+    required bool isDark,
+    required ChallengeData data,
+    required bool isBn,
+    required bool isHi,
+    String? imagePath,
+  }) {
+    final bool isImplemented = data.category == 'Knowledge' || data.category == 'Logic';
+    final categoryColor = data.isLocked || !isImplemented
+        ? Colors.grey
+        : (data.category.toLowerCase().contains('knowledge') 
+            ? AppColors.primary 
+            : (data.category.toLowerCase().contains('logic') || data.category.toLowerCase().contains('memory') || data.category.toLowerCase().contains('focus')
+                ? const Color(0xFF00F1FE) 
+                : const Color(0xFFECB2FF)));
 
     return AnimatedScaleButton(
-      onTap: data.isLocked ? null : data.onTap,
+      onTap: isImplemented && !data.isLocked ? data.onTap : null,
       child: Container(
-        padding: const EdgeInsets.all(22),
+        width: 260,
+        height: 155,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: isDark
-                ? [highlightColor.withValues(alpha: 0.15), highlightColor.withValues(alpha: 0.02)]
-                : [highlightColor.withValues(alpha: 0.1), highlightColor.withValues(alpha: 0.02)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: isDark 
+              ? const Color(0xFF151D1E).withValues(alpha: 0.65) 
+              : Colors.white.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: highlightColor.withValues(alpha: 0.35),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: highlightColor.withValues(alpha: isDark ? 0.08 : 0.03),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.01),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: highlightColor.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    data.icon,
-                    color: highlightColor,
-                    size: 24,
-                  ),
-                ),
-                _buildBadge(Icons.timer_outlined, data.duration, isDark),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Text(
-              data.title,
-              style: GoogleFonts.montserrat(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              data.description,
-              style: TextStyle(
-                fontSize: 12.5,
-                height: 1.4,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildBadge(Icons.bookmark_border_rounded, data.category, isDark),
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: highlightColor,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: highlightColor.withValues(alpha: 0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow_rounded,
-                    color: Colors.black,
-                    size: 20,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 2. Compact Bento Grid split card (Fits side-by-side)
-  Widget _buildBentoSplitCard(
-      BuildContext context, ChallengeData data, bool isDark, bool isBn, bool isHi) {
-    final highlightColor = data.category.toLowerCase().contains('logic') 
-        ? const Color(0xFF00F1FE) // Cyan
-        : (data.category.toLowerCase().contains('memory') 
-            ? const Color(0xFFECB2FF) // Pink
-            : AppColors.primary); // Yellow/Violet default
-
-    return AnimatedScaleButton(
-      onTap: data.isLocked ? null : data.onTap,
-      child: Container(
-        height: 155,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark 
-              ? const Color(0xFF151D1E).withValues(alpha: 0.6) 
-              : Colors.white.withValues(alpha: 0.75),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: data.isLocked
+            color: data.isLocked || !isImplemented
                 ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05))
-                : highlightColor.withValues(alpha: 0.2),
+                : categoryColor.withValues(alpha: 0.25),
             width: 1.5,
           ),
           boxShadow: [
+            if (!data.isLocked && isImplemented)
+              BoxShadow(
+                color: categoryColor.withValues(alpha: isDark ? 0.08 : 0.04),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
               blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(
-                  data.isLocked ? Icons.lock_outline_rounded : data.icon,
-                  color: data.isLocked
-                      ? (isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight)
-                      : highlightColor,
-                  size: 20,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              if (imagePath != null)
+                Positioned.fill(
+                  child: Image.asset(
+                    imagePath,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.centerRight,
+                  ),
                 ),
-                if (data.isLocked)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              if (imagePath != null)
+                Positioned.fill(
+                  child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      isBn ? 'লকড' : isHi ? 'बंद' : 'LOCKED',
-                      style: const TextStyle(
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.error,
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.98),
+                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.85),
+                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.3),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.45, 0.75, 1.0],
                       ),
                     ),
-                  )
-                else
-                  Text(
-                    data.duration,
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
-                    ),
-                  ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              data.title,
-              style: GoogleFonts.montserrat(
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-                color: data.isLocked 
-                    ? (isDark ? Colors.white38 : Colors.grey.shade400)
-                    : (isDark ? Colors.white : AppColors.textPrimaryLight),
-                letterSpacing: -0.2,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              data.category,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
-              ),
-            ),
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: data.isLocked 
-                        ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100)
-                        : highlightColor,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    data.isLocked ? Icons.lock_outline_rounded : Icons.play_arrow_rounded,
-                    color: data.isLocked
-                        ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                        : Colors.black,
-                    size: 14,
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 3. Landscape Banner Bento Card (Wide banner layout)
-  Widget _buildBentoBannerCard(
-      BuildContext context, ChallengeData data, bool isDark, bool isBn, bool isHi) {
-    final highlightColor = data.category.toLowerCase().contains('focus')
-        ? const Color(0xFFE2F0D9)
-        : AppColors.primary;
-
-    return AnimatedScaleButton(
-      onTap: data.isLocked ? null : data.onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(
-          color: isDark 
-              ? const Color(0xFF151D1E).withValues(alpha: 0.6) 
-              : Colors.white.withValues(alpha: 0.75),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: data.isLocked
-                ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05))
-                : highlightColor.withValues(alpha: 0.2),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
-              blurRadius: 10,
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                data.isLocked ? Icons.lock_outline_rounded : data.icon,
-                color: data.isLocked
-                    ? (isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight)
-                    : highlightColor,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
+              if (data.isLocked)
+                Positioned.fill(
+                  child: Container(
+                    color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.45),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: data.isLocked || !isImplemented
+                                ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade200)
+                                : categoryColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: data.isLocked || !isImplemented
+                                  ? Colors.transparent 
+                                  : categoryColor.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            data.category.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: data.isLocked || !isImplemented
+                                  ? (isDark ? Colors.white38 : Colors.grey.shade500)
+                                  : (isDark ? categoryColor : AppColors.primaryDark),
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                        ),
+                        if (data.isLocked)
+                          Row(
+                            children: [
+                              const Icon(Icons.lock_rounded, color: AppColors.error, size: 12),
+                              const SizedBox(width: 4),
+                              Text(
+                                isBn ? 'লকড' : isHi ? 'लॉक' : 'LOCKED',
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.error,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          // Duration badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              data.duration,
+                              style: TextStyle(
+                                fontSize: 8.5,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const Spacer(),
+                    // Title
+                    Padding(
+                      padding: const EdgeInsets.only(right: 65),
+                      child: Text(
                         data.title,
                         style: GoogleFonts.montserrat(
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w900,
-                          color: data.isLocked 
+                          color: data.isLocked || !isImplemented
                               ? (isDark ? Colors.white38 : Colors.grey.shade400)
                               : (isDark ? Colors.white : AppColors.textPrimaryLight),
                           letterSpacing: -0.2,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      if (data.isLocked) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                          decoration: BoxDecoration(
-                            color: AppColors.error.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
+                    ),
+                    const SizedBox(height: 3),
+                    // Subtitle
+                    Padding(
+                      padding: const EdgeInsets.only(right: 65),
+                      child: Text(
+                        data.description,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: data.isLocked || !isImplemented
+                              ? (isDark ? Colors.white24 : Colors.grey.shade400)
+                              : (isDark ? AppColors.textSecondaryDark.withValues(alpha: 0.7) : AppColors.textSecondaryLight.withValues(alpha: 0.7)),
+                          fontFamily: 'Inter',
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Spacer(),
+                    // Footer Action row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          data.isLocked 
+                              ? (isBn ? 'লেভেল ১৫ খুলবে' : isHi ? 'लेवल 15 पर खुलेगा' : 'Unlocks Level 15')
+                              : (isBn ? 'সক্রিয় চ্যালেঞ্জ' : isHi ? 'সক্রিয় চ্যালেঞ্জ' : 'Active Challenge'),
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: data.isLocked
+                                ? AppColors.error.withValues(alpha: 0.8)
+                                : (isDark ? AppColors.textSecondaryDark.withValues(alpha: 0.7) : AppColors.textSecondaryLight.withValues(alpha: 0.7)),
                           ),
-                          child: Text(
-                            isBn ? 'লকড' : isHi ? 'बंद' : 'LOCKED',
-                            style: const TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.error,
-                            ),
+                        ),
+                        // Play action circle button
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: data.isLocked || !isImplemented
+                                ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100)
+                                : categoryColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            data.isLocked ? Icons.lock_outline_rounded : Icons.play_arrow_rounded,
+                            color: data.isLocked || !isImplemented
+                                ? (isDark ? Colors.white24 : Colors.grey.shade400)
+                                : Colors.black,
+                            size: 16,
                           ),
                         ),
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    data.description,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  ],
+                ),
+              ),
+              // Frosted Glass Blur overlay if not implemented
+              if (!isImplemented)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                      child: Container(
+                        color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.25),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.blur_on_rounded, color: Colors.white70, size: 14),
+                                const SizedBox(width: 6),
+                                Text(
+                                  isBn ? 'শীঘ্রই আসছে' : isHi ? 'जल्द ही आ रहा है' : 'COMING SOON',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: data.isLocked 
-                    ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100)
-                    : highlightColor,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                data.isLocked ? Icons.lock_outline_rounded : Icons.play_arrow_rounded,
-                color: data.isLocked
-                    ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                    : Colors.black,
-                size: 16,
-              ),
-            ),
-          ],
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -1250,69 +1250,143 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildGameCard(
-                  title: isBn ? 'ট্রিভিয়া কুইজ' : isHi ? 'त्रिविया क्विज़' : 'Trivia Duel',
-                  subtitle: isBn 
-                      ? 'সাধারণ জ্ঞান এবং গতি পরীক্ষা করে আপনার প্রতিপক্ষকে হারান।'
-                      : isHi 
-                          ? 'सामान्य ज्ञान और गति का परीक्षण करके प्रतिद्वंद्वी को हराएं।'
-                          : 'Duel your opponent in a fast-paced General Knowledge quiz.',
-                  icon: Icons.quiz_rounded,
-                  color: AppColors.primary,
-                  isLocked: false,
-                  onTap: () {
-                    setState(() {
-                      _selectedGame = 'TRIVIA';
-                      _arenaState = BattleArenaState.configureGame;
-                    });
-                  },
+                // Category 1: Trivia & GK
+                _buildTopicHeader(
+                  title: isBn ? 'ট্রিভিয়া এবং জিকে' : isHi ? 'त्रिविया और जीके' : 'Trivia & GK',
                   isDark: isDark,
+                  isBn: isBn,
+                  isHi: isHi,
+                  hasMultiple: false,
                 ),
-                const SizedBox(height: 16),
-                _buildGameCard(
-                  title: isBn ? 'অ্যারো পাথ মেজ' : isHi ? 'एरो पाथ भूलभुलैया' : 'Arrow Path Maze',
-                  subtitle: isBn 
-                      ? 'গতিপথ মনে রেখে গোলকধাঁধা সমাধান করুন। (শীঘ্রই আসছে)'
-                      : isHi 
-                          ? 'रास्ता याद रखकर भूलभुलैया हल करें। (जल्द ही आ रहा है)'
-                          : 'Solve the arrow maze to test memory & logic. (Coming Soon)',
-                  icon: Icons.alt_route_rounded,
-                  color: Colors.grey,
-                  isLocked: true,
-                  onTap: () {},
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: [
+                      _buildGameTile(
+                        context: context,
+                        isDark: isDark,
+                        badgeText: 'TRIVIA',
+                        title: isBn ? 'ট্রিভিয়া কুইজ' : isHi ? 'त्रिविया क्विज़' : 'Trivia Duel',
+                        subtitle: isBn 
+                            ? 'সাধারণ জ্ঞান এবং গতি পরীক্ষা করে আপনার প্রতিপক্ষকে হারান।'
+                            : isHi 
+                                ? 'सामान्य ज्ञान और गति का परीक्षण करके प्रतिद्वंद्वी को हराएं।'
+                                : 'Duel your opponent in a fast-paced General Knowledge quiz.',
+                        isLocked: false,
+                        onTap: () {
+                          setState(() {
+                            _selectedGame = 'TRIVIA';
+                            _arenaState = BattleArenaState.configureGame;
+                          });
+                        },
+                        isBn: isBn,
+                        isHi: isHi,
+                        imagePath: isDark ? 'assets/icon/gk_mascot_dark.jpg' : 'assets/icon/gk_mascot_light.jpg',
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 28),
+                
+                // Category 2: Logic & Memory
+                _buildTopicHeader(
+                  title: isBn ? 'যুক্তি এবং মেমরি' : isHi ? 'तर्क और स्मृति' : 'Logic & Memory',
                   isDark: isDark,
+                  isBn: isBn,
+                  isHi: isHi,
+                  hasMultiple: true,
                 ),
-                const SizedBox(height: 16),
-                _buildGameCard(
-                  title: isBn ? 'সিন্যাপ্স রিকল' : isHi ? 'सिनैप्स रिकॉल' : 'Synapse Recall',
-                  subtitle: isBn 
-                      ? 'অল্প সময়ে ছবি ও প্যাটার্ন মনে রাখার ক্ষমতা যাচাই করুন। (শীঘ্রই আসছে)'
-                      : isHi 
-                          ? 'कम समय में चित्र और पैटर्न याद रखने की क्षमता का परीक्षण करें। (जल्द ही आ रहा है)'
-                          : 'Test visual recall under strict timing. (Coming Soon)',
-                  icon: Icons.memory_rounded,
-                  color: Colors.grey,
-                  isLocked: true,
-                  onTap: () {},
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: [
+                      _buildGameTile(
+                        context: context,
+                        isDark: isDark,
+                        badgeText: 'MAZE',
+                        title: isBn ? 'অ্যারো পাথ মেজ' : isHi ? 'एरो पाथ भूलभुलैया' : 'Arrow Path Maze',
+                        subtitle: isBn 
+                            ? 'গতিপথ মনে রেখে গোলকধাঁধা সমাধান করুন।'
+                            : isHi 
+                                ? 'रास्ता याद रखकर भूलभुलैया हल करें।'
+                                : 'Solve the arrow maze to test memory & logic.',
+                        isLocked: false,
+                        onTap: () {
+                          setState(() {
+                            _selectedGame = 'ARROW_MAZE';
+                            _arenaState = BattleArenaState.configureGame;
+                          });
+                        },
+                        isBn: isBn,
+                        isHi: isHi,
+                        imagePath: isDark ? 'assets/icon/logic_mascot_dark.jpg' : 'assets/icon/logic_mascot_light.jpg',
+                      ),
+                      const SizedBox(width: 12),
+                      _buildGameTile(
+                        context: context,
+                        isDark: isDark,
+                        badgeText: 'RECALL',
+                        title: isBn ? 'সিন্যাপ্স রিকল' : isHi ? 'सिनैप्स रिकॉल' : 'Synapse Recall',
+                        subtitle: isBn 
+                            ? 'অল্প সময়ে ছবি ও প্যাটার্ন মনে রাখার ক্ষমতা যাচাই করুন।'
+                            : isHi 
+                                ? 'कम समय में चित्र और पैटर्न याद रखने की क्षमता का परीक्षण करें।'
+                                : 'Test visual recall under strict timing.',
+                        isLocked: true,
+                        onTap: () {},
+                        isBn: isBn,
+                        isHi: isHi,
+                        imagePath: isDark ? 'assets/icon/logic_mascot_dark.jpg' : 'assets/icon/logic_mascot_light.jpg',
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 28),
+                
+                // Category 3: Math & Numbers
+                _buildTopicHeader(
+                  title: isBn ? 'গণিত ও সংখ্যা' : isHi ? 'गणित और संख्याएँ' : 'Math & Numbers',
                   isDark: isDark,
+                  isBn: isBn,
+                  isHi: isHi,
+                  hasMultiple: false,
                 ),
-                const SizedBox(height: 16),
-                _buildGameCard(
-                  title: isBn ? 'ম্যাথ স্পিড স্প্রিন্ট' : isHi ? 'गणित स्पीड स्प्रिंट' : 'Math Speed Sprint',
-                  subtitle: isBn 
-                      ? 'দ্রুত গতিতে গণিত ধাঁধার সমাধান করুন। (শীঘ্রই আসছে)'
-                      : isHi 
-                          ? 'तेजी से गणित की समस्याओं को हल करें। (जल्द ही आ रहा है)'
-                          : 'Race against time solving fast math calculations. (Coming Soon)',
-                  icon: Icons.calculate_rounded,
-                  color: Colors.grey,
-                  isLocked: true,
-                  onTap: () {},
-                  isDark: isDark,
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: [
+                      _buildGameTile(
+                        context: context,
+                        isDark: isDark,
+                        badgeText: 'MATH',
+                        title: isBn ? 'ম্যাথ স্পিড স্প্রিন্ট' : isHi ? 'गणित स्पीड स्प्रिंट' : 'Math Speed Sprint',
+                        subtitle: isBn 
+                            ? 'দ্রুত গতিতে গণিত ধাঁধার সমাধান করুন।'
+                            : isHi 
+                                ? 'तेजी से गणित की समस्याओं को हल करें।'
+                                : 'Race against time solving fast math calculations.',
+                        isLocked: true,
+                        onTap: () {},
+                        isBn: isBn,
+                        isHi: isHi,
+                        imagePath: isDark ? 'assets/icon/math_mascot_dark.jpg' : 'assets/icon/math_mascot_light.jpg',
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -1321,119 +1395,264 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
     );
   }
 
-  Widget _buildGameCard({
+  Widget _buildTopicHeader({
+    required String title,
+    required bool isDark,
+    required bool isBn,
+    required bool isHi,
+    required bool hasMultiple,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            color: isDark ? Colors.white70 : Colors.grey.shade700,
+            letterSpacing: -0.2,
+          ),
+        ),
+        if (hasMultiple)
+          Row(
+            children: [
+              Icon(
+                Icons.swipe_left_rounded,
+                size: 13,
+                color: isDark ? Colors.white38 : Colors.grey.shade400,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                isBn ? 'ডানে সোয়াইপ করুন' : isHi ? 'दाएँ स्वाइप करें' : 'Swipe right',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white38 : Colors.grey.shade400,
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildGameTile({
+    required BuildContext context,
+    required bool isDark,
+    required String badgeText,
     required String title,
     required String subtitle,
-    required IconData icon,
-    required Color color,
     required bool isLocked,
     required VoidCallback onTap,
-    required bool isDark,
+    required bool isBn,
+    required bool isHi,
+    String? imagePath,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.cardDark : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isLocked
-              ? Colors.transparent
-              : isDark
-                  ? AppColors.primary.withValues(alpha: 0.2)
-                  : AppColors.primary.withValues(alpha: 0.1),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    final categoryColor = isLocked
+        ? Colors.grey
+        : (badgeText.contains('TRIVIA') 
+            ? AppColors.primary 
+            : (badgeText.contains('MAZE') || badgeText.contains('RECALL') 
+                ? const Color(0xFF00F1FE) 
+                : const Color(0xFFECB2FF)));
+
+    return AnimatedScaleButton(
+      onTap: isLocked ? null : onTap,
+      child: Container(
+        width: 260,
+        height: 155,
+        decoration: BoxDecoration(
+          color: isDark 
+              ? const Color(0xFF151D1E).withValues(alpha: 0.65) 
+              : Colors.white.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isLocked
+                ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05))
+                : categoryColor.withValues(alpha: 0.25),
+            width: 1.5,
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          onTap: isLocked ? null : onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isLocked 
-                        ? Colors.grey.withValues(alpha: 0.1)
-                        : (isDark ? color : (color == AppColors.primary ? AppColors.primaryDark : color)).withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isLocked ? Colors.grey : (isDark ? color : (color == AppColors.primary ? AppColors.primaryDark : color)),
-                    size: 28,
+          boxShadow: [
+            if (!isLocked)
+              BoxShadow(
+                color: categoryColor.withValues(alpha: isDark ? 0.08 : 0.04),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              if (imagePath != null)
+                Positioned.fill(
+                  child: Image.asset(
+                    imagePath,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.centerRight,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: isLocked
-                                    ? (isDark ? Colors.white38 : Colors.grey.shade500)
-                                    : (isDark ? Colors.white : AppColors.textPrimaryLight),
-                              ),
+              if (imagePath != null)
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.98),
+                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.85),
+                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.3),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.45, 0.75, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              if (isLocked)
+                Positioned.fill(
+                  child: Container(
+                    color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.45),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isLocked 
+                                ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade200)
+                                : categoryColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isLocked 
+                                  ? Colors.transparent 
+                                  : categoryColor.withValues(alpha: 0.3),
+                              width: 1,
                             ),
                           ),
-                          if (isLocked)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.lock_rounded, size: 10, color: Colors.grey),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'LOCKED',
-                                    style: TextStyle(
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          child: Text(
+                            badgeText,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: isLocked
+                                  ? (isDark ? Colors.white38 : Colors.grey.shade500)
+                                  : (isDark ? categoryColor : AppColors.primaryDark),
+                              letterSpacing: 0.6,
                             ),
-                        ],
+                          ),
+                        ),
+                        if (isLocked)
+                          Row(
+                            children: [
+                              const Icon(Icons.lock_rounded, color: AppColors.error, size: 12),
+                              const SizedBox(width: 4),
+                              Text(
+                                isBn ? 'লকড' : isHi ? 'लॉक' : 'LOCKED',
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.error,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                    const Spacer(),
+                    // Title
+                    Padding(
+                      padding: const EdgeInsets.only(right: 65),
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: isLocked 
+                              ? (isDark ? Colors.white38 : Colors.grey.shade400)
+                              : (isDark ? Colors.white : AppColors.textPrimaryLight),
+                          letterSpacing: -0.2,
+                          fontFamily: 'Montserrat',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 6),
-                      Text(
+                    ),
+                    const SizedBox(height: 3),
+                    // Subtitle
+                    Padding(
+                      padding: const EdgeInsets.only(right: 65),
+                      child: Text(
                         subtitle,
                         style: TextStyle(
-                          fontSize: 12.5,
-                          color: isDark ? Colors.white54 : Colors.grey.shade600,
-                          height: 1.3,
+                          fontSize: 11,
+                          color: isLocked
+                              ? (isDark ? Colors.white24 : Colors.grey.shade400)
+                              : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
+                          fontFamily: 'Inter',
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
+                    ),
+                    const Spacer(),
+                    // Footer Action row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isLocked 
+                              ? (isBn ? 'শীঘ্রই আসছে' : isHi ? 'जल्द ही आ रहा है' : 'Coming Soon')
+                              : (isBn ? 'সক্রিয় চ্যালেঞ্জ' : isHi ? 'সক্রিয় চ্যালেঞ্জ' : 'Active Challenge'),
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: isLocked
+                                ? (isDark ? Colors.white24 : Colors.grey.shade400)
+                                : (isDark ? AppColors.textSecondaryDark.withValues(alpha: 0.7) : AppColors.textSecondaryLight.withValues(alpha: 0.7)),
+                          ),
+                        ),
+                        // Play action circle button
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: isLocked 
+                                ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100)
+                                : categoryColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isLocked ? Icons.lock_outline_rounded : Icons.play_arrow_rounded,
+                            color: isLocked
+                                ? (isDark ? Colors.white24 : Colors.grey.shade400)
+                                : Colors.black,
+                            size: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

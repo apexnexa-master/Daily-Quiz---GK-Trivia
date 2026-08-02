@@ -1,5 +1,6 @@
 // lib/presentation/screens/home_screen.dart
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
@@ -294,7 +295,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.local_fire_department_rounded,
             iconColor: const Color(0xFFF97316),
             label: isBn ? 'সক্রিয় দিন' : isHi ? 'लगातार दिन' : 'Streak',
-            value: '$streak ${isBn ? 'দিন' : isHi ? 'दिन' : 'Days'}',
+            value: streak > 0 ? '$streak ${isBn ? 'দিন' : isHi ? 'दिन' : 'Days'}' : '-',
             isDark: isDark,
           ),
           _buildVerticalDivider(isDark),
@@ -302,7 +303,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.gps_fixed_rounded,
             iconColor: const Color(0xFF10B981),
             label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
-            value: '${(accuracy * 100).toInt()}%',
+            value: accuracy > 0 ? '${accuracy.toInt()}%' : '-',
             isDark: isDark,
           ),
           _buildVerticalDivider(isDark),
@@ -310,7 +311,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: Icons.psychology_rounded,
             iconColor: isDark ? AppColors.primary : AppColors.primaryDark,
             label: isBn ? 'মস্তিষ্ক সূচক' : isHi ? 'मस्तिष्क सूचकांक' : 'BSI Index',
-            value: '$bsi',
+            value: bsi > 0 ? '$bsi' : '-',
             isDark: isDark,
           ),
         ],
@@ -447,7 +448,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/icon/gk_mascot.jpg',
+                imagePath: isDark ? 'assets/icon/gk_mascot_dark.jpg' : 'assets/icon/gk_mascot_light.jpg',
               ),
               const SizedBox(width: 12),
               // Card 2: Arrow Path Maze (Unlocked Daily Challenge)
@@ -467,7 +468,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/icon/logic_mascot.jpg',
+                imagePath: isDark ? 'assets/icon/logic_mascot_dark.jpg' : 'assets/icon/logic_mascot_light.jpg',
               ),
               const SizedBox(width: 12),
               // Card 3: Math Speed Sprint (Locked)
@@ -482,7 +483,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onTap: () {},
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/icon/math_mascot.jpg',
+                imagePath: isDark ? 'assets/icon/math_mascot_dark.jpg' : 'assets/icon/math_mascot_light.jpg',
               ),
             ],
           ),
@@ -801,7 +802,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               Text(
-                '${accuracy.toInt()}%',
+                accuracy > 0 ? '${accuracy.toInt()}%' : '-',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
@@ -849,11 +850,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark 
-              ? Colors.white.withValues(alpha: 0.08) 
-              : Colors.black.withValues(alpha: 0.06), 
-          width: 1.2,
+              ? const Color(0xFF00F1FE).withValues(alpha: 0.35) 
+              : const Color(0xFF0284C7).withValues(alpha: 0.25), 
+          width: 1.6,
         ),
         boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00F1FE).withValues(alpha: isDark ? 0.12 : 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
             blurRadius: 12,
@@ -867,7 +873,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Positioned.fill(
               child: Image.asset(
-                'assets/icon/battle_mascot.jpg',
+                isDark ? 'assets/icon/battle_mascot_dark.jpg' : 'assets/icon/battle_mascot_light.jpg',
                 fit: BoxFit.cover,
                 alignment: Alignment.centerRight,
               ),
@@ -937,7 +943,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Text(
                       isBn ? '১ বনাম ১ কুইজ যুদ্ধ' : isHi ? '1 बनाम 1 क्विज़ युद्ध' : '1v1 Quiz Battle Arena',
                       style: TextStyle(
-                         fontSize: 20,
+                         fontSize: 17,
                          fontWeight: FontWeight.w900,
                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
                          letterSpacing: -0.4,
@@ -955,37 +961,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ? 'दोस्तों के साथ लाइव खेलें या बॉट के साथ अभ्यास करें।'
                               : 'Duel friends in real-time online, or train offline against a bot.',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 11.5,
                         height: 1.4,
                         color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  AnimatedScaleButton(
+                   AnimatedScaleButton(
                     onTap: () {
                       Navigator.pushNamed(context, '/battle');
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.flash_on_rounded, color: Colors.black, size: 18),
-                          const SizedBox(width: 8),
-                          Text(
-                            isBn ? 'যুদ্ধক্ষেত্রে প্রবেশ করুন' : isHi ? 'युद्ध में शामिल हों' : 'Enter Battle Arena',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.black,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: isDark 
+                                ? Colors.white.withValues(alpha: 0.08) 
+                                : Colors.black.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isDark 
+                                  ? Colors.white.withValues(alpha: 0.15) 
+                                  : Colors.black.withValues(alpha: 0.15),
+                              width: 1.5,
                             ),
                           ),
-                        ],
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.flash_on_rounded, 
+                                color: isDark ? AppColors.primary : AppColors.primaryDark, 
+                                size: 18
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                isBn ? 'যুদ্ধক্ষেত্রে প্রবেশ করুন' : isHi ? 'युद्ध में शामिल हों' : 'Enter Battle Arena',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                                  letterSpacing: 0.2,
+                                  fontFamily: 'Montserrat',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
