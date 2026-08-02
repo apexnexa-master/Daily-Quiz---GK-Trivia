@@ -4,3 +4,4 @@ export 'quiz_providers.dart';
 export 'gamification_providers.dart';
 export 'stats_providers.dart';
 export 'leaderboard_providers.dart';
+export 'navigation_providers.dart';

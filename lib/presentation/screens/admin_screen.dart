@@ -133,7 +133,16 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
           centerTitle: true,
-          automaticallyImplyLeading: _currentStep != AdminFlowStep.dashboard,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            onPressed: () {
+              if (_currentStep == AdminFlowStep.password) {
+                setState(() => _currentStep = AdminFlowStep.email);
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
           elevation: 0,
           backgroundColor: isDark ? AppColors.cardDark : AppColors.primary,
           foregroundColor: Colors.white,

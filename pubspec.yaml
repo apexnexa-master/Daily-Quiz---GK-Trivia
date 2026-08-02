@@ -23,6 +23,9 @@ dependencies:
   # State management
   flutter_riverpod: ^2.5.1
   riverpod_annotation: ^2.3.5
+  flutter_bloc: ^9.0.0
+  flame: ^1.25.0
+  vector_math: ^2.1.4
 
   # Google Sign-In
   google_sign_in: ^7.2.0

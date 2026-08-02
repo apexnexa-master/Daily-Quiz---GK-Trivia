@@ -479,16 +479,20 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         children: [
           Row(
             children: [
-              // Exit button
+              // Back button
               GestureDetector(
                 onTap: () => _showExitDialog(context),
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.1),
+                    color: _isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(AppIcons.close, color: AppColors.error, size: 18),
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    color: _isDark ? Colors.white : AppColors.textPrimaryLight,
+                    size: 18,
+                  ),
                 ),
               ),
               const SizedBox(width: 6),

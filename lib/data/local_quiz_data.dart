@@ -128,13 +128,17 @@ class LocalQuizData {
     );
   }
 
-  static QuizModel? getPracticeQuiz(String examMode, int questionCount, {String? difficulty}) {
+  static QuizModel? getPracticeQuiz(String examMode, int questionCount, {String? difficulty, String? category}) {
     var allQuestions = _questionsByMode[examMode] ?? _questionsByMode['GENERAL'] ?? [];
 
     if (allQuestions.isEmpty) return null;
 
     if (difficulty != null && difficulty.toLowerCase() != 'all') {
       allQuestions = allQuestions.where((q) => q.difficulty.toLowerCase() == difficulty.toLowerCase()).toList();
+    }
+
+    if (category != null && category.toLowerCase() != 'all') {
+      allQuestions = allQuestions.where((q) => q.category.toLowerCase() == category.toLowerCase()).toList();
     }
 
     if (allQuestions.isEmpty) {

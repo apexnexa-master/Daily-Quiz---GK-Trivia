@@ -1119,9 +1119,18 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
           padding: AppSpacing.paddingCardCondensed,
           child: Row(
             children: [
-              if (widget.isTab != true) ...[
+              if (Navigator.canPop(context)) ...[
                 IconButton(
                   onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.arrow_back_rounded,
+                      color: isDark ? Colors.white : AppColors.textPrimaryLight),
+                ),
+                const SizedBox(width: 4),
+              ] else ...[
+                IconButton(
+                  onPressed: () {
+                    ref.read(navigationTabProvider.notifier).state = 0;
+                  },
                   icon: Icon(Icons.arrow_back_rounded,
                       color: isDark ? Colors.white : AppColors.textPrimaryLight),
                 ),

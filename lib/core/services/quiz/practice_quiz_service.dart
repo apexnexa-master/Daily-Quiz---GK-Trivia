@@ -215,6 +215,7 @@ class PracticeQuizService {
   Future<QuizModel> fetchPracticeQuiz({
     int questionCount = 10,
     String? difficulty,
+    String? category,
   }) async {
     await init();
 
@@ -248,18 +249,23 @@ class PracticeQuizService {
           order: map['order'] ?? 0,
         );
         
-        // Filter by GENERAL mode and difficulty if supplied
+        // Filter by GENERAL mode, difficulty, and category if supplied
         if (q.examTags.contains('GENERAL')) {
-          if (difficulty == null ||
+          final matchesDifficulty = difficulty == null ||
               difficulty.toLowerCase() == 'all' ||
-              q.difficulty.toLowerCase() == difficulty.toLowerCase()) {
+              q.difficulty.toLowerCase() == difficulty.toLowerCase();
+          final matchesCategory = category == null ||
+              category.toLowerCase() == 'all' ||
+              q.category.toLowerCase() == category.toLowerCase();
+
+          if (matchesDifficulty && matchesCategory) {
             pool.add(q);
           }
         }
       }
     }
 
-    // Fallback if difficulty filter yields no questions
+    // Fallback if difficulty/category filter yields no questions
     if (pool.isEmpty) {
       for (final key in _questionsBox.keys) {
         final jsonStr = _questionsBox.get(key);
@@ -287,7 +293,7 @@ class PracticeQuizService {
 
     if (pool.isEmpty) {
       // Ultimate fallback: create from LocalQuizData
-      final localQuiz = LocalQuizData.getPracticeQuiz('GENERAL', questionCount, difficulty: difficulty);
+      final localQuiz = LocalQuizData.getPracticeQuiz('GENERAL', questionCount, difficulty: difficulty, category: category);
       if (localQuiz != null) return localQuiz;
       throw Exception('No questions available in the local database.');
     }

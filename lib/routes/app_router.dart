@@ -16,6 +16,9 @@ import '../presentation/screens/feedback_screen.dart';
 // import '../presentation/screens/premium_screen.dart';
 import '../presentation/screens/admin_screen.dart';
 import '../presentation/screens/games/game_placeholder_screen.dart';
+import '../presentation/screens/knowledge_categories_screen.dart';
+import '../presentation/screens/games/arrow_escape_game_screen.dart';
+
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey =
       GlobalKey<NavigatorState>();
@@ -30,9 +33,11 @@ class AppRouter {
   static const String achievements = '/achievements';
   static const String onboarding = '/onboarding';
   static const String feedback = '/feedback';
+  static const String knowledge = '/knowledge';
   // Premium route - not used
   // static const String premium = '/premium';
   static const String admin = '/admin';
+  static const String arrowPuzzle = '/arrow-puzzle';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     // Intercept deep links of format: /challenge/{roomId}
@@ -59,6 +64,8 @@ class AppRouter {
         return _build(const ProfileScreen(), settings);
       case feedback:
         return _build(const FeedbackScreen(), settings);
+      case knowledge:
+        return _build(const KnowledgeCategoriesScreen(), settings);
       case battle:
         return _build(const BattleScreen(), settings);
       case achievements:
@@ -79,6 +86,8 @@ class AppRouter {
         );
       case admin:
         return _build(const AdminScreen(), settings);
+      case arrowPuzzle:
+        return _build(const ArrowEscapeGameScreen(), settings);
       default:
         return _build(const HomeScreen(), settings);
     }

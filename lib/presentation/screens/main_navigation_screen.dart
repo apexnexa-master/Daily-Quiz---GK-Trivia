@@ -1,4 +1,4 @@
-// lib/presentation/screens/main_navigation_screen.dart
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
@@ -6,6 +6,7 @@ import 'play_zone_screen.dart';
 import 'battle_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
+import '../providers/app_providers.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
   final int initialIndex;
@@ -16,8 +17,6 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 }
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
-  late int _currentIndex;
-
   final List<Widget> _screens = const [
     HomeScreen(),
     PlayZoneScreen(),
@@ -27,74 +26,86 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex.clamp(0, 2);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(navigationTabProvider.notifier).state = widget.initialIndex.clamp(0, 2);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currentIndex = ref.watch(navigationTabProvider);
 
     return Scaffold(
       extendBody: true,
       body: IndexedStack(
-        index: _currentIndex,
+        index: currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: Container(
         color: Colors.transparent,
         padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          bottom: 16 + MediaQuery.of(context).padding.bottom,
-          top: 8,
+          left: 20,
+          right: 20,
+          bottom: 12 + MediaQuery.of(context).padding.bottom,
+          top: 6,
         ),
         child: Container(
           decoration: BoxDecoration(
             color: isDark 
-                ? AppColors.cardDark.withValues(alpha: 0.95) 
-                : Colors.white.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(24),
+                ? const Color(0xFF151D1E).withValues(alpha: 0.85) 
+                : Colors.white.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(26),
             border: Border.all(
               color: isDark 
-                  ? AppColors.outlineVariant.withValues(alpha: 0.3) 
+                  ? AppColors.outlineVariant.withValues(alpha: 0.2) 
                   : Colors.black.withValues(alpha: 0.05),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: 0.1),
-                blurRadius: 20,
+                color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: 0.12),
+                blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildNavItem(
-                  index: 0,
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home_rounded,
-                  label: 'Home',
-                  isDark: isDark,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(26),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildNavItem(
+                      index: 0,
+                      icon: Icons.home_outlined,
+                      activeIcon: Icons.home_rounded,
+                      label: 'Home',
+                      isDark: isDark,
+                      currentIndex: currentIndex,
+                    ),
+                    _buildNavItem(
+                      index: 1,
+                      icon: Icons.sports_esports_outlined,
+                      activeIcon: Icons.sports_esports_rounded,
+                      label: 'Arena',
+                      isDark: isDark,
+                      currentIndex: currentIndex,
+                    ),
+                    _buildNavItem(
+                      index: 2,
+                      icon: AppIcons.battle,
+                      activeIcon: AppIcons.battle,
+                      label: 'Battle',
+                      isDark: isDark,
+                      currentIndex: currentIndex,
+                    ),
+                  ],
                 ),
-                _buildNavItem(
-                  index: 1,
-                  icon: Icons.sports_esports_outlined,
-                  activeIcon: Icons.sports_esports_rounded,
-                  label: 'Arena',
-                  isDark: isDark,
-                ),
-                _buildNavItem(
-                  index: 2,
-                  icon: AppIcons.battle,
-                  activeIcon: AppIcons.battle,
-                  label: 'Battle',
-                  isDark: isDark,
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -108,49 +119,70 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     required IconData activeIcon,
     required String label,
     required bool isDark,
+    required int currentIndex,
   }) {
-    final isSelected = _currentIndex == index;
+    final isSelected = currentIndex == index;
     final activeColor = isDark ? AppColors.primary : AppColors.primaryDark;
     final inactiveColor = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     return GestureDetector(
       onTap: () {
-        if (_currentIndex != index) {
-          setState(() {
-            _currentIndex = index;
-          });
+        if (currentIndex != index) {
+          ref.read(navigationTabProvider.notifier).state = index;
         }
       },
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-        child: Column(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (isDark ? AppColors.primary.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.08))
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected
+                ? (isDark ? AppColors.primary.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.1))
+                : Colors.transparent,
+            width: 1.2,
+          ),
+          boxShadow: [
+            if (isSelected && isDark)
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.06),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+          ],
+        ),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeOutCubic,
-              transform: Matrix4.identity()..scale(isSelected ? 1.12 : 1.0),
-              transformAlignment: Alignment.center,
-              child: Icon(
-                isSelected ? activeIcon : icon,
-                color: isSelected ? activeColor : inactiveColor,
-                size: 22,
-              ),
+            Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? activeColor : inactiveColor,
+              size: 20,
             ),
-            const SizedBox(height: 5),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOutCubic,
-              style: TextStyle(
-                color: isSelected ? activeColor : inactiveColor,
-                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                fontSize: isSelected ? 11.5 : 10.5,
-                letterSpacing: isSelected ? -0.1 : -0.2,
-                fontFamily: 'Outfit',
+            AnimatedCrossFade(
+              firstChild: Row(
+                children: [
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: activeColor,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                      fontFamily: 'Outfit',
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
               ),
-              child: Text(label),
+              secondChild: const SizedBox.shrink(),
+              crossFadeState: isSelected ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+              duration: const Duration(milliseconds: 200),
             ),
           ],
         ),

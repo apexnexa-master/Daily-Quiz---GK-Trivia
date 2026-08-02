@@ -1,4 +1,4 @@
-// lib/core/theme/app_theme.dart
+// lib/core/theme/app_theme_original.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gk_quiz_app/core/theme/app_colors.dart';
@@ -49,10 +49,8 @@ class AppTheme {
       ];
 
   static TextTheme _buildTextTheme(Brightness brightness) {
-    // Body & Labels: Inter
-    final base = GoogleFonts.interTextTheme();
-    // Headlines & Display: Montserrat
-    final headingFont = GoogleFonts.montserrat();
+    final base = GoogleFonts.plusJakartaSansTextTheme();
+    final headingFont = GoogleFonts.outfit();
     final bool isDark = brightness == Brightness.dark;
     final color = isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight;
     
@@ -96,7 +94,7 @@ class AppTheme {
       backgroundColor: AppColors.bgLight,
       foregroundColor: AppColors.textPrimaryLight,
       surfaceTintColor: Colors.transparent,
-      titleTextStyle: GoogleFonts.montserrat(
+      titleTextStyle: GoogleFonts.outfit(
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimaryLight,
@@ -115,7 +113,7 @@ class AppTheme {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w800),
+        textStyle: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -137,7 +135,7 @@ class AppTheme {
     ),
     chipTheme: ChipThemeData(
       selectedColor: AppColors.primary,
-      labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
     inputDecorationTheme: InputDecorationTheme(
@@ -211,7 +209,7 @@ class AppTheme {
       backgroundColor: AppColors.bgDark,
       foregroundColor: AppColors.textPrimaryDark,
       surfaceTintColor: Colors.transparent,
-      titleTextStyle: GoogleFonts.montserrat(
+      titleTextStyle: GoogleFonts.outfit(
         fontSize: 20,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimaryDark,
@@ -230,7 +228,7 @@ class AppTheme {
         elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w800),
+        textStyle: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -252,7 +250,7 @@ class AppTheme {
     ),
     chipTheme: ChipThemeData(
       selectedColor: AppColors.primary,
-      labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ),
     inputDecorationTheme: InputDecorationTheme(
