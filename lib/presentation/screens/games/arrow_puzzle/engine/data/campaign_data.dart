@@ -127,7 +127,7 @@ LevelDef _generateSingleLevel(int levelId) {
     rows = (size * 1.5).round();
   }
 
-  final generator = ProceduralGenerator(config: config);
+  final generator = ProceduralGenerator.withSeed(levelId, config: config);
   final levelData = generator.generate(cols, rows, shape,
       levelId: levelId, chapterId: chapterId);
 

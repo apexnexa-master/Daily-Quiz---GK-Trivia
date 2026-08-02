@@ -232,6 +232,7 @@ class QuizService {
     required String playerName,
     required int score,
     required int timeTaken,
+    required String challengeId,
   }) async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -244,16 +245,37 @@ class QuizService {
     final entryId = '${user.uid}_$today';
 
     try {
-      await _db.collection(AppConstants.colLeaderboard).doc(entryId).set({
+      final docRef = _db.collection(AppConstants.colLeaderboard).doc(entryId);
+      final docSnap = await docRef.get();
+
+      int finalScore = score;
+      int finalTime = timeTaken;
+      List<String> completedChallenges = [challengeId];
+
+      if (docSnap.exists) {
+        final data = docSnap.data();
+        if (data != null) {
+          final prevChallenges = List<String>.from(data['completed_challenges'] ?? []);
+          if (prevChallenges.contains(challengeId)) {
+            return;
+          }
+          finalScore += (data['score'] as num).toInt();
+          finalTime += (data['time_taken'] as num).toInt();
+          completedChallenges.addAll(prevChallenges);
+        }
+      }
+
+      await docRef.set({
         'uid': user.uid,
         'display_name': playerName.isNotEmpty && playerName != 'You' ? playerName : (user.displayName ?? 'Guest'),
         'photo_url': user.photoURL,
-        'score': score,
-        'time_taken': timeTaken,
+        'score': finalScore,
+        'time_taken': finalTime,
         'quiz_date': today,
         'week_id': weekId,
         'exam_mode': 'GENERAL',
         'rank': 99,
+        'completed_challenges': completedChallenges,
       }, SetOptions(merge: true));
     } catch (_) {
       // Silently ignore write failures (e.g. offline)

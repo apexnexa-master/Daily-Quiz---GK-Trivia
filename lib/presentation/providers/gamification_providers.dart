@@ -2,10 +2,30 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/gamification_service.dart';
 import '../../data/models/gamification_models.dart';
+import 'app_providers.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 final gamificationServiceProvider = Provider<GamificationService>((ref) => GamificationService.instance);
 
 final userStatsProvider = FutureProvider<UserStatsModel>((ref) async {
+  final user = ref.watch(authServiceProvider).currentUser;
+  if (user != null) {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        return UserStatsModel(
+          xp: data['xp'] ?? 0,
+          level: data['level'] ?? 1,
+          coins: data['coins'] ?? 100,
+          currentStreak: data['current_streak'] ?? 0,
+          longestStreak: data['longest_streak'] ?? 0,
+          lives: data['lives'] ?? 3,
+          referralCount: data['referral_count'] ?? 0,
+        );
+      }
+    } catch (_) {}
+  }
   final service = ref.watch(gamificationServiceProvider);
   return service.getUserStats();
 });

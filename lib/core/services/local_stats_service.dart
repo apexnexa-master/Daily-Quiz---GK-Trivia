@@ -123,7 +123,7 @@ class LocalStatsService {
   }
 
   Future<void> addScoreToLeaderboard(
-      String playerName, int score, int timeTaken) async {
+      String playerName, int score, int timeTaken, String challengeId) async {
     final leaderboard = await getLocalLeaderboard();
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
@@ -132,13 +132,16 @@ class LocalStatsService {
         .indexWhere((e) => e.playerName == playerName && e.date == today);
 
     if (existingIndex != -1) {
-      // Update if new score is better
-      if (score > leaderboard[existingIndex].score) {
+      final entry = leaderboard[existingIndex];
+      // Only add to score if this challenge hasn't been completed yet today
+      if (!entry.completedChallenges.contains(challengeId)) {
+        final updatedChallenges = List<String>.from(entry.completedChallenges)..add(challengeId);
         leaderboard[existingIndex] = LeaderboardEntryLocal(
           playerName: playerName,
-          score: score,
-          timeTaken: timeTaken,
+          score: entry.score + score,
+          timeTaken: entry.timeTaken + timeTaken,
           date: today,
+          completedChallenges: updatedChallenges,
         );
       }
     } else {
@@ -148,6 +151,7 @@ class LocalStatsService {
         score: score,
         timeTaken: timeTaken,
         date: today,
+        completedChallenges: [challengeId],
       ));
     }
 
@@ -177,11 +181,11 @@ class LocalStatsService {
 
     return [
       // Today entries (small scores, Vikram R 1st, Amit K 3rd, Rahim Sk 4th)
-      LeaderboardEntryLocal(playerName: 'Vikram R', score: 9, timeTaken: 150, date: today),
-      LeaderboardEntryLocal(playerName: 'Priya M', score: 7, timeTaken: 170, date: today),
-      LeaderboardEntryLocal(playerName: 'Amit K', score: 6, timeTaken: 180, date: today),
-      LeaderboardEntryLocal(playerName: 'Rahim Sk', score: 5, timeTaken: 190, date: today),
-      LeaderboardEntryLocal(playerName: 'Sneha D', score: 4, timeTaken: 200, date: today),
+      LeaderboardEntryLocal(playerName: 'Vikram R', score: 220, timeTaken: 150, date: today, completedChallenges: ['gk_challenge', 'arrow_puzzle']),
+      LeaderboardEntryLocal(playerName: 'Priya M', score: 190, timeTaken: 170, date: today, completedChallenges: ['gk_challenge', 'arrow_puzzle']),
+      LeaderboardEntryLocal(playerName: 'Amit K', score: 160, timeTaken: 180, date: today, completedChallenges: ['gk_challenge', 'arrow_puzzle']),
+      LeaderboardEntryLocal(playerName: 'Rahim Sk', score: 130, timeTaken: 190, date: today, completedChallenges: ['gk_challenge', 'arrow_puzzle']),
+      LeaderboardEntryLocal(playerName: 'Sneha D', score: 100, timeTaken: 200, date: today, completedChallenges: ['gk_challenge']),
 
       // Yesterday/This Week entries (To sum up to > 10 distinct people with little big numbers)
       LeaderboardEntryLocal(playerName: 'Vikram R', score: 210, timeTaken: 160, date: yesterday),
@@ -264,20 +268,24 @@ class LeaderboardEntryLocal {
   final int score;
   final int timeTaken;
   final String date;
+  final List<String> completedChallenges;
 
   LeaderboardEntryLocal({
     required this.playerName,
     required this.score,
     required this.timeTaken,
     required this.date,
+    this.completedChallenges = const [],
   });
 
   factory LeaderboardEntryLocal.fromJson(Map<String, dynamic> json) {
+    final rawList = json['completedChallenges'] as List?;
     return LeaderboardEntryLocal(
       playerName: json['playerName'] ?? 'Unknown',
       score: json['score'] ?? 0,
       timeTaken: json['timeTaken'] ?? 0,
       date: json['date'] ?? '',
+      completedChallenges: rawList != null ? List<String>.from(rawList) : const [],
     );
   }
 
@@ -286,5 +294,6 @@ class LeaderboardEntryLocal {
         'score': score,
         'timeTaken': timeTaken,
         'date': date,
+        'completedChallenges': completedChallenges,
       };
 }

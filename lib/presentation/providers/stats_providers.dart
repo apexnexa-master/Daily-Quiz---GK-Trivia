@@ -5,11 +5,28 @@ import '../../core/services/question_tracking_service.dart';
 import '../../data/models/firestore_models.dart';
 import '../../data/models/gamification_models.dart';
 import 'quiz_providers.dart';
+import 'app_providers.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 final localStatsServiceProvider = Provider<LocalStatsService>((ref) => LocalStatsService.instance);
 final questionTrackingProvider = Provider<QuestionTrackingService>((ref) => QuestionTrackingService.instance);
 
 final localStreakProvider = FutureProvider<LocalStreakData>((ref) async {
+  final user = ref.watch(authServiceProvider).currentUser;
+  if (user != null) {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        final current = data['current_streak'] ?? 0;
+        final longest = data['longest_streak'] ?? current;
+        return LocalStreakData(
+          currentStreak: current,
+          longestStreak: longest,
+        );
+      }
+    } catch (_) {}
+  }
   return ref.watch(localStatsServiceProvider).getStreak();
 });
 
@@ -39,6 +56,19 @@ final currentModeStatsProvider = FutureProvider<ModeStats>((ref) async {
 });
 
 final overallAccuracyProvider = FutureProvider<double>((ref) async {
+  final user = ref.watch(authServiceProvider).currentUser;
+  if (user != null) {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        if (data.containsKey('accuracy')) {
+          return (data['accuracy'] as num).toDouble();
+        }
+      }
+    } catch (_) {}
+  }
+
   final statsMap = await ref.watch(modeStatsProvider.future);
   int totalCorrect = 0;
   int totalQuestions = 0;

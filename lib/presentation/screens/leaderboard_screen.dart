@@ -9,6 +9,7 @@ import '../../core/theme/app_animations.dart';
 import '../../core/services/local_stats_service.dart';
 import '../providers/app_providers.dart';
 import '../widgets/shimmer_loading.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 final leaderboardTabProvider = StateProvider.autoDispose<int>((ref) => 0);
 
@@ -127,6 +128,14 @@ class LeaderboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.help_outline_rounded, color: Colors.white, size: 20),
+                onPressed: () => _showLeaderboardRulesDialog(context, isDark, isBn, isHi),
+                tooltip: 'Leaderboard Rules',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
             ],
           ),
@@ -408,7 +417,7 @@ class LeaderboardScreen extends ConsumerWidget {
         
         // Score
         Text(
-          isCumulative ? '${entry.score} pts' : '${entry.score}/10',
+          '${entry.score} pts',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w800,
@@ -548,7 +557,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
             ),
             child: Text(
-              isCumulative ? '${entry.score} pts' : '${entry.score}/10',
+              '${entry.score} pts',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -562,8 +571,8 @@ class LeaderboardScreen extends ConsumerWidget {
   }
 
   Color _getScoreColor(int score) {
-    if (score >= 8) return AppColors.success;
-    if (score >= 5) return AppColors.warning;
+    if (score >= 150) return AppColors.success;
+    if (score >= 80) return AppColors.warning;
     return AppColors.error;
   }
 
@@ -597,5 +606,126 @@ class LeaderboardScreen extends ConsumerWidget {
     });
 
     return aggregated;
+  }
+
+  void _showLeaderboardRulesDialog(BuildContext context, bool isDark, bool isBn, bool isHi) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+          ),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.emoji_events_rounded, color: Color(0xFFFBBF24)),
+            const SizedBox(width: 8),
+            Text(
+              isBn ? 'র‍্যাঙ্কিং নিয়মাবলী' : isHi ? 'रैंकिंग नियम' : 'Leaderboard Rules',
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.w900,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '1. RATED CHALLENGES ONLY:',
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  color: AppColors.primary,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Only daily challenge games (GK Live Challenge and Arrow Puzzle 3D Daily Challenge) count towards the leaderboard rankings. Practice modes or campaign levels do not award leaderboard points.',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                '2. CUMULATIVE POINT ACCUMULATION:',
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  color: Colors.green,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Points from each completed daily challenge are added together. Higher cumulative points decide weekly and all-time leaderboard standings.',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                '3. SPEED & ACCURACY SCORING:',
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  color: Colors.amber,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '• Time is critical: Solving/answering in less time gives you significant speed bonuses.\n'
+                '• For GK Live: Score is based on correct answers + time bonus (remaining seconds).\n'
+                '• For Arrow Puzzle 3D: Points = Base Score (100) - Moves Penalty + Speed Bonus (up to 50 points based on completion time).',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                '4. TIE-BREAKER RULE:',
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  color: Colors.redAccent,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'If multiple players have the same total score, the player who solved the challenges with the lowest overall time taken is ranked higher.',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'GOT IT',
+              style: GoogleFonts.montserrat(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

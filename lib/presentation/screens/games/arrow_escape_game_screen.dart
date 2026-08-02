@@ -1,5 +1,5 @@
-// lib/presentation/screens/games/arrow_escape_game_screen.dart
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,6 +16,9 @@ import 'arrow_puzzle/engine/logic/game_solver.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_animations.dart';
 import '../../../../core/services/ad_service.dart';
+import '../../../../core/services/local_stats_service.dart';
+import '../../../../core/services/quiz_service.dart';
+import '../../../../core/services/auth_service.dart';
 
 const String _saveKey = 'progress_save';
 
@@ -26,12 +29,20 @@ class ArrowEscapeGameScreen extends StatefulWidget {
   State<ArrowEscapeGameScreen> createState() => _ArrowEscapeGameScreenState();
 }
 
-class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
+class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with TickerProviderStateMixin {
   late final GameCanvas _game;
   late final GameBloc _bloc;
   final AnalyticsService _analytics = NullAnalyticsService();
   late ProgressManager _progress;
   final CampaignCatalog _catalog = CampaignCatalog.createFullCatalog();
+
+  AnimationController? _rulesBlinkController;
+  late Animation<double> _rulesAnimation;
+  final GlobalKey _helpButtonKey = GlobalKey();
+
+  Timer? _timer;
+  int _elapsedSeconds = 0;
+  bool _timerStarted = false;
 
   bool _loaded = false;
   int _currentLevelId = 1;
@@ -44,6 +55,27 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
   Offset _initialPan = Offset.zero;
   Offset _focalPoint = Offset.zero;
 
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      final state = _bloc.state;
+      if (state.status == GameStatus.playing) {
+        setState(() {
+          _elapsedSeconds++;
+        });
+      } else if (state.status == GameStatus.won || state.status == GameStatus.failed) {
+        _timer?.cancel();
+      }
+    });
+  }
+
+  String _formatTime(int totalSeconds) {
+    final m = totalSeconds ~/ 60;
+    final s = totalSeconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -52,15 +84,33 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
     _game.gameCamera.allowOverflow = true;
     _progress = ProgressManager();
 
+    _rulesBlinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 250),
+    );
+    _rulesAnimation = Tween<double>(begin: 1.0, end: 0.2).animate(
+      CurvedAnimation(parent: _rulesBlinkController!, curve: Curves.easeInOut),
+    );
+
     _bloc.stream.listen((state) {
       if (!mounted) return;
+
+      if (state.lastTappedArrowId != null && !_timerStarted) {
+        _timerStarted = true;
+        _startTimer();
+      }
+
       if (state.status == GameStatus.won) {
         setState(() => _showWinOverlay = true);
         Future.delayed(const Duration(milliseconds: 800), () {
           if (mounted) _onLevelWon();
         });
       } else if (state.status == GameStatus.deadEnd) {
-        setState(() => _showDeadEndOverlay = true);
+        if (_isDailyChallenge) {
+          setState(() => _showFailedOverlay = true);
+        } else {
+          setState(() => _showDeadEndOverlay = true);
+        }
       } else if (state.status == GameStatus.failed) {
         setState(() => _showFailedOverlay = true);
       } else {
@@ -71,6 +121,15 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
           setState(() => _showFailedOverlay = false);
         }
         if (state.lastTappedArrowId != null && !state.lastMoveValid) {
+          // Trigger the rules button blinking!
+          _rulesBlinkController?.forward().then((_) {
+            _rulesBlinkController?.reverse().then((_) {
+              _rulesBlinkController?.forward().then((_) {
+                _rulesBlinkController?.reverse();
+              });
+            });
+          });
+
           final parsed = state.parsedLevel;
           if (parsed != null) {
             try {
@@ -124,8 +183,221 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
     _loadLevel(_currentLevelId);
   }
 
+  void _showRulesDialog({VoidCallback? onDismiss}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Offset buttonCenter = const Offset(300, 80);
+    final renderBox = _helpButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final buttonPosition = renderBox.localToGlobal(Offset.zero);
+      final buttonSize = renderBox.size;
+      buttonCenter = Offset(
+        buttonPosition.dx + buttonSize.width / 2,
+        buttonPosition.dy + buttonSize.height / 2,
+      );
+    }
+
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withValues(alpha: 0.7),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return Center(
+            child: AlertDialog(
+              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(
+                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                ),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.help_outline_rounded, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'How to Play',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'GOAL:',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Swipe or tap arrows to slide them off the grid. Arrows can only move in the direction they are pointing.',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'CAN BE MOVED:',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: Colors.green,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('✓ ', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                        Expanded(
+                          child: Text(
+                            'Arrows with an empty, clear path in front of them.',
+                            style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('✓ ', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                        Expanded(
+                          child: Text(
+                            'Arrows at the top layer (brighter lines, casting longer shadows).',
+                            style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'CANNOT BE MOVED (BLOCKED):',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: Colors.redAccent,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('✗ ', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                        Expanded(
+                          child: Text(
+                            'Path Blocked: Another arrow is sitting directly on the path in front of it.',
+                            style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('✗ ', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                        Expanded(
+                          child: Text(
+                            'Covered (3D Stacking): Another arrow on a higher layer is crossing directly over its body. You must clear the top, brighter arrow first!',
+                            style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'TIPS:',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        color: Colors.amber,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '• Look at shadows & brightness: Clear the brightest, topmost layer first.\n'
+                      '• Use the Reset button if you get stuck.\n'
+                      '• Tap a blocked arrow to see a helpful message explaining what is blocking it.',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onDismiss?.call();
+                  },
+                  child: Text(
+                    'GOT IT',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+        reverseTransitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curvedAnimation = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return AnimatedBuilder(
+            animation: curvedAnimation,
+            builder: (context, childWidget) {
+              final t = curvedAnimation.value;
+              final screenSize = MediaQuery.of(context).size;
+              final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
+              final translation = Offset.lerp(buttonCenter - screenCenter, Offset.zero, t)!;
+
+              return Transform.translate(
+                offset: translation,
+                child: Transform.scale(
+                  scale: t,
+                  alignment: Alignment.center,
+                  child: Opacity(
+                    opacity: t.clamp(0.0, 1.0),
+                    child: childWidget,
+                  ),
+                ),
+              );
+            },
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
   int getHarderDailyLevelId() {
-    final now = DateTime.now().toUtc();
+    final now = DateTime.now();
     final dateKey = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
     final seed = int.tryParse(dateKey) ?? 0;
     // Map the seed to a hard level between level 70 and 95 (25 levels range)
@@ -143,7 +415,6 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
         _progress = ProgressManager();
       }
     }
-    ProgressManager.bypassLocks = true; // Make navigation flexible for training
     _progress.recordSession();
     _bloc.startSession();
     _loaded = true;
@@ -166,6 +437,15 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
         _showDeadEndOverlay = false;
         _showFailedOverlay = false;
       });
+
+      _timer?.cancel();
+      _elapsedSeconds = 0;
+      _timerStarted = false;
+      if (_isDailyChallenge) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _showRulesDialog();
+        });
+      }
     }
   }
 
@@ -182,6 +462,30 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
       coinsEarned: result.coinsEarned,
     );
     _saveProgress();
+
+    if (_isDailyChallenge) {
+      final basePoints = 100;
+      final extraMoves = result.movesUsed > result.targetMoves ? (result.movesUsed - result.targetMoves) : 0;
+      final movesPenalty = extraMoves * 2;
+      final baseScore = (basePoints - movesPenalty).clamp(20, 100);
+      final speedBonus = _elapsedSeconds < 180 ? ((180 - _elapsedSeconds) * 50 ~/ 180) : 0;
+      final totalPoints = baseScore + speedBonus;
+
+      final auth = AuthService();
+      final user = auth.currentUser;
+      final playerName = user?.displayName ?? 'You';
+
+      LocalStatsService.instance.addScoreToLeaderboard(playerName, totalPoints, _elapsedSeconds, 'arrow_puzzle');
+
+      if (user != null) {
+        QuizService().submitScoreToLeaderboard(
+          playerName: playerName,
+          score: totalPoints,
+          timeTaken: _elapsedSeconds,
+          challengeId: 'arrow_puzzle',
+        );
+      }
+    }
 
     // Show completion popup on overlay instead of replacing route
     setState(() {
@@ -213,6 +517,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
 
   @override
   void dispose() {
+    _timer?.cancel();
+    _rulesBlinkController?.dispose();
     _saveProgress();
     _bloc.endSession();
     _bloc.close();
@@ -371,7 +677,7 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                           icon: Icon(Icons.arrow_back_rounded, color: isDark ? Colors.white : Colors.black87),
                           onPressed: () => Navigator.pop(context),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: GestureDetector(
                             onTap: _isDailyChallenge ? null : _showLevelSelector,
@@ -393,7 +699,7 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                                       children: [
                                         Text(
                                           _isDailyChallenge
-                                              ? 'Daily Hard Mode'
+                                              ? 'Arrow Puzzle 3D'
                                               : 'Challenge $_currentLevelId',
                                           style: GoogleFonts.montserrat(
                                             fontSize: 16,
@@ -413,26 +719,19 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                             ),
                           ),
                         ),
-                        StreamBuilder<GameState>(
-                          initialData: _bloc.state,
-                          stream: _bloc.stream,
-                          builder: (context, snapshot) {
-                            final s = snapshot.data!;
-                            return Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: List.generate(3, (idx) {
-                                final active = idx < s.lives;
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                                  child: Icon(
-                                    active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                    color: active ? Colors.redAccent : (isDark ? Colors.white24 : Colors.black26),
-                                    size: 20,
-                                  ),
-                                );
-                              }),
+                        AnimatedBuilder(
+                          animation: _rulesAnimation,
+                          builder: (context, child) {
+                            return Opacity(
+                              opacity: _rulesAnimation.value,
+                              child: child,
                             );
                           },
+                          child: IconButton(
+                            key: _helpButtonKey,
+                            icon: Icon(Icons.help_outline_rounded, color: AppColors.primary, size: 20),
+                            onPressed: () => _showRulesDialog(),
+                          ),
                         ),
                       ],
                     ),
@@ -525,38 +824,85 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                                 ),
                               ],
                             ),
-                            const Spacer(),
-
-                            // Undo
-                            _buildActionButton(
-                              icon: Icons.undo_rounded,
-                              label: 'Undo',
-                              enabled: canUndo,
-                              isDark: isDark,
-                              onTap: _requestUndo,
+                            const SizedBox(width: 24),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'LIVES',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    color: isDark ? Colors.white38 : Colors.black38,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: List.generate(3, (idx) {
+                                    final active = idx < s.lives;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 3.0),
+                                      child: Icon(
+                                        active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                        color: active ? Colors.redAccent : (isDark ? Colors.white24 : Colors.black26),
+                                        size: 16,
+                                      ),
+                                    );
+                                  }),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 10),
-
-                            // Hint
-                            _buildActionButton(
-                              icon: Icons.lightbulb_outline_rounded,
-                              label: 'Hint',
-                              enabled: true,
-                              isDark: isDark,
-                              onTap: _requestHint,
+                            const SizedBox(width: 24),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'TIME',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    color: isDark ? Colors.white38 : Colors.black38,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Text(
+                                  _formatTime(_elapsedSeconds),
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 10),
-
-                            // Reset
-                            _buildActionButton(
-                              icon: Icons.refresh_rounded,
-                              label: 'Reset',
-                              enabled: true,
-                              isDark: isDark,
-                              onTap: () {
-                                _bloc.add(ResetLevelEvent());
-                              },
-                            ),
+                            if (!_isDailyChallenge) ...[
+                              const Spacer(),
+                              // Undo
+                              _buildActionButton(
+                                icon: Icons.undo_rounded,
+                                label: 'Undo',
+                                enabled: canUndo,
+                                isDark: isDark,
+                                onTap: _requestUndo,
+                              ),
+                              const SizedBox(width: 16),
+                              // Reset
+                              _buildActionButton(
+                                icon: Icons.refresh_rounded,
+                                label: 'Reset',
+                                enabled: true,
+                                isDark: isDark,
+                                onTap: () {
+                                  _bloc.add(ResetLevelEvent());
+                                  _timer?.cancel();
+                                  setState(() {
+                                    _elapsedSeconds = 0;
+                                    _timerStarted = false;
+                                  });
+                                },
+                              ),
+                            ],
                           ],
                         ),
                       );
@@ -666,6 +1012,14 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                     color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.6),
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  'Time Taken: ${_formatTime(_elapsedSeconds)}',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.6),
+                  ),
+                ),
                 if (isPerfect) ...[
                   const SizedBox(height: 8),
                   Container(
@@ -687,32 +1041,34 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          _loadLevel(_currentLevelId);
-                        },
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.24) : Colors.black.withValues(alpha: 0.24)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                    if (!_isDailyChallenge) ...[
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            _loadLevel(_currentLevelId);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.24) : Colors.black.withValues(alpha: 0.24)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          'Retry',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.7),
+                          child: Text(
+                            'Retry',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.7),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
+                      const SizedBox(width: 12),
+                    ],
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          if (_currentLevelId < _catalog.totalLevels) {
+                          if (!_isDailyChallenge && _currentLevelId < _catalog.totalLevels) {
                             _loadLevel(_currentLevelId + 1);
                           } else {
                             Navigator.pop(context);
@@ -726,7 +1082,7 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                           ),
                         ),
                         child: Text(
-                          _currentLevelId < _catalog.totalLevels ? 'Next Level' : 'Exit',
+                          (!_isDailyChallenge && _currentLevelId < _catalog.totalLevels) ? 'Next Level' : 'Exit',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -806,10 +1162,13 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          _bloc.add(ResetLevelEvent());
-                          setState(() {
-                            _showDeadEndOverlay = false;
-                          });
+                           _bloc.add(ResetLevelEvent());
+                           _timer?.cancel();
+                           setState(() {
+                             _showDeadEndOverlay = false;
+                             _elapsedSeconds = 0;
+                             _timerStarted = false;
+                           });
                         },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -862,7 +1221,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'You ran out of lives. Revive to continue or restart.',
+                  _isDailyChallenge
+                      ? 'You ran out of lives. Revive to continue or exit.'
+                      : 'You ran out of lives. Revive to continue or restart.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 13,
@@ -875,27 +1236,29 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () async {
-                          if (!AdService.instance.isRewardedReady) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Ad is loading, please wait...'), duration: Duration(seconds: 1)),
-                            );
-                            await AdService.instance.loadRewarded();
+                          if (_isDailyChallenge) {
+                            Navigator.pop(context); // Exit
+                          } else {
                             if (!AdService.instance.isRewardedReady) {
-                              // Fallback if ad cannot load (e.g. offline)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Ad is loading, please wait...'), duration: Duration(seconds: 1)),
+                              );
+                              await AdService.instance.loadRewarded();
+                              if (!AdService.instance.isRewardedReady) {
+                                _bloc.add(ReviveEvent());
+                                setState(() {
+                                  _showFailedOverlay = false;
+                                });
+                                return;
+                              }
+                            }
+                            final earned = await AdService.instance.showRewarded();
+                            if (earned) {
                               _bloc.add(ReviveEvent());
                               setState(() {
                                 _showFailedOverlay = false;
                               });
-                              return;
                             }
-                          }
-
-                          final earned = await AdService.instance.showRewarded();
-                          if (earned) {
-                            _bloc.add(ReviveEvent());
-                            setState(() {
-                              _showFailedOverlay = false;
-                            });
                           }
                         },
                         style: OutlinedButton.styleFrom(
@@ -904,17 +1267,43 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Revive', style: TextStyle(color: Colors.redAccent)),
+                        child: Text(_isDailyChallenge ? 'Exit' : 'Revive', style: const TextStyle(color: Colors.redAccent)),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
-                          _bloc.add(ResetLevelEvent());
-                          setState(() {
-                            _showFailedOverlay = false;
-                          });
+                        onPressed: () async {
+                          if (_isDailyChallenge) {
+                            if (!AdService.instance.isRewardedReady) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Ad is loading, please wait...'), duration: Duration(seconds: 1)),
+                              );
+                              await AdService.instance.loadRewarded();
+                              if (!AdService.instance.isRewardedReady) {
+                                _bloc.add(ReviveEvent());
+                                setState(() {
+                                  _showFailedOverlay = false;
+                                });
+                                return;
+                              }
+                            }
+                            final earned = await AdService.instance.showRewarded();
+                            if (earned) {
+                              _bloc.add(ReviveEvent());
+                              setState(() {
+                                _showFailedOverlay = false;
+                              });
+                            }
+                          } else {
+                            _bloc.add(ResetLevelEvent());
+                            _timer?.cancel();
+                            setState(() {
+                              _showFailedOverlay = false;
+                              _elapsedSeconds = 0;
+                              _timerStarted = false;
+                            });
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -923,7 +1312,7 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Restart', style: TextStyle(color: Colors.white)),
+                        child: Text(_isDailyChallenge ? 'Revive' : 'Restart', style: const TextStyle(color: Colors.white)),
                       ),
                     ),
                   ],

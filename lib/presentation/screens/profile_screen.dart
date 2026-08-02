@@ -159,7 +159,7 @@ class _StatsSection extends ConsumerWidget {
                 data: (acc) => _StatCard(
                   icon: Icons.percent_rounded,
                   iconColor: AppColors.secondary,
-                  value: '${acc.toInt()}%',
+                  value: acc > 0 ? '${acc.toInt()}%' : '-',
                   label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
                   sublabel: isBn ? 'হার' : isHi ? 'दर' : 'rate',
                   isDark: isDark,
@@ -168,7 +168,7 @@ class _StatsSection extends ConsumerWidget {
                 error: (_, __) => _StatCard(
                   icon: Icons.percent_rounded,
                   iconColor: AppColors.secondary,
-                  value: '0%',
+                  value: '-',
                   label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
                   sublabel: isBn ? 'হার' : isHi ? 'दर' : 'rate',
                   isDark: isDark,
@@ -203,7 +203,7 @@ class _StatsSection extends ConsumerWidget {
                 data: (best) => _StatCard(
                   icon: AppIcons.achievement,
                   iconColor: AppColors.success,
-                  value: '${best.percentage.toInt()}%',
+                  value: best.percentage > 0 ? '${best.percentage.toInt()}%' : '-',
                   label: isBn ? 'সেরা স্কোর' : isHi ? 'सर्वश्रेष्ठ स्कोर' : 'Best Score',
                   sublabel: isBn ? 'শতাংশ' : isHi ? 'प्रतिशत' : '%',
                   isDark: isDark,

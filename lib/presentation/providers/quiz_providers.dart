@@ -10,6 +10,8 @@ import '../../data/models/firestore_models.dart';
 
 import '../../core/services/analytics_service.dart';
 import 'auth_providers.dart';
+import 'stats_providers.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 final quizServiceProvider = Provider<QuizService>((ref) => QuizService());
 final questionServiceProvider = Provider<QuestionService>((ref) => QuestionService.instance);
@@ -151,17 +153,39 @@ class QuizSessionNotifier extends StateNotifier<QuizSessionState?> {
       await _localStats.updatePersonalBestIfNeeded(score, state!.quiz.questionCount);
       await _localStats.addToTotalScore(score);
 
+      // GK Challenge points = (correct answers * 10) + speed bonus (remaining seconds out of 180)
+      final basePoints = score * 10;
+      final speedBonus = totalTimeTaken < 180 ? ((180 - totalTimeTaken) * 50 ~/ 180) : 0;
+      final totalPoints = basePoints + speedBonus;
+
       final user = _ref.read(authServiceProvider).currentUser;
       final playerName = user?.displayName ?? 'You';
-      await _localStats.addScoreToLeaderboard(playerName, score, totalTimeTaken);
+      await _localStats.addScoreToLeaderboard(playerName, totalPoints, totalTimeTaken, 'gk_challenge');
       
       // Upload to global Firestore leaderboard if online
       if (user != null) {
         await _quizService.submitScoreToLeaderboard(
           playerName: playerName,
-          score: score,
+          score: totalPoints,
           timeTaken: totalTimeTaken,
+          challengeId: 'gk_challenge',
         );
+
+        // Fetch overall stats to calculate and save overall accuracy to Firestore
+        try {
+          _ref.invalidate(modeStatsProvider);
+          final statsMap = await _ref.read(modeStatsProvider.future);
+          int totalCorrect = 0;
+          int totalQuestions = 0;
+          statsMap.forEach((_, stats) {
+            totalCorrect += stats.totalCorrect;
+            totalQuestions += stats.totalQuestions;
+          });
+          final double newAccuracy = totalQuestions > 0 ? (totalCorrect / totalQuestions) * 100 : 0.0;
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+            'accuracy': newAccuracy,
+          });
+        } catch (_) {}
       }
 
       state = state!.copyWith(isSubmitting: false, result: result, totalTimeTaken: totalTimeTaken);

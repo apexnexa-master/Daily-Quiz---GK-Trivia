@@ -41,14 +41,19 @@ class CloudSyncService {
   Future<void> _uploadStatsToCloud(Map<String, dynamic> stats) async {
     if (_currentUser == null) return;
 
+    final xp = stats['xp'] ?? 0;
+    final level = stats['level'] ?? 1;
+    final bsi = xp + level * 100;
+
     await _db.collection('users').doc(_currentUser!.uid).update({
-      'xp': stats['xp'] ?? 0,
-      'level': stats['level'] ?? 1,
+      'xp': xp,
+      'level': level,
       'coins': stats['coins'] ?? 100,
       'current_streak': stats['currentStreak'] ?? 0,
       'longest_streak': stats['longestStreak'] ?? 0,
       'lives': stats['lives'] ?? 3,
       'referral_count': stats['referralCount'] ?? 0,
+      'bsi_index': bsi,
       'last_sync': FieldValue.serverTimestamp(),
     });
   }

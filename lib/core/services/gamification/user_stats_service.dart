@@ -26,6 +26,9 @@ class UserStatsService {
 
   Future<void> saveUserStats(UserStatsModel stats) async {
     await _statsBox.put('user_stats', jsonEncode(_userStatsToJson(stats)));
+    try {
+      await CloudSyncService.instance.syncStatsToCloud();
+    } catch (_) {}
   }
 
   Future<UserStatsModel> addXP(int xp) async {

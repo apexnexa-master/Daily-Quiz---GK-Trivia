@@ -215,10 +215,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         arrowId: event.arrowId,
         reason: 'modifier_blocked',
       );
+      final newLives = state.lives - 1;
+      final newStatus = newLives <= 0 ? GameStatus.failed : state.status;
       emit(state.copyWith(
         lastTappedArrowId: event.arrowId,
         lastMoveValid: false,
         combo: 0,
+        lives: newLives,
+        status: newStatus,
       ));
       return;
     }
@@ -294,10 +298,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         arrowId: event.arrowId,
         reason: 'path_blocked',
       );
+      final newLives = state.lives - 1;
+      final newStatus = newLives <= 0 ? GameStatus.failed : state.status;
       emit(state.copyWith(
         lastTappedArrowId: event.arrowId,
         lastMoveValid: false,
         combo: 0,
+        lives: newLives,
+        status: newStatus,
       ));
     }
   }
