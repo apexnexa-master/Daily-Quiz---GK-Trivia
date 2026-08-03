@@ -93,6 +93,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
         ),
         child: SafeArea(
+          bottom: false,
           child: Column(
             children: [
               // Custom Header Bar matching Mind Gym
@@ -267,54 +268,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildMetricsBentoBox(int streak, double accuracy, int bsi, bool isBn, bool isHi, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: isDark 
-            ? AppColors.cardDark.withValues(alpha: 0.4) 
-            : Colors.white.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark 
-              ? Colors.white.withValues(alpha: 0.08) 
-              : Colors.black.withValues(alpha: 0.05),
-          width: 1.2,
+    final displayBsi = bsi > 0 ? bsi : 100;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: isDark 
+                ? const Color(0xFF151D1E).withValues(alpha: 0.25) 
+                : Colors.white.withValues(alpha: 0.45),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark 
+                  ? Colors.white.withValues(alpha: 0.1) 
+                  : Colors.black.withValues(alpha: 0.05),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildMetricItem(
+                icon: Icons.local_fire_department_rounded,
+                iconColor: const Color(0xFFF97316),
+                label: isBn ? 'সক্রিয় দিন' : isHi ? 'लगातार दिन' : 'Streak',
+                value: '$streak ${isBn ? 'দিন' : isHi ? 'दिन' : 'Days'}',
+                isDark: isDark,
+              ),
+              _buildVerticalDivider(isDark),
+              _buildMetricItem(
+                icon: Icons.gps_fixed_rounded,
+                iconColor: const Color(0xFF10B981),
+                label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
+                value: '${accuracy.toInt()}%',
+                isDark: isDark,
+              ),
+              _buildVerticalDivider(isDark),
+              _buildMetricItem(
+                icon: Icons.psychology_rounded,
+                iconColor: isDark ? AppColors.primary : AppColors.primaryDark,
+                label: isBn ? 'মস্তিষ্ক সূচক' : isHi ? 'मस्तिष्क सूचकांक' : 'BSI Index',
+                value: '$displayBsi',
+                isDark: isDark,
+              ),
+            ],
+          ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildMetricItem(
-            icon: Icons.local_fire_department_rounded,
-            iconColor: const Color(0xFFF97316),
-            label: isBn ? 'সক্রিয় দিন' : isHi ? 'लगातार दिन' : 'Streak',
-            value: streak > 0 ? '$streak ${isBn ? 'দিন' : isHi ? 'दिन' : 'Days'}' : '-',
-            isDark: isDark,
-          ),
-          _buildVerticalDivider(isDark),
-          _buildMetricItem(
-            icon: Icons.gps_fixed_rounded,
-            iconColor: const Color(0xFF10B981),
-            label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
-            value: accuracy > 0 ? '${accuracy.toInt()}%' : '-',
-            isDark: isDark,
-          ),
-          _buildVerticalDivider(isDark),
-          _buildMetricItem(
-            icon: Icons.psychology_rounded,
-            iconColor: isDark ? AppColors.primary : AppColors.primaryDark,
-            label: isBn ? 'মস্তিষ্ক সূচক' : isHi ? 'मस्तिष्क सूचकांक' : 'BSI Index',
-            value: bsi > 0 ? '$bsi' : '-',
-            isDark: isDark,
-          ),
-        ],
       ),
     );
   }
@@ -841,25 +849,204 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildBattleBentoCard(BuildContext context, bool isBn, bool isHi, bool isDark) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: isDark 
-            ? AppColors.cardDark.withValues(alpha: 0.55) 
-            : Colors.white.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
+    const neonCyan = Color(0xFF00F1FE);
+
+    return AnimatedScaleButton(
+      onTap: () => Navigator.pushNamed(context, '/battle'),
+      child: Container(
+        width: double.infinity,
+        height: 155,
+        decoration: BoxDecoration(
           color: isDark 
-              ? const Color(0xFF00F1FE).withValues(alpha: 0.35) 
-              : const Color(0xFF0284C7).withValues(alpha: 0.25), 
-          width: 1.6,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF00F1FE).withValues(alpha: isDark ? 0.12 : 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+              ? const Color(0xFF151D1E).withValues(alpha: 0.65) 
+              : Colors.white.withValues(alpha: 0.8),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: neonCyan.withValues(alpha: 0.25),
+            width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: neonCyan.withValues(alpha: isDark ? 0.08 : 0.04),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/icon/battle_1v1_mascot.jpg',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.centerRight,
+                ),
+              ),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.98),
+                        (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.85),
+                        (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.3),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.45, 0.75, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: neonCyan.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: neonCyan.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              PulseWidget(
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: neonCyan,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isBn ? 'মাল্টিপ্লেয়ার' : isHi ? 'मल्टीप्लेयर' : 'MULTIPLAYER',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? neonCyan : const Color(0xFF0284C7),
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 12,
+                              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isBn ? '৫ মিনিট' : isHi ? '5 मिनट' : '~5 min',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 65),
+                      child: Text(
+                        isBn ? '১ বনাম ১ কুইজ যুদ্ধ' : isHi ? '1 बनाम 1 क्विज़ युद्ध' : '1v1 Quiz Battle',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                          letterSpacing: -0.2,
+                          fontFamily: 'Montserrat',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 65),
+                      child: Text(
+                        isBn ? 'লাইভ দ্বৈরথ বা বট প্রশিক্ষণ' : isHi ? 'लाइव दोस्त या बॉट से खेलें' : 'Duel friends live or train vs bot',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                          fontFamily: 'Inter',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isBn ? 'অনলাইন ও অফলাইন মোড' : isHi ? 'ऑनलाइन और ऑफ़लाइन मोड' : 'Online & offline modes',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.bold,
+                            color: isDark 
+                                ? AppColors.textSecondaryDark.withValues(alpha: 0.7) 
+                                : AppColors.textSecondaryLight.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: neonCyan,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: neonCyan.withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.black,
+                            size: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
             blurRadius: 12,
@@ -873,7 +1060,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Positioned.fill(
               child: Image.asset(
-                isDark ? 'assets/icon/battle_mascot_dark.jpg' : 'assets/icon/battle_mascot_light.jpg',
+                'assets/icon/battle_1v1_mascot.jpg',
                 fit: BoxFit.cover,
                 alignment: Alignment.centerRight,
               ),

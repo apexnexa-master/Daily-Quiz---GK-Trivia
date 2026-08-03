@@ -22,6 +22,7 @@ class BattleService {
     required String playerId,
     required String avatarUrl,
     int questionCount = 5,
+    String gameType = 'TRIVIA',
   }) async {
     final random = Random();
     final roomId = (100000 + random.nextInt(900000)).toString();
@@ -40,6 +41,7 @@ class BattleService {
       'status': 'waiting',
       'createdAt': FieldValue.serverTimestamp(),
       'questions': selectedQuestions,
+      'gameType': gameType,
       'players': {
         playerId: {
           'name': playerNickname,

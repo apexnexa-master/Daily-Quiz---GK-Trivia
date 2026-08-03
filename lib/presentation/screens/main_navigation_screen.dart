@@ -17,18 +17,21 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
 }
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    PlayZoneScreen(),
-    BattleScreen(isTab: true),
-  ];
+  late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: widget.initialIndex.clamp(0, 2));
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(navigationTabProvider.notifier).state = widget.initialIndex.clamp(0, 2);
     });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -36,37 +39,60 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentIndex = ref.watch(navigationTabProvider);
 
+    // Listen to provider changes to animate the PageView
+    ref.listen<int>(navigationTabProvider, (previous, next) {
+      if (_pageController.hasClients && _pageController.page?.round() != next) {
+        _pageController.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    });
+
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: currentIndex,
-        children: _screens,
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        children: const [
+          TabKeepAliveWrapper(child: HomeScreen()),
+          TabKeepAliveWrapper(child: PlayZoneScreen()),
+          TabKeepAliveWrapper(child: BattleScreen(isTab: true)),
+        ],
       ),
       bottomNavigationBar: Container(
         color: Colors.transparent,
         padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          bottom: 12 + MediaQuery.of(context).padding.bottom,
+          left: 24,
+          right: 24,
+          bottom: 16 + MediaQuery.of(context).padding.bottom,
           top: 6,
         ),
         child: Container(
           decoration: BoxDecoration(
             color: isDark 
-                ? const Color(0xFF151D1E).withValues(alpha: 0.85) 
-                : Colors.white.withValues(alpha: 0.9),
+                ? const Color(0xFF0F171A).withValues(alpha: 0.6) 
+                : Colors.white.withValues(alpha: 0.65),
             borderRadius: BorderRadius.circular(26),
             border: Border.all(
               color: isDark 
-                  ? AppColors.outlineVariant.withValues(alpha: 0.2) 
-                  : Colors.black.withValues(alpha: 0.05),
-              width: 1.5,
+                  ? Colors.white.withValues(alpha: 0.1) 
+                  : Colors.black.withValues(alpha: 0.06),
+              width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: 0.12),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: isDark ? 0.35 : 0.08),
+                blurRadius: 32,
+                offset: const Offset(0, 10),
+                spreadRadius: -4,
+              ),
+              BoxShadow(
+                color: (isDark ? AppColors.primary : Colors.white).withValues(alpha: isDark ? 0.03 : 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, -2),
+                spreadRadius: -2,
               ),
             ],
           ),
@@ -97,8 +123,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                     ),
                     _buildNavItem(
                       index: 2,
-                      icon: AppIcons.battle,
-                      activeIcon: AppIcons.battle,
+                      icon: Icons.shield_outlined,
+                      activeIcon: Icons.shield_rounded,
                       label: 'Battle',
                       isDark: isDark,
                       currentIndex: currentIndex,
@@ -188,5 +214,24 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         ),
       ),
     );
+  }
+}
+
+class TabKeepAliveWrapper extends StatefulWidget {
+  final Widget child;
+  const TabKeepAliveWrapper({super.key, required this.child});
+
+  @override
+  State<TabKeepAliveWrapper> createState() => _TabKeepAliveWrapperState();
+}
+
+class _TabKeepAliveWrapperState extends State<TabKeepAliveWrapper> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

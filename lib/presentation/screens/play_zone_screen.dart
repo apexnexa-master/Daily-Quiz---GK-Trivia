@@ -172,6 +172,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
           gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
         ),
         child: SafeArea(
+          bottom: false,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

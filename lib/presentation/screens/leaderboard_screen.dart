@@ -54,9 +54,9 @@ class LeaderboardScreen extends ConsumerWidget {
                   }
 
                   if (filteredEntries.isEmpty) {
-                    return _buildEmptyState(isDark, isBn, isHi);
+                    return _buildEmptyState(ref, isDark, isBn, isHi);
                   }
-                  return _buildContent(filteredEntries, isDark, isBn, isHi, selectedTab != 0);
+                  return _buildContent(ref, filteredEntries, isDark, isBn, isHi, selectedTab != 0);
                 },
                 loading: () => const Padding(
                   padding: EdgeInsets.all(20.0),
@@ -203,82 +203,102 @@ class LeaderboardScreen extends ConsumerWidget {
     return '${now.day} ${months[now.month - 1]}';
   }
 
-  Widget _buildEmptyState(bool isDark, bool isBn, bool isHi) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.emoji_events_outlined, size: 52, color: AppColors.primary),
+  Widget _buildEmptyState(WidgetRef ref, bool isDark, bool isBn, bool isHi) {
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () async {
+        ref.invalidate(localLeaderboardProvider);
+        await Future.delayed(const Duration(milliseconds: 600));
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Container(
+          height: 400,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.emoji_events_outlined, size: 52, color: AppColors.primary),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                isBn
+                    ? 'কোনো র‍্যাংকিং নেই'
+                    : isHi
+                        ? 'अभी तक कोई रैंकिंग नहीं'
+                        : 'No rankings yet',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isBn
+                    ? 'কুইজ দিয়ে প্রথম হন!'
+                    : isHi
+                        ? 'क्विज़ देकर पहले बनें!'
+                        : 'Be the first to attempt!',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white54 : Colors.grey,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
-          Text(
-            isBn
-                ? 'কোনো র‍্যাংকিং নেই'
-                : isHi
-                    ? 'अभी तक कोई रैंकिंग नहीं'
-                    : 'No rankings yet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : AppColors.textPrimaryLight,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isBn
-                ? 'কুইজ দিয়ে প্রথম হন!'
-                : isHi
-                    ? 'क्विज़ देकर पहले बनें!'
-                    : 'Be the first to attempt!',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white54 : Colors.grey,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildContent(List<LeaderboardEntryLocal> entries, bool isDark, bool isBn, bool isHi, bool isCumulative) {
+  Widget _buildContent(WidgetRef ref, List<LeaderboardEntryLocal> entries, bool isDark, bool isBn, bool isHi, bool isCumulative) {
     final podiumEntries = entries.take(3).toList();
     final listEntries = entries.skip(3).toList();
 
-    return CustomScrollView(
-      slivers: [
-        // 3D Podium visually
-        if (podiumEntries.isNotEmpty)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-              child: _buildPodium(podiumEntries, isDark, isBn, isHi, isCumulative),
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () async {
+        ref.invalidate(localLeaderboardProvider);
+        await Future.delayed(const Duration(milliseconds: 600));
+      },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          // 3D Podium visually
+          if (podiumEntries.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                child: _buildPodium(podiumEntries, isDark, isBn, isHi, isCumulative),
+              ),
+            ),
+          // List entries
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final entry = listEntries[index];
+                  final rank = index + 4;
+                  return StaggeredListItem(
+                    index: index,
+                    child: _buildListEntry(entry, rank, isDark, isCumulative),
+                  );
+                },
+                childCount: listEntries.length,
+              ),
             ),
           ),
-        // List entries
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final entry = listEntries[index];
-                final rank = index + 4;
-                return StaggeredListItem(
-                  index: index,
-                  child: _buildListEntry(entry, rank, isDark, isCumulative),
-                );
-              },
-              childCount: listEntries.length,
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
