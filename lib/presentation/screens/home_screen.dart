@@ -974,7 +974,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Padding(
                       padding: const EdgeInsets.only(right: 65),
                       child: Text(
-                        isBn ? '১ বনাম ১ কুইজ যুদ্ধ' : isHi ? '1 बनाम 1 क्विज़ युद्ध' : '1v1 Quiz Battle',
+                        isBn ? '১ বনাম ১ যুদ্ধ অ্যারেনা' : isHi ? '1 बनाम 1 युद्ध एरिना' : '1v1 Battle Arena',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w900,

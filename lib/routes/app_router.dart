@@ -18,6 +18,7 @@ import '../presentation/screens/admin_screen.dart';
 import '../presentation/screens/games/game_placeholder_screen.dart';
 import '../presentation/screens/knowledge_categories_screen.dart';
 import '../presentation/screens/games/arrow_escape_game_screen.dart';
+import '../presentation/screens/games/stroop_rush_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -38,6 +39,7 @@ class AppRouter {
   // static const String premium = '/premium';
   static const String admin = '/admin';
   static const String arrowPuzzle = '/arrow-puzzle';
+  static const String stroopRush = '/stroop-rush';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     // Intercept deep links of format: /challenge/{roomId}
@@ -88,6 +90,8 @@ class AppRouter {
         return _build(const AdminScreen(), settings);
       case arrowPuzzle:
         return _build(const ArrowEscapeGameScreen(), settings);
+      case stroopRush:
+        return _build(const StroopRushScreen(), settings);
       default:
         return _build(const HomeScreen(), settings);
     }

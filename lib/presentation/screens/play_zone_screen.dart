@@ -63,6 +63,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         duration: 'Self',
         icon: Icons.history_edu_rounded,
         isLocked: false,
+        isImplemented: true,
         onTap: () {
           _showPracticeBottomSheet(context, isDark, isBn, isHi);
         },
@@ -78,6 +79,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         duration: '2m',
         icon: Icons.extension_rounded,
         isLocked: false,
+        isImplemented: true,
         onTap: () {
           Navigator.pushNamed(context, '/arrow-puzzle');
         },
@@ -98,6 +100,23 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
             'title': 'Synapse Recall',
             'description': 'Memorize the flashing green pattern on the grid matrix. Recreate it accurately as grid size expands.',
           });
+        },
+      ),
+      ChallengeData(
+        title: isBn ? 'স্ট্রুপ রাশ' : isHi ? 'स्ट्रूप रश' : 'Stroop Rush',
+        description: isBn
+            ? 'শব্দ ও রঙের মিল দ্রুত চিহ্নিত করে মনোযোগ ও প্রতিক্রিয়া গতি বাড়ান।'
+            : isHi
+                ? 'शब्द और रंग के मेल को तेजी से पहचानकर फोकस और प्रतिक्रिया समय बढ़ाएं।'
+                : 'Race the clock matching word meanings to ink colors to sharpen focus and reaction speed.',
+        category: 'Focus',
+        duration: '2.5s',
+        icon: Icons.palette_rounded,
+        imagePath: 'assets/icon/stroopRush.PNG',
+        isLocked: false,
+        isImplemented: true,
+        onTap: () {
+          Navigator.pushNamed(context, '/stroop-rush');
         },
       ),
       ChallengeData(
@@ -543,7 +562,8 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
     required bool isHi,
     String? imagePath,
   }) {
-    final bool isImplemented = data.category == 'Knowledge' || data.category == 'Logic';
+    final bool isImplemented = data.isImplemented;
+    final String? resolvedImagePath = data.imagePath ?? imagePath;
     final categoryColor = data.isLocked || !isImplemented
         ? Colors.grey
         : (data.category.toLowerCase().contains('knowledge') 
@@ -586,15 +606,15 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
           borderRadius: BorderRadius.circular(24),
           child: Stack(
             children: [
-              if (imagePath != null)
+              if (resolvedImagePath != null)
                 Positioned.fill(
                   child: Image.asset(
-                    imagePath,
+                    resolvedImagePath,
                     fit: BoxFit.cover,
                     alignment: Alignment.centerRight,
                   ),
                 ),
-              if (imagePath != null)
+              if (resolvedImagePath != null)
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
@@ -1040,7 +1060,9 @@ class ChallengeData {
   final String category;
   final String duration;
   final IconData icon;
+  final String? imagePath;
   final bool isLocked;
+  final bool isImplemented;
   final VoidCallback onTap;
 
   ChallengeData({
@@ -1050,6 +1072,8 @@ class ChallengeData {
     required this.duration,
     required this.icon,
     required this.isLocked,
+    this.imagePath,
+    this.isImplemented = false,
     required this.onTap,
   });
 }
