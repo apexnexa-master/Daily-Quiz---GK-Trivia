@@ -1,7 +1,7 @@
 name: gk_quiz_app
 description: Daily GK Quiz for Indian competitive exam aspirants
 publish_to: 'none'
-version: 1.2.0+4
+version: 1.3.0+6
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -69,9 +69,9 @@ flutter_launcher_icons:
   android: true
   ios: false
   remove_alpha_ios: false
-  image_path: "assets/icon/daily_gk_quiz_playstore_icon.png"
-  adaptive_icon_background: "#6366F1"
-  adaptive_icon_foreground: "assets/icon/daily_gk_quiz_playstore_icon.png"
+  image_path: "assets/icon/logo3.png"
+  adaptive_icon_background: "#011327"
+  adaptive_icon_foreground: "assets/icon/logo3.png"
 
 flutter:
   uses-material-design: true

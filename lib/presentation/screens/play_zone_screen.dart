@@ -113,6 +113,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         duration: '2.5s',
         icon: Icons.palette_rounded,
         imagePath: 'assets/icon/stroopRush.PNG',
+        accentColor: const Color(0xFFFF2D95),
         isLocked: false,
         isImplemented: true,
         onTap: () {
@@ -564,13 +565,14 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
   }) {
     final bool isImplemented = data.isImplemented;
     final String? resolvedImagePath = data.imagePath ?? imagePath;
-    final categoryColor = data.isLocked || !isImplemented
-        ? Colors.grey
-        : (data.category.toLowerCase().contains('knowledge') 
-            ? AppColors.primary 
-            : (data.category.toLowerCase().contains('logic') || data.category.toLowerCase().contains('memory') || data.category.toLowerCase().contains('focus')
-                ? const Color(0xFF00F1FE) 
-                : const Color(0xFFECB2FF)));
+    final categoryColor = (data.accentColor ??
+        (data.isLocked || !isImplemented
+            ? Colors.grey
+            : (data.category.toLowerCase().contains('knowledge') 
+                ? AppColors.primary 
+                : (data.category.toLowerCase().contains('logic') || data.category.toLowerCase().contains('memory') || data.category.toLowerCase().contains('focus')
+                    ? const Color(0xFF00F1FE) 
+                    : const Color(0xFFECB2FF)))));
 
     return AnimatedScaleButton(
       onTap: isImplemented && !data.isLocked ? data.onTap : null,
@@ -1064,6 +1066,7 @@ class ChallengeData {
   final bool isLocked;
   final bool isImplemented;
   final VoidCallback onTap;
+  final Color? accentColor;
 
   ChallengeData({
     required this.title,
@@ -1074,6 +1077,7 @@ class ChallengeData {
     required this.isLocked,
     this.imagePath,
     this.isImplemented = false,
+    this.accentColor,
     required this.onTap,
   });
 }

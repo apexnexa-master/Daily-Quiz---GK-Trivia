@@ -171,34 +171,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Glowing Hero Psychology Icon
+                    // Glowing Hero Logo
                     PulseWidget(
-                      child: Container(
-                        width: 130,
-                        height: 130,
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.cardDark : Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark ? AppColors.outlineVariant : Colors.black12,
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 4),
+                      child: SizedBox(
+                        width: 190,
+                        height: 190,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: 150,
+                              height: 150,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isDark ? AppColors.cardDark : Colors.white,
+                                border: Border.all(
+                                  color: isDark ? AppColors.outlineVariant : Colors.black12,
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.1),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Image.asset(
+                              'assets/icon/logo2.png',
+                              width: 150,
+                              height: 150,
+                              fit: BoxFit.contain,
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.psychology_rounded,
-                          size: 64,
-                          color: AppColors.primary,
-                        ),
                       ),
                     ),
-                    const SizedBox(height: 36),
+                    const SizedBox(height: 20),
 
                     // Typography Stack
                     Text(

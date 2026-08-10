@@ -1337,13 +1337,8 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                             : isHi 
                                 ? 'रास्ता याद रखकर भूलभुलैया हल करें।'
                                 : 'Solve the arrow maze to test memory & logic.',
-                        isLocked: false,
-                        onTap: () {
-                          setState(() {
-                            _selectedGame = 'ARROW_MAZE';
-                            _arenaState = BattleArenaState.configureGame;
-                          });
-                        },
+                        isLocked: true,
+                        onTap: () {},
                         isBn: isBn,
                         isHi: isHi,
                         imagePath: isDark ? 'assets/icon/logic_mascot_dark.jpg' : 'assets/icon/logic_mascot_light.jpg',
