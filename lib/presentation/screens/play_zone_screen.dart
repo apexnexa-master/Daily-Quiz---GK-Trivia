@@ -78,6 +78,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         category: 'Logic',
         duration: '2m',
         icon: Icons.extension_rounded,
+        imagePath: 'assets/icon/arrows3.PNG',
         isLocked: false,
         isImplemented: true,
         onTap: () {
@@ -112,7 +113,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         category: 'Focus',
         duration: '2.5s',
         icon: Icons.palette_rounded,
-        imagePath: 'assets/icon/stroopRush.PNG',
+        imagePath: 'assets/icon/stroopRush2.PNG',
         accentColor: const Color(0xFFFF2D95),
         isLocked: false,
         isImplemented: true,
@@ -379,7 +380,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                 isDark: isDark,
                                 isBn: isBn,
                                 isHi: isHi,
-                                hasMultiple: knowledgeGames.length > 1,
                               ),
                               const SizedBox(height: 10),
                               SingleChildScrollView(
@@ -396,7 +396,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                         data: game,
                                         isBn: isBn,
                                         isHi: isHi,
-                                        imagePath: isDark ? 'assets/icon/gk_mascot_dark.jpg' : 'assets/icon/gk_mascot_light.jpg',
+                                        imagePath: 'assets/icon/quiz2.PNG',
                                       ),
                                     );
                                   }).toList(),
@@ -412,7 +412,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                 isDark: isDark,
                                 isBn: isBn,
                                 isHi: isHi,
-                                hasMultiple: logicMemoryGames.length > 1,
                               ),
                               const SizedBox(height: 10),
                               SingleChildScrollView(
@@ -445,7 +444,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                 isDark: isDark,
                                 isBn: isBn,
                                 isHi: isHi,
-                                hasMultiple: focusGames.length > 1,
                               ),
                               const SizedBox(height: 10),
                               SingleChildScrollView(
@@ -478,7 +476,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                 isDark: isDark,
                                 isBn: isBn,
                                 isHi: isHi,
-                                hasMultiple: mathGames.length > 1,
                               ),
                               const SizedBox(height: 10),
                               SingleChildScrollView(
@@ -495,7 +492,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                         data: game,
                                         isBn: isBn,
                                         isHi: isHi,
-                                        imagePath: isDark ? 'assets/icon/math_mascot_dark.jpg' : 'assets/icon/math_mascot_light.jpg',
+                                        imagePath: 'assets/icon/mathSpeed2.PNG',
                                       ),
                                     );
                                   }).toList(),
@@ -518,7 +515,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
     required bool isDark,
     required bool isBn,
     required bool isHi,
-    required bool hasMultiple,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -532,25 +528,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
             letterSpacing: -0.2,
           ),
         ),
-        if (hasMultiple)
-          Row(
-            children: [
-              Icon(
-                Icons.swipe_left_rounded,
-                size: 13,
-                color: isDark ? Colors.white38 : Colors.grey.shade400,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                isBn ? 'ডানে সোয়াইপ করুন' : isHi ? 'दाएँ स्वाइप करें' : 'Swipe right',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white38 : Colors.grey.shade400,
-                ),
-              ),
-            ],
-          ),
       ],
     );
   }

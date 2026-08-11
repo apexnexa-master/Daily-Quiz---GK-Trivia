@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
-import '../widgets/gamification_bar.dart';
 import '../widgets/profile/profile_overview.dart';
 import '../widgets/profile/settings_section.dart';
 import '../utils/account_linker.dart';
@@ -11,7 +10,6 @@ import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/theme_manager.dart';
 import '../../core/theme/app_animations.dart';
-import '../../data/models/gamification_models.dart';
 import '../../core/services/question_tracking_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -51,12 +49,6 @@ class ProfileScreen extends ConsumerWidget {
                 padding: AppSpacing.paddingScreen,
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Stats section with entrance animation
-                    StaggeredListItem(
-                      index: 0,
-                      child: _StatsSection(lang: lang, isDark: isDark, ref: ref),
-                    ),
-                    const SizedBox(height: 24),
                     if (user.isAnonymous) ...[
                       StaggeredListItem(
                         index: 5,
@@ -81,7 +73,7 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 32),
                     Center(
                       child: Text(
-                        'GK Quiz Daily v1.1.0',
+                        'BrainX v1.5.0',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -115,215 +107,6 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatsSection extends ConsumerWidget {
-  final String lang;
-  final bool isDark;
-  final WidgetRef ref;
-  const _StatsSection({
-    required this.lang,
-    required this.isDark,
-    required this.ref,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final accuracyAsync = ref.watch(overallAccuracyProvider);
-    final totalQuizzesAsync = ref.watch(totalQuizzesProvider);
-    final personalBestAsync = ref.watch(localPersonalBestProvider);
-    final isBn = lang == 'bn';
-    final isHi = lang == 'hi';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _SectionHeader(
-          icon: Icons.analytics_rounded,
-          title: isBn
-              ? 'পরিসংখ্যান'
-              : isHi
-                  ? 'आंकड़े'
-                  : 'Statistics',
-          isDark: isDark,
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: accuracyAsync.when(
-                data: (acc) => _StatCard(
-                  icon: Icons.percent_rounded,
-                  iconColor: AppColors.secondary,
-                  value: acc > 0 ? '${acc.toInt()}%' : '-',
-                  label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
-                  sublabel: isBn ? 'হার' : isHi ? 'दर' : 'rate',
-                  isDark: isDark,
-                ),
-                loading: () => _StatCardSkeleton(isDark: isDark),
-                error: (_, __) => _StatCard(
-                  icon: Icons.percent_rounded,
-                  iconColor: AppColors.secondary,
-                  value: '-',
-                  label: isBn ? 'সঠিকতা' : isHi ? 'सटीकता' : 'Accuracy',
-                  sublabel: isBn ? 'হার' : isHi ? 'दर' : 'rate',
-                  isDark: isDark,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: totalQuizzesAsync.when(
-                data: (count) => _StatCard(
-                  icon: Icons.quiz_rounded,
-                  iconColor: AppColors.primary,
-                  value: '$count',
-                  label: isBn ? 'মোট কুইজ' : isHi ? 'कुल क्विज़' : 'Total Quizzes',
-                  sublabel: isBn ? 'খেলা হয়েছে' : isHi ? 'खेले' : 'played',
-                  isDark: isDark,
-                ),
-                loading: () => _StatCardSkeleton(isDark: isDark),
-                error: (_, __) => _StatCard(
-                  icon: Icons.quiz_rounded,
-                  iconColor: AppColors.primary,
-                  value: '0',
-                  label: isBn ? 'মোট কুইজ' : isHi ? 'कुल क्विज़' : 'Total Quizzes',
-                  sublabel: isBn ? 'খেলা হয়েছে' : isHi ? 'खेले' : 'played',
-                  isDark: isDark,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: personalBestAsync.when(
-                data: (best) => _StatCard(
-                  icon: AppIcons.achievement,
-                  iconColor: AppColors.success,
-                  value: best.percentage > 0 ? '${best.percentage.toInt()}%' : '-',
-                  label: isBn ? 'সেরা স্কোর' : isHi ? 'सर्वश्रेष्ठ स्कोर' : 'Best Score',
-                  sublabel: isBn ? 'শতাংশ' : isHi ? 'प्रतिशत' : '%',
-                  isDark: isDark,
-                ),
-                loading: () => _StatCardSkeleton(isDark: isDark),
-                error: (_, __) => _StatCard(
-                  icon: AppIcons.achievement,
-                  iconColor: AppColors.success,
-                  value: '—',
-                  label: isBn ? 'সেরা স্কোর' : isHi ? 'सर्वश्रेष्ठ स्कोर' : 'Best Score',
-                  sublabel: isBn ? 'শতাংশ' : isHi ? 'प्रतिशत' : '%',
-                  isDark: isDark,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String value;
-  final String label;
-  final String sublabel;
-  final bool isDark;
-
-  const _StatCard({
-    required this.icon,
-    required this.iconColor,
-    required this.value,
-    required this.label,
-    required this.sublabel,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.cardDark : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.grey.withValues(alpha: 0.1),
-        ),
-        boxShadow: isDark ? null : [
-          BoxShadow(
-            color: iconColor.withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              color: isDark ? Colors.white : AppColors.textPrimaryLight,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            sublabel,
-            style: TextStyle(
-              fontSize: 9,
-              color: isDark ? Colors.white38 : Colors.grey.shade500,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: isDark ? Colors.white54 : Colors.grey.shade600,
-              fontWeight: FontWeight.w700,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatCardSkeleton extends StatelessWidget {
-  final bool isDark;
-  const _StatCardSkeleton({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 110,
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.cardDark : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: const Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
     );

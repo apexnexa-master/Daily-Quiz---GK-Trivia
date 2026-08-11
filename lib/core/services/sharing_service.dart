@@ -25,7 +25,7 @@ class SharingService {
     final emoji = _getResultEmoji(percentage);
 
     final text = '''
-🎯 **GK Quiz Results**
+🎯 **BrainX Results**
 
 📚 Exam: $examMode
 ✅ Score: $score/$total ($percentage%)
@@ -34,10 +34,10 @@ class SharingService {
 $emoji ${_getResultMessage(percentage)}
 
 ${referralCode != null ? '🎁 Use my referral code: $referralCode\n' : ''}
-📲 Download GK Quiz App: https://play.google.com/store/apps/details?id=com.gkquiz.app
+📲 Download BrainX App: https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
 ''';
 
-    await Share.share(text, subject: '🎯 My GK Quiz Score!');
+    await Share.share(text, subject: '🎯 My BrainX Score!');
   }
 
   Future<void> shareChallenge({
@@ -49,7 +49,7 @@ ${referralCode != null ? '🎁 Use my referral code: $referralCode\n' : ''}
     final percentage = ((score / total) * 100).toInt();
 
     final text = '''
-⚔️ **GK Quiz Challenge!**
+⚔️ **BrainX Challenge!**
 
 📚 Exam: $examMode
 ✅ I scored $score/$total ($percentage%)
@@ -57,7 +57,7 @@ ${referralCode != null ? '🎁 Use my referral code: $referralCode\n' : ''}
 Can you beat my score? 🤔
 
 🔥 Take the challenge:
-https://gkquiz.app/challenge/$challengeId
+https://dailyquiz.nexasoft.com/challenge/$challengeId
 ''';
 
     await Share.share(text, subject: '⚔️ Beat my Quiz Score!');
@@ -73,11 +73,11 @@ https://gkquiz.app/challenge/$challengeId
 📈 Current Streak: $streak days
 🏆 Longest Streak: $longestStreak days
 
-💪 Taking GK Quiz daily! Join me!
-📲 https://play.google.com/store/apps/details?id=com.gkquiz.app
+💪 Taking BrainX daily! Join me!
+📲 https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
 ''';
 
-    await Share.share(text, subject: '🔥 My GK Quiz Streak!');
+    await Share.share(text, subject: '🔥 My BrainX Streak!');
   }
 
   Future<void> shareAchievement({
@@ -89,8 +89,8 @@ https://gkquiz.app/challenge/$challengeId
 
 $icon $title
 
-I'm crushing it on GK Quiz! 🚀
-📲 https://play.google.com/store/apps/details?id=com.gkquiz.app
+I'm crushing it on BrainX! 🚀
+📲 https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
 ''';
 
     await Share.share(text, subject: '🏆 Achievement Unlocked!');
@@ -102,10 +102,10 @@ I'm crushing it on GK Quiz! 🚀
     final text = '''
 ⭐ **Level Up!** 
 
-I just reached Level $newLevel on GK Quiz!
+I just reached Level $newLevel on BrainX!
 
 🎯 Take daily quizzes and level up!
-📲 https://play.google.com/store/apps/details?id=com.gkquiz.app
+📲 https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
 ''';
 
     await Share.share(text, subject: '⭐ I just Leveled Up!');
@@ -117,14 +117,14 @@ I just reached Level $newLevel on GK Quiz!
     final text = '''
 🎁 **Invite & Earn!**
 
-Join GK Quiz using my referral code and get 50 🪙 coins!
+Join BrainX using my referral code and get 50 🪙 coins!
 
  code: $referralCode
 
-📲 Download: https://play.google.com/store/apps/details?id=com.gkquiz.app
+📲 Download: https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
 ''';
 
-    await Share.share(text, subject: '🎁 Join GK Quiz with me!');
+    await Share.share(text, subject: '🎁 Join BrainX with me!');
   }
 
   String _getResultEmoji(int percentage) {
@@ -187,7 +187,7 @@ class ShareableScoreCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'GK Quiz',
+            'BrainX',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,

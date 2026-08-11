@@ -692,7 +692,7 @@ class DailyChallengesCard extends ConsumerWidget {
               const Icon(Icons.track_changes_rounded, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(
-                isBn ? 'দৈনিক চ্যালেঞ্জ' : isHi ? 'दैनिक चुनौतियां' : 'Daily Challenges',
+                isBn ? 'আজকের চ্যালেঞ্জ' : isHi ? 'आज की चुनौती' : "Today's Challenge",
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,

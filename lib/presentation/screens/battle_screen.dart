@@ -19,6 +19,7 @@ import '../../data/models/firestore_models.dart';
 import '../../data/local_quiz_data.dart';
 import '../../core/services/battle_service.dart';
 import '../../core/services/question_service.dart';
+import '../../core/services/daily_progress_service.dart';
 
 enum BattleArenaState {
   selectMode,
@@ -558,6 +559,16 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
         _opponentSeriesWins++;
       }
     });
+
+    // Track daily goal, streak & brain score (Speed pillar)
+    final battleTotal = _totalQuestions > 0 ? _totalQuestions : _selectedQuestionCount;
+    final battlePct = battleTotal > 0 ? (_playerScore / battleTotal * 100).round() : 0;
+    DailyProgressService.instance.recordGameCompletion(
+      pillar: BrainPillar.speed,
+      scorePct: battlePct,
+      gameType: GameType.battle,
+    );
+    ref.invalidate(dailyProgressProvider);
 
     // Check if opponent already requested a rematch before we finished
     final user = ref.read(currentUserProvider).value;
@@ -1276,7 +1287,6 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                   isDark: isDark,
                   isBn: isBn,
                   isHi: isHi,
-                  hasMultiple: false,
                 ),
                 const SizedBox(height: 10),
                 SingleChildScrollView(
@@ -1304,7 +1314,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                         },
                         isBn: isBn,
                         isHi: isHi,
-                        imagePath: isDark ? 'assets/icon/gk_mascot_dark.jpg' : 'assets/icon/gk_mascot_light.jpg',
+                        imagePath: 'assets/icon/quiz2.PNG',
                       ),
                     ],
                   ),
@@ -1318,7 +1328,6 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                   isDark: isDark,
                   isBn: isBn,
                   isHi: isHi,
-                  hasMultiple: true,
                 ),
                 const SizedBox(height: 10),
                 SingleChildScrollView(
@@ -1341,7 +1350,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                         onTap: () {},
                         isBn: isBn,
                         isHi: isHi,
-                        imagePath: isDark ? 'assets/icon/logic_mascot_dark.jpg' : 'assets/icon/logic_mascot_light.jpg',
+                        imagePath: 'assets/icon/arrows3.PNG',
                       ),
                       const SizedBox(width: 12),
                       _buildGameTile(
@@ -1372,7 +1381,6 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                   isDark: isDark,
                   isBn: isBn,
                   isHi: isHi,
-                  hasMultiple: false,
                 ),
                 const SizedBox(height: 10),
                 SingleChildScrollView(
@@ -1395,7 +1403,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                         onTap: () {},
                         isBn: isBn,
                         isHi: isHi,
-                        imagePath: isDark ? 'assets/icon/math_mascot_dark.jpg' : 'assets/icon/math_mascot_light.jpg',
+                        imagePath: 'assets/icon/mathSpeed2.PNG',
                       ),
                     ],
                   ),
@@ -1413,7 +1421,6 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
     required bool isDark,
     required bool isBn,
     required bool isHi,
-    required bool hasMultiple,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1427,25 +1434,6 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
             letterSpacing: -0.2,
           ),
         ),
-        if (hasMultiple)
-          Row(
-            children: [
-              Icon(
-                Icons.swipe_left_rounded,
-                size: 13,
-                color: isDark ? Colors.white38 : Colors.grey.shade400,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                isBn ? 'ডানে সোয়াইপ করুন' : isHi ? 'दाएँ स्वाइप करें' : 'Swipe right',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white38 : Colors.grey.shade400,
-                ),
-              ),
-            ],
-          ),
       ],
     );
   }

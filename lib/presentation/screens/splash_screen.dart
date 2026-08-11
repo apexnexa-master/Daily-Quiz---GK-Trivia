@@ -96,7 +96,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     child: Column(
                       children: [
                         Text(
-                          'GK Quiz',
+                          'BrainX',
                           style: TextStyle(
                             fontSize: 38,
                             fontWeight: FontWeight.w900,

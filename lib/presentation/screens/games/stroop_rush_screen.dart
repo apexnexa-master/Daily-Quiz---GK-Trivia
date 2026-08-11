@@ -4,12 +4,15 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/services/ad_service.dart';
+import '../../../core/services/daily_progress_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../providers/app_providers.dart';
 
 enum _StroopRule { tapInk, tapWord }
 
@@ -455,6 +458,17 @@ class _StroopRushScreenState extends State<StroopRushScreen>
     if (prefs != null && isNewBest) {
       prefs.setInt('stroop_best_score', _score);
     }
+
+    // Track daily goal, streak & brain score (Reaction pillar)
+    DailyProgressService.instance.recordGameCompletion(
+      pillar: BrainPillar.reaction,
+      scorePct: _score,
+      gameType: GameType.stroop,
+    );
+    try {
+      ProviderScope.containerOf(context, listen: false)
+          .invalidate(dailyProgressProvider);
+    } catch (_) {}
   }
 
   Future<void> _offerExtraLife() async {

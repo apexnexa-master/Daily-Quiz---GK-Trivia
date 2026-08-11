@@ -12,6 +12,7 @@ import '../widgets/result/xp_breakdown_card.dart';
 import '../widgets/result/question_review_card.dart';
 import '../../core/services/ad_service.dart';
 import '../../core/services/question_tracking_service.dart';
+import '../../core/services/daily_progress_service.dart';
 import '../../core/services/quiz_scheduler_service.dart';
 import '../../core/services/gamification_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -264,6 +265,16 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         // Update per-mode stats
         final examMode = session.quiz.examMode;
         final trackingService = QuestionTrackingService.instance;
+
+        // Track daily goal, streak & brain score (Knowledge pillar)
+        await DailyProgressService.instance.recordGameCompletion(
+          pillar: BrainPillar.knowledge,
+          scorePct: (pct * 100).round(),
+          gameType: session.quiz.quizId.startsWith('practice_')
+              ? GameType.quiz
+              : GameType.challenge,
+        );
+        ref.invalidate(dailyProgressProvider);
 
         // Mark questions as answered
         final questionIds = session.quiz.questions.map((q) => q.id).toList();
@@ -598,10 +609,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                   final emoji = percentage >= 80 ? '🌟' : percentage >= 60 ? '👍' : percentage >= 40 ? '💪' : '📚';
                   await Share.share(
                     isBn
-                        ? 'GK Quiz-এ আমি ${score}/${session.quiz.questionCount} ($percentage%) $emoji পেয়েছি! 🎯 তুমি পারবে?\n\n#GKQuiz #DailyQuiz #IndiaQuiz'
+                        ? 'BrainX-এ আমি ${score}/${session.quiz.questionCount} ($percentage%) $emoji পেয়েছি! 🎯 তুমি পারবে?\n\n#BrainX #DailyQuiz #IndiaQuiz'
                         : isHi
-                            ? 'मैंने GK Quiz में ${score}/${session.quiz.questionCount} ($percentage%) $emoji स्कोर किया! 🎯 क्या आप कर सकते हैं?\n\n#GKQuiz #DailyQuiz #IndiaQuiz'
-                            : 'I scored ${score}/${session.quiz.questionCount} ($percentage%) $emoji on GK Quiz! 🎯\n\nCan you beat me?\n\n#GKQuiz #DailyQuiz #IndiaQuiz',
+                            ? 'मैंने BrainX में ${score}/${session.quiz.questionCount} ($percentage%) $emoji स्कोर किया! 🎯 क्या आप कर सकते हैं?\n\n#BrainX #DailyQuiz #IndiaQuiz'
+                            : 'I scored ${score}/${session.quiz.questionCount} ($percentage%) $emoji on BrainX! 🎯\n\nCan you beat me?\n\n#BrainX #DailyQuiz #IndiaQuiz',
                   );
                 },
               ),

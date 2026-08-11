@@ -43,7 +43,6 @@ class CloudSyncService {
 
     final xp = stats['xp'] ?? 0;
     final level = stats['level'] ?? 1;
-    final bsi = xp + level * 100;
 
     await _db.collection('users').doc(_currentUser!.uid).update({
       'xp': xp,
@@ -53,7 +52,6 @@ class CloudSyncService {
       'longest_streak': stats['longestStreak'] ?? 0,
       'lives': stats['lives'] ?? 3,
       'referral_count': stats['referralCount'] ?? 0,
-      'bsi_index': bsi,
       'last_sync': FieldValue.serverTimestamp(),
     });
   }

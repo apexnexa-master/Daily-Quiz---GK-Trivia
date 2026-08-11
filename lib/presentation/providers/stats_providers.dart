@@ -2,6 +2,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/local_stats_service.dart';
 import '../../core/services/question_tracking_service.dart';
+import '../../core/services/daily_progress_service.dart';
+import '../../core/constants/app_constants.dart';
 import '../../data/models/firestore_models.dart';
 import '../../data/models/gamification_models.dart';
 import 'quiz_providers.dart';
@@ -10,6 +12,25 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 final localStatsServiceProvider = Provider<LocalStatsService>((ref) => LocalStatsService.instance);
 final questionTrackingProvider = Provider<QuestionTrackingService>((ref) => QuestionTrackingService.instance);
+
+final dailyProgressProvider = FutureProvider<DailyProgress>((ref) async {
+  final user = ref.watch(authServiceProvider).currentUser;
+  if (user != null) {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection(AppConstants.colUsers)
+          .doc(user.uid)
+          .get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        if (data.containsKey('daily_games_completed')) {
+          return DailyProgress.fromFirestore(data);
+        }
+      }
+    } catch (_) {}
+  }
+  return DailyProgressService.instance.getProgress();
+});
 
 final localStreakProvider = FutureProvider<LocalStreakData>((ref) async {
   final user = ref.watch(authServiceProvider).currentUser;

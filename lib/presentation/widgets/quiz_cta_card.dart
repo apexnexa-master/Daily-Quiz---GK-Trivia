@@ -7,6 +7,7 @@ import '../../core/theme/app_animations.dart';
 import '../../core/services/quiz_scheduler_service.dart';
 import '../../data/models/firestore_models.dart';
 import '../providers/app_providers.dart';
+import '../utils/daily_challenge_auth.dart';
 
 class QuizCtaCard extends ConsumerWidget {
   final QuizModel? quiz;
@@ -206,6 +207,10 @@ class QuizCtaCard extends ConsumerWidget {
                   AnimatedScaleButton(
                     onTap: isQuizActive
                         ? () {
+                            if (!DailyChallengeAuth.canStart(ref)) {
+                              DailyChallengeAuth.requireLogin(context, ref);
+                              return;
+                            }
                             ref.read(quizSessionProvider.notifier).startQuiz(quiz!);
                             Navigator.pushNamed(context, '/quiz');
                           }
@@ -292,16 +297,16 @@ class QuizCtaCard extends ConsumerWidget {
         final mins = waitMinutes % 60;
         if (hours > 0) {
           return isBn
-              ? 'দৈনিক চ্যালেঞ্জ $hours ঘণ্টা $mins মিনিটে শুরু'
+              ? 'আজকের চ্যালেঞ্জ $hours ঘণ্টা $mins মিনিটে শুরু'
               : isHi
-                  ? 'दैनिक चुनौती $hours घंटे $mins मिनट में शुरू'
-                  : 'Daily challenge starts in ${hours}h ${mins}m';
+                  ? 'आज की चुनौती $hours घंटे $mins मिनट में शुरू'
+                  : "Today's challenge starts in ${hours}h ${mins}m";
         } else {
           return isBn
-              ? 'দৈনিক চ্যালেঞ্জ $mins মিনিটে শুরু'
+              ? 'আজকের চ্যালেঞ্জ $mins মিনিটে শুরু'
               : isHi
-                  ? 'दैनिक चुनौती $mins मिनट में शुरू'
-                  : 'Daily challenge starts in $mins min';
+                  ? 'आज की चुनौती $mins मिनट में शुरू'
+                  : "Today's challenge starts in $mins min";
         }
       } else {
         return isBn ? 'আজকের চ্যালেঞ্জ শেষ হয়ে গেছে' : isHi ? 'आज की चुनौती समाप्त हो गई' : "Today's challenge has ended";
@@ -347,10 +352,10 @@ class QuizCtaCard extends ConsumerWidget {
           const SizedBox(height: 6),
           Text(
             isBn
-                ? 'দৈনিক চ্যালেঞ্জগুলি পরে পরীক্ষা করুন বা অনুশীলন মোড খেলুন।'
+                ? 'আজকের চ্যালেঞ্জ পরে পরীক্ষা করুন বা অনুশীলন মোড খেলুন।'
                 : isHi
-                    ? 'दैनिक चुनौती के लिए बाद में देखें या अभ्यास मोड खेलें।'
-                    : 'Check back later for the next daily challenge or practice below.',
+                    ? 'आज की चुनौती के लिए बाद में देखें या अभ्यास मोड खेलें।'
+                    : "Check back later for today's challenge or practice below.",
             style: TextStyle(
               fontSize: 12,
               color: isDark ? Colors.white54 : Colors.grey[600],

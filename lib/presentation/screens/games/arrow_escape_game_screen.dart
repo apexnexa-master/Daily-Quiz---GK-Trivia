@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flame/game.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,6 +20,8 @@ import '../../../../core/services/ad_service.dart';
 import '../../../../core/services/local_stats_service.dart';
 import '../../../../core/services/quiz_service.dart';
 import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/daily_progress_service.dart';
+import '../../providers/app_providers.dart';
 
 const String _saveKey = 'progress_save';
 
@@ -463,14 +466,14 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
     );
     _saveProgress();
 
-    if (_isDailyChallenge) {
-      final basePoints = 100;
-      final extraMoves = result.movesUsed > result.targetMoves ? (result.movesUsed - result.targetMoves) : 0;
-      final movesPenalty = extraMoves * 2;
-      final baseScore = (basePoints - movesPenalty).clamp(20, 100);
-      final speedBonus = _elapsedSeconds < 180 ? ((180 - _elapsedSeconds) * 50 ~/ 180) : 0;
-      final totalPoints = baseScore + speedBonus;
+    final basePoints = 100;
+    final extraMoves = result.movesUsed > result.targetMoves ? (result.movesUsed - result.targetMoves) : 0;
+    final movesPenalty = extraMoves * 2;
+    final baseScore = (basePoints - movesPenalty).clamp(20, 100);
+    final speedBonus = _elapsedSeconds < 180 ? ((180 - _elapsedSeconds) * 50 ~/ 180) : 0;
+    final totalPoints = baseScore + speedBonus;
 
+    if (_isDailyChallenge) {
       final auth = AuthService();
       final user = auth.currentUser;
       final playerName = user?.displayName ?? 'You';
@@ -486,6 +489,17 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
         );
       }
     }
+
+    // Track daily goal, streak & brain score (Logic pillar)
+    DailyProgressService.instance.recordGameCompletion(
+      pillar: BrainPillar.logic,
+      scorePct: totalPoints,
+      gameType: GameType.arrow,
+    );
+    try {
+      ProviderScope.containerOf(context, listen: false)
+          .invalidate(dailyProgressProvider);
+    } catch (_) {}
 
     // Show completion popup on overlay instead of replacing route
     setState(() {

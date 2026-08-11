@@ -668,7 +668,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Only daily challenge games (GK Live Challenge and Arrow Puzzle 3D Daily Challenge) count towards the leaderboard rankings. Practice modes or campaign levels do not award leaderboard points.',
+                "Only today's challenge games (GK Live Challenge and Arrow Puzzle 3D Daily Challenge) count towards the leaderboard rankings. Practice modes or campaign levels do not award leaderboard points.",
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,
@@ -686,7 +686,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Points from each completed daily challenge are added together. Higher cumulative points decide weekly and all-time leaderboard standings.',
+                "Points from each completed today's challenge are added together. Higher cumulative points decide weekly and all-time leaderboard standings.",
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,
