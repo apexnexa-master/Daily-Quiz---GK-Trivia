@@ -11,6 +11,7 @@ import '../../core/theme/app_animations.dart';
 import '../../core/services/quiz_scheduler_service.dart';
 import '../../core/utils/offline_manager.dart';
 import '../../core/services/daily_progress_service.dart';
+import '../widgets/game_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../utils/daily_challenge_auth.dart';
@@ -698,7 +699,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/icon/quiz2.PNG',
+                imagePath: 'assets/icon/quiz3.png',
               ),
               const SizedBox(width: 12),
               // Card 2: Arrow Path Maze (Unlocked Daily Challenge)
@@ -766,252 +767,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ? const Color(0xFF00F1FE) 
             : const Color(0xFFECB2FF));
 
-    return AnimatedScaleButton(
-      onTap: isLocked ? null : onTap,
-      child: Container(
-        width: 260,
-        height: 155,
-        decoration: BoxDecoration(
-          color: isDark 
-              ? const Color(0xFF151D1E).withValues(alpha: 0.65) 
-              : Colors.white.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isLocked
-                ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05))
-                : categoryColor.withValues(alpha: 0.25),
-            width: 1.5,
-          ),
-          boxShadow: [
-            if (!isLocked)
-              BoxShadow(
-                color: categoryColor.withValues(alpha: isDark ? 0.08 : 0.04),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            children: [
-              if (imagePath != null)
-                Positioned.fill(
-                  child: Image.asset(
-                    imagePath,
-                    fit: BoxFit.cover,
-                    alignment: Alignment.centerRight,
-                  ),
-                ),
-              if (imagePath != null)
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.98),
-                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.85),
-                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.3),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.45, 0.75, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-              if (isLocked)
-                Positioned.fill(
-                  child: Container(
-                    color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.4),
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isLocked 
-                                ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade200)
-                                : categoryColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isLocked 
-                                  ? Colors.transparent 
-                                  : categoryColor.withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (isLive) ...[
-                                PulseWidget(
-                                  child: Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFEF4444),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                              ],
-                              Text(
-                                badgeText,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                  color: isLocked
-                                      ? (isDark ? Colors.white38 : Colors.grey.shade500)
-                                      : (isDark ? categoryColor : AppColors.primaryDark),
-                                  letterSpacing: 0.6,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Status / Time Left
-                        if (timeLeft != null)
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.access_time_rounded,
-                                size: 12,
-                                color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                timeLeft,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
-                                ),
-                              ),
-                            ],
-                          )
-                        else if (isLocked)
-                          Row(
-                            children: [
-                              const Icon(Icons.lock_rounded, color: AppColors.error, size: 12),
-                              const SizedBox(width: 4),
-                              Text(
-                                isBn ? 'লকড' : isHi ? 'लॉक' : 'LOCKED',
-                                style: const TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.error,
-                                  letterSpacing: 0.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                    const Spacer(),
-                    // Title
-                    Padding(
-                      padding: const EdgeInsets.only(right: 65),
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: isLocked 
-                              ? (isDark ? Colors.white38 : Colors.grey.shade400)
-                              : (isDark ? Colors.white : AppColors.textPrimaryLight),
-                          letterSpacing: -0.2,
-                          fontFamily: 'Montserrat',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    // Subtitle
-                    Padding(
-                      padding: const EdgeInsets.only(right: 65),
-                      child: Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isLocked
-                              ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                              : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
-                          fontFamily: 'Inter',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const Spacer(),
-                    // Footer Action row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Metric details
-                        Text(
-                          isLocked 
-                              ? (isBn ? 'পরবর্তী স্তরে খুলবে' : isHi ? 'अगले स्तर पर अनलॉक' : 'Unlocks next level')
-                              : (isBn ? 'রিয়াল-টাইম স্কোর' : isHi ? 'वास्तविक समय स्कोर' : 'Live reward active'),
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: isLocked
-                                ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                                : (isDark ? AppColors.textSecondaryDark.withValues(alpha: 0.7) : AppColors.textSecondaryLight.withValues(alpha: 0.7)),
-                          ),
-                        ),
-                        // Action Circle Button
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: isLocked 
-                                ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100)
-                                : categoryColor,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              if (!isLocked)
-                                BoxShadow(
-                                  color: categoryColor.withValues(alpha: 0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                            ],
-                          ),
-                          child: Icon(
-                            isLocked ? Icons.lock_outline_rounded : Icons.play_arrow_rounded,
-                            color: isLocked
-                                ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                                : Colors.black,
-                            size: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return GameCard(
+      width: 260,
+      compact: true,
+      coverAspectRatio: 2.6,
+      imagePath: imagePath,
+      accent: categoryColor,
+      badge: badgeText,
+      isLive: isLive,
+      isLocked: isLocked,
+      meta: timeLeft,
+      metaIcon: timeLeft != null ? Icons.access_time_rounded : null,
+      title: title,
+      subtitle: subtitle,
+      footer: isLocked
+          ? (isBn ? 'পরবর্তী স্তরে খুলবে' : isHi ? 'अगले स्तर पर अनलॉक' : 'Unlocks next level')
+          : (isBn ? 'রিয়াল-টাইম স্কোর' : isHi ? 'वास्तविक समय स्कोर' : 'Live reward active'),
+      onTap: onTap,
     );
   }
 
@@ -1097,212 +869,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildBattleBentoCard(BuildContext context, bool isBn, bool isHi, bool isDark) {
     const neonCyan = Color(0xFF00F1FE);
 
-    return AnimatedScaleButton(
+    return GameCard(
+      width: double.infinity,
+      compact: true,
+      coverHeight: 110,
+      imagePath: 'assets/icon/battle2.PNG',
+      accent: neonCyan,
+      badge: isBn ? 'মাল্টিপ্লেয়ার' : isHi ? 'मल्टीप्लेयर' : 'MULTIPLAYER',
+      isLive: true,
+      meta: isBn ? '৫ মিনিট' : isHi ? '5 मिनट' : '~5 min',
+      metaIcon: Icons.access_time_rounded,
+      title: isBn ? '১ বনাম ১ যুদ্ধ অ্যারেনা' : isHi ? '1 बनाम 1 युद्ध एरिना' : '1v1 Battle Arena',
+      subtitle: isBn
+          ? 'লাইভ দ্বৈরথ বা বট প্রশিক্ষণ'
+          : isHi
+              ? 'लाइव दोस्त या बॉट से खेलें'
+              : 'Duel friends live or train vs bot',
+      footer: isBn ? 'অনলাইন ও অফলাইন মোড' : isHi ? 'ऑनलाइन और ऑफ़लाइन मोड' : 'Online & offline modes',
       onTap: () => Navigator.pushNamed(context, '/battle'),
-      child: Container(
-        width: double.infinity,
-        height: 155,
-        decoration: BoxDecoration(
-          color: isDark 
-              ? const Color(0xFF151D1E).withValues(alpha: 0.65) 
-              : Colors.white.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: neonCyan.withValues(alpha: 0.25),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: neonCyan.withValues(alpha: isDark ? 0.08 : 0.04),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/icon/battle2.PNG',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.centerRight,
-                ),
-              ),
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.98),
-                        (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.85),
-                        (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.3),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.45, 0.75, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: neonCyan.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: neonCyan.withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              PulseWidget(
-                                child: Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    color: neonCyan,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isBn ? 'মাল্টিপ্লেয়ার' : isHi ? 'मल्टीप्लेयर' : 'MULTIPLAYER',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                  color: isDark ? neonCyan : const Color(0xFF0284C7),
-                                  letterSpacing: 0.6,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              size: 12,
-                              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              isBn ? '৫ মিনিট' : isHi ? '5 मिनट' : '~5 min',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 65),
-                      child: Text(
-                        isBn ? '১ বনাম ১ যুদ্ধ অ্যারেনা' : isHi ? '1 बनाम 1 युद्ध एरिना' : '1v1 Battle Arena',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                          letterSpacing: -0.2,
-                          fontFamily: 'Montserrat',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 65),
-                      child: Text(
-                        isBn ? 'লাইভ দ্বৈরথ বা বট প্রশিক্ষণ' : isHi ? 'लाइव दोस्त या बॉट से खेलें' : 'Duel friends live or train vs bot',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                          fontFamily: 'Inter',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const Spacer(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          isBn ? 'অনলাইন ও অফলাইন মোড' : isHi ? 'ऑनलाइन और ऑफ़लाइन मोड' : 'Online & offline modes',
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: isDark 
-                                ? AppColors.textSecondaryDark.withValues(alpha: 0.7) 
-                                : AppColors.textSecondaryLight.withValues(alpha: 0.7),
-                          ),
-                        ),
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: neonCyan,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: neonCyan.withValues(alpha: 0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.play_arrow_rounded,
-                            color: Colors.black,
-                            size: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
   Widget _buildPillarsGrid(BuildContext context, bool isBn, bool isHi, bool isDark) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cellWidth = (screenWidth - 32 - 12) / 2;
+    const coverRatio = 1.9;
+    const infoReserve = 60.0;
+    final aspectRatio = cellWidth / (cellWidth / coverRatio + infoReserve);
+
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.4,
+      childAspectRatio: aspectRatio,
       children: [
         _buildPillarItem(
           index: 0,
+          accent: AppColors.primary,
           icon: Icons.menu_book_rounded,
           title: isBn ? 'জ্ঞান' : isHi ? 'ज्ञान' : 'Knowledge',
           subtitle: isBn ? 'সাধারণ বুদ্ধি' : isHi ? 'सामान्य ज्ञान' : 'General fluid intelligence',
@@ -1316,9 +921,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       : 'Select core syllabus topics like History, Geography, Science, and Polity to begin structured cognitive training.',
             });
           },
+          isBn: isBn,
+          isHi: isHi,
         ),
         _buildPillarItem(
           index: 1,
+          accent: const Color(0xFF00F1FE),
           icon: Icons.bolt_rounded,
           title: isBn ? 'গতি' : isHi ? 'गति' : 'Speed',
           subtitle: isBn ? 'প্রতিক্রিয়া গতি' : isHi ? 'त्वरित गणना' : 'Reaction & calculation',
@@ -1328,18 +936,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               'description': 'A 60-second mental arithmetic sprint to sharpen focus and operational cognitive processing.',
             });
           },
+          isBn: isBn,
+          isHi: isHi,
         ),
         _buildPillarItem(
           index: 2,
+          accent: const Color(0xFFECB2FF),
           icon: Icons.account_tree_rounded,
           title: isBn ? 'যুক্তি' : isHi ? 'तर्क' : 'Logic',
           subtitle: isBn ? 'প্যাটার্ন খোঁজা' : isHi ? 'तार्किक भूलभुलैया' : 'Directional orientation',
           onTap: () {
             Navigator.pushNamed(context, '/arrow-puzzle');
           },
+          isBn: isBn,
+          isHi: isHi,
         ),
         _buildPillarItem(
           index: 3,
+          accent: const Color(0xFFFF2D95),
           icon: Icons.psychology_rounded,
           title: isBn ? 'স্মৃতিশক্তি' : isHi ? 'स्मृति' : 'Memory',
           subtitle: isBn ? 'সক্রিয় স্মরণ' : isHi ? 'ग्रिड विजुअल रिकॉल' : 'Active recall performance',
@@ -1349,6 +963,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               'description': 'Memorize the flashing green pattern on the grid matrix. Recreate it accurately as grid size expands.',
             });
           },
+          isBn: isBn,
+          isHi: isHi,
         ),
       ],
     );
@@ -1356,78 +972,67 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildPillarItem({
     required IconData icon,
+    required Color accent,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
     required int index,
+    required bool isBn,
+    required bool isHi,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return StaggeredListItem(
       index: index,
-      child: AnimatedScaleButton(
+      child: GameCard(
+        compact: true,
+        fillHeight: true,
+        coverAspectRatio: 1.9,
+        accent: accent,
+        cover: _buildPillarCover(icon, accent, isDark),
+        title: title,
+        subtitle: subtitle,
+        footer: isBn ? 'খেলুন' : isHi ? 'खेलें' : 'Play now',
         onTap: onTap,
+      ),
+    );
+  }
+
+  Widget _buildPillarCover(IconData icon, Color accent, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accent.withValues(alpha: isDark ? 0.28 : 0.22),
+            accent.withValues(alpha: isDark ? 0.08 : 0.06),
+          ],
+        ),
+      ),
+      child: Center(
         child: Container(
-          padding: const EdgeInsets.all(12),
+          width: 46,
+          height: 46,
           decoration: BoxDecoration(
-            color: isDark 
-                ? AppColors.cardDark.withValues(alpha: 0.55) 
-                : Colors.white.withValues(alpha: 0.75),
-            borderRadius: BorderRadius.circular(16),
+            color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
+            shape: BoxShape.circle,
             border: Border.all(
-              color: isDark 
-                  ? Colors.white.withValues(alpha: 0.08) 
-                  : Colors.black.withValues(alpha: 0.06), 
-              width: 1.2,
+              color: accent.withValues(alpha: 0.35),
+              width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
-                blurRadius: 10,
+                color: accent.withValues(alpha: 0.25),
+                blurRadius: 14,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.1 : 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: isDark ? AppColors.primary : AppColors.primaryDark,
-                  size: 20,
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ],
+          child: Icon(
+            icon,
+            color: GameCard.accentForeground(accent, isDark),
+            size: 22,
           ),
         ),
       ),

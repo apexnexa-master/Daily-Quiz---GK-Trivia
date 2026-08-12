@@ -20,6 +20,7 @@ import '../../data/local_quiz_data.dart';
 import '../../core/services/battle_service.dart';
 import '../../core/services/question_service.dart';
 import '../../core/services/daily_progress_service.dart';
+import '../widgets/game_card.dart';
 
 enum BattleArenaState {
   selectMode,
@@ -1314,7 +1315,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                         },
                         isBn: isBn,
                         isHi: isHi,
-                        imagePath: 'assets/icon/quiz2.PNG',
+                        imagePath: 'assets/icon/quiz3.png',
                       ),
                     ],
                   ),
@@ -1458,205 +1459,30 @@ class _BattleScreenState extends ConsumerState<BattleScreen> with WidgetsBinding
                 ? const Color(0xFF00F1FE) 
                 : const Color(0xFFECB2FF)));
 
-    return AnimatedScaleButton(
-      onTap: isLocked ? null : onTap,
-      child: Container(
-        width: 260,
-        height: 155,
-        decoration: BoxDecoration(
-          color: isDark 
-              ? const Color(0xFF151D1E).withValues(alpha: 0.65) 
-              : Colors.white.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isLocked
-                ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05))
-                : categoryColor.withValues(alpha: 0.25),
-            width: 1.5,
-          ),
-          boxShadow: [
-            if (!isLocked)
-              BoxShadow(
-                color: categoryColor.withValues(alpha: isDark ? 0.08 : 0.04),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            children: [
-              if (imagePath != null)
-                Positioned.fill(
-                  child: Image.asset(
-                    imagePath,
-                    fit: BoxFit.cover,
-                    alignment: Alignment.centerRight,
-                  ),
-                ),
-              if (imagePath != null)
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.98),
-                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.85),
-                          (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.3),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.45, 0.75, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-              if (isLocked)
-                Positioned.fill(
-                  child: Container(
-                    color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.45),
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isLocked 
-                                ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade200)
-                                : categoryColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: isLocked 
-                                  ? Colors.transparent 
-                                  : categoryColor.withValues(alpha: 0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            badgeText,
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                              color: isLocked
-                                  ? (isDark ? Colors.white38 : Colors.grey.shade500)
-                                  : (isDark ? categoryColor : AppColors.primaryDark),
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                        ),
-                        if (isLocked)
-                          Row(
-                            children: [
-                              const Icon(Icons.lock_rounded, color: AppColors.error, size: 12),
-                              const SizedBox(width: 4),
-                              Text(
-                                isBn ? 'লকড' : isHi ? 'लॉक' : 'LOCKED',
-                                style: const TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.error,
-                                  letterSpacing: 0.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                    const Spacer(),
-                    // Title
-                    Padding(
-                      padding: const EdgeInsets.only(right: 65),
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: isLocked 
-                              ? (isDark ? Colors.white38 : Colors.grey.shade400)
-                              : (isDark ? Colors.white : AppColors.textPrimaryLight),
-                          letterSpacing: -0.2,
-                          fontFamily: 'Montserrat',
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    // Subtitle
-                    Padding(
-                      padding: const EdgeInsets.only(right: 65),
-                      child: Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isLocked
-                              ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                              : (isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight),
-                          fontFamily: 'Inter',
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const Spacer(),
-                    // Footer Action row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          isLocked 
-                              ? (isBn ? 'শীঘ্রই আসছে' : isHi ? 'जल्द ही आ रहा है' : 'Coming Soon')
-                              : (isBn ? 'সক্রিয় চ্যালেঞ্জ' : isHi ? 'সক্রিয় চ্যালেঞ্জ' : 'Active Challenge'),
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: isLocked
-                                ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                                : (isDark ? AppColors.textSecondaryDark.withValues(alpha: 0.7) : AppColors.textSecondaryLight.withValues(alpha: 0.7)),
-                          ),
-                        ),
-                        // Play action circle button
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: isLocked 
-                                ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade100)
-                                : categoryColor,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            isLocked ? Icons.lock_outline_rounded : Icons.play_arrow_rounded,
-                            color: isLocked
-                                ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                                : Colors.black,
-                            size: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    final meta = switch (badgeText) {
+      'TRIVIA' => '~5 min',
+      'MAZE' => '2 min',
+      'RECALL' => '5 min',
+      'MATH' => '1 min',
+      _ => null,
+    };
+
+    return GameCard(
+      width: 260,
+      compact: true,
+      coverAspectRatio: 2.6,
+      imagePath: imagePath,
+      accent: categoryColor,
+      badge: badgeText,
+      isLocked: isLocked,
+      meta: meta,
+      metaIcon: meta != null ? Icons.timer_outlined : null,
+      title: title,
+      subtitle: subtitle,
+      footer: isLocked
+          ? (isBn ? 'শীঘ্রই আসছে' : isHi ? 'जल्द ही आ रहा है' : 'Coming Soon')
+          : (isBn ? 'সক্রিয় চ্যালেঞ্জ' : isHi ? 'सक्रिय चुनौती' : 'Active Challenge'),
+      onTap: onTap,
     );
   }
 

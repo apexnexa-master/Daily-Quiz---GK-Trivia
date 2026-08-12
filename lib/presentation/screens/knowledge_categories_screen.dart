@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_animations.dart';
+import '../widgets/game_card.dart';
 import '../providers/app_providers.dart';
 import '../../core/services/quiz/practice_quiz_service.dart';
 
@@ -116,11 +116,11 @@ class _KnowledgeCategoriesScreenState extends ConsumerState<KnowledgeCategoriesS
               const SizedBox(height: 20),
               Expanded(
                 child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
-                    childAspectRatio: 1.15,
+                    childAspectRatio: _gridAspectRatio(context),
                   ),
                   itemCount: _categories.length,
                   itemBuilder: (context, index) {
@@ -154,71 +154,22 @@ class _KnowledgeCategoriesScreenState extends ConsumerState<KnowledgeCategoriesS
 
                     return StaggeredListItem(
                       index: index,
-                      child: AnimatedScaleButton(
+                      child: GameCard(
+                        compact: true,
+                        fillHeight: true,
+                        coverAspectRatio: 1.9,
+                        accent: categoryColor,
+                        cover: _buildCategoryCover(categoryColor, icon),
+                        title: localizedName,
+                        subtitle: isBn
+                            ? 'অনুশীলন শুরু করুন'
+                            : isHi
+                                ? 'अभ्यास शुरू करें'
+                                : subtitle,
+                        footer: isBn ? 'শুরু করুন' : isHi ? 'शुरू करें' : 'Select to start',
                         onTap: () {
                           _showPracticeBottomSheet(context, name, localizedName, isDark, isBn, isHi);
                         },
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.cardDark.withValues(alpha: 0.55),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: categoryColor.withValues(alpha: 0.25),
-                              width: 1.2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: categoryColor.withValues(alpha: 0.06),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: categoryColor.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  icon,
-                                  color: categoryColor,
-                                  size: 20,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                localizedName,
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: -0.2,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                isBn
-                                    ? 'অনুশীলন শুরু করুন'
-                                    : isHi
-                                        ? 'अभ्यास शुरू करें'
-                                        : subtitle,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.textTertiaryDark,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
                     );
                   },
@@ -227,6 +178,85 @@ class _KnowledgeCategoriesScreenState extends ConsumerState<KnowledgeCategoriesS
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  double _gridAspectRatio(BuildContext context) {
+    const hPadding = 20.0;
+    const spacing = 12.0;
+    const coverRatio = 1.9;
+    const infoReserve = 60.0;
+    final cellWidth = (MediaQuery.sizeOf(context).width - hPadding * 2 - spacing) / 2;
+    return cellWidth / (cellWidth / coverRatio + infoReserve);
+  }
+
+  Widget _buildCategoryCover(Color color, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withValues(alpha: isDark ? 0.32 : 0.26),
+            color.withValues(alpha: isDark ? 0.10 : 0.06),
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -18,
+            top: -22,
+            child: Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isDark ? 0.10 : 0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            left: -22,
+            bottom: -26,
+            child: Container(
+              width: 78,
+              height: 78,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isDark ? 0.07 : 0.06),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Center(
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: isDark ? 0.18 : 0.14),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: color.withValues(alpha: 0.40),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.25),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: GameCard.accentForeground(color, isDark),
+                size: 19,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
