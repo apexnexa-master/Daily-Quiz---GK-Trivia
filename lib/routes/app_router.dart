@@ -19,6 +19,7 @@ import '../presentation/screens/games/game_placeholder_screen.dart';
 import '../presentation/screens/knowledge_categories_screen.dart';
 import '../presentation/screens/games/arrow_escape_game_screen.dart';
 import '../presentation/screens/games/stroop_rush_screen.dart';
+import '../presentation/workout/workout_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -40,6 +41,7 @@ class AppRouter {
   static const String admin = '/admin';
   static const String arrowPuzzle = '/arrow-puzzle';
   static const String stroopRush = '/stroop-rush';
+  static const String workout = '/workout';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     // Intercept deep links of format: /challenge/{roomId}
@@ -57,7 +59,7 @@ class AppRouter {
       case home:
         return _build(const MainNavigationScreen(), settings);
       case quiz:
-        return _build(const QuizScreen(), settings);
+        return _buildFade(const QuizScreen(), settings);
       case result:
         return _build(const ResultScreen(), settings);
       case leaderboard:
@@ -89,9 +91,15 @@ class AppRouter {
       case admin:
         return _build(const AdminScreen(), settings);
       case arrowPuzzle:
-        return _build(const ArrowEscapeGameScreen(), settings);
+        return _buildFade(const ArrowEscapeGameScreen(), settings);
       case stroopRush:
-        return _build(const StroopRushScreen(), settings);
+        return _buildFade(const StroopRushScreen(), settings);
+      case workout:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        return _buildFade(
+          WorkoutScreen(presetId: args['presetId'] ?? 'balanced'),
+          settings,
+        );
       default:
         return _build(const HomeScreen(), settings);
     }
@@ -99,6 +107,34 @@ class AppRouter {
 
   static MaterialPageRoute _build(Widget widget, RouteSettings settings) {
     return MaterialPageRoute(builder: (_) => widget, settings: settings);
+  }
+
+  /// Smooth fade + subtle rise transition used for game/quiz screens so that
+  /// switching between modes feels polished instead of the default zoom.
+  static PageRoute<void> _buildFade(Widget widget, RouteSettings settings) {
+    return PageRouteBuilder<void>(
+      settings: settings,
+      transitionDuration: const Duration(milliseconds: 320),
+      reverseTransitionDuration: const Duration(milliseconds: 260),
+      pageBuilder: (context, animation, secondaryAnimation) => widget,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.025),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
+        );
+      },
+    );
   }
 
   static Route<dynamic> _buildOnboarding(RouteSettings settings) {

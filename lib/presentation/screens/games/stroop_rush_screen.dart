@@ -13,6 +13,8 @@ import '../../../core/services/ad_service.dart';
 import '../../../core/services/daily_progress_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../providers/app_providers.dart';
+import '../../workout/workout_models.dart';
+import '../../workout/workout_progress_banner.dart';
 
 enum _StroopRule { tapInk, tapWord }
 
@@ -98,6 +100,9 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   bool _reviveUsed = false;
   bool _reviving = false;
 
+  WorkoutStep? _workoutStep;
+  int _workoutScore = 0;
+
   final List<_FloatingScore> _floaters = [];
   SharedPreferences? _prefs;
 
@@ -130,6 +135,16 @@ class _StroopRushScreenState extends State<StroopRushScreen>
     if (_streak >= 10) return 2.0;
     if (_streak >= 5) return 1.5;
     return 1.0;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final step = args?['workoutStep'];
+    if (step is WorkoutStep && _workoutStep == null) {
+      _workoutStep = step;
+    }
   }
 
   @override
@@ -459,6 +474,8 @@ class _StroopRushScreenState extends State<StroopRushScreen>
       prefs.setInt('stroop_best_score', _score);
     }
 
+    _workoutScore = _accuracy.round();
+
     // Track daily goal, streak & brain score (Reaction pillar)
     DailyProgressService.instance.recordGameCompletion(
       pillar: BrainPillar.reaction,
@@ -613,6 +630,8 @@ Can you beat me? 🚀
                 SafeArea(
                   child: Column(
                     children: [
+                      if (_workoutStep != null)
+                        WorkoutProgressBanner(step: _workoutStep!),
                       _buildHeader(isDark),
                       _buildStatsRow(isDark),
                       Expanded(child: _buildWordStage(isDark)),
@@ -2201,7 +2220,9 @@ Can you beat me? 🚀
                       Align(
                         alignment: Alignment.centerRight,
                         child: InkWell(
-                          onTap: () => Navigator.pop(context),
+                          onTap: () => _workoutStep == null
+                              ? Navigator.pop(context)
+                              : Navigator.pop(context, _workoutScore),
                           borderRadius: BorderRadius.circular(20),
                           child: Padding(
                             padding: const EdgeInsets.all(6),
@@ -2391,6 +2412,7 @@ Can you beat me? 🚀
                           ],
                         ),
                       ),
+                      if (_workoutStep == null) ...[
                       if (!_reviveUsed) ...[
                         const SizedBox(height: 16),
                         SizedBox(
@@ -2474,6 +2496,30 @@ Can you beat me? 🚀
                           ),
                         ],
                       ),
+                      ],
+                      if (_workoutStep != null) ...[
+                        const SizedBox(height: 18),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: FilledButton.icon(
+                            onPressed: () => Navigator.pop(context, _workoutScore),
+                            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 0,
+                            ),
+                            label: const Text(
+                              'CONTINUE',
+                              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

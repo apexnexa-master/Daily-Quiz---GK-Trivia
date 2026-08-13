@@ -12,6 +12,7 @@ import '../../core/services/quiz_scheduler_service.dart';
 import '../../core/utils/offline_manager.dart';
 import '../../core/services/daily_progress_service.dart';
 import '../widgets/game_card.dart';
+import '../widgets/workout_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import '../utils/daily_challenge_auth.dart';
@@ -26,7 +27,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _countdownTimer;
   String _savedUsername = 'Explorer';
-  String _savedPhotoUrl = '';
 
   @override
   void initState() {
@@ -44,7 +44,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _savedUsername = prefs.getString('temp_username') ?? 'Explorer';
-      _savedPhotoUrl = prefs.getString('temp_photo_url') ?? '';
     });
   }
 
@@ -68,7 +67,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Retrieve username and photo from currentUserProvider
     final currentUser = ref.watch(currentUserProvider).value;
     final username = currentUser?.displayName ?? _savedUsername;
-    final photoUrl = currentUser?.photoUrl ?? _savedPhotoUrl;
 
     // Daily progress metrics (streak, daily goal, brain score)
     final dailyProgress = dailyProgressAsync.value ?? const DailyProgress();
@@ -77,56 +75,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isGuest = currentUser?.isAnonymous ?? true;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              // Custom Header Bar matching BrainX branding
-              _buildTopAppBar(photoUrl, context),
-              const NetworkStatusBanner(),
-              
-              Expanded(
-                child: RefreshIndicator(
-                  color: AppColors.primary,
-                  onRefresh: () async {
-                    ref.invalidate(todayQuizProvider);
-                    ref.invalidate(localStreakProvider);
-                    ref.invalidate(localLeaderboardProvider);
-                    ref.invalidate(localPersonalBestProvider);
-                    ref.invalidate(totalQuizzesProvider);
-                    ref.invalidate(totalScoreProvider);
-                    ref.invalidate(gamificationNotifierProvider);
-                    ref.invalidate(dailyProgressProvider);
-                    ref.invalidate(currentUserProvider);
-                    await _loadSavedIdentity();
-                    await Future.delayed(const Duration(milliseconds: 500));
-                  },
-                  child: CustomScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    slivers: [
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        sliver: SliverList(
-                          delegate: SliverChildListDelegate([
-                            // Small Greeting Row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  isBn ? 'নমস্কার, $username' : isHi ? 'नमस्ते, $username' : 'Hello, $username',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                    color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+      body: Stack(
+        children: [
+          // Base slate backdrop.
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
+              ),
+            ),
+          ),
+          // Ambient neon glows (BRAINX glassmorphism atmosphere) — dark mode only.
+          if (isDark) ...[
+            const Positioned(
+              top: -90,
+              left: -70,
+              child: _GlowBlob(color: AppColors.neonCyan, size: 260),
+            ),
+            const Positioned(
+              top: 300,
+              right: -100,
+              child: _GlowBlob(color: AppColors.neonViolet, size: 220),
+            ),
+            const Positioned(
+              bottom: -120,
+              right: -80,
+              child: _GlowBlob(color: AppColors.neonLime, size: 300),
+            ),
+          ],
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
+                // Custom Header Bar matching BrainX branding
+                _buildTopAppBar(context),
+                const NetworkStatusBanner(),
+                
+                Expanded(
+                  child: RefreshIndicator(
+                    color: AppColors.primary,
+                    onRefresh: () async {
+                      ref.invalidate(todayQuizProvider);
+                      ref.invalidate(localStreakProvider);
+                      ref.invalidate(localLeaderboardProvider);
+                      ref.invalidate(localPersonalBestProvider);
+                      ref.invalidate(totalQuizzesProvider);
+                      ref.invalidate(totalScoreProvider);
+                      ref.invalidate(gamificationNotifierProvider);
+                      ref.invalidate(dailyProgressProvider);
+                      ref.invalidate(currentUserProvider);
+                      await _loadSavedIdentity();
+                      await Future.delayed(const Duration(milliseconds: 500));
+                    },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          sliver: SliverList(
+                            delegate: SliverChildListDelegate([
+                              // Small Greeting Row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    isBn ? 'নমস্কার, $username' : isHi ? 'नमस्ते, $username' : 'Hello, $username',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  DateFormat('EEEE, MMM d').format(DateTime.now()),
-                                  style: TextStyle(
+                                  Text(
+                                    DateFormat('EEEE, MMM d').format(DateTime.now()),
+                                    style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
@@ -145,13 +167,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             _buildWorkoutCard(quizAsync, context, isBn, isHi, isDark),
                             const SizedBox(height: 16),
 
-                             // 1v1 Battle Arena Bento Card
-                             _buildBattleBentoCard(context, isBn, isHi, isDark),
+                             // Quick Brain Workout (one-tap multi-game session)
+                             QuickBrainWorkoutCard(lang: lang),
                              const SizedBox(height: 24),
 
-                            // Pillars title
+                            // Train Your Brain title
                             Text(
-                              isBn ? 'মানসিক দক্ষতার স্তম্ভসমূহ' : isHi ? 'संज्ञानात्मक कौशल के स्तंभ' : 'Pillars of Cognitive Fitness',
+                              isBn ? 'আপনার মস্তিষ্ক প্রশিক্ষণ দিন' : isHi ? 'अपने दिमाग को प्रशिक्षित करें' : 'Train Your Brain',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w900,
@@ -161,8 +183,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             const SizedBox(height: 12),
 
-                            // Pillars Grid
-                             _buildPillarsGrid(context, isBn, isHi, isDark),
+                            // Train Your Brain grid (only playable skills)
+                             _buildTrainYourBrainSection(quizAsync, context, isBn, isHi, isDark),
                              const SizedBox(height: 100),
                           ]),
                         ),
@@ -174,81 +196,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
+        ],
       ),
     );
   }
 
-  Widget _buildTopAppBar(String photoUrl, BuildContext context) {
+  Widget _buildTopAppBar(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      height: 72,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.bgDark : AppColors.bgLight,
-        border: Border(
-          bottom: BorderSide(
-            color: isDark ? AppColors.outlineVariant.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.05),
-            width: 1,
-          ),
-        ),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/profile'),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark ? AppColors.primary.withValues(alpha: 0.5) : AppColors.primaryDark.withValues(alpha: 0.3),
-                      width: 1.5,
-                    ),
-                    image: photoUrl.isNotEmpty
-                        ? DecorationImage(image: NetworkImage(photoUrl), fit: BoxFit.cover)
-                        : null,
-                  ),
-                  child: photoUrl.isEmpty
-                      ? Icon(
-                          Icons.person_rounded,
-                          color: isDark ? AppColors.primary : AppColors.primaryDark,
-                          size: 20,
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'BRAINX',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
+          // Brand name (BRAINX)
+          Text(
+            'BRAINX',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+              color: AppColors.primary,
+              shadows: isDark
+                  ? const [Shadow(color: AppColors.neonLime, blurRadius: 14)]
+                  : null,
+            ),
           ),
+          // Leaderboard glass button (right side)
           GestureDetector(
             onTap: () => Navigator.pushNamed(context, '/leaderboard'),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceElevatedDark.withValues(alpha: 0.5) : AppColors.surfaceElevatedLight,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark ? AppColors.outlineVariant : Colors.black12,
-                  width: 1,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: isDark ? 0.06 : 0.04),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.neonCyan.withValues(alpha: 0.25)
+                          : Colors.black.withValues(alpha: 0.06),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.leaderboard_rounded,
+                    color: isDark ? AppColors.primary : AppColors.primaryDark,
+                    size: 22,
+                  ),
                 ),
-              ),
-              child: Icon(
-                Icons.leaderboard_rounded,
-                color: isDark ? AppColors.primary : AppColors.primaryDark,
-                size: 22,
               ),
             ),
           ),
@@ -263,19 +260,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final dailyGoal = dailyProgress.dailyGoal;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: isDark 
                 ? const Color(0xFF151D1E).withValues(alpha: 0.25) 
                 : Colors.white.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isDark 
-                  ? Colors.white.withValues(alpha: 0.1) 
+                  ? AppColors.neonCyan.withValues(alpha: 0.22) 
                   : Colors.black.withValues(alpha: 0.05),
               width: 1.2,
             ),
@@ -285,6 +282,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
+              if (isDark)
+                BoxShadow(
+                  color: AppColors.neonCyan.withValues(alpha: 0.08),
+                  blurRadius: 28,
+                  spreadRadius: -2,
+                ),
             ],
           ),
           child: Row(
@@ -866,173 +869,191 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildBattleBentoCard(BuildContext context, bool isBn, bool isHi, bool isDark) {
-    const neonCyan = Color(0xFF00F1FE);
+  Widget _buildTrainYourBrainSection(AsyncValue<dynamic> quizAsync, BuildContext context, bool isBn, bool isHi, bool isDark) {
+    final dailyProgress = ref.watch(dailyProgressProvider).value ?? const DailyProgress();
 
-    return GameCard(
-      width: double.infinity,
-      compact: true,
-      coverHeight: 110,
-      imagePath: 'assets/icon/battle2.PNG',
-      accent: neonCyan,
-      badge: isBn ? 'মাল্টিপ্লেয়ার' : isHi ? 'मल्टीप्लेयर' : 'MULTIPLAYER',
-      isLive: true,
-      meta: isBn ? '৫ মিনিট' : isHi ? '5 मिनट' : '~5 min',
-      metaIcon: Icons.access_time_rounded,
-      title: isBn ? '১ বনাম ১ যুদ্ধ অ্যারেনা' : isHi ? '1 बनाम 1 युद्ध एरिना' : '1v1 Battle Arena',
-      subtitle: isBn
-          ? 'লাইভ দ্বৈরথ বা বট প্রশিক্ষণ'
-          : isHi
-              ? 'लाइव दोस्त या बॉट से खेलें'
-              : 'Duel friends live or train vs bot',
-      footer: isBn ? 'অনলাইন ও অফলাইন মোড' : isHi ? 'ऑनलाइन और ऑफ़लाइन मोड' : 'Online & offline modes',
-      onTap: () => Navigator.pushNamed(context, '/battle'),
-    );
-  }
+    void launchGKQuiz() {
+      if (!DailyChallengeAuth.canStart(ref)) {
+        DailyChallengeAuth.requireLogin(context, ref);
+        return;
+      }
+      quizAsync.whenData((quiz) {
+        if (quiz != null) {
+          ref.read(quizSessionProvider.notifier).startQuiz(quiz);
+          Navigator.pushNamed(context, '/quiz');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Today's GK challenge is not available yet.")),
+          );
+        }
+      });
+    }
 
-  Widget _buildPillarsGrid(BuildContext context, bool isBn, bool isHi, bool isDark) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final cellWidth = (screenWidth - 32 - 12) / 2;
-    const coverRatio = 1.9;
-    const infoReserve = 60.0;
-    final aspectRatio = cellWidth / (cellWidth / coverRatio + infoReserve);
-
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: aspectRatio,
+    return Column(
       children: [
-        _buildPillarItem(
+        _buildTrainYourBrainItem(
           index: 0,
+          emoji: '🧠',
           accent: AppColors.primary,
-          icon: Icons.menu_book_rounded,
-          title: isBn ? 'জ্ঞান' : isHi ? 'ज्ञान' : 'Knowledge',
-          subtitle: isBn ? 'সাধারণ বুদ্ধি' : isHi ? 'सामान्य ज्ञान' : 'General fluid intelligence',
-          onTap: () {
-            Navigator.pushNamed(context, '/game-placeholder', arguments: {
-              'title': isBn ? 'জিকে প্র্যাকটিস অ্যারেনা' : isHi ? 'जीके अभ्यास एरिना' : 'GK Practice Arena',
-              'description': isBn
-                  ? 'ইতিহাস, ভূগোল, বিজ্ঞান এবং রাষ্ট্রনীতির মতো গুরুত্বপূর্ণ সিলেবাস ভিত্তিক বিষয়গুলি বেছে নিয়ে নিয়মিত অনুশীলন করুন।'
-                  : isHi
-                      ? 'इतिहास, भूगोल, विज्ञान और राजनीति जैसे महत्वपूर्ण विषयों को चुनकर नियमित अभ्यास करें।'
-                      : 'Select core syllabus topics like History, Geography, Science, and Polity to begin structured cognitive training.',
-            });
-          },
+          skillName: isBn ? 'জ্ঞান' : isHi ? 'ज्ञान' : 'Knowledge',
+          gameName: isBn ? 'জিকে কুইজ' : isHi ? 'जीके क्विज़' : 'GK Quiz',
+          score: dailyProgress.pillarScore(BrainPillar.knowledge),
           isBn: isBn,
           isHi: isHi,
+          isDark: isDark,
+          onTap: launchGKQuiz,
         ),
-        _buildPillarItem(
+        const SizedBox(height: 12),
+        _buildTrainYourBrainItem(
           index: 1,
+          emoji: '🧩',
           accent: const Color(0xFF00F1FE),
-          icon: Icons.bolt_rounded,
-          title: isBn ? 'গতি' : isHi ? 'गति' : 'Speed',
-          subtitle: isBn ? 'প্রতিক্রিয়া গতি' : isHi ? 'त्वरित गणना' : 'Reaction & calculation',
-          onTap: () {
-            Navigator.pushNamed(context, '/game-placeholder', arguments: {
-              'title': 'Math Speed Sprint',
-              'description': 'A 60-second mental arithmetic sprint to sharpen focus and operational cognitive processing.',
-            });
-          },
+          skillName: isBn ? 'যুক্তি' : isHi ? 'तर्क' : 'Logic',
+          gameName: isBn ? 'দিকনির্দেশ ধাঁধা' : isHi ? 'दिशा पहेली' : 'Arrow Puzzle',
+          score: dailyProgress.pillarScore(BrainPillar.logic),
           isBn: isBn,
           isHi: isHi,
-        ),
-        _buildPillarItem(
-          index: 2,
-          accent: const Color(0xFFECB2FF),
-          icon: Icons.account_tree_rounded,
-          title: isBn ? 'যুক্তি' : isHi ? 'तर्क' : 'Logic',
-          subtitle: isBn ? 'প্যাটার্ন খোঁজা' : isHi ? 'तार्किक भूलभुलैया' : 'Directional orientation',
+          isDark: isDark,
           onTap: () {
+            if (!DailyChallengeAuth.canStart(ref)) {
+              DailyChallengeAuth.requireLogin(context, ref);
+              return;
+            }
             Navigator.pushNamed(context, '/arrow-puzzle');
           },
-          isBn: isBn,
-          isHi: isHi,
         ),
-        _buildPillarItem(
-          index: 3,
-          accent: const Color(0xFFFF2D95),
-          icon: Icons.psychology_rounded,
-          title: isBn ? 'স্মৃতিশক্তি' : isHi ? 'स्मृति' : 'Memory',
-          subtitle: isBn ? 'সক্রিয় স্মরণ' : isHi ? 'ग्रिड विजुअल रिकॉल' : 'Active recall performance',
-          onTap: () {
-            Navigator.pushNamed(context, '/game-placeholder', arguments: {
-              'title': 'Synapse Recall',
-              'description': 'Memorize the flashing green pattern on the grid matrix. Recreate it accurately as grid size expands.',
-            });
-          },
+        const SizedBox(height: 12),
+        _buildTrainYourBrainItem(
+          index: 2,
+          emoji: '⚡',
+          accent: const Color(0xFFECB2FF),
+          skillName: isBn ? 'গতি' : isHi ? 'गति' : 'Speed',
+          gameName: isBn ? 'স্ট্রুপ রাশ' : isHi ? 'स्ट्रूप रश' : 'Stroop Rush',
+          score: dailyProgress.pillarScore(BrainPillar.speed),
           isBn: isBn,
           isHi: isHi,
+          isDark: isDark,
+          onTap: () {
+            if (!DailyChallengeAuth.canStart(ref)) {
+              DailyChallengeAuth.requireLogin(context, ref);
+              return;
+            }
+            Navigator.pushNamed(context, '/stroop-rush');
+          },
         ),
       ],
     );
   }
 
-  Widget _buildPillarItem({
-    required IconData icon,
-    required Color accent,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
+  Widget _buildTrainYourBrainItem({
     required int index,
+    required String emoji,
+    required Color accent,
+    required String skillName,
+    required String gameName,
+    required int score,
     required bool isBn,
     required bool isHi,
+    required bool isDark,
+    required VoidCallback onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return StaggeredListItem(
       index: index,
-      child: GameCard(
-        compact: true,
-        fillHeight: true,
-        coverAspectRatio: 1.9,
-        accent: accent,
-        cover: _buildPillarCover(icon, accent, isDark),
-        title: title,
-        subtitle: subtitle,
-        footer: isBn ? 'খেলুন' : isHi ? 'खेलें' : 'Play now',
+      child: AnimatedScaleButton(
         onTap: onTap,
-      ),
-    );
-  }
-
-  Widget _buildPillarCover(IconData icon, Color accent, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: isDark ? 0.28 : 0.22),
-            accent.withValues(alpha: isDark ? 0.08 : 0.06),
-          ],
-        ),
-      ),
-      child: Center(
         child: Container(
-          width: 46,
-          height: 46,
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
-            shape: BoxShape.circle,
+            color: isDark
+                ? const Color(0xFF192122).withValues(alpha: 0.75)
+                : Colors.white.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: accent.withValues(alpha: 0.35),
-              width: 1,
+              color: accent.withValues(alpha: isDark ? 0.35 : 0.25),
+              width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: accent.withValues(alpha: 0.25),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: Icon(
-            icon,
-            color: GameCard.accentForeground(accent, isDark),
-            size: 22,
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: isDark ? 0.16 : 0.10),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: accent.withValues(alpha: 0.35), width: 1),
+                ),
+                child: Center(child: Text(emoji, style: const TextStyle(fontSize: 22))),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          skillName,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          gameName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: accent,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: score / 100,
+                        backgroundColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                        valueColor: AlwaysStoppedAnimation<Color>(accent),
+                        minHeight: 4,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      score > 0
+                          ? (isBn ? 'স্কোর $score' : isHi ? 'स्कोर $score' : 'Score $score')
+                          : (isBn ? 'খেলে শুরু করুন' : isHi ? 'खेलकर शुरू करें' : 'Play to start'),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: score > 0 ? accent : (isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: isDark ? 0.18 : 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.play_arrow_rounded, color: accent, size: 20),
+              ),
+            ],
           ),
         ),
       ),
@@ -1211,6 +1232,32 @@ class _AnimatedCountUpState extends State<_AnimatedCountUp>
       builder: (context, _) => Text(
         '${_animation.value.round()}',
         style: widget.style,
+      ),
+    );
+  }
+}
+
+/// Soft radial blob used to paint ambient neon glows on the dark backdrop.
+class _GlowBlob extends StatelessWidget {
+  final Color color;
+  final double size;
+  const _GlowBlob({required this.color, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: 0.16),
+              color.withValues(alpha: 0.0),
+            ],
+          ),
+        ),
       ),
     );
   }

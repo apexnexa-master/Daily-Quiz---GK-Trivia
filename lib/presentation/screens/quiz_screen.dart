@@ -12,6 +12,9 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/theme/theme_manager.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/services/daily_progress_service.dart';
+import '../workout/workout_models.dart';
+import '../workout/workout_progress_banner.dart';
 
 class QuizScreen extends ConsumerStatefulWidget {
   const QuizScreen({super.key});
@@ -37,6 +40,18 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   String _currentLang = 'en';
   Set<int> _5050VisibleIndices = {};
   bool _isPaused = false;
+
+  WorkoutStep? _workoutStep;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final step = args?['workoutStep'];
+    if (step is WorkoutStep && _workoutStep == null) {
+      _workoutStep = step;
+    }
+  }
 
   @override
   void initState() {
@@ -160,7 +175,23 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   Future<void> _submitQuiz() async {
     try {
       await ref.read(quizSessionProvider.notifier).submitQuiz(_totalTimeTaken);
-      if (mounted) {
+      if (!mounted) return;
+      final score = ref.read(quizSessionProvider)?.result?.score ?? 0;
+      if (_workoutStep != null) {
+        // Inside a workout we don't navigate to the standalone result screen;
+        // record the same brain-score / daily-goal data and hand back the score.
+        // A 0% run is not a meaningful session, so it must not advance the goal.
+        if (score > 0) {
+          await DailyProgressService.instance.recordGameCompletion(
+            pillar: BrainPillar.knowledge,
+            scorePct: score,
+            gameType: GameType.challenge,
+          );
+        }
+        if (!mounted) return;
+        ref.invalidate(dailyProgressProvider);
+        Navigator.pop(context, score);
+      } else {
         Navigator.pushReplacementNamed(context, '/result');
       }
     } catch (e) {
@@ -174,6 +205,39 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         );
       }
     }
+  }
+
+  Widget _buildQuizCompleteLoader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isBn = _currentLang == 'bn';
+    final isHi = _currentLang == 'hi';
+    return Scaffold(
+      backgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 3,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              isBn ? 'ফলাফল প্রস্তুত হচ্ছে…' : isHi ? 'परिणाम तैयार हो रहा है…' : 'Getting your results ready…',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white70 : Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _onAnswerSelected(int qIndex, int aIndex) {
@@ -261,6 +325,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     }
 
     if (session.isComplete) {
+      if (_workoutStep != null) {
+        return _buildQuizCompleteLoader();
+      }
       return Scaffold(
         body: Center(
           child: Column(
@@ -322,6 +389,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                     children: [
                       // Sleek Quiz AppBar Header
                       _buildHeaderBar(session, lang),
+                      
+                      // Workout progress indicator (only inside a Quick Brain Workout)
+                      if (_workoutStep != null)
+                        WorkoutProgressBanner(step: _workoutStep!, lang: lang, padding: const EdgeInsets.fromLTRB(16, 4, 16, 2)),
                       
                       // Question and Options Card
                       Expanded(

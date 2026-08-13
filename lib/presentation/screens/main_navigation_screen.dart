@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
 import 'play_zone_screen.dart';
 import 'battle_screen.dart';
+import 'profile_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../providers/app_providers.dart';
@@ -22,9 +23,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: widget.initialIndex.clamp(0, 2));
+    _pageController = PageController(initialPage: widget.initialIndex.clamp(0, 3));
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(navigationTabProvider.notifier).state = widget.initialIndex.clamp(0, 2);
+      ref.read(navigationTabProvider.notifier).state = widget.initialIndex.clamp(0, 3);
     });
   }
 
@@ -59,6 +60,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           TabKeepAliveWrapper(child: HomeScreen()),
           TabKeepAliveWrapper(child: PlayZoneScreen()),
           TabKeepAliveWrapper(child: BattleScreen(isTab: true)),
+          TabKeepAliveWrapper(child: ProfileScreen()),
         ],
       ),
       bottomNavigationBar: Container(
@@ -123,9 +125,17 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                     ),
                     _buildNavItem(
                       index: 2,
-                      icon: Icons.shield_outlined,
-                      activeIcon: Icons.shield_rounded,
+                      icon: Icons.sports_kabaddi_outlined,
+                      activeIcon: Icons.sports_kabaddi_rounded,
                       label: 'Battle',
+                      isDark: isDark,
+                      currentIndex: currentIndex,
+                    ),
+                    _buildNavItem(
+                      index: 3,
+                      icon: Icons.person_outline_rounded,
+                      activeIcon: Icons.person_rounded,
+                      label: 'Profile',
                       isDark: isDark,
                       currentIndex: currentIndex,
                     ),

@@ -8,7 +8,20 @@ class AppColors {
   static const Color primary = Color(0xFFD4FF50); // Cyber-Lime / Neon Yellow
   static const Color primaryLight = Color(0xFFE5FF92);
   static const Color primaryDark = Color(0xFF556D00);
-  
+
+  // BRAINX neon palette (Glassmorphism / Neon Dark Mode style tokens)
+  static const Color neonLime = Color(0xFF39FF14);
+  static const Color neonCyan = Color(0xFF00F2FE);
+  static const Color neonViolet = Color(0xFF7B2CBF);
+  static const Color slateDark = Color(0xFF0B0E14);
+  static const Color slateNavy = Color(0xFF0D1117);
+
+  /// Hero CTA gradient — neon lime to electric green (BRAINX workout banner).
+  static const LinearGradient workoutGradient = LinearGradient(
+    colors: [Color(0xFF8AFF00), Color(0xFF00FF87)],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
   static const Color secondary = Color(0xFFECB2FF); // Neon Violet
   static const Color secondaryLight = Color(0xFFF8D8FF);
   static const Color secondaryDark = Color(0xFFCF5CFF);
@@ -45,8 +58,8 @@ class AppColors {
   static const Color textSecondaryLight = Color(0xFF475569);
   static const Color textTertiaryLight = Color(0xFF94A3B8);
 
-  // Dark Mode Surfaces (DESIGN2: Hyper-Glass specifications)
-  static const Color bgDark = Color(0xFF0D1515); // surface / background
+  // Dark Mode Surfaces (BRAINX Glassmorphism / Neon Dark specifications)
+  static const Color bgDark = Color(0xFF0D1117); // deep slate navy background
   static const Color cardDark = Color(0xFF192122); // surface-container
   static const Color surfaceElevatedDark = Color(0xFF232B2C); // surface-container-high
   static const Color surfaceContainerHighest = Color(0xFF2E3637);
@@ -120,9 +133,9 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF0D1515), // bgDark
-      Color(0xFF151D1E), // surface-container-low
-      Color(0xFF192122), // cardDark
+      Color(0xFF0B0E14), // deep slate navy
+      Color(0xFF0D1117), // slate navy
+      Color(0xFF111923), // deep slate blue
     ],
     stops: [0.0, 0.5, 1.0],
   );

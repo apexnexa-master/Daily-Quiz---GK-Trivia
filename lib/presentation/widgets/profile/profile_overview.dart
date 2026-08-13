@@ -333,12 +333,17 @@ class ProfileOverview extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      IconButton(
-                        onPressed: () => Navigator.maybePop(context),
-                        icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 24),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
+                      // Back arrow only when there's a route to pop (e.g. pushed
+                      // via /profile). Hidden when Profile is a bottom-nav tab.
+                      if (Navigator.of(context).canPop())
+                        IconButton(
+                          onPressed: () => Navigator.maybePop(context),
+                          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 24),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        )
+                      else
+                        const SizedBox(width: 24),
                       // Premium tier badge
                       Container(
                         padding: const EdgeInsets.symmetric(

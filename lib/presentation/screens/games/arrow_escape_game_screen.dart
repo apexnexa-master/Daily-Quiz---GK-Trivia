@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flame/game.dart';
@@ -7,12 +8,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'arrow_puzzle/bloc/game_bloc.dart';
 import 'arrow_puzzle/engine/data/campaign_data.dart';
-import 'arrow_puzzle/engine/data/daily_challenge_manager.dart';
-import 'arrow_puzzle/engine/data/economy_config.dart';
 import 'arrow_puzzle/engine/data/progress_manager.dart';
 import 'arrow_puzzle/engine/services/analytics_service.dart';
 import 'arrow_puzzle/engine/render/game_canvas.dart';
-import 'arrow_puzzle/engine/logic/grid_matrix.dart';
 import 'arrow_puzzle/engine/logic/game_solver.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_animations.dart';
@@ -22,6 +20,8 @@ import '../../../../core/services/quiz_service.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/daily_progress_service.dart';
 import '../../providers/app_providers.dart';
+import '../../workout/workout_models.dart';
+import '../../workout/workout_progress_banner.dart';
 
 const String _saveKey = 'progress_save';
 
@@ -53,6 +53,10 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
   bool _showDeadEndOverlay = false;
   bool _showFailedOverlay = false;
   bool _isDailyChallenge = false;
+
+  WorkoutStep? _workoutStep;
+  int? _preparedLevelId;
+  int _lastCompletionScore = 0;
 
   double _initialScale = 1.0;
   Offset _initialPan = Offset.zero;
@@ -168,7 +172,18 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
     super.didChangeDependencies();
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
     final isDaily = args['isDailyChallenge'] == true;
-    if (isDaily != _isDailyChallenge) {
+    final step = args['workoutStep'];
+    final prepared = args['preparedLevelId'];
+    if (step is WorkoutStep && _workoutStep == null) {
+      _workoutStep = step;
+      _isDailyChallenge = false;
+    }
+    if (prepared is int && _preparedLevelId == null) {
+      _preparedLevelId = prepared;
+    }
+    // The workout route also passes `isDailyChallenge: true`, but a workout is
+    // never a daily challenge — don't let it flip the mode once it is set.
+    if (_workoutStep == null && isDaily != _isDailyChallenge) {
       _isDailyChallenge = isDaily;
       if (_loaded) {
         _loadInitialChallenge();
@@ -177,13 +192,27 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
   }
 
   void _loadInitialChallenge() {
-    if (_isDailyChallenge) {
-      _currentLevelId = getHarderDailyLevelId();
-    } else {
-      _currentLevelId = _progress.getHighestUnlockedLevel();
-      if (_currentLevelId > 100) _currentLevelId = 1;
+    _currentLevelId = _pickInitialLevelId();
+    _prepareLevel(_currentLevelId);
+  }
+
+  int _pickInitialLevelId() {
+    if (_workoutStep != null) {
+      return _preparedLevelId ?? Random().nextInt(_catalog.totalLevels) + 1;
     }
-    _loadLevel(_currentLevelId);
+    if (_isDailyChallenge) {
+      return getHarderDailyLevelId();
+    }
+    final unlocked = _progress.getHighestUnlockedLevel();
+    return unlocked > 100 ? 1 : unlocked;
+  }
+
+  /// Generates the level on a background isolate (never blocks the UI thread)
+  /// and loads it into the game once ready.
+  Future<void> _prepareLevel(int levelId) async {
+    final levelDef = await CampaignCatalog.generateInBackground(levelId);
+    if (!mounted || levelDef == null) return;
+    _loadLevel(levelDef.levelId);
   }
 
   void _showRulesDialog({VoidCallback? onDismiss}) {
@@ -408,6 +437,20 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
   }
 
   Future<void> _loadProgressAndStart() async {
+    try {
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+      final isDaily = args['isDailyChallenge'] == true;
+      final step = args['workoutStep'];
+      final prepared = args['preparedLevelId'];
+      if (step is WorkoutStep) {
+        _workoutStep = step;
+        _isDailyChallenge = false;
+        if (prepared is int) _preparedLevelId = prepared;
+      } else if (isDaily) {
+        _isDailyChallenge = true;
+      }
+    } catch (_) {}
+
     final prefs = await SharedPreferences.getInstance();
     final jsonStr = prefs.getString(_saveKey);
     if (jsonStr != null && jsonStr.isNotEmpty) {
@@ -420,8 +463,11 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
     }
     _progress.recordSession();
     _bloc.startSession();
+
+    _currentLevelId = _pickInitialLevelId();
+    await _prepareLevel(_currentLevelId);
+    if (!mounted) return;
     _loaded = true;
-    _loadInitialChallenge();
     setState(() {});
   }
 
@@ -472,6 +518,7 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
     final baseScore = (basePoints - movesPenalty).clamp(20, 100);
     final speedBonus = _elapsedSeconds < 180 ? ((180 - _elapsedSeconds) * 50 ~/ 180) : 0;
     final totalPoints = baseScore + speedBonus;
+    _lastCompletionScore = baseScore;
 
     if (_isDailyChallenge) {
       final auth = AuthService();
@@ -668,8 +715,6 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final levelDef = _catalog.getLevel(_currentLevelId);
-    final totalLevels = _catalog.totalLevels;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
@@ -682,6 +727,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
             children: [
               Column(
                 children: [
+                  if (_workoutStep != null)
+                    WorkoutProgressBanner(step: _workoutStep!),
                   // Glassmorphic Header Bar
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1085,7 +1132,7 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                           if (!_isDailyChallenge && _currentLevelId < _catalog.totalLevels) {
                             _loadLevel(_currentLevelId + 1);
                           } else {
-                            Navigator.pop(context);
+                            Navigator.pop(context, _lastCompletionScore);
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -1251,7 +1298,7 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                       child: OutlinedButton(
                         onPressed: () async {
                           if (_isDailyChallenge) {
-                            Navigator.pop(context); // Exit
+                            Navigator.pop(context, _lastCompletionScore); // Exit
                           } else {
                             if (!AdService.instance.isRewardedReady) {
                               ScaffoldMessenger.of(context).showSnackBar(

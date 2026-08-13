@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'level_schema.dart';
 import 'procedural_generator.dart';
 import 'shape_masks.dart';
@@ -58,14 +59,43 @@ ChapterDef getChapterForLevel(int levelId) {
 class CampaignCatalog {
   final Map<int, LevelDef> _levels = {};
 
+  /// Shared across every catalog instance. Level generation is deterministic
+  /// per level id (seeded by the level id), so a level generated once can be
+  /// reused everywhere without duplicating the (expensive) work.
+  static final Map<int, LevelDef> _globalCache = {};
+  static final Map<int, Future<LevelDef>> _inflight = {};
+
   CampaignCatalog();
 
   LevelDef? getLevel(int levelId) {
     if (levelId < 1 || levelId > 100) return null;
+    final global = _globalCache[levelId];
+    if (global != null) return global;
     if (!_levels.containsKey(levelId)) {
       _levels[levelId] = _generateSingleLevel(levelId);
     }
     return _levels[levelId];
+  }
+
+  /// Generates a level on a background isolate and caches the result globally.
+  /// Already-generated or in-flight requests are deduplicated, so multiple
+  /// callers can warm the cache without blocking the UI thread.
+  static Future<LevelDef?> generateInBackground(int levelId) async {
+    if (levelId < 1 || levelId > 100) return null;
+    final cached = _globalCache[levelId];
+    if (cached != null) return cached;
+    final inFlight = _inflight[levelId];
+    if (inFlight != null) return inFlight;
+
+    final future = compute(generateSingleLevel, levelId);
+    _inflight[levelId] = future;
+    try {
+      final level = await future;
+      _globalCache[levelId] = level;
+      return level;
+    } finally {
+      _inflight.remove(levelId);
+    }
   }
 
   List<LevelDef> getLevelsInChapter(int chapterId) {
@@ -96,6 +126,9 @@ class CampaignCatalog {
     return CampaignCatalog();
   }
 }
+
+/// Top-level entry point so it can be run inside an isolate via [compute].
+LevelDef generateSingleLevel(int levelId) => _generateSingleLevel(levelId);
 
 LevelDef _generateSingleLevel(int levelId) {
   final shapes = kShapeMasks.map((s) => s.id).toList();

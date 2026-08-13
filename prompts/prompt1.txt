@@ -1,0 +1,32 @@
+Here are the detailed, highly structured text prompts you can use with AI image generation models (like Midjourney, DALL-E 3, or Stable Diffusion) to replicate that sleek, modern **Glassmorphism / Neon Dark Mode** UI style for **BRAINX**:
+ 
+### 🎨 Master Prompt: Complete App Screen Layout
+ 
+**Prompt:** A high-fidelity modern mobile app UI/UX design for a brain training and trivia dashboard named "BRAINX", portrait orientation, 9:16 aspect ratio. **Theme & Aesthetics:** Ultra-modern dark mode, deep slate navy background (`#0D1117`) with subtle background glows in cyan (`#00F2FE`) and lime green (`#39FF14`). Glassmorphism aesthetic featuring frosted glass container cards with smooth rounded corners (24px radius), subtle translucent borders, and inner glowing accents. **Header & App Bar:** Clean dark app bar at the top featuring a minimalist glowing brain icon logo, bold crisp title "BRAINX", and a sleek profile badge on the right. **Progress Section:** A horizontal frosted-glass dashboard card at the top displaying gamification stats: "2 DAY STREAK" with a glowing fire icon, a sleek progress pill bar for "DAILY GOAL 2/3", and "BRAIN SCORE 54" with a glowing brain icon. **Cards & Tiles:** Elevated floating cards for "Today's Challenge" with vivid 3D illustration thumbnails (a thinking man with a lightbulb, 3D colorful geometric puzzles). Semi-transparent background panels with neon badge tags like "GK LIVE" and "LOGIC". A prominent primary hero banner for "Quick Brain Workout" featuring a vibrant gradient "START WORKOUT" button with a smooth neon lime to electric green gradient (`#8AFF00` to `#00FF87`). **Bottom Navigation:** Floating blurred glass bottom navigation bar with minimal line icons for Home, Games, and Profile, with the active tab highlighted in neon green. Clean, crisp typography, premium digital art style, Figma showcase quality, 8k resolution, photorealistic mobile UI mockup.
+ 
+### 🧩 Modular Prompts (For Specific Elements)
+ 
+If you are generating individual UI assets, components, or style guidelines in design tools, use these specific modular prompts:
+ 
+#### 1. Background Color Theme & Atmosphere
+ 
+**Prompt:** Minimalist app UI background texture, dark mode, deep space navy blue charcoal background (`#0A0E1A`), faint ambient soft light blobs in neon cyan and lime green out of focus in the background, sleek subtle radial gradients, ultra-clean, high-end digital mobile app background, 8k.
+ 
+#### 2. App Bar & Navigation Section
+ 
+**Prompt:** Top mobile app bar UI design, dark transparent glassmorphism background with blurred backdrop, left-aligned glowing neon green vector logo of a brain-lightbulb hybrid, bold modern sans-serif typography reading "BRAINX", right-aligned rounded user avatar pill container with name tag, ultra-clean mobile header layout, UI component mockup.
+ 
+#### 3. Cards & Tile Design Style
+ 
+**Prompt:** Mobile UI card component, dark mode glassmorphism panel, semi-transparent black background with 20% opacity, soft backdrop blur effect, thin 1px glowing subtle stroke border, 24px rounded corners, vibrant 3D renders inside the card, floating neon badge tags in top corners, high contrast crisp text, UI design system element.
+ 
+### 🛠️ Key Style Tokens (To use in custom prompts or code)
+ 
+ 
+- **Design Trend:** Glassmorphism / Dark Mode Neumorphism / Cyber-Minimalism
+ 
+- **Primary Accent Colors:** Neon Lime (`#39FF14`), Electric Cyan (`#00F2FE`), Deep Violet Glow (`#7B2CBF`)
+ 
+- **Background Surface:** Slate Dark (`#0B0E14`), Panel Glass (`rgba(255, 255, 255, 0.05)`)
+ 
+- **Effects:** Backdrop Blur (`blur(20px)`), Soft Drop Shadow (`0 8px 32px 0 rgba(0,0,0,0.37)`), Corner Radius (`20px` to `28px`)
