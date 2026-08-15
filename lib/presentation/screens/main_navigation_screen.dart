@@ -4,9 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
 import 'play_zone_screen.dart';
 import 'battle_screen.dart';
-import 'profile_screen.dart';
+import 'leaderboard_screen.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_icons.dart';
 import '../providers/app_providers.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
@@ -14,7 +13,8 @@ class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({super.key, this.initialIndex = 0});
 
   @override
-  ConsumerState<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  ConsumerState<MainNavigationScreen> createState() =>
+      _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
@@ -23,9 +23,11 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: widget.initialIndex.clamp(0, 3));
+    _pageController =
+        PageController(initialPage: widget.initialIndex.clamp(0, 3));
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(navigationTabProvider.notifier).state = widget.initialIndex.clamp(0, 3);
+      ref.read(navigationTabProvider.notifier).state =
+          widget.initialIndex.clamp(0, 3);
     });
   }
 
@@ -60,7 +62,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           TabKeepAliveWrapper(child: HomeScreen()),
           TabKeepAliveWrapper(child: PlayZoneScreen()),
           TabKeepAliveWrapper(child: BattleScreen(isTab: true)),
-          TabKeepAliveWrapper(child: ProfileScreen()),
+          TabKeepAliveWrapper(child: LeaderboardScreen(isTab: true)),
         ],
       ),
       bottomNavigationBar: Container(
@@ -73,25 +75,27 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         ),
         child: Container(
           decoration: BoxDecoration(
-            color: isDark 
-                ? const Color(0xFF0F171A).withValues(alpha: 0.6) 
+            color: isDark
+                ? const Color(0xFF0F171A).withValues(alpha: 0.6)
                 : Colors.white.withValues(alpha: 0.65),
             borderRadius: BorderRadius.circular(26),
             border: Border.all(
-              color: isDark 
-                  ? Colors.white.withValues(alpha: 0.1) 
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
                   : Colors.black.withValues(alpha: 0.06),
               width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: (isDark ? Colors.black : AppColors.primary).withValues(alpha: isDark ? 0.35 : 0.08),
+                color: (isDark ? Colors.black : AppColors.primary)
+                    .withValues(alpha: isDark ? 0.35 : 0.08),
                 blurRadius: 32,
                 offset: const Offset(0, 10),
                 spreadRadius: -4,
               ),
               BoxShadow(
-                color: (isDark ? AppColors.primary : Colors.white).withValues(alpha: isDark ? 0.03 : 0.25),
+                color: (isDark ? AppColors.primary : Colors.white)
+                    .withValues(alpha: isDark ? 0.03 : 0.25),
                 blurRadius: 16,
                 offset: const Offset(0, -2),
                 spreadRadius: -2,
@@ -103,7 +107,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -125,17 +130,17 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                     ),
                     _buildNavItem(
                       index: 2,
-                      icon: Icons.sports_kabaddi_outlined,
-                      activeIcon: Icons.sports_kabaddi_rounded,
+                      icon: Icons.shield_outlined,
+                      activeIcon: Icons.shield_rounded,
                       label: 'Battle',
                       isDark: isDark,
                       currentIndex: currentIndex,
                     ),
                     _buildNavItem(
                       index: 3,
-                      icon: Icons.person_outline_rounded,
-                      activeIcon: Icons.person_rounded,
-                      label: 'Profile',
+                      icon: Icons.leaderboard_outlined,
+                      activeIcon: Icons.leaderboard_rounded,
+                      label: 'Leaderboard',
                       isDark: isDark,
                       currentIndex: currentIndex,
                     ),
@@ -159,7 +164,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   }) {
     final isSelected = currentIndex == index;
     final activeColor = isDark ? AppColors.primary : AppColors.primaryDark;
-    final inactiveColor = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
+    final inactiveColor =
+        isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     return GestureDetector(
       onTap: () {
@@ -174,12 +180,16 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? AppColors.primary.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.08))
+              ? (isDark
+                  ? AppColors.primary.withValues(alpha: 0.12)
+                  : AppColors.primary.withValues(alpha: 0.08))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected
-                ? (isDark ? AppColors.primary.withValues(alpha: 0.2) : AppColors.primary.withValues(alpha: 0.1))
+                ? (isDark
+                    ? AppColors.primary.withValues(alpha: 0.2)
+                    : AppColors.primary.withValues(alpha: 0.1))
                 : Colors.transparent,
             width: 1.2,
           ),
@@ -217,7 +227,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                 ],
               ),
               secondChild: const SizedBox.shrink(),
-              crossFadeState: isSelected ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+              crossFadeState: isSelected
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
               duration: const Duration(milliseconds: 200),
             ),
           ],
@@ -235,7 +247,8 @@ class TabKeepAliveWrapper extends StatefulWidget {
   State<TabKeepAliveWrapper> createState() => _TabKeepAliveWrapperState();
 }
 
-class _TabKeepAliveWrapperState extends State<TabKeepAliveWrapper> with AutomaticKeepAliveClientMixin {
+class _TabKeepAliveWrapperState extends State<TabKeepAliveWrapper>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 

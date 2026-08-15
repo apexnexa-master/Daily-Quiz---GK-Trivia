@@ -1,4 +1,14 @@
 // lib/presentation/screens/games/stroop_rush_screen.dart
+// STROOP RUSH — a color-word interference game.
+//
+// Flow: INTRO → COUNTDOWN → PLAY (turn-based, 3 lives) → RESULTS.
+// Rules alternate between "tap the INK color" and "tap the WRITTEN word".
+// Pacing ramps (turns shrink) and the palette grows from 5 to 7 colors.
+//
+// Visual language: neon-glass, matching Math Sprint — animated aurora, glowing
+// gradient word card, per-color accent answer tiles, glass HUD and a shared
+// countdown + results system. All animations are opacity/transform based.
+
 import 'dart:math';
 import 'dart:ui';
 
@@ -11,27 +21,37 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/services/ad_service.dart';
 import '../../../core/services/daily_progress_service.dart';
+import '../../../core/services/game_sfx.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../games/widgets/countdown_overlay.dart';
 import '../../providers/app_providers.dart';
 import '../../workout/workout_models.dart';
 import '../../workout/workout_progress_banner.dart';
 
 enum _StroopRule { tapInk, tapWord }
 
-class StroopRushScreen extends StatefulWidget {
+class StroopRushScreen extends ConsumerStatefulWidget {
   const StroopRushScreen({super.key});
 
   @override
-  State<StroopRushScreen> createState() => _StroopRushScreenState();
+  ConsumerState<StroopRushScreen> createState() => _StroopRushScreenState();
 }
 
-class _StroopRushScreenState extends State<StroopRushScreen>
-    with TickerProviderStateMixin {
+class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   static const double _baseTurnSeconds = 5.0;
   static const double _minTurnSeconds = 1.5;
   static const int _maxLives = 3;
 
-  static const List<String> _allNames = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'ORANGE', 'PINK'];
+  static const List<String> _allNames = [
+    'RED',
+    'BLUE',
+    'GREEN',
+    'YELLOW',
+    'PURPLE',
+    'ORANGE',
+    'PINK'
+  ];
   static const List<Color> _allValues = [
     Color(0xFFEF4444),
     Color(0xFF3B82F6),
@@ -43,8 +63,10 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   ];
 
   /// Active palette grows as the player scores higher.
-  List<String> get _names => _correct >= 15 ? _allNames : _allNames.sublist(0, 5);
-  List<Color> get _values => _correct >= 15 ? _allValues : _allValues.sublist(0, 5);
+  List<String> get _names =>
+      _correct >= 15 ? _allNames : _allNames.sublist(0, 5);
+  List<Color> get _values =>
+      _correct >= 15 ? _allValues : _allValues.sublist(0, 5);
 
   final Random _rng = Random();
   late final AnimationController _timer;
@@ -99,9 +121,20 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   bool _isNewBest = false;
   bool _reviveUsed = false;
   bool _reviving = false;
+  bool _showCountdown = false;
 
   WorkoutStep? _workoutStep;
   int _workoutScore = 0;
+
+  bool get _isBn => _lang == 'bn';
+  bool get _isHi => _lang == 'hi';
+  String get _lang => ref.read(languageProvider);
+
+  String _t(String en, String bn, String hi) => _isBn
+      ? bn
+      : _isHi
+          ? hi
+          : en;
 
   final List<_FloatingScore> _floaters = [];
   SharedPreferences? _prefs;
@@ -119,13 +152,21 @@ class _StroopRushScreenState extends State<StroopRushScreen>
     final distractors = [_distractorIdx, _distractor2Idx];
     final otherSlots = [0, 1, 2].where((s) => s != _correctSlot).toList();
     final pos = otherSlots.indexOf(slot);
-    return pos >= 0 && pos < distractors.length ? distractors[pos] : _distractorIdx;
+    return pos >= 0 && pos < distractors.length
+        ? distractors[pos]
+        : _distractorIdx;
   }
 
-  double get _accuracy => _totalAttempts == 0 ? 0 : (_correct / _totalAttempts) * 100;
+  double get _accuracy =>
+      _totalAttempts == 0 ? 0 : (_correct / _totalAttempts) * 100;
 
   int get _speedPips =>
-      1 + (((_baseTurnSeconds - _turnSeconds) / (_baseTurnSeconds - _minTurnSeconds)) * 4).round().clamp(0, 4);
+      1 +
+      (((_baseTurnSeconds - _turnSeconds) /
+                  (_baseTurnSeconds - _minTurnSeconds)) *
+              4)
+          .round()
+          .clamp(0, 4);
 
   double get _avgReactionSeconds =>
       _correct == 0 ? 0 : (_totalReactionMs / _correct) / 1000;
@@ -140,7 +181,8 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final step = args?['workoutStep'];
     if (step is WorkoutStep && _workoutStep == null) {
       _workoutStep = step;
@@ -150,6 +192,7 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _timer = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: (_baseTurnSeconds * 1000).round()),
@@ -185,7 +228,18 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      if (!_intro && _playing && !_finished && !_paused && !_answering) {
+        _togglePause();
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer.dispose();
     _shake.dispose();
     _confetti.dispose();
@@ -199,10 +253,16 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   _StroopRule _pickRule() {
     if (_correct < 6) return _StroopRule.tapInk;
     // Progressive: switch probability grows with score
-    final switchChance = (_correct < 12) ? 0.3 : (_correct < 20) ? 0.45 : 0.5;
+    final switchChance = (_correct < 12)
+        ? 0.3
+        : (_correct < 20)
+            ? 0.45
+            : 0.5;
     final swap = _rng.nextDouble() < switchChance;
     return swap
-        ? (_rule == _StroopRule.tapInk ? _StroopRule.tapWord : _StroopRule.tapInk)
+        ? (_rule == _StroopRule.tapInk
+            ? _StroopRule.tapWord
+            : _StroopRule.tapInk)
         : _rule;
   }
 
@@ -249,7 +309,8 @@ class _StroopRushScreenState extends State<StroopRushScreen>
       _correctOnLeft = !(_lastAnswer ?? true);
       _lastAnswer = _correctOnLeft;
       _sameAnswerCount = 1;
-      _textIndex = _prevTextIndex < 0 ? 0 : (_prevTextIndex + 1) % _names.length;
+      _textIndex =
+          _prevTextIndex < 0 ? 0 : (_prevTextIndex + 1) % _names.length;
       _inkIndex = _prevInkIndex < 0 ? 1 : (_prevInkIndex + 1) % _values.length;
       _prevTextIndex = _textIndex;
       _prevInkIndex = _inkIndex;
@@ -278,18 +339,28 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   }
 
   void _updateTurnDuration(double reactionSeconds) {
-    final speedBonus = (_baseTurnSeconds - reactionSeconds).clamp(0.0, _baseTurnSeconds);
+    final speedBonus =
+        (_baseTurnSeconds - reactionSeconds).clamp(0.0, _baseTurnSeconds);
     final shrink = 0.03 + speedBonus * 0.06;
-    _turnSeconds = (_turnSeconds - shrink).clamp(_minTurnSeconds, _baseTurnSeconds);
+    _turnSeconds =
+        (_turnSeconds - shrink).clamp(_minTurnSeconds, _baseTurnSeconds);
     _timer.duration = Duration(milliseconds: (_turnSeconds * 1000).round());
   }
 
   void _startGame() {
     if (_playing) return;
-    HapticFeedback.selectionClick();
+    GameSfxService.instance.play(GameSfx.tap);
     _introPulse.stop();
     _introPulse.value = 0;
-    setState(() => _intro = false);
+    setState(() {
+      _intro = false;
+      _showCountdown = true;
+    });
+  }
+
+  void _beginGame() {
+    if (_playing) return;
+    setState(() => _showCountdown = false);
     _nextTurn();
     setState(() => _playing = true);
     _timer.forward(from: 0);
@@ -298,6 +369,7 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   void _togglePause() {
     if (!_playing || _finished || _answering || _intro) return;
     HapticFeedback.selectionClick();
+    GameSfxService.instance.play(GameSfx.tap);
     if (_paused) {
       setState(() => _paused = false);
       if (!_answering) {
@@ -312,6 +384,7 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   Future<void> _advance() async {
     _nextTurn();
     if (_ruleJustChanged) {
+      GameSfxService.instance.play(GameSfx.levelUp);
       _answering = true;
       setState(() => _ruleFlash = true);
       await Future<void>.delayed(const Duration(milliseconds: 900));
@@ -336,7 +409,8 @@ class _StroopRushScreenState extends State<StroopRushScreen>
     final isCorrect = tappedIdx == _correctIdx;
 
     if (isCorrect) {
-      final reactionMs = ((_turnSeconds - remaining * _turnSeconds) * 1000).round();
+      final reactionMs =
+          ((_turnSeconds - remaining * _turnSeconds) * 1000).round();
       _totalReactionMs += reactionMs;
       _correct++;
       _streak++;
@@ -349,8 +423,7 @@ class _StroopRushScreenState extends State<StroopRushScreen>
       }
 
       final speedPoints = (remaining * 6).round();
-      final comboPoints =
-          ((10 + speedPoints) * (_comboMultiplier - 1)).round();
+      final comboPoints = ((10 + speedPoints) * (_comboMultiplier - 1)).round();
       final earned = 10 + speedPoints + comboPoints;
       _totalSpeedPoints += speedPoints;
       _score += earned;
@@ -369,6 +442,8 @@ class _StroopRushScreenState extends State<StroopRushScreen>
 
       // Perfect answer detection (< 0.8s)
       final isPerfect = reactionSeconds < 0.8;
+      GameSfxService.instance
+          .play(_comboMultiplier > 1 ? GameSfx.combo : GameSfx.correct);
       HapticFeedback.lightImpact();
 
       setState(() {
@@ -384,7 +459,9 @@ class _StroopRushScreenState extends State<StroopRushScreen>
       // Combo milestone banners
       if (_streak == 5 || _streak == 10 || _streak == 15 || _streak == 20) {
         _showComboMilestone = true;
-        _comboMilestoneText = '🔥 x$_streak COMBO!';
+        _comboMilestoneText =
+            '🔥 x$_streak ${_t('COMBO!', 'কম্বো!', 'कॉम्बो!')}';
+        GameSfxService.instance.play(GameSfx.combo);
         HapticFeedback.mediumImpact();
         Future<void>.delayed(const Duration(milliseconds: 800), () {
           if (!mounted) return;
@@ -414,6 +491,7 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   }
 
   void _onMistake() {
+    GameSfxService.instance.play(GameSfx.wrong);
     // Streak freeze: absorb one mistake without losing a life
     if (_hasStreakFreeze) {
       _hasStreakFreeze = false;
@@ -437,7 +515,8 @@ class _StroopRushScreenState extends State<StroopRushScreen>
     }
 
     HapticFeedback.heavyImpact();
-    _turnSeconds = (_turnSeconds + 0.4).clamp(_minTurnSeconds, _baseTurnSeconds);
+    _turnSeconds =
+        (_turnSeconds + 0.4).clamp(_minTurnSeconds, _baseTurnSeconds);
     _timer.duration = Duration(milliseconds: (_turnSeconds * 1000).round());
     setState(() {
       _flashWrong = true;
@@ -475,11 +554,12 @@ class _StroopRushScreenState extends State<StroopRushScreen>
     }
 
     _workoutScore = _accuracy.round();
+    GameSfxService.instance.play(GameSfx.gameOver);
 
     // Track daily goal, streak & brain score (Reaction pillar)
     DailyProgressService.instance.recordGameCompletion(
       pillar: BrainPillar.reaction,
-      scorePct: _score,
+      scorePct: _workoutScore,
       gameType: GameType.stroop,
     );
     try {
@@ -498,7 +578,11 @@ class _StroopRushScreenState extends State<StroopRushScreen>
       if (!AdService.instance.isRewardedReady) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No ad available right now. Please try again.')),
+          SnackBar(
+              content: Text(_t(
+                  'No ad available right now. Please try again.',
+                  'এই মুহূর্তে বিজ্ঞাপন নেই। আবার চেষ্টা করুন।',
+                  'अभी कोई विज्ञापन उपलब्ध नहीं है। कृपया पुनः प्रयास करें।'))),
         );
         return;
       }
@@ -508,7 +592,11 @@ class _StroopRushScreenState extends State<StroopRushScreen>
         _reviveRun();
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Watch the full ad to earn an extra life.')),
+          SnackBar(
+              content: Text(_t(
+                  'Watch the full ad to earn an extra life.',
+                  'অতিরিক্ত জীবন পেতে সম্পূর্ণ বিজ্ঞাপন দেখুন।',
+                  'अतिरिक्त जीवन पाने के लिए पूरा विज्ञापन देखें।'))),
         );
       }
     } finally {
@@ -517,6 +605,7 @@ class _StroopRushScreenState extends State<StroopRushScreen>
   }
 
   void _reviveRun() {
+    GameSfxService.instance.play(GameSfx.tap);
     _confetti.stop();
     _confetti.value = 0;
     setState(() {
@@ -549,12 +638,15 @@ Can you beat me? 🚀
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sharing is not available right now.')),
+        SnackBar(
+            content: Text(_t('Sharing is not available right now.',
+                'এখন শেয়ার করা যাচ্ছে না।', 'अभी साझा करना संभव नहीं है।'))),
       );
     }
   }
 
   void _playAgain() {
+    GameSfxService.instance.play(GameSfx.tap);
     _confetti.stop();
     _confetti.value = 0;
     setState(() {
@@ -620,7 +712,9 @@ Can you beat me? 🚀
         children: [
           Container(
             decoration: BoxDecoration(
-              gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
+              gradient: isDark
+                  ? AppColors.homeBackdropDark
+                  : AppColors.homeBackdropGradient,
             ),
             child: Stack(
               children: [
@@ -644,6 +738,11 @@ Can you beat me? 🚀
             ),
           ),
           _buildFloaters(),
+          if (_showCountdown)
+            CountdownOverlay(
+              onFinished: _beginGame,
+              goLabel: _t('GO!', 'শুরু!', 'शुरू!'),
+            ),
           if (_showComboMilestone) _buildComboMilestoneOverlay(isDark),
           if (_ruleFlash) _buildRuleFlashOverlay(isDark),
           if (_intro) _buildIntroOverlay(isDark),
@@ -688,7 +787,8 @@ Can you beat me? 🚀
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFCF5CFF).withValues(alpha: isDark ? 0.10 : 0.05),
+                    const Color(0xFFCF5CFF)
+                        .withValues(alpha: isDark ? 0.10 : 0.05),
                     Colors.transparent,
                   ],
                 ),
@@ -705,7 +805,8 @@ Can you beat me? 🚀
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF3B82F6).withValues(alpha: isDark ? 0.07 : 0.04),
+                    const Color(0xFF3B82F6)
+                        .withValues(alpha: isDark ? 0.07 : 0.04),
                     Colors.transparent,
                   ],
                 ),
@@ -814,7 +915,8 @@ Can you beat me? 🚀
   // Header
   // ---------------------------------------------------------------------------
   Widget _buildHeader(bool isDark) {
-    final subtle = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06);
+    final subtle =
+        (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 2, 16, 0),
@@ -851,7 +953,8 @@ Can you beat me? 🚀
                       color: Colors.white,
                       shadows: [
                         Shadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                          color: Colors.black
+                              .withValues(alpha: isDark ? 0.3 : 0.08),
                           blurRadius: 10,
                           offset: const Offset(0, 1),
                         ),
@@ -860,11 +963,14 @@ Can you beat me? 🚀
                   ),
                 ),
                 Text(
-                  'Match the rule. Beat the clock.',
+                  _t('Match the rule. Beat the clock.',
+                      'নিয়ম মেলান। ঘড়ি হারান।', 'नियम मिलाएँ। घड़ी हराएँ।'),
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+                    color: isDark
+                        ? AppColors.textTertiaryDark
+                        : AppColors.textTertiaryLight,
                   ),
                 ),
               ],
@@ -876,7 +982,8 @@ Can you beat me? 🚀
           _buildSpeedChip(isDark),
           const SizedBox(width: 8),
           IconButton(
-            onPressed: (_playing && !_finished && !_answering) ? _togglePause : null,
+            onPressed:
+                (_playing && !_finished && !_answering) ? _togglePause : null,
             visualDensity: VisualDensity.compact,
             style: IconButton.styleFrom(backgroundColor: subtle),
             icon: Icon(
@@ -955,7 +1062,7 @@ Can you beat me? 🚀
         children: [
           Expanded(
             child: _buildStatBox(
-              'ROUND',
+              _t('ROUND', 'রাউন্ড', 'राउंड'),
               '$_round',
               Icons.tag_rounded,
               const Color(0xFF06B6D4),
@@ -966,7 +1073,7 @@ Can you beat me? 🚀
           Expanded(
             flex: 2,
             child: _buildStatBox(
-              'SCORE',
+              _t('SCORE', 'স্কোর', 'स्कोर'),
               '$_score',
               Icons.bolt_rounded,
               AppColors.primary,
@@ -999,17 +1106,25 @@ Can you beat me? 🚀
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: isDark
-              ? [Colors.white.withValues(alpha: 0.10), Colors.white.withValues(alpha: 0.03)]
-              : [Colors.white.withValues(alpha: 0.96), Colors.white.withValues(alpha: 0.80)],
+              ? [
+                  Colors.white.withValues(alpha: 0.10),
+                  Colors.white.withValues(alpha: 0.03)
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.96),
+                  Colors.white.withValues(alpha: 0.80)
+                ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: boxAccent.withValues(alpha: goldFlash ? 0.75 : (isDark ? 0.35 : 0.25)),
+          color: boxAccent.withValues(
+              alpha: goldFlash ? 0.75 : (isDark ? 0.35 : 0.25)),
           width: goldFlash ? 1.8 : 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: boxAccent.withValues(alpha: goldFlash ? 0.30 : (isDark ? 0.10 : 0.06)),
+            color: boxAccent.withValues(
+                alpha: goldFlash ? 0.30 : (isDark ? 0.10 : 0.06)),
             blurRadius: goldFlash ? 20 : 14,
             offset: const Offset(0, 4),
           ),
@@ -1026,7 +1141,8 @@ Can you beat me? 🚀
                 decoration: BoxDecoration(
                   color: boxAccent.withValues(alpha: isDark ? 0.18 : 0.12),
                   shape: BoxShape.circle,
-                  border: Border.all(color: boxAccent.withValues(alpha: 0.35), width: 1),
+                  border: Border.all(
+                      color: boxAccent.withValues(alpha: 0.35), width: 1),
                 ),
                 child: Icon(icon, size: 11, color: boxAccent),
               ),
@@ -1052,7 +1168,9 @@ Can you beat me? 🚀
                                 style: GoogleFonts.montserrat(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w900,
-                                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.textPrimaryLight,
                                 ),
                               ),
                             )
@@ -1086,9 +1204,11 @@ Can you beat me? 🚀
                           if (trailing != null) ...[
                             const SizedBox(width: 4),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 1.5),
                               decoration: BoxDecoration(
-                                color: boxAccent.withValues(alpha: isDark ? 0.22 : 0.14),
+                                color: boxAccent.withValues(
+                                    alpha: isDark ? 0.22 : 0.14),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -1146,14 +1266,18 @@ Can you beat me? 🚀
   Widget _buildQuestion(bool isDark) {
     final isInk = _rule == _StroopRule.tapInk;
     final accent = isInk ? const Color(0xFF3EC8FF) : const Color(0xFFECB2FF);
-    final highlight = isInk ? 'INK COLOR' : 'WRITTEN WORD';
+    final highlight = isInk
+        ? _t('INK COLOR', 'কালির রং', 'स्याही का रंग')
+        : _t('WRITTEN WORD', 'লেখা শব্দ', 'लिखा शब्द');
+    final tapLabel = _t('TAP THE ', 'ট্যাপ করুন: ', 'टैप करें: ');
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 280),
       transitionBuilder: (child, anim) => FadeTransition(
         opacity: anim,
         child: SlideTransition(
-          position: Tween(begin: const Offset(0, -0.4), end: Offset.zero).animate(anim),
+          position: Tween(begin: const Offset(0, -0.4), end: Offset.zero)
+              .animate(anim),
           child: child,
         ),
       ),
@@ -1192,7 +1316,7 @@ Can you beat me? 🚀
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'TAP THE ',
+                  tapLabel,
                   style: GoogleFonts.montserrat(
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
@@ -1208,7 +1332,8 @@ Can you beat me? 🚀
                     letterSpacing: 1.2,
                     color: accent,
                     shadows: [
-                      Shadow(color: accent.withValues(alpha: 0.8), blurRadius: 14),
+                      Shadow(
+                          color: accent.withValues(alpha: 0.8), blurRadius: 14),
                     ],
                   ),
                 ),
@@ -1248,7 +1373,9 @@ Can you beat me? 🚀
             ? AppColors.success
             : _flashWrong
                 ? AppColors.error
-                : (isDark ? Colors.white.withValues(alpha: 0.16) : Colors.black.withValues(alpha: 0.10));
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.16)
+                    : Colors.black.withValues(alpha: 0.10));
     final glowColor = _flashPerfect
         ? const Color(0xFFFBBF24)
         : _flashCorrect
@@ -1277,7 +1404,8 @@ Can you beat me? 🚀
               end: Alignment.bottomRight,
               colors: [
                 cardTint.withValues(alpha: isDark ? 0.45 : 0.40),
-                (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.97),
+                (isDark ? const Color(0xFF151D1E) : Colors.white)
+                    .withValues(alpha: 0.97),
               ],
             ),
             borderRadius: BorderRadius.circular(32),
@@ -1345,9 +1473,11 @@ Can you beat me? 🚀
         final lowTime = _playing && !_finished && remaining < 0.25;
         final Color ringColor;
         if (remaining >= 0.55) {
-          ringColor = Color.lerp(AppColors.success, AppColors.warning, (1 - remaining) / 0.45)!;
+          ringColor = Color.lerp(
+              AppColors.success, AppColors.warning, (1 - remaining) / 0.45)!;
         } else {
-          ringColor = Color.lerp(AppColors.warning, AppColors.error, (0.55 - remaining) / 0.55)!;
+          ringColor = Color.lerp(
+              AppColors.warning, AppColors.error, (0.55 - remaining) / 0.55)!;
         }
         final pulse = lowTime ? 1 + sin(_timer.value * pi * 10) * 0.06 : 1.0;
         return LayoutBuilder(
@@ -1387,7 +1517,8 @@ Can you beat me? 🚀
                             opacity: anim,
                             child: ScaleTransition(
                               scale: Tween(begin: 0.9, end: 1.0).animate(
-                                CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
+                                CurvedAnimation(
+                                    parent: anim, curve: Curves.easeOutBack),
                               ),
                               child: child,
                             ),
@@ -1404,8 +1535,12 @@ Can you beat me? 🚀
                                 letterSpacing: 2,
                                 color: _ink,
                                 shadows: [
-                                  Shadow(color: _ink.withValues(alpha: 0.5), blurRadius: 26),
-                                  Shadow(color: _ink.withValues(alpha: 0.22), blurRadius: 60),
+                                  Shadow(
+                                      color: _ink.withValues(alpha: 0.5),
+                                      blurRadius: 26),
+                                  Shadow(
+                                      color: _ink.withValues(alpha: 0.22),
+                                      blurRadius: 60),
                                 ],
                               ),
                             ),
@@ -1424,18 +1559,20 @@ Can you beat me? 🚀
   }
 
   Widget _buildRoundHint(bool isDark) {
-    final tertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
+    final tertiary =
+        isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     String text;
     IconData icon;
     Color color = tertiary;
 
     if (_flashPerfect) {
-      text = 'PERFECT!';
+      text = _t('PERFECT!', 'নিখুঁত!', 'बेहतरीन!');
       icon = Icons.auto_awesome_rounded;
       color = const Color(0xFFFBBF24);
     } else if (_ruleFlash) {
-      text = 'new rule — study it';
+      text = _t('new rule — study it', 'নতুন নিয়ম — দেখে নিন',
+          'नया नियम — ध्यान दें');
       icon = Icons.bolt_rounded;
       color = const Color(0xFFECB2FF);
     } else {
@@ -1479,7 +1616,8 @@ Can you beat me? 🚀
   // Answer area (two or three color options to tap)
   // ---------------------------------------------------------------------------
   Widget _buildAnswerArea(bool isDark) {
-    final enabled = _playing && !_answering && !_finished && !_intro && !_paused;
+    final enabled =
+        _playing && !_answering && !_finished && !_intro && !_paused;
 
     Widget option(int slot, {required bool compact}) {
       final isLeft = slot == 0;
@@ -1550,7 +1688,8 @@ Can you beat me? 🚀
                   animation: _floaters[i].controller,
                   builder: (context, _) {
                     final item = _floaters[i];
-                    final t = Curves.easeOutCubic.transform(item.controller.value);
+                    final t =
+                        Curves.easeOutCubic.transform(item.controller.value);
                     return Opacity(
                       opacity: (1 - t).clamp(0.0, 1.0),
                       child: Transform.translate(
@@ -1568,7 +1707,10 @@ Can you beat me? 🚀
                                   color: item.color.withValues(alpha: 0.6),
                                   blurRadius: 18,
                                 ),
-                                const Shadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
+                                const Shadow(
+                                    color: Colors.black26,
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2)),
                               ],
                             ),
                           ),
@@ -1666,7 +1808,8 @@ Can you beat me? 🚀
                     builder: (context, scale, child) =>
                         Transform.scale(scale: scale, child: child),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
                       decoration: BoxDecoration(
                         color: const Color(0xFFA855F7).withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(22),
@@ -1676,7 +1819,8 @@ Can you beat me? 🚀
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFA855F7).withValues(alpha: 0.4),
+                            color:
+                                const Color(0xFFA855F7).withValues(alpha: 0.4),
                             blurRadius: 28,
                           ),
                         ],
@@ -1691,7 +1835,8 @@ Can you beat me? 🚀
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'NEW RULE — READY?',
+                            _t('NEW RULE — READY?', 'নতুন নিয়ম — প্রস্তুত?',
+                                'नया नियम — तैयार?'),
                             style: GoogleFonts.montserrat(
                               fontSize: 14,
                               fontWeight: FontWeight.w900,
@@ -1717,7 +1862,8 @@ Can you beat me? 🚀
   // ---------------------------------------------------------------------------
   Widget _buildIntroOverlay(bool isDark) {
     final cardText = isDark ? Colors.white : AppColors.textPrimaryLight;
-    final cardTertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
+    final cardTertiary =
+        isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     return Positioned.fill(
       child: ColoredBox(
@@ -1737,7 +1883,8 @@ Can you beat me? 🚀
                 ),
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withValues(alpha: 0.08),
                   width: 1,
                 ),
                 boxShadow: [
@@ -1764,7 +1911,7 @@ Can you beat me? 🚀
                         ),
                       ),
                       Text(
-                        'How to play',
+                        _t('How to play', 'কীভাবে খেলবেন', 'कैसे खेलें'),
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -1778,31 +1925,46 @@ Can you beat me? 🚀
                   const SizedBox(height: 18),
                   _buildIntroBullet(
                     Icons.help_outline_rounded,
-                    'Read the question above the word',
+                    _t(
+                        'Read the question above the word',
+                        'শব্দের উপরের প্রশ্নটি পড়ুন',
+                        'शब्द के ऊपर सवाल पढ़ें'),
                     isDark,
                   ),
                   const SizedBox(height: 8),
                   _buildIntroBullet(
                     Icons.touch_app_rounded,
-                    'Tap the color button that answers it',
+                    _t(
+                        'Tap the color button that answers it',
+                        'উত্তর দেওয়া রঙের বোতামে ট্যাপ করুন',
+                        'उत्तर वाले रंग के बटन पर टैप करें'),
                     isDark,
                   ),
                   const SizedBox(height: 8),
                   _buildIntroBullet(
                     Icons.timer_outlined,
-                    'Answer fast — a wrong tap costs a life',
+                    _t(
+                        'Answer fast — a wrong tap costs a life',
+                        'দ্রুত উত্তর দিন — ভুল ট্যাপে জীবন কাটে',
+                        'तेज़ी से उत्तर दें — गलत टैप पर जीवन जाता है'),
                     isDark,
                   ),
                   const SizedBox(height: 8),
                   _buildIntroBullet(
                     Icons.rocket_launch_rounded,
-                    'Speed increases as you play — new colors & rules unlock!',
+                    _t(
+                        'Speed increases as you play — new colors & rules unlock!',
+                        'খেলতে খেলতে গতি বাড়ে — নতুন রং ও নিয়ম খুলে যায়!',
+                        'खेलते-खेलते गति बढ़ती है — नए रंग व नियम खुलते हैं!'),
                     isDark,
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
-                    child: _StartButton(onTap: _startGame),
+                    child: _StartButton(
+                      onTap: _startGame,
+                      label: _t('START', 'শুরু করুন', 'शुरू करें'),
+                    ),
                   ),
                 ],
               ),
@@ -1827,7 +1989,8 @@ Can you beat me? 🚀
           end: Alignment.bottomRight,
           colors: [
             inkColor.withValues(alpha: isDark ? 0.20 : 0.14),
-            (isDark ? const Color(0xFF151D1E) : Colors.white).withValues(alpha: 0.96),
+            (isDark ? const Color(0xFF151D1E) : Colors.white)
+                .withValues(alpha: 0.96),
           ],
         ),
         borderRadius: BorderRadius.circular(22),
@@ -1841,7 +2004,8 @@ Can you beat me? 🚀
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFFA855F7).withValues(alpha: isDark ? 0.20 : 0.12),
+              color: const Color(0xFFA855F7)
+                  .withValues(alpha: isDark ? 0.20 : 0.12),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: const Color(0xFFA855F7).withValues(alpha: 0.5),
@@ -1851,10 +2015,12 @@ Can you beat me? 🚀
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.palette_rounded, size: 13, color: Color(0xFFA855F7)),
+                const Icon(Icons.palette_rounded,
+                    size: 13, color: Color(0xFFA855F7)),
                 const SizedBox(width: 6),
                 Text(
-                  'Which is the INK color?',
+                  _t('Which is the INK color?', 'কালির রং কোনটি?',
+                      'स्याही का रंग कौन सा है?'),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
@@ -1890,7 +2056,8 @@ Can you beat me? 🚀
                   decoration: BoxDecoration(
                     color: inkColor,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.4), width: 2),
                   ),
                   child: Center(
                     child: Text(
@@ -1916,9 +2083,12 @@ Can you beat me? 🚀
                   decoration: BoxDecoration(
                     color: inkColor,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.5), width: 2),
                     boxShadow: [
-                      BoxShadow(color: inkColor.withValues(alpha: 0.5), blurRadius: 14),
+                      BoxShadow(
+                          color: inkColor.withValues(alpha: 0.5),
+                          blurRadius: 14),
                     ],
                   ),
                   child: Column(
@@ -1929,7 +2099,9 @@ Can you beat me? 🚀
                         decoration: BoxDecoration(
                           color: inkColor,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.7), width: 1.5),
+                          border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              width: 1.5),
                         ),
                       ),
                       const SizedBox(height: 5),
@@ -1951,7 +2123,8 @@ Can you beat me? 🚀
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
+                    color: (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: const Color(0xFFEF4444).withValues(alpha: 0.45),
@@ -1986,11 +2159,16 @@ Can you beat me? 🚀
           ),
           const SizedBox(height: 10),
           Text(
-            'answer is BLUE — tap it before time runs out!',
+            _t(
+                'answer is BLUE — tap it before time runs out!',
+                'উত্তর হলো BLUE — সময় শেষ হওয়ার আগে ট্যাপ করুন!',
+                'उत्तर है BLUE — समय समाप्त होने से पहले टैप करें!'),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+              color: isDark
+                  ? AppColors.textTertiaryDark
+                  : AppColors.textTertiaryLight,
             ),
             textAlign: TextAlign.center,
           ),
@@ -2031,7 +2209,8 @@ Can you beat me? 🚀
   // ---------------------------------------------------------------------------
   Widget _buildPauseOverlay(bool isDark) {
     final cardText = isDark ? Colors.white : AppColors.textPrimaryLight;
-    final cardTertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
+    final cardTertiary =
+        isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     return Positioned.fill(
       child: ColoredBox(
@@ -2051,7 +2230,8 @@ Can you beat me? 🚀
                 ),
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withValues(alpha: 0.08),
                   width: 1,
                 ),
                 boxShadow: [
@@ -2087,7 +2267,7 @@ Can you beat me? 🚀
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    'PAUSED',
+                    _t('PAUSED', 'বিরতি', 'विराम'),
                     style: GoogleFonts.montserrat(
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
@@ -2097,7 +2277,10 @@ Can you beat me? 🚀
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'The clock is frozen — take a breath.',
+                    _t(
+                        'The clock is frozen — take a breath.',
+                        'ঘড়ি থেমে আছে — একটু বিশ্রাম নিন।',
+                        'घड़ी रुक गई है — एक सांस लें।'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 11,
@@ -2120,9 +2303,10 @@ Can you beat me? 🚀
                         ),
                         elevation: 0,
                       ),
-                      label: const Text(
-                        'RESUME',
-                        style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                      label: Text(
+                        _t('RESUME', 'চালিয়ে যান', 'फिर से शुरू करें'),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w900, letterSpacing: 0.5),
                       ),
                     ),
                   ),
@@ -2130,7 +2314,7 @@ Can you beat me? 🚀
                   TextButton(
                     onPressed: _playAgain,
                     child: Text(
-                      'RESTART',
+                      _t('RESTART', 'পুনরায় শুরু', 'फिर से शुरू'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -2141,7 +2325,7 @@ Can you beat me? 🚀
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: Text(
-                      'EXIT',
+                      _t('EXIT', 'প্রস্থান', 'बाहर निकलें'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -2164,7 +2348,8 @@ Can you beat me? 🚀
   Widget _buildResultOverlay(bool isDark) {
     final rank = _rankInfo(_score);
     final cardText = isDark ? Colors.white : AppColors.textPrimaryLight;
-    final cardTertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
+    final cardTertiary =
+        isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     return Positioned.fill(
       child: BackdropFilter(
@@ -2173,360 +2358,409 @@ Can you beat me? 🚀
           color: Colors.black.withValues(alpha: 0.75),
           child: Stack(
             children: [
-            if (_isNewBest)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: AnimatedBuilder(
-                    animation: _confetti,
-                    builder: (context, _) => CustomPaint(
-                      painter: _ConfettiPainter(
-                        progress: _confetti.value,
-                        colors: _confettiColors,
+              if (_isNewBest)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: _confetti,
+                      builder: (context, _) => CustomPaint(
+                        painter: _ConfettiPainter(
+                          progress: _confetti.value,
+                          colors: _confettiColors,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 28),
-                  padding: const EdgeInsets.all(26),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: isDark
-                          ? [const Color(0xFF1C2425), AppColors.cardDark]
-                          : [Colors.white, Colors.white.withValues(alpha: 0.98)],
-                    ),
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        blurRadius: 34,
-                        offset: const Offset(0, 14),
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 28),
+                    padding: const EdgeInsets.all(26),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: isDark
+                            ? [const Color(0xFF1C2425), AppColors.cardDark]
+                            : [
+                                Colors.white,
+                                Colors.white.withValues(alpha: 0.98)
+                              ],
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: InkWell(
-                          onTap: () => _workoutStep == null
-                              ? Navigator.pop(context)
-                              : Navigator.pop(context, _workoutScore),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: Icon(
-                              Icons.close_rounded,
-                              size: 22,
-                              color: cardTertiary,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: (isDark ? Colors.white : Colors.black)
+                            .withValues(alpha: 0.08),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 34,
+                          offset: const Offset(0, 14),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: InkWell(
+                            onTap: () => _workoutStep == null
+                                ? Navigator.pop(context)
+                                : Navigator.pop(context, _workoutScore),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.close_rounded,
+                                size: 22,
+                                color: cardTertiary,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        width: 76,
-                        height: 76,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primary.withValues(alpha: 0.12),
-                          border: Border.all(color: AppColors.primary, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.4),
-                              blurRadius: 26,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.emoji_events_rounded,
-                          color: AppColors.primary,
-                          size: 36,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              rank.color.withValues(alpha: isDark ? 0.22 : 0.14),
-                              rank.color.withValues(alpha: isDark ? 0.08 : 0.05),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: 76,
+                          height: 76,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            border:
+                                Border.all(color: AppColors.primary, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.4),
+                                blurRadius: 26,
+                              ),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: rank.color.withValues(alpha: 0.5),
-                            width: 1.2,
+                          child: const Icon(
+                            Icons.emoji_events_rounded,
+                            color: AppColors.primary,
+                            size: 36,
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(rank.icon, size: 13, color: rank.color),
-                            const SizedBox(width: 6),
-                            Text(
-                              rank.label,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1,
-                                color: rank.color,
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 13, vertical: 6),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                rank.color
+                                    .withValues(alpha: isDark ? 0.22 : 0.14),
+                                rank.color
+                                    .withValues(alpha: isDark ? 0.08 : 0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: rank.color.withValues(alpha: 0.5),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(rank.icon, size: 13, color: rank.color),
+                              const SizedBox(width: 6),
+                              Text(
+                                rank.label,
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1,
+                                  color: rank.color,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (_isNewBest) ...[
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.4, end: 1),
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.elasticOut,
+                            builder: (context, scale, child) =>
+                                Transform.scale(scale: scale, child: child),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 7),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFFFBBF24),
+                                    Color(0xFFF59E0B)
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(22),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFBBF24)
+                                        .withValues(alpha: 0.55),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                _t(
+                                    '🎉 NEW HIGH SCORE!',
+                                    '🎉 নতুন সর্বোচ্চ স্কোর!',
+                                    '🎉 नया हाई स्कोर!'),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black87,
+                                  letterSpacing: 0.6,
+                                ),
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (_isNewBest) ...[
+                          ),
+                          const SizedBox(height: 10),
+                        ],
                         TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.4, end: 1),
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.elasticOut,
-                          builder: (context, scale, child) =>
-                              Transform.scale(scale: scale, child: child),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+                          tween: Tween(begin: 0, end: _score.toDouble()),
+                          duration: const Duration(milliseconds: 900),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, value, _) => Text(
+                            '${value.round()}',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 58,
+                              fontWeight: FontWeight.w900,
+                              color: cardText,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          _t('POINTS', 'পয়েন্ট', 'अंक'),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.4,
+                            color: cardTertiary,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: (isDark ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: (isDark ? Colors.white : Colors.black)
+                                  .withValues(alpha: 0.06),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildResultStat(
+                                      _t('ACCURACY', 'সঠিকতা', 'सटीकता'),
+                                      '${_accuracy.toStringAsFixed(0)}%',
+                                      Icons.ads_click_rounded,
+                                      const Color(0xFF3B82F6),
+                                      isDark,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: _buildResultStat(
+                                      _t('AVG TAP', 'গড় ট্যাপ', 'औसत टैप'),
+                                      '${_avgReactionSeconds.toStringAsFixed(2)}s',
+                                      Icons.bolt_rounded,
+                                      const Color(0xFFFBBF24),
+                                      isDark,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              borderRadius: BorderRadius.circular(22),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFFBBF24).withValues(alpha: 0.55),
-                                  blurRadius: 20,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: const Text(
-                              '🎉 NEW HIGH SCORE!',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.black87,
-                                letterSpacing: 0.6,
+                              const SizedBox(height: 14),
+                              Divider(
+                                height: 1,
+                                color: (isDark ? Colors.white : Colors.black)
+                                    .withValues(alpha: 0.08),
                               ),
-                            ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildResultStat(
+                                      _t('BEST STREAK', 'সেরা স্ট্রিক',
+                                          'सर्वश्रेष्ठ स्ट्रीक'),
+                                      '$_bestStreak',
+                                      Icons.local_fire_department_rounded,
+                                      const Color(0xFFF97316),
+                                      isDark,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: _buildResultStat(
+                                      _t('SPEED BONUS', 'গতি বোনাস',
+                                          'गति बोनस'),
+                                      '+$_totalSpeedPoints',
+                                      Icons.rocket_launch_rounded,
+                                      AppColors.success,
+                                      isDark,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 10),
-                      ],
-                      TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0, end: _score.toDouble()),
-                        duration: const Duration(milliseconds: 900),
-                        curve: Curves.easeOutCubic,
-                        builder: (context, value, _) => Text(
-                          '${value.round()}',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 58,
-                            fontWeight: FontWeight.w900,
-                            color: cardText,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        'POINTS',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.4,
-                          color: cardTertiary,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildResultStat(
-                                    'ACCURACY',
-                                    '${_accuracy.toStringAsFixed(0)}%',
-                                    Icons.ads_click_rounded,
-                                    const Color(0xFF3B82F6),
-                                    isDark,
+                        if (_workoutStep == null) ...[
+                          if (!_reviveUsed) ...[
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: FilledButton.tonalIcon(
+                                onPressed: _reviving ? null : _offerExtraLife,
+                                icon: _reviving
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.play_circle_fill_rounded,
+                                        size: 20),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFF7C3AED)
+                                      .withValues(alpha: isDark ? 0.28 : 0.14),
+                                  foregroundColor: isDark
+                                      ? const Color(0xFFC4B5FD)
+                                      : const Color(0xFF6D28D9),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: BorderSide(
+                                      color: const Color(0xFF7C3AED).withValues(
+                                          alpha: isDark ? 0.45 : 0.35),
+                                    ),
                                   ),
+                                  elevation: 0,
                                 ),
-                                Expanded(
-                                  child: _buildResultStat(
-                                    'AVG TAP',
-                                    '${_avgReactionSeconds.toStringAsFixed(2)}s',
-                                    Icons.bolt_rounded,
-                                    const Color(0xFFFBBF24),
-                                    isDark,
-                                  ),
+                                label: Text(
+                                  _t(
+                                      'WATCH AD FOR EXTRA LIFE',
+                                      'বিজ্ঞাপন দেখে অতিরিক্ত জীবন নিন',
+                                      'विज्ञापन देखें और अतिरिक्त जीवन पाएं'),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.4,
+                                      fontSize: 12),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 14),
-                            Divider(
-                              height: 1,
-                              color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
-                            ),
-                            const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildResultStat(
-                                    'BEST STREAK',
-                                    '$_bestStreak',
-                                    Icons.local_fire_department_rounded,
-                                    const Color(0xFFF97316),
-                                    isDark,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: _buildResultStat(
-                                    'SPEED BONUS',
-                                    '+$_totalSpeedPoints',
-                                    Icons.rocket_launch_rounded,
-                                    AppColors.success,
-                                    isDark,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ],
-                        ),
-                      ),
-                      if (_workoutStep == null) ...[
-                      if (!_reviveUsed) ...[
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: FilledButton.tonalIcon(
-                            onPressed: _reviving ? null : _offerExtraLife,
-                            icon: _reviving
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.play_circle_fill_rounded, size: 20),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF7C3AED).withValues(alpha: isDark ? 0.28 : 0.14),
-                              foregroundColor: isDark ? const Color(0xFFC4B5FD) : const Color(0xFF6D28D9),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: BorderSide(
-                                  color: const Color(0xFF7C3AED).withValues(alpha: isDark ? 0.45 : 0.35),
+                          const SizedBox(height: 18),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: SizedBox(
+                                  height: 50,
+                                  child: FilledButton.icon(
+                                    onPressed: _shareScore,
+                                    icon: const Icon(Icons.share_rounded,
+                                        size: 18),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor:
+                                          (isDark ? Colors.white : Colors.black)
+                                              .withValues(alpha: 0.06),
+                                      foregroundColor: cardText,
+                                      side: BorderSide(
+                                        color: (isDark
+                                                ? Colors.white
+                                                : Colors.black)
+                                            .withValues(alpha: 0.15),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    label: Text(
+                                      _t('SHARE', 'শেয়ার', 'साझा करें'),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.5),
+                                    ),
+                                  ),
                                 ),
                               ),
-                              elevation: 0,
-                            ),
-                            label: const Text(
-                              'WATCH AD FOR EXTRA LIFE',
-                              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.4, fontSize: 12),
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 18),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 50,
-                              child: FilledButton.icon(
-                                onPressed: _shareScore,
-                                icon: const Icon(Icons.share_rounded, size: 18),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
-                                  foregroundColor: cardText,
-                                  side: BorderSide(
-                                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.15),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: SizedBox(
+                                  height: 50,
+                                  child: FilledButton.icon(
+                                    onPressed: _playAgain,
+                                    icon: const Icon(Icons.refresh_rounded,
+                                        size: 18),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.black,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    label: Text(
+                                      _t('PLAY AGAIN', 'আবার খেলুন',
+                                          'फिर से खेलें'),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.5),
+                                    ),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                label: const Text(
-                                  'SHARE',
-                                  style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
                                 ),
                               ),
-                            ),
+                            ],
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: SizedBox(
-                              height: 50,
-                              child: FilledButton.icon(
-                                onPressed: _playAgain,
-                                icon: const Icon(Icons.refresh_rounded, size: 18),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.black,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  elevation: 0,
+                        ],
+                        if (_workoutStep != null) ...[
+                          const SizedBox(height: 18),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: FilledButton.icon(
+                              onPressed: () =>
+                                  Navigator.pop(context, _workoutScore),
+                              icon: const Icon(Icons.arrow_forward_rounded,
+                                  size: 18),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                label: const Text(
-                                  'PLAY AGAIN',
-                                  style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
-                                ),
+                                elevation: 0,
+                              ),
+                              label: Text(
+                                _t('CONTINUE', 'চালিয়ে যান', 'जारी रखें'),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5),
                               ),
                             ),
                           ),
                         ],
-                      ),
                       ],
-                      if (_workoutStep != null) ...[
-                        const SizedBox(height: 18),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: FilledButton.icon(
-                            onPressed: () => Navigator.pop(context, _workoutScore),
-                            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 0,
-                            ),
-                            label: const Text(
-                              'CONTINUE',
-                              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
@@ -2599,7 +2833,8 @@ Can you beat me? 🚀
     bool isDark,
   ) {
     final textColor = isDark ? Colors.white : AppColors.textPrimaryLight;
-    final tertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
+    final tertiary =
+        isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -2742,9 +2977,11 @@ class _ConfettiPainter extends CustomPainter {
       final y = (seedY + progress * fallSpan * speed) % fallSpan - 40;
       final w = 6 + rng.nextDouble() * 6;
       final h = 4 + rng.nextDouble() * 6;
-      final rotation = rng.nextDouble() * pi * 2 + progress * (rng.nextBool() ? 8 : -8);
+      final rotation =
+          rng.nextDouble() * pi * 2 + progress * (rng.nextBool() ? 8 : -8);
       final paint = Paint()
-        ..color = colors[i % colors.length].withValues(alpha: 0.7 + rng.nextDouble() * 0.3);
+        ..color = colors[i % colors.length]
+            .withValues(alpha: 0.7 + rng.nextDouble() * 0.3);
       canvas.save();
       canvas.translate(x, y);
       canvas.rotate(rotation);
@@ -2765,9 +3002,10 @@ class _ConfettiPainter extends CustomPainter {
 }
 
 class _StartButton extends StatefulWidget {
-  const _StartButton({required this.onTap});
+  const _StartButton({required this.onTap, this.label = 'START'});
 
   final VoidCallback onTap;
+  final String label;
 
   @override
   State<_StartButton> createState() => _StartButtonState();
@@ -2797,7 +3035,8 @@ class _StartButtonState extends State<_StartButton> {
               colors: [AppColors.primaryLight, AppColors.primary],
             ),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.4),
+            border: Border.all(
+                color: Colors.white.withValues(alpha: 0.4), width: 1.4),
             boxShadow: [
               BoxShadow(
                 color: AppColors.primary.withValues(alpha: 0.45),
@@ -2816,11 +3055,12 @@ class _StartButtonState extends State<_StartButton> {
                   color: Colors.black.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.play_arrow_rounded, color: Colors.black, size: 22),
+                child: const Icon(Icons.play_arrow_rounded,
+                    color: Colors.black, size: 22),
               ),
               const SizedBox(width: 12),
               Text(
-                'START',
+                widget.label,
                 style: GoogleFonts.montserrat(
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
@@ -2871,11 +3111,15 @@ class _ColorOptionState extends State<_ColorOption> {
     final Color fillTop;
     final Color fillBottom;
     if (isDark) {
-      fillTop = Color.lerp(const Color(0xFF31445F), base, _pressed ? 0.20 : 0.04)!;
-      fillBottom = Color.lerp(const Color(0xFF0C1420), base, _pressed ? 0.30 : 0.08)!;
+      fillTop =
+          Color.lerp(const Color(0xFF31445F), base, _pressed ? 0.20 : 0.04)!;
+      fillBottom =
+          Color.lerp(const Color(0xFF0C1420), base, _pressed ? 0.30 : 0.08)!;
     } else {
-      fillTop = Color.lerp(const Color(0xFF3B4A5E), base, _pressed ? 0.16 : 0.03)!;
-      fillBottom = Color.lerp(const Color(0xFF18212C), base, _pressed ? 0.24 : 0.06)!;
+      fillTop =
+          Color.lerp(const Color(0xFF3B4A5E), base, _pressed ? 0.16 : 0.03)!;
+      fillBottom =
+          Color.lerp(const Color(0xFF18212C), base, _pressed ? 0.24 : 0.06)!;
     }
 
     return Opacity(
@@ -2885,7 +3129,8 @@ class _ColorOptionState extends State<_ColorOption> {
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOutCubic,
         child: GestureDetector(
-          onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
+          onTapDown:
+              widget.enabled ? (_) => setState(() => _pressed = true) : null,
           onTapUp: widget.enabled
               ? (_) {
                   setState(() => _pressed = false);
@@ -2929,7 +3174,8 @@ class _ColorOptionState extends State<_ColorOption> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.white.withValues(alpha: _pressed ? 0.10 : 0.16),
+                          Colors.white
+                              .withValues(alpha: _pressed ? 0.10 : 0.16),
                           Colors.white.withValues(alpha: 0),
                         ],
                       ),
@@ -2969,8 +3215,12 @@ class _ColorOptionState extends State<_ColorOption> {
                           letterSpacing: 1.8,
                           color: Colors.white,
                           shadows: [
-                            Shadow(color: Colors.black.withValues(alpha: 0.6), blurRadius: 6),
-                            Shadow(color: Colors.black.withValues(alpha: 0.30), blurRadius: 14),
+                            Shadow(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                blurRadius: 6),
+                            Shadow(
+                                color: Colors.black.withValues(alpha: 0.30),
+                                blurRadius: 14),
                           ],
                         ),
                       ),

@@ -20,6 +20,7 @@ import '../presentation/screens/knowledge_categories_screen.dart';
 import '../presentation/screens/games/arrow_escape_game_screen.dart';
 import '../presentation/screens/games/stroop_rush_screen.dart';
 import '../presentation/screens/games/synapse_recall/synapse_recall_screen.dart';
+import '../presentation/screens/games/math_sprint/math_sprint_screen.dart';
 import '../presentation/workout/workout_screen.dart';
 
 class AppRouter {
@@ -43,6 +44,7 @@ class AppRouter {
   static const String arrowPuzzle = '/arrow-puzzle';
   static const String stroopRush = '/stroop-rush';
   static const String synapseRecall = '/synapse-recall';
+  static const String mathSprint = '/math-sprint';
   static const String workout = '/workout';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -98,6 +100,8 @@ class AppRouter {
         return _buildFade(const StroopRushScreen(), settings);
       case synapseRecall:
         return _buildFade(const SynapseRecallScreen(), settings);
+      case mathSprint:
+        return _buildFade(const MathSprintScreen(), settings);
       case workout:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return _buildFade(

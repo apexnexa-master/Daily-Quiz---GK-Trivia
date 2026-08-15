@@ -28,6 +28,7 @@ class GameType {
   static const String arrow = 'arrow';
   static const String stroop = 'stroop';
   static const String synapse = 'synapse';
+  static const String math = 'math';
   static const String battle = 'battle';
 }
 
@@ -117,8 +118,7 @@ class DailyProgress {
         'currentStreak': currentStreak,
         'longestStreak': longestStreak,
         'lastPlayedDate': lastPlayedDate,
-        'pillarScores':
-            pillarScores.map((key, value) => MapEntry(key, value)),
+        'pillarScores': pillarScores.map((key, value) => MapEntry(key, value)),
       };
 
   factory DailyProgress.fromJson(Map<String, dynamic> json) {
@@ -193,8 +193,7 @@ class DailyProgressService {
     final data = _box.get(_key);
     if (data == null) return const DailyProgress();
     try {
-      return DailyProgress.fromJson(
-          jsonDecode(data) as Map<String, dynamic>);
+      return DailyProgress.fromJson(jsonDecode(data) as Map<String, dynamic>);
     } catch (_) {
       return const DailyProgress();
     }
@@ -231,9 +230,8 @@ class DailyProgressService {
 
     final isNewDay = progress.dailyGoalDate != today;
     var challengeDone = isNewDay ? false : progress.dailyChallengeDone;
-    final gamesPlayed = isNewDay
-        ? <String>[]
-        : List<String>.from(progress.dailyGamesPlayed);
+    final gamesPlayed =
+        isNewDay ? <String>[] : List<String>.from(progress.dailyGamesPlayed);
 
     if (gameType == GameType.challenge) {
       challengeDone = true;
@@ -249,7 +247,8 @@ class DailyProgressService {
         currentStreak = 1;
       } else {
         final todayDate = DateTime.now();
-        final todayOnly = DateTime(todayDate.year, todayDate.month, todayDate.day);
+        final todayOnly =
+            DateTime(todayDate.year, todayDate.month, todayDate.day);
         final lastOnly = DateTime(lastDate.year, lastDate.month, lastDate.day);
         final diff = todayOnly.difference(lastOnly).inDays;
         if (diff == 1) {
@@ -301,7 +300,10 @@ class DailyProgressService {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     try {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
         'daily_goal_date': progress.dailyGoalDate,
         'daily_challenge_done': progress.dailyChallengeDone,
         'daily_games_played': progress.dailyGamesPlayed,
@@ -310,8 +312,7 @@ class DailyProgressService {
         'current_streak': progress.currentStreak,
         'longest_streak': progress.longestStreak,
         'last_played_date': progress.lastPlayedDate,
-        'pillar_scores':
-            progress.pillarScores.map((k, v) => MapEntry(k, v)),
+        'pillar_scores': progress.pillarScores.map((k, v) => MapEntry(k, v)),
         'brain_score': progress.brainScore,
         'last_sync': FieldValue.serverTimestamp(),
       });

@@ -10,7 +10,13 @@ import '../../routes/app_router.dart';
 import '../../core/services/daily_progress_service.dart';
 
 /// Identifiers for the currently playable games.
-enum WorkoutGameId { gkQuiz, arrowPuzzle, stroopRush, synapseRecall }
+enum WorkoutGameId {
+  gkQuiz,
+  arrowPuzzle,
+  stroopRush,
+  synapseRecall,
+  mathSprint,
+}
 
 /// Cognitive skills that are actually backed by playable games today.
 enum WorkoutSkill {
@@ -63,8 +69,11 @@ enum WorkoutSkill {
   final String emoji;
   final Color accent;
 
-  String label(String lang) =>
-      lang == 'bn' ? labelBn : lang == 'hi' ? labelHi : labelEn;
+  String label(String lang) => lang == 'bn'
+      ? labelBn
+      : lang == 'hi'
+          ? labelHi
+          : labelEn;
 }
 
 /// A single playable game referenced by a workout.
@@ -87,8 +96,11 @@ class WorkoutGameDef {
     required this.gameType,
   });
 
-  String title(String lang) =>
-      lang == 'bn' ? titleBn : lang == 'hi' ? titleHi : titleEn;
+  String title(String lang) => lang == 'bn'
+      ? titleBn
+      : lang == 'hi'
+          ? titleHi
+          : titleEn;
 }
 
 /// An ordered list of games that form one workout session.
@@ -107,8 +119,11 @@ class WorkoutPreset {
     required this.games,
   });
 
-  String name(String lang) =>
-      lang == 'bn' ? nameBn : lang == 'hi' ? nameHi : nameEn;
+  String name(String lang) => lang == 'bn'
+      ? nameBn
+      : lang == 'hi'
+          ? nameHi
+          : nameEn;
 }
 
 /// Built-in presets. Only "balanced" is surfaced on the Home screen today;
@@ -155,6 +170,15 @@ class WorkoutPresets {
     gameType: GameType.synapse,
   );
 
+  static const WorkoutGameDef mathSprint = WorkoutGameDef(
+    id: WorkoutGameId.mathSprint,
+    titleEn: 'Math Sprint',
+    titleBn: 'ম্যাথ স্প্রিন্ট',
+    titleHi: 'मैथ स्प्रिंट',
+    skill: WorkoutSkill.speed,
+    gameType: GameType.math,
+  );
+
   static const WorkoutPreset balanced = WorkoutPreset(
     id: balancedId,
     nameEn: 'Balanced',
@@ -162,6 +186,27 @@ class WorkoutPresets {
     nameHi: 'संतुलित',
     games: [gkQuiz, arrowPuzzle, synapseRecall, stroopRush],
   );
+
+  /// Every playable game in the app today. The workout game picker is driven
+  /// from this list, so a new game only needs to be added here (plus its
+  /// launcher case in `WorkoutScreen`) to show up everywhere.
+  static const List<WorkoutGameDef> allGames = [
+    gkQuiz,
+    arrowPuzzle,
+    stroopRush,
+    synapseRecall,
+    mathSprint,
+  ];
+
+  /// Builds an ad-hoc preset from a user-picked list of games (e.g. the
+  /// "choose 3 games" flow). Order is preserved as selected.
+  static WorkoutPreset fromGames(List<WorkoutGameDef> games) => WorkoutPreset(
+        id: 'custom',
+        nameEn: 'Custom',
+        nameBn: 'নিজস্ব',
+        nameHi: 'कस्टम',
+        games: games,
+      );
 
   // Future presets (kept internal; not exposed on Home yet).
   static const WorkoutPreset speedFocus = WorkoutPreset(
@@ -226,6 +271,8 @@ class WorkoutStep {
         return AppRouter.arrowPuzzle;
       case WorkoutGameId.stroopRush:
         return AppRouter.stroopRush;
+      case WorkoutGameId.mathSprint:
+        return AppRouter.mathSprint;
       case WorkoutGameId.synapseRecall:
         return AppRouter.synapseRecall;
     }
@@ -256,7 +303,8 @@ class WorkoutSessionResult {
 
   /// Average of every completed game, 0 when nothing was completed.
   int get overallScore {
-    final scores = games.where((g) => g.completed).map((g) => g.score!).toList();
+    final scores =
+        games.where((g) => g.completed).map((g) => g.score!).toList();
     if (scores.isEmpty) return 0;
     return (scores.reduce((a, b) => a + b) / scores.length).round();
   }

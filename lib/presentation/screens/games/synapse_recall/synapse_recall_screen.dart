@@ -7,6 +7,9 @@
 // The player watches a sequence of premium geometric objects, then rebuilds it
 // from a tile pool. Difficulty (sequence length + viewing time) always grows.
 // The engine is a pure Dart class so future recall modes can plug in cleanly.
+//
+// Visual language: neon-glass, matching Math Sprint — animated aurora, glowing
+// board cards, glass HUD, shared countdown + results system and full sound.
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -19,8 +22,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/services/daily_progress_service.dart';
+import '../../../../core/services/game_sfx.dart';
 import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../games/widgets/countdown_overlay.dart';
 import '../../../providers/app_providers.dart';
 import '../../../workout/workout_models.dart';
 import '../../../workout/workout_progress_banner.dart';
@@ -29,16 +34,25 @@ import 'synapse_art.dart';
 import 'synapse_config.dart';
 import 'synapse_engine.dart';
 
-enum _SynapsePhase { intro, countdown, memorize, recall, correct, incorrect, results }
+enum _SynapsePhase {
+  intro,
+  countdown,
+  memorize,
+  recall,
+  correct,
+  incorrect,
+  results
+}
 
-class SynapseRecallScreen extends StatefulWidget {
+class SynapseRecallScreen extends ConsumerStatefulWidget {
   const SynapseRecallScreen({super.key});
 
   @override
-  State<SynapseRecallScreen> createState() => _SynapseRecallScreenState();
+  ConsumerState<SynapseRecallScreen> createState() =>
+      _SynapseRecallScreenState();
 }
 
-class _SynapseRecallScreenState extends State<SynapseRecallScreen>
+class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late final SynapseRecallEngine _engine;
 
@@ -48,8 +62,6 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
   List<MemoryObject> _selection = [];
   SynapseRoundResult? _lastResult;
 
-  int _countdownValue = SynapseConfig.countdownStart;
-  Timer? _countdownTimer;
   Timer? _autoAdvanceTimer;
 
   late final AnimationController _memorize;
@@ -65,10 +77,21 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
   WorkoutStep? _workoutStep;
   bool _gameFinished = false;
 
+  bool get _isBn => _lang == 'bn';
+  bool get _isHi => _lang == 'hi';
+  String get _lang => ref.read(languageProvider);
+
+  String _t(String en, String bn, String hi) => _isBn
+      ? bn
+      : _isHi
+          ? hi
+          : en;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     final step = args?['workoutStep'];
     if (step is WorkoutStep && _workoutStep == null) {
       _workoutStep = step;
@@ -84,7 +107,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
       vsync: this,
       duration: const Duration(seconds: 4),
     )..addStatusListener((status) {
-        if (status == AnimationStatus.completed && _phase == _SynapsePhase.memorize) {
+        if (status == AnimationStatus.completed &&
+            _phase == _SynapsePhase.memorize) {
           _beginRecall();
         }
       });
@@ -102,7 +126,6 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _countdownTimer?.cancel();
     _autoAdvanceTimer?.cancel();
     _memorize.dispose();
     _shake.dispose();
@@ -112,7 +135,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       if (_phase == _SynapsePhase.memorize) _memorize.stop();
     } else if (state == AppLifecycleState.resumed) {
       if (_phase == _SynapsePhase.memorize && !_memorize.isAnimating) {
@@ -125,7 +149,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _bestLongestSequence = prefs.getInt(SynapseConfig.prefBestLongestSequence) ?? 0;
+      _bestLongestSequence =
+          prefs.getInt(SynapseConfig.prefBestLongestSequence) ?? 0;
       _bestScore = prefs.getInt(SynapseConfig.prefBestScore) ?? 0;
       _bestStreak = prefs.getInt(SynapseConfig.prefBestStreak) ?? 0;
     });
@@ -134,23 +159,14 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
   // ── Flow control ────────────────────────────────────────────────────────
 
   void _startGame() {
+    GameSfxService.instance.play(GameSfx.tap);
     HapticFeedback.lightImpact();
-    setState(() {
-      _phase = _SynapsePhase.countdown;
-      _countdownValue = SynapseConfig.countdownStart;
-    });
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(SynapseConfig.countdownDuration, (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      setState(() => _countdownValue--);
-      if (_countdownValue <= 0) {
-        timer.cancel();
-        _startRound(1);
-      }
-    });
+    setState(() => _phase = _SynapsePhase.countdown);
+  }
+
+  void _onCountdownFinished() {
+    if (!mounted) return;
+    _startRound(1);
   }
 
   void _startRound(int number) {
@@ -178,6 +194,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
     final round = _round;
     if (round == null) return;
     final index = _selection.indexOf(object);
+    GameSfxService.instance.play(GameSfx.tap);
     setState(() {
       if (index >= 0) {
         _selection.removeAt(index);
@@ -199,6 +216,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
     _lastResult = result;
 
     if (result.correct) {
+      GameSfxService.instance
+          .play(_engine.stats.streak >= 2 ? GameSfx.combo : GameSfx.correct);
       HapticFeedback.lightImpact();
       setState(() => _phase = _SynapsePhase.correct);
       _autoAdvanceTimer?.cancel();
@@ -206,6 +225,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
         if (mounted) _nextRound();
       });
     } else {
+      GameSfxService.instance.play(GameSfx.wrong);
       HapticFeedback.mediumImpact();
       _shake.forward(from: 0);
       setState(() => _phase = _SynapsePhase.incorrect);
@@ -214,6 +234,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
 
   void _nextRound() {
     _autoAdvanceTimer?.cancel();
+    GameSfxService.instance.play(GameSfx.tap);
     if (_roundNumber >= SynapseConfig.sessionRounds) {
       _finishSession();
     } else {
@@ -224,6 +245,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
   /// Replays the current round (same sequence) so the player can solve it.
   void _retryRound() {
     _autoAdvanceTimer?.cancel();
+    GameSfxService.instance.play(GameSfx.tap);
     final round = _round;
     if (!mounted || round == null) return;
     setState(() {
@@ -239,6 +261,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
 
   Future<void> _finishSession() async {
     final stats = _engine.stats;
+    GameSfxService.instance.play(GameSfx.gameOver);
     final newBestSeq = stats.longestCorrectSequence > _bestLongestSequence;
     final newBestScore = stats.score > _bestScore;
     final newBestStreak = stats.bestStreak > _bestStreak;
@@ -247,7 +270,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     if (newBestSeq) {
-      prefs.setInt(SynapseConfig.prefBestLongestSequence, stats.longestCorrectSequence);
+      prefs.setInt(
+          SynapseConfig.prefBestLongestSequence, stats.longestCorrectSequence);
     }
     if (newBestScore) {
       prefs.setInt(SynapseConfig.prefBestScore, stats.score);
@@ -277,6 +301,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
   void _playAgain() {
     _autoAdvanceTimer?.cancel();
     _memorize.stop();
+    GameSfxService.instance.play(GameSfx.tap);
     setState(() {
       _engine.stats
         ..score = 0
@@ -295,6 +320,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
   }
 
   void _exit() {
+    GameSfxService.instance.play(GameSfx.tap);
     if (_workoutStep != null) {
       Navigator.pop(context, _engine.stats.workoutScore);
     } else {
@@ -313,7 +339,9 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
         children: [
           Container(
             decoration: BoxDecoration(
-              gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
+              gradient: isDark
+                  ? AppColors.homeBackdropDark
+                  : AppColors.homeBackdropGradient,
             ),
             child: Stack(
               children: [
@@ -333,7 +361,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                           switchInCurve: Curves.easeOutCubic,
                           switchOutCurve: Curves.easeInCubic,
                           child: switch (_phase) {
-                            _SynapsePhase.memorize => _buildMemorizeBoard(isDark),
+                            _SynapsePhase.memorize =>
+                              _buildMemorizeBoard(isDark),
                             _SynapsePhase.recall => _buildRecallArea(isDark),
                             _ => const SizedBox.shrink(),
                           },
@@ -347,7 +376,11 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
             ),
           ),
           if (_phase == _SynapsePhase.intro) _buildIntroOverlay(isDark),
-          if (_phase == _SynapsePhase.countdown) _buildCountdownOverlay(isDark),
+          if (_phase == _SynapsePhase.countdown)
+            CountdownOverlay(
+              onFinished: _onCountdownFinished,
+              goLabel: _t('GO!', 'শুরু!', 'शुरू!'),
+            ),
           if (_phase == _SynapsePhase.correct) _buildCorrectOverlay(isDark),
           if (_phase == _SynapsePhase.incorrect) _buildIncorrectOverlay(isDark),
           if (_phase == _SynapsePhase.results) _buildResultsOverlay(isDark),
@@ -393,8 +426,10 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
   }
 
   Widget _buildHeader(bool isDark) {
-    final subtle = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06);
-    final playing = _phase == _SynapsePhase.memorize || _phase == _SynapsePhase.recall;
+    final subtle =
+        (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06);
+    final playing =
+        _phase == _SynapsePhase.memorize || _phase == _SynapsePhase.recall;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 2, 16, 0),
@@ -402,6 +437,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
         children: [
           IconButton(
             onPressed: () {
+              GameSfxService.instance.play(GameSfx.tap);
               if (_gameFinished && _workoutStep != null) {
                 Navigator.pop(context, _engine.stats.workoutScore);
               } else {
@@ -437,7 +473,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                       color: Colors.white,
                       shadows: [
                         Shadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                          color: Colors.black
+                              .withValues(alpha: isDark ? 0.3 : 0.08),
                           blurRadius: 10,
                           offset: const Offset(0, 1),
                         ),
@@ -446,11 +483,16 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                   ),
                 ),
                 Text(
-                  'Remember. Rebuild. Repeat.',
+                  _t(
+                      'Remember. Rebuild. Repeat.',
+                      'মনে রাখুন। পুনর্গঠন করুন। পুনরাবৃত্তি করুন।',
+                      'याद रखें। दोबारा बनाएँ। दोहराएँ।'),
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+                    color: isDark
+                        ? AppColors.textTertiaryDark
+                        : AppColors.textTertiaryLight,
                   ),
                 ),
               ],
@@ -509,7 +551,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
         children: [
           Expanded(
             child: _buildStatBox(
-              'ROUND',
+              _t('ROUND', 'রাউন্ড', 'राउंड'),
               '${_roundNumber.toString().padLeft(2, '0')} / ${SynapseConfig.sessionRounds}',
               Icons.tag_rounded,
               const Color(0xFF00F1FE),
@@ -520,7 +562,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
           Expanded(
             flex: 2,
             child: _buildStatBox(
-              'SCORE',
+              _t('SCORE', 'স্কোর', 'स्कोर'),
               '${_engine.stats.score}',
               Icons.bolt_rounded,
               AppColors.primary,
@@ -546,8 +588,14 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: isDark
-              ? [Colors.white.withValues(alpha: 0.10), Colors.white.withValues(alpha: 0.03)]
-              : [Colors.white.withValues(alpha: 0.96), Colors.white.withValues(alpha: 0.80)],
+              ? [
+                  Colors.white.withValues(alpha: 0.10),
+                  Colors.white.withValues(alpha: 0.03)
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.96),
+                  Colors.white.withValues(alpha: 0.80)
+                ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
@@ -570,7 +618,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
             decoration: BoxDecoration(
               color: accent.withValues(alpha: isDark ? 0.18 : 0.12),
               shape: BoxShape.circle,
-              border: Border.all(color: accent.withValues(alpha: 0.35), width: 1),
+              border:
+                  Border.all(color: accent.withValues(alpha: 0.35), width: 1),
             ),
             child: Icon(icon, size: 11, color: accent),
           ),
@@ -614,7 +663,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
       children: [
         const SizedBox(height: 8),
         Text(
-          'ROUND ${round.number.toString().padLeft(2, '0')}',
+          '${_t('ROUND', 'রাউন্ড', 'राउंड')} ${round.number.toString().padLeft(2, '0')}',
           style: GoogleFonts.montserrat(
             fontSize: 13,
             fontWeight: FontWeight.w900,
@@ -624,7 +673,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
         ),
         const SizedBox(height: 14),
         Text(
-          'MEMORIZE',
+          _t('MEMORIZE', 'মনে রাখুন', 'याद करें'),
           style: GoogleFonts.montserrat(
             fontSize: 26,
             fontWeight: FontWeight.w900,
@@ -634,11 +683,14 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
         ),
         const SizedBox(height: 4),
         Text(
-          'Remember the pattern',
+          _t('Remember the pattern', 'প্যাটার্নটি মনে রাখুন',
+              'पैटर्न याद रखें'),
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+            color: isDark
+                ? AppColors.textTertiaryDark
+                : AppColors.textTertiaryLight,
           ),
         ),
         const SizedBox(height: 18),
@@ -669,7 +721,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
   Widget _buildBoardSurface(bool isDark, double maxWidth, SynapseRound round) {
     final length = round.sequence.length;
     const gap = 14.0;
-    final maxObj = math.min(74.0, (maxWidth - 36 - (length - 1) * gap) / length);
+    final maxObj =
+        math.min(74.0, (maxWidth - 36 - (length - 1) * gap) / length);
     final objSize = maxObj.clamp(38.0, 74.0);
 
     return AnimatedBuilder(
@@ -700,7 +753,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.08),
+                color:
+                    AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.08),
                 blurRadius: 26,
                 offset: const Offset(0, 10),
               ),
@@ -756,7 +810,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
       children: [
         const SizedBox(height: 8),
         Text(
-          'RECALL',
+          _t('RECALL', 'মনে করুন', 'याद करें'),
           style: GoogleFonts.montserrat(
             fontSize: 24,
             fontWeight: FontWeight.w900,
@@ -766,11 +820,14 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
         ),
         const SizedBox(height: 4),
         Text(
-          'Rebuild the sequence',
+          _t('Rebuild the sequence', 'ধারাটি পুনর্গঠন করুন',
+              'अनुक्रम दोबारा बनाएँ'),
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+            color: isDark
+                ? AppColors.textTertiaryDark
+                : AppColors.textTertiaryLight,
           ),
         ),
         const SizedBox(height: 12),
@@ -792,9 +849,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
               builder: (context, constraints) {
                 const cols = 4;
                 const gap = 10.0;
-                final tile =
-                    ((constraints.maxWidth - (cols - 1) * gap) / cols)
-                        .clamp(56.0, 96.0);
+                final tile = ((constraints.maxWidth - (cols - 1) * gap) / cols)
+                    .clamp(56.0, 96.0);
                 return SingleChildScrollView(
                   child: Wrap(
                     alignment: WrapAlignment.center,
@@ -820,11 +876,16 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Text(
-            'Tap a tile to add it · tap again to remove',
+            _t(
+                'Tap a tile to add it · tap again to remove',
+                'টাইল ট্যাপ করে যোগ করুন · আবার ট্যাপে মুছুন',
+                'टाइल टैप करके जोड़ें · फिर टैप करके हटाएँ'),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+              color: isDark
+                  ? AppColors.textTertiaryDark
+                  : AppColors.textTertiaryLight,
             ),
           ),
         ),
@@ -866,7 +927,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
 
   Widget _buildIntroOverlay(bool isDark) {
     final textPrimary = isDark ? Colors.white : AppColors.textPrimaryLight;
-    final textTertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
+    final textTertiary =
+        isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     return Positioned.fill(
       child: BackdropFilter(
@@ -883,9 +945,11 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildIntroChip(Icons.timer_outlined, '~2–4 min', textTertiary),
+                      _buildIntroChip(
+                          Icons.timer_outlined, '~2–4 min', textTertiary),
                       const SizedBox(width: 8),
-                      _buildIntroChip(Icons.psychology_rounded, 'MEMORY', AppColors.primary),
+                      _buildIntroChip(Icons.psychology_rounded,
+                          _t('MEMORY', 'স্মৃতি', 'स्मृति'), AppColors.primary),
                     ],
                   ),
                   const Spacer(),
@@ -895,14 +959,16 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                       height: 220,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.primary.withValues(alpha: isDark ? 0.06 : 0.04),
+                        color: AppColors.primary
+                            .withValues(alpha: isDark ? 0.06 : 0.04),
                         border: Border.all(
                           color: AppColors.primary.withValues(alpha: 0.25),
                           width: 1.2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.08),
+                            color: AppColors.primary
+                                .withValues(alpha: isDark ? 0.14 : 0.08),
                             blurRadius: 40,
                           ),
                         ],
@@ -932,7 +998,10 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Remember. Rebuild. Repeat.',
+                    _t(
+                        'Remember. Rebuild. Repeat.',
+                        'মনে রাখুন। পুনর্গঠন করুন। পুনরাবৃত্তি করুন।',
+                        'याद रखें। दोबारा बनाएँ। दोहराएँ।'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
@@ -943,7 +1012,10 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                   ),
                   const SizedBox(height: 22),
                   Text(
-                    'Remember the pattern.\nRebuild it in the correct order.',
+                    _t(
+                        'Remember the pattern.\nRebuild it in the correct order.',
+                        'প্যাটার্নটি মনে রাখুন।\nসঠিক ক্রমে সাজান।',
+                        'पैटर्न याद रखें।\nसही क्रम में बनाएँ।'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15,
@@ -967,7 +1039,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: isDark ? 0.4 : 0.2),
+                            color: AppColors.primary
+                                .withValues(alpha: isDark ? 0.4 : 0.2),
                             blurRadius: 24,
                             offset: const Offset(0, 8),
                           ),
@@ -975,7 +1048,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                       ),
                       child: Center(
                         child: Text(
-                          'START',
+                          _t('START', 'শুরু করুন', 'शुरू करें'),
                           style: GoogleFonts.montserrat(
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
@@ -1023,46 +1096,6 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
     );
   }
 
-  // ── Countdown overlay ───────────────────────────────────────────────────
-
-  Widget _buildCountdownOverlay(bool isDark) {
-    final textPrimary = isDark ? Colors.white : AppColors.textPrimaryLight;
-    return Positioned.fill(
-      child: ColoredBox(
-        color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.4),
-        child: Center(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 320),
-            transitionBuilder: (child, anim) => FadeTransition(
-              opacity: anim,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.5, end: 1.0).animate(
-                  CurvedAnimation(parent: anim, curve: Curves.easeOutBack),
-                ),
-                child: child,
-              ),
-            ),
-            child: Text(
-              '${math.max(_countdownValue, 0)}',
-              key: ValueKey(_countdownValue),
-              style: GoogleFonts.montserrat(
-                fontSize: 96,
-                fontWeight: FontWeight.w900,
-                color: textPrimary,
-                shadows: [
-                  Shadow(
-                    color: AppColors.primary.withValues(alpha: 0.6),
-                    blurRadius: 30,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   // ── Correct overlay ─────────────────────────────────────────────────────
 
   Widget _buildCorrectOverlay(bool isDark) {
@@ -1077,7 +1110,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
             child: BounceInWidget(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 36),
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 30, vertical: 30),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -1089,7 +1123,9 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                     ],
                   ),
                   borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: AppColors.success.withValues(alpha: 0.5), width: 1.4),
+                  border: Border.all(
+                      color: AppColors.success.withValues(alpha: 0.5),
+                      width: 1.4),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.success.withValues(alpha: 0.35),
@@ -1109,11 +1145,12 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                         color: AppColors.success.withValues(alpha: 0.16),
                         border: Border.all(color: AppColors.success, width: 2),
                       ),
-                      child: const Icon(Icons.check_rounded, color: AppColors.success, size: 34),
+                      child: const Icon(Icons.check_rounded,
+                          color: AppColors.success, size: 34),
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      'PERFECT RECALL',
+                      _t('PERFECT RECALL', 'নিখুঁত স্মরণ', 'सटीक याद'),
                       style: GoogleFonts.montserrat(
                         fontSize: 18,
                         fontWeight: FontWeight.w900,
@@ -1139,7 +1176,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                               color: Color(0xFFF97316), size: 18),
                           const SizedBox(width: 6),
                           Text(
-                            'Streak ${_engine.stats.streak}',
+                            '${_t('Streak', 'স্ট্রিক', 'स्ट्रीक')} ${_engine.stats.streak}',
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w900,
@@ -1165,7 +1202,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
     final round = _round;
     final result = _lastResult;
     final textPrimary = isDark ? Colors.white : AppColors.textPrimaryLight;
-    final textTertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
+    final textTertiary =
+        isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     return Positioned.fill(
       child: BackdropFilter(
@@ -1209,14 +1247,15 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.warning.withValues(alpha: 0.14),
-                          border: Border.all(color: AppColors.warning, width: 2),
+                          border:
+                              Border.all(color: AppColors.warning, width: 2),
                         ),
                         child: const Icon(Icons.refresh_rounded,
                             color: AppColors.warning, size: 30),
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        'Not quite.',
+                        _t('Not quite.', 'প্রায় হয়েছে।', 'बिल्कुल सही नहीं।'),
                         style: GoogleFonts.montserrat(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
@@ -1225,7 +1264,10 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'You remembered: ${result?.remembered ?? 0} / ${round?.length ?? 0}',
+                        _t(
+                            'You remembered: ${result?.remembered ?? 0} / ${round?.length ?? 0}',
+                            'আপনি মনে রেখেছেন: ${result?.remembered ?? 0} / ${round?.length ?? 0}',
+                            'आपने याद रखा: ${result?.remembered ?? 0} / ${round?.length ?? 0}'),
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -1233,9 +1275,9 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                         ),
                       ),
                       const SizedBox(height: 18),
-                      const Text(
-                        'Correct sequence',
-                        style: TextStyle(
+                      Text(
+                        _t('Correct sequence', 'সঠিক ধারা', 'सही अनुक्रम'),
+                        style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1,
@@ -1249,7 +1291,9 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                         spacing: 8,
                         runSpacing: 10,
                         children: [
-                          for (var i = 0; i < (round?.sequence.length ?? 0); i++) ...[
+                          for (var i = 0;
+                              i < (round?.sequence.length ?? 0);
+                              i++) ...[
                             if (i > 0)
                               const Icon(Icons.arrow_forward_rounded,
                                   size: 14, color: Colors.white38),
@@ -1283,7 +1327,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                           ),
                           child: Center(
                             child: Text(
-                              'TRY AGAIN',
+                              _t('TRY AGAIN', 'আবার চেষ্টা করুন',
+                                  'फिर से प्रयास करें'),
                               style: GoogleFonts.montserrat(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w900,
@@ -1302,7 +1347,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                           height: 44,
                           child: Center(
                             child: Text(
-                              'Skip → next round',
+                              _t('Skip → next round', 'স্কিপ → পরের রাউন্ড',
+                                  'छोड़ें → अगला राउंड'),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w800,
@@ -1330,7 +1376,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
   Widget _buildResultsOverlay(bool isDark) {
     final stats = _engine.stats;
     final textPrimary = isDark ? Colors.white : AppColors.textPrimaryLight;
-    final textTertiary = isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
+    final textTertiary =
+        isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
 
     return Positioned.fill(
       child: BackdropFilter(
@@ -1353,7 +1400,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                   ),
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                    color: (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.08),
                     width: 1,
                   ),
                   boxShadow: [
@@ -1374,7 +1422,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.primary.withValues(alpha: 0.12),
-                          border: Border.all(color: AppColors.primary, width: 2),
+                          border:
+                              Border.all(color: AppColors.primary, width: 2),
                           boxShadow: [
                             BoxShadow(
                               color: AppColors.primary.withValues(alpha: 0.4),
@@ -1397,7 +1446,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'SESSION COMPLETE',
+                      _t('SESSION COMPLETE', 'সেশন সম্পন্ন', 'सत्र पूर्ण'),
                       style: GoogleFonts.montserrat(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
@@ -1414,7 +1463,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                         builder: (context, scale, child) =>
                             Transform.scale(scale: scale, child: child),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 7),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
@@ -1422,15 +1472,19 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                             borderRadius: BorderRadius.circular(22),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFFBBF24).withValues(alpha: 0.5),
+                                color: const Color(0xFFFBBF24)
+                                    .withValues(alpha: 0.5),
                                 blurRadius: 20,
                                 spreadRadius: 2,
                               ),
                             ],
                           ),
-                          child: const Text(
-                            '🎉 NEW PERSONAL BEST!',
-                            style: TextStyle(
+                          child: Text(
+                            _t(
+                                '🎉 NEW PERSONAL BEST!',
+                                '🎉 নতুন ব্যক্তিগত রেকর্ড!',
+                                '🎉 नया व्यक्तिगत रिकॉर्ड!'),
+                            style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w900,
                               color: Colors.black87,
@@ -1443,10 +1497,12 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
+                        color: (isDark ? Colors.white : Colors.black)
+                            .withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                          color: (isDark ? Colors.white : Colors.black)
+                              .withValues(alpha: 0.08),
                           width: 1,
                         ),
                       ),
@@ -1456,7 +1512,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                             children: [
                               Expanded(
                                 child: _buildResultStat(
-                                  'MEMORY LEVEL',
+                                  _t('MEMORY LEVEL', 'স্মৃতি স্তর',
+                                      'स्मृति स्तर'),
                                   '${stats.maxLevelReached}',
                                   Icons.psychology_rounded,
                                   AppColors.primary,
@@ -1465,7 +1522,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                               ),
                               Expanded(
                                 child: _buildResultStat(
-                                  'ACCURACY',
+                                  _t('ACCURACY', 'সঠিকতা', 'सटीकता'),
                                   '${stats.accuracy}%',
                                   Icons.ads_click_rounded,
                                   const Color(0xFF3B82F6),
@@ -1477,14 +1534,16 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                           const SizedBox(height: 14),
                           Divider(
                             height: 1,
-                            color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                            color: (isDark ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.08),
                           ),
                           const SizedBox(height: 14),
                           Row(
                             children: [
                               Expanded(
                                 child: _buildResultStat(
-                                  'BEST STREAK',
+                                  _t('BEST STREAK', 'সেরা স্ট্রিক',
+                                      'सर्वश्रेष्ठ स्ट्रीक'),
                                   '${stats.bestStreak}',
                                   Icons.local_fire_department_rounded,
                                   const Color(0xFFF97316),
@@ -1493,8 +1552,10 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                               ),
                               Expanded(
                                 child: _buildResultStat(
-                                  'LONGEST SEQUENCE',
-                                  '${stats.longestCorrectSequence} items',
+                                  _t('LONGEST SEQUENCE', 'দীর্ঘতম ধারা',
+                                      'सबसे लंबा अनुक्रम'),
+                                  '${stats.longestCorrectSequence} '
+                                  '${_t('items', 'টি আইটেম', 'आइटम')}',
                                   Icons.hub_rounded,
                                   const Color(0xFF00F1FE),
                                   isDark,
@@ -1523,7 +1584,7 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Text(
-                            'SCORE',
+                            _t('SCORE', 'স্কোর', 'स्कोर'),
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
@@ -1545,21 +1606,25 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                                 onPressed: _exit,
                                 icon: const Icon(Icons.close_rounded, size: 18),
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: (isDark ? Colors.white : Colors.black)
-                                      .withValues(alpha: 0.06),
+                                  backgroundColor:
+                                      (isDark ? Colors.white : Colors.black)
+                                          .withValues(alpha: 0.06),
                                   foregroundColor: textPrimary,
                                   side: BorderSide(
-                                    color: (isDark ? Colors.white : Colors.black)
-                                        .withValues(alpha: 0.15),
+                                    color:
+                                        (isDark ? Colors.white : Colors.black)
+                                            .withValues(alpha: 0.15),
                                   ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   elevation: 0,
                                 ),
-                                label: const Text(
-                                  'DONE',
-                                  style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                                label: Text(
+                                  _t('DONE', 'সম্পন্ন', 'पूर्ण'),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5),
                                 ),
                               ),
                             ),
@@ -1570,7 +1635,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                               height: 50,
                               child: FilledButton.icon(
                                 onPressed: _playAgain,
-                                icon: const Icon(Icons.refresh_rounded, size: 18),
+                                icon:
+                                    const Icon(Icons.refresh_rounded, size: 18),
                                 style: FilledButton.styleFrom(
                                   backgroundColor: AppColors.primary,
                                   foregroundColor: Colors.black,
@@ -1579,9 +1645,12 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                                   ),
                                   elevation: 0,
                                 ),
-                                label: const Text(
-                                  'PLAY AGAIN',
-                                  style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                                label: Text(
+                                  _t('PLAY AGAIN', 'আবার খেলুন',
+                                      'फिर से खेलें'),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 0.5),
                                 ),
                               ),
                             ),
@@ -1594,7 +1663,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                         height: 50,
                         child: FilledButton.icon(
                           onPressed: _exit,
-                          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                          icon:
+                              const Icon(Icons.arrow_forward_rounded, size: 18),
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.black,
@@ -1603,9 +1673,11 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
                             ),
                             elevation: 0,
                           ),
-                          label: const Text(
-                            'CONTINUE',
-                            style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+                          label: Text(
+                            _t('CONTINUE', 'চালিয়ে যান', 'जारी रखें'),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5),
                           ),
                         ),
                       ),
@@ -1620,7 +1692,8 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
     );
   }
 
-  Widget _buildResultStat(String label, String value, IconData icon, Color accent, bool isDark) {
+  Widget _buildResultStat(
+      String label, String value, IconData icon, Color accent, bool isDark) {
     return Column(
       children: [
         Row(
@@ -1646,7 +1719,9 @@ class _SynapseRecallScreenState extends State<SynapseRecallScreen>
             fontSize: 8.5,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.7,
-            color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+            color: isDark
+                ? AppColors.textTertiaryDark
+                : AppColors.textTertiaryLight,
           ),
         ),
       ],
@@ -1673,7 +1748,8 @@ class _MemorizeProgress extends StatelessWidget {
           child: LinearProgressIndicator(
             value: remaining,
             minHeight: 6,
-            backgroundColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.10),
+            backgroundColor:
+                (isDark ? Colors.white : Colors.black).withValues(alpha: 0.10),
             valueColor: AlwaysStoppedAnimation<Color>(
               remaining > 0.3
                   ? AppColors.primary
@@ -1708,7 +1784,16 @@ class _RecallTile extends StatelessWidget {
   static String _circle(int n) {
     if (n >= 1 && n <= 10) {
       return const [
-        '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩',
+        '①',
+        '②',
+        '③',
+        '④',
+        '⑤',
+        '⑥',
+        '⑦',
+        '⑧',
+        '⑨',
+        '⑩',
       ][n - 1];
     }
     return '$n';
@@ -1765,7 +1850,8 @@ class _RecallTile extends StatelessWidget {
             animation: shake,
             builder: (context, child) {
               final t = shake.value;
-              final dx = t <= 0 ? 0.0 : math.sin(t * math.pi * 12) * 10 * (1 - t);
+              final dx =
+                  t <= 0 ? 0.0 : math.sin(t * math.pi * 12) * 10 * (1 - t);
               return Transform.translate(offset: Offset(dx, 0), child: child);
             },
             child: MemoryObjectView(
@@ -1816,7 +1902,8 @@ class _GlowOrb extends StatelessWidget {
   final Color color;
   final double alpha;
 
-  const _GlowOrb({required this.size, required this.color, required this.alpha});
+  const _GlowOrb(
+      {required this.size, required this.color, required this.alpha});
 
   @override
   Widget build(BuildContext context) {

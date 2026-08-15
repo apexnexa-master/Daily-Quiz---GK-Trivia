@@ -46,9 +46,20 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   @override
   void initState() {
     super.initState();
-    _preset = WorkoutPresets.byId(widget.presetId);
     _checkInitialDailyGoal();
+    // An explicit preset overrides the auto-picked random selection. By
+    // default the app picks 3 random games so each session feels fresh.
+    _preset = widget.presetId != WorkoutPresets.balancedId
+        ? WorkoutPresets.byId(widget.presetId)
+        : _randomPreset();
     _prewarmGame(0);
+  }
+
+  /// Picks 3 random playable games for this session. New games added to
+  /// [WorkoutPresets.allGames] automatically join the pool.
+  WorkoutPreset _randomPreset() {
+    final pool = List<WorkoutGameDef>.of(WorkoutPresets.allGames)..shuffle();
+    return WorkoutPresets.fromGames(pool.take(3).toList());
   }
 
   /// Pre-warms the next game while the current phase is visible so that
@@ -69,6 +80,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         break;
       case WorkoutGameId.stroopRush:
       case WorkoutGameId.synapseRecall:
+      case WorkoutGameId.mathSprint:
         break;
     }
   }
@@ -80,7 +92,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   Future<QuizModel?> _fetchQuiz() async {
     try {
       await PracticeQuizService.instance.init();
-      return await PracticeQuizService.instance.fetchPracticeQuiz(questionCount: 5);
+      return await PracticeQuizService.instance
+          .fetchPracticeQuiz(questionCount: 5);
     } catch (_) {
       return null;
     }
@@ -108,17 +121,26 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     final shouldQuit = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.cardDark : Colors.white,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? AppColors.cardDark
+            : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            const Icon(Icons.exit_to_app_rounded, color: AppColors.warning, size: 22),
+            const Icon(Icons.exit_to_app_rounded,
+                color: AppColors.warning, size: 22),
             const SizedBox(width: 8),
             Text(
-              _isBn ? 'ওয়ার্কআউট ত্যাগ করবেন?' : _isHi ? 'वर्कआउट छोड़ें?' : 'Quit Workout?',
+              _isBn
+                  ? 'ওয়ার্কআউট ত্যাগ করবেন?'
+                  : _isHi
+                      ? 'वर्कआउट छोड़ें?'
+                      : 'Quit Workout?',
               style: TextStyle(
                 fontWeight: FontWeight.w900,
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textPrimaryLight,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : AppColors.textPrimaryLight,
               ),
             ),
           ],
@@ -130,13 +152,19 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                   ? 'यदि आप वर्कआउट छोड़ते हैं तो वर्तमान प्रगति सहेजी नहीं जाएगी।'
                   : 'Your progress in this workout session will be lost.',
           style: TextStyle(
-            color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.grey.shade600,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white70
+                : Colors.grey.shade600,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(_isBn ? 'থাকুন' : _isHi ? 'रुकें' : 'Stay'),
+            child: Text(_isBn
+                ? 'থাকুন'
+                : _isHi
+                    ? 'रुकें'
+                    : 'Stay'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -144,7 +172,11 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
             ),
-            child: Text(_isBn ? 'প্রস্থান' : _isHi ? 'बाहर निकलें' : 'Quit'),
+            child: Text(_isBn
+                ? 'প্রস্থান'
+                : _isHi
+                    ? 'बाहर निकलें'
+                    : 'Quit'),
           ),
         ],
       ),
@@ -159,7 +191,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
   Future<void> _launchGame(int index) async {
     final game = _preset.games[index];
-    final step = WorkoutStep(game: game, index: index, total: _preset.games.length);
+    final step =
+        WorkoutStep(game: game, index: index, total: _preset.games.length);
 
     // GK Quiz needs a prepared quiz session before the quiz screen loads.
     if (game.id == WorkoutGameId.gkQuiz) {
@@ -181,7 +214,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         'preparedLevelId': _arrowLevelId,
     };
 
-    final result = await Navigator.pushNamed(context, step.route, arguments: args) as int?;
+    final result =
+        await Navigator.pushNamed(context, step.route, arguments: args) as int?;
     if (!mounted) return;
 
     _recordResult(game, result);
@@ -235,7 +269,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final session = WorkoutSessionResult(preset: _preset, games: _results);
     final dailyProgress =
         ref.watch(dailyProgressProvider).value ?? const DailyProgress();
 
@@ -278,12 +311,14 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                   ),
                 _WorkoutPhase.results => _WorkoutResults(
                     key: const ValueKey('results'),
-                    session: session,
+                    session:
+                        WorkoutSessionResult(preset: _preset, games: _results),
                     isBn: _isBn,
                     isHi: _isHi,
                     pointsGained: _pointsGained,
                     wasDailyGoalCompleteBefore: _wasDailyGoalCompleteBefore,
-                    onDone: () => Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false),
+                    onDone: () => Navigator.pushNamedAndRemoveUntil(
+                        context, '/home', (_) => false),
                   ),
               },
             ),
@@ -330,7 +365,8 @@ class _WorkoutIntro extends StatelessWidget {
           IconButton(
             onPressed: () => onBack(),
             style: IconButton.styleFrom(
-              backgroundColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
+              backgroundColor: (isDark ? Colors.white : Colors.black)
+                  .withValues(alpha: 0.06),
             ),
             icon: Icon(
               Icons.arrow_back_rounded,
@@ -345,23 +381,32 @@ class _WorkoutIntro extends StatelessWidget {
                 height: 88,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.10),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.5), width: 1.5),
+                  color:
+                      AppColors.primary.withValues(alpha: isDark ? 0.14 : 0.10),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.5),
+                      width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.12),
+                      color: AppColors.primary
+                          .withValues(alpha: isDark ? 0.25 : 0.12),
                       blurRadius: 28,
                     ),
                   ],
                 ),
-                child: const Icon(Icons.bolt_rounded, color: AppColors.primary, size: 42),
+                child: const Icon(Icons.bolt_rounded,
+                    color: AppColors.primary, size: 42),
               ),
             ),
           ),
           const SizedBox(height: 22),
           Center(
             child: Text(
-              isBn ? 'দ্রুত ব্রেন ওয়ার্কআউট' : isHi ? 'क्विक ब्रेन वर्कआउट' : 'QUICK BRAIN WORKOUT',
+              isBn
+                  ? 'দ্রুত ব্রেন ওয়ার্কআউট'
+                  : isHi
+                      ? 'क्विक ब्रेन वर्कआउट'
+                      : 'QUICK BRAIN WORKOUT',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 24,
@@ -383,7 +428,9 @@ class _WorkoutIntro extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
               ),
             ),
           ),
@@ -394,12 +441,20 @@ class _WorkoutIntro extends StatelessWidget {
               children: [
                 _Chip(
                   icon: Icons.sports_esports_rounded,
-                  label: isBn ? '${preset.games.length}টি গেম' : isHi ? '${preset.games.length} गेम' : '${preset.games.length} games',
+                  label: isBn
+                      ? '${preset.games.length}টি গেম'
+                      : isHi
+                          ? '${preset.games.length} गेम'
+                          : '${preset.games.length} games',
                 ),
                 const SizedBox(width: 8),
                 _Chip(
                   icon: Icons.schedule_rounded,
-                  label: isBn ? '~৫–৭ মিনিট' : isHi ? '~5–7 मिनट' : '~5–7 min',
+                  label: isBn
+                      ? '~৫–৭ মিনিট'
+                      : isHi
+                          ? '~5–7 मिनट'
+                          : '~5–7 min',
                 ),
               ],
             ),
@@ -408,7 +463,11 @@ class _WorkoutIntro extends StatelessWidget {
           _DailyGoalMini(progress: progress, isBn: isBn, isHi: isHi),
           const SizedBox(height: 24),
           Text(
-            isBn ? 'আপনি যা প্রশিক্ষণ দেবেন' : isHi ? 'आप प्रशिक्षण लेंगे' : "You'll train",
+            isBn
+                ? 'আপনি যা প্রশিক্ষণ দেবেন'
+                : isHi
+                    ? 'आप प्रशिक्षण लेंगे'
+                    : "You'll train",
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
@@ -417,7 +476,10 @@ class _WorkoutIntro extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           for (final skill in skills) ...[
-            _SkillRow(skill: skill, game: preset.games.firstWhere((g) => g.skill == skill), lang: lang),
+            _SkillRow(
+                skill: skill,
+                game: preset.games.firstWhere((g) => g.skill == skill),
+                lang: lang),
             const SizedBox(height: 10),
           ],
           const Spacer(),
@@ -435,7 +497,8 @@ class _WorkoutIntro extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.18),
+                        color: AppColors.primary
+                            .withValues(alpha: isDark ? 0.3 : 0.18),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -443,7 +506,11 @@ class _WorkoutIntro extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      isBn ? 'শুরু করুন' : isHi ? 'शुरू करें' : 'START WORKOUT',
+                      isBn
+                          ? 'শুরু করুন'
+                          : isHi
+                              ? 'शुरू करें'
+                              : 'START WORKOUT',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
@@ -500,7 +567,9 @@ class _DailyGoalMini extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              goalHit ? Icons.local_fire_department_rounded : Icons.flag_rounded,
+              goalHit
+                  ? Icons.local_fire_department_rounded
+                  : Icons.flag_rounded,
               size: 17,
               color: accent,
             ),
@@ -532,9 +601,12 @@ class _DailyGoalMini extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(3),
                   child: LinearProgressIndicator(
-                    value: progress.dailyGoal > 0 ? completed / progress.dailyGoal : 0,
+                    value: progress.dailyGoal > 0
+                        ? completed / progress.dailyGoal
+                        : 0,
                     minHeight: 5,
-                    backgroundColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                    backgroundColor: (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.08),
                     valueColor: AlwaysStoppedAnimation<Color>(accent),
                   ),
                 ),
@@ -569,7 +641,9 @@ class _Chip extends StatelessWidget {
       decoration: BoxDecoration(
         color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.12)),
+        border: Border.all(
+            color:
+                (isDark ? Colors.white : Colors.black).withValues(alpha: 0.12)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -594,7 +668,8 @@ class _SkillRow extends StatelessWidget {
   final WorkoutSkill skill;
   final WorkoutGameDef game;
   final String lang;
-  const _SkillRow({required this.skill, required this.game, required this.lang});
+  const _SkillRow(
+      {required this.skill, required this.game, required this.lang});
 
   @override
   Widget build(BuildContext context) {
@@ -604,7 +679,8 @@ class _SkillRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: skill.accent.withValues(alpha: 0.3), width: 1),
+        border:
+            Border.all(color: skill.accent.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         children: [
@@ -615,7 +691,8 @@ class _SkillRow extends StatelessWidget {
               color: skill.accent.withValues(alpha: isDark ? 0.16 : 0.10),
               shape: BoxShape.circle,
             ),
-            child: Center(child: Text(skill.emoji, style: const TextStyle(fontSize: 17))),
+            child: Center(
+                child: Text(skill.emoji, style: const TextStyle(fontSize: 17))),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -641,7 +718,10 @@ class _SkillRow extends StatelessWidget {
               ],
             ),
           ),
-          Icon(Icons.chevron_right_rounded, size: 18, color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.25)),
+          Icon(Icons.chevron_right_rounded,
+              size: 18,
+              color: (isDark ? Colors.white : Colors.black)
+                  .withValues(alpha: 0.25)),
         ],
       ),
     );
@@ -730,7 +810,8 @@ class _WorkoutTransition extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.check_rounded, color: AppColors.success, size: 44),
+                child: const Icon(Icons.check_rounded,
+                    color: AppColors.success, size: 44),
               ),
             ),
           ),
@@ -758,7 +839,9 @@ class _WorkoutTransition extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
               ),
             ),
           ),
@@ -766,16 +849,20 @@ class _WorkoutTransition extends StatelessWidget {
             const SizedBox(height: 14),
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
                 decoration: BoxDecoration(
-                  color: completed.skill.accent.withValues(alpha: isDark ? 0.14 : 0.10),
+                  color: completed.skill.accent
+                      .withValues(alpha: isDark ? 0.14 : 0.10),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: completed.skill.accent.withValues(alpha: 0.35)),
+                  border: Border.all(
+                      color: completed.skill.accent.withValues(alpha: 0.35)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.stars_rounded, size: 15, color: completed.skill.accent),
+                    Icon(Icons.stars_rounded,
+                        size: 15, color: completed.skill.accent),
                     const SizedBox(width: 6),
                     Text(
                       isBn
@@ -807,10 +894,12 @@ class _WorkoutTransition extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: next.skill.accent.withValues(alpha: 0.45), width: 1.5),
+              border: Border.all(
+                  color: next.skill.accent.withValues(alpha: 0.45), width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: next.skill.accent.withValues(alpha: isDark ? 0.12 : 0.06),
+                  color:
+                      next.skill.accent.withValues(alpha: isDark ? 0.12 : 0.06),
                   blurRadius: 18,
                   offset: const Offset(0, 6),
                 ),
@@ -822,10 +911,13 @@ class _WorkoutTransition extends StatelessWidget {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: next.skill.accent.withValues(alpha: isDark ? 0.2 : 0.12),
+                    color: next.skill.accent
+                        .withValues(alpha: isDark ? 0.2 : 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Center(child: Text(next.skill.emoji, style: const TextStyle(fontSize: 24))),
+                  child: Center(
+                      child: Text(next.skill.emoji,
+                          style: const TextStyle(fontSize: 24))),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -833,7 +925,11 @@ class _WorkoutTransition extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        isBn ? 'পরবর্তী গেম ($index/$total)' : isHi ? 'अगला गेम ($index/$total)' : 'NEXT UP ($index/$total)',
+                        isBn
+                            ? 'পরবর্তী গেম ($index/$total)'
+                            : isHi
+                                ? 'अगला गेम ($index/$total)'
+                                : 'NEXT UP ($index/$total)',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
@@ -856,7 +952,9 @@ class _WorkoutTransition extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+                          color: isDark
+                              ? AppColors.textTertiaryDark
+                              : AppColors.textTertiaryLight,
                         ),
                       ),
                     ],
@@ -869,11 +967,14 @@ class _WorkoutTransition extends StatelessWidget {
           if (next.id == WorkoutGameId.arrowPuzzle && !nextReady) ...[
             Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: next.skill.accent.withValues(alpha: isDark ? 0.12 : 0.08),
+                  color:
+                      next.skill.accent.withValues(alpha: isDark ? 0.12 : 0.08),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: next.skill.accent.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: next.skill.accent.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -888,7 +989,11 @@ class _WorkoutTransition extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      isBn ? 'পরবর্তী চ্যালেঞ্জ প্রস্তুত হচ্ছে…' : isHi ? 'अगली चुनौती तैयार हो रही है…' : 'Preparing next challenge…',
+                      isBn
+                          ? 'পরবর্তী চ্যালেঞ্জ প্রস্তুত হচ্ছে…'
+                          : isHi
+                              ? 'अगली चुनौती तैयार हो रही है…'
+                              : 'Preparing next challenge…',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -910,7 +1015,8 @@ class _WorkoutTransition extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.18),
+                    color: AppColors.primary
+                        .withValues(alpha: isDark ? 0.3 : 0.18),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -918,7 +1024,11 @@ class _WorkoutTransition extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  isBn ? 'চালিয়ে যান →' : isHi ? 'जारी रखें →' : 'CONTINUE →',
+                  isBn
+                      ? 'চালিয়ে যান →'
+                      : isHi
+                          ? 'जारी रखें →'
+                          : 'CONTINUE →',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
@@ -960,7 +1070,8 @@ class _WorkoutResults extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimary = isDark ? Colors.white : AppColors.textPrimaryLight;
-    final dailyProgress = ref.watch(dailyProgressProvider).value ?? const DailyProgress();
+    final dailyProgress =
+        ref.watch(dailyProgressProvider).value ?? const DailyProgress();
     final completedCount = session.completedCount;
     final overall = session.overallScore;
     final goalComplete = dailyProgress.isDailyGoalComplete;
@@ -974,7 +1085,11 @@ class _WorkoutResults extends ConsumerWidget {
           BounceInWidget(
             child: Center(
               child: Text(
-                isBn ? 'ওয়ার্কআউট সম্পন্ন! 🎉' : isHi ? 'वर्कआउट पूर्ण! 🎉' : 'WORKOUT COMPLETE 🎉',
+                isBn
+                    ? 'ওয়ার্কআউট সম্পন্ন! 🎉'
+                    : isHi
+                        ? 'वर्कआउट पूर्ण! 🎉'
+                        : 'WORKOUT COMPLETE 🎉',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
@@ -1002,7 +1117,9 @@ class _WorkoutResults extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
               ),
             ),
           ),
@@ -1014,7 +1131,8 @@ class _WorkoutResults extends ConsumerWidget {
           const SizedBox(height: 14),
           _OverallScoreCard(score: overall, isBn: isBn, isHi: isHi),
           const SizedBox(height: 14),
-          if (pointsGained > 0) _BrainPointsChip(points: pointsGained, isBn: isBn, isHi: isHi),
+          if (pointsGained > 0)
+            _BrainPointsChip(points: pointsGained, isBn: isBn, isHi: isHi),
           const SizedBox(height: 16),
           _DailyGoalCard(
             progress: dailyProgress,
@@ -1028,10 +1146,15 @@ class _WorkoutResults extends ConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.local_fire_department_rounded, color: Color(0xFFF97316), size: 22),
+                    const Icon(Icons.local_fire_department_rounded,
+                        color: Color(0xFFF97316), size: 22),
                     const SizedBox(width: 8),
                     Text(
-                      isBn ? 'দৈনিক লক্ষ্য সম্পন্ন! 🔥' : isHi ? 'दैनिक लक्ष्य पूर्ण! 🔥' : 'Daily Goal Complete! 🔥',
+                      isBn
+                          ? 'দৈনিক লক্ষ্য সম্পন্ন! 🔥'
+                          : isHi
+                              ? 'दैनिक लक्ष्य पूर्ण! 🔥'
+                              : 'Daily Goal Complete! 🔥',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
@@ -1053,7 +1176,8 @@ class _WorkoutResults extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.18),
+                    color: AppColors.primary
+                        .withValues(alpha: isDark ? 0.3 : 0.18),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
@@ -1061,7 +1185,11 @@ class _WorkoutResults extends ConsumerWidget {
               ),
               child: Center(
                 child: Text(
-                  isBn ? 'সম্পন্ন' : isHi ? 'पूर्ण' : 'DONE',
+                  isBn
+                      ? 'সম্পন্ন'
+                      : isHi
+                          ? 'पूर्ण'
+                          : 'DONE',
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
@@ -1082,7 +1210,8 @@ class _ResultSkillRow extends StatelessWidget {
   final WorkoutGameResult result;
   final bool isBn;
   final bool isHi;
-  const _ResultSkillRow({required this.result, required this.isBn, required this.isHi});
+  const _ResultSkillRow(
+      {required this.result, required this.isBn, required this.isHi});
 
   @override
   Widget build(BuildContext context) {
@@ -1095,7 +1224,8 @@ class _ResultSkillRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: skill.accent.withValues(alpha: 0.35), width: 1.1),
+        border:
+            Border.all(color: skill.accent.withValues(alpha: 0.35), width: 1.1),
       ),
       child: Row(
         children: [
@@ -1106,7 +1236,8 @@ class _ResultSkillRow extends StatelessWidget {
               color: skill.accent.withValues(alpha: isDark ? 0.18 : 0.12),
               shape: BoxShape.circle,
             ),
-            child: Center(child: Text(skill.emoji, style: const TextStyle(fontSize: 18))),
+            child: Center(
+                child: Text(skill.emoji, style: const TextStyle(fontSize: 18))),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -1114,7 +1245,11 @@ class _ResultSkillRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  skill.label(isBn ? 'bn' : isHi ? 'hi' : 'en'),
+                  skill.label(isBn
+                      ? 'bn'
+                      : isHi
+                          ? 'hi'
+                          : 'en'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
@@ -1122,10 +1257,16 @@ class _ResultSkillRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  result.game.title(isBn ? 'bn' : isHi ? 'hi' : 'en'),
+                  result.game.title(isBn
+                      ? 'bn'
+                      : isHi
+                          ? 'hi'
+                          : 'en'),
                   style: TextStyle(
                     fontSize: 11,
-                    color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+                    color: isDark
+                        ? AppColors.textTertiaryDark
+                        : AppColors.textTertiaryLight,
                   ),
                 ),
               ],
@@ -1151,7 +1292,8 @@ class _ResultSkillRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
-                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.25),
+                color: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: 0.25),
               ),
             ),
         ],
@@ -1164,7 +1306,8 @@ class _OverallScoreCard extends StatelessWidget {
   final int score;
   final bool isBn;
   final bool isHi;
-  const _OverallScoreCard({required this.score, required this.isBn, required this.isHi});
+  const _OverallScoreCard(
+      {required this.score, required this.isBn, required this.isHi});
 
   @override
   Widget build(BuildContext context) {
@@ -1181,7 +1324,8 @@ class _OverallScoreCard extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.2),
+        border: Border.all(
+            color: AppColors.primary.withValues(alpha: 0.4), width: 1.2),
       ),
       child: Row(
         children: [
@@ -1190,17 +1334,32 @@ class _OverallScoreCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isBn ? 'সামগ্রিক ওয়ার্কআউট স্কোর' : isHi ? 'समग्र वर्कआउट स्कोर' : 'Overall Workout Score',
+                  isBn
+                      ? 'সামগ্রিক ওয়ার্কআউট স্কোর'
+                      : isHi
+                          ? 'समग्र वर्कआउट स्कोर'
+                          : 'Overall Workout Score',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                    color: isDark
+                        ? AppColors.textSecondaryDark
+                        : AppColors.textSecondaryLight,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  isBn || isHi ? (score >= 70 ? 'দারুণ!' : score >= 45 ? 'ভালো!' : 'তারা চেষ্টা চালিয়ে যান')
-                      : (score >= 70 ? 'Great!' : score >= 45 ? 'Good job!' : 'Keep training!'),
+                  isBn || isHi
+                      ? (score >= 70
+                          ? 'দারুণ!'
+                          : score >= 45
+                              ? 'ভালো!'
+                              : 'তারা চেষ্টা চালিয়ে যান')
+                      : (score >= 70
+                          ? 'Great!'
+                          : score >= 45
+                              ? 'Good job!'
+                              : 'Keep training!'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -1234,7 +1393,8 @@ class _BrainPointsChip extends StatelessWidget {
   final int points;
   final bool isBn;
   final bool isHi;
-  const _BrainPointsChip({required this.points, required this.isBn, required this.isHi});
+  const _BrainPointsChip(
+      {required this.points, required this.isBn, required this.isHi});
 
   @override
   Widget build(BuildContext context) {
@@ -1250,7 +1410,8 @@ class _BrainPointsChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.psychology_rounded, color: AppColors.primary, size: 18),
+            const Icon(Icons.psychology_rounded,
+                color: AppColors.primary, size: 18),
             const SizedBox(width: 6),
             TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: points.toDouble()),
@@ -1276,7 +1437,8 @@ class _DailyGoalCard extends StatelessWidget {
   final DailyProgress progress;
   final bool isBn;
   final bool isHi;
-  const _DailyGoalCard({required this.progress, required this.isBn, required this.isHi});
+  const _DailyGoalCard(
+      {required this.progress, required this.isBn, required this.isHi});
 
   @override
   Widget build(BuildContext context) {
@@ -1288,7 +1450,9 @@ class _DailyGoalCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1)),
+        border: Border.all(
+            color:
+                (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1297,7 +1461,11 @@ class _DailyGoalCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isBn ? 'দৈনিক লক্ষ্য' : isHi ? 'दैनिक लक्ष्य' : 'Daily Goal',
+                isBn
+                    ? 'দৈনিক লক্ষ্য'
+                    : isHi
+                        ? 'दैनिक लक्ष्य'
+                        : 'Daily Goal',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
@@ -1318,9 +1486,12 @@ class _DailyGoalCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(5),
             child: LinearProgressIndicator(
-              value: progress.dailyGoal > 0 ? completed / progress.dailyGoal : 0,
-              backgroundColor: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+              value:
+                  progress.dailyGoal > 0 ? completed / progress.dailyGoal : 0,
+              backgroundColor: (isDark ? Colors.white : Colors.black)
+                  .withValues(alpha: 0.08),
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
               minHeight: 8,
             ),
           ),
