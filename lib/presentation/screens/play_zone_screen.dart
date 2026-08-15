@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../providers/app_providers.dart';
 import '../../core/services/quiz/practice_quiz_service.dart';
 import '../widgets/game_card.dart';
+import 'games/synapse_recall/synapse_art.dart';
 
 class PlayZoneScreen extends ConsumerStatefulWidget {
   const PlayZoneScreen({super.key});
@@ -92,14 +93,12 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                 ? 'प्रकाश और ध्वनि के जटिल पैटर्न को फिर से बनाकर काम करने की स्मृति को मजबूत करें।'
                 : 'Strengthen working memory by recreating complex patterns of flashing tiles.',
         category: 'Memory',
-        duration: '5m',
+        duration: '3m',
         icon: Icons.psychology_rounded,
         isLocked: false,
+        isImplemented: true,
         onTap: () {
-          Navigator.pushNamed(context, '/game-placeholder', arguments: {
-            'title': 'Synapse Recall',
-            'description': 'Memorize the flashing green pattern on the grid matrix. Recreate it accurately as grid size expands.',
-          });
+          Navigator.pushNamed(context, '/synapse-recall');
         },
       ),
       ChallengeData(
@@ -395,7 +394,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                         data: game,
                                         isBn: isBn,
                                         isHi: isHi,
-                                         imagePath: 'assets/icon/quiz3.png',
+                                        imagePath: 'assets/icon/quiz3.png',
                                       ),
                                     );
                                   }).toList(),
@@ -428,6 +427,9 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                         isBn: isBn,
                                         isHi: isHi,
                                         imagePath: isDark ? 'assets/icon/logic_mascot_dark.jpg' : 'assets/icon/logic_mascot_light.jpg',
+                                        cover: game.category == 'Memory'
+                                            ? const SynapseRecallCover()
+                                            : null,
                                       ),
                                     );
                                   }).toList(),
@@ -538,6 +540,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
     required bool isBn,
     required bool isHi,
     String? imagePath,
+    Widget? cover,
   }) {
     final bool isImplemented = data.isImplemented;
     final String? resolvedImagePath = data.imagePath ?? imagePath;
@@ -554,7 +557,8 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
       width: 260,
       compact: true,
       coverAspectRatio: 2.6,
-      imagePath: resolvedImagePath,
+      imagePath: cover == null ? resolvedImagePath : null,
+      cover: cover,
       accent: categoryColor,
       badge: data.category.toUpperCase(),
       isLocked: data.isLocked,

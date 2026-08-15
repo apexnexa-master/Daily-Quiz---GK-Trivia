@@ -27,6 +27,7 @@ class GameType {
   static const String quiz = 'quiz'; // practice / other knowledge quizzes
   static const String arrow = 'arrow';
   static const String stroop = 'stroop';
+  static const String synapse = 'synapse';
   static const String battle = 'battle';
 }
 

@@ -10,7 +10,7 @@ import '../../routes/app_router.dart';
 import '../../core/services/daily_progress_service.dart';
 
 /// Identifiers for the currently playable games.
-enum WorkoutGameId { gkQuiz, arrowPuzzle, stroopRush }
+enum WorkoutGameId { gkQuiz, arrowPuzzle, stroopRush, synapseRecall }
 
 /// Cognitive skills that are actually backed by playable games today.
 enum WorkoutSkill {
@@ -37,6 +37,14 @@ enum WorkoutSkill {
     labelHi: 'गति',
     emoji: '⚡',
     accent: Color(0xFFECB2FF),
+  ),
+  memory(
+    pillar: BrainPillar.memory,
+    labelEn: 'Memory',
+    labelBn: 'স্মৃতি',
+    labelHi: 'स्मृति',
+    emoji: '🔗',
+    accent: Color(0xFFB388FF),
   );
 
   const WorkoutSkill({
@@ -138,12 +146,21 @@ class WorkoutPresets {
     gameType: GameType.stroop,
   );
 
+  static const WorkoutGameDef synapseRecall = WorkoutGameDef(
+    id: WorkoutGameId.synapseRecall,
+    titleEn: 'Synapse Recall',
+    titleBn: 'সিন্যাপ্স রিকল',
+    titleHi: 'सिनैप्स रिकॉल',
+    skill: WorkoutSkill.memory,
+    gameType: GameType.synapse,
+  );
+
   static const WorkoutPreset balanced = WorkoutPreset(
     id: balancedId,
     nameEn: 'Balanced',
     nameBn: 'সমন্বিত',
     nameHi: 'संतुलित',
-    games: [gkQuiz, arrowPuzzle, stroopRush],
+    games: [gkQuiz, arrowPuzzle, synapseRecall, stroopRush],
   );
 
   // Future presets (kept internal; not exposed on Home yet).
@@ -209,6 +226,8 @@ class WorkoutStep {
         return AppRouter.arrowPuzzle;
       case WorkoutGameId.stroopRush:
         return AppRouter.stroopRush;
+      case WorkoutGameId.synapseRecall:
+        return AppRouter.synapseRecall;
     }
   }
 }

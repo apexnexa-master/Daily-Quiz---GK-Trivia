@@ -1,32 +1,1181 @@
-Here are the detailed, highly structured text prompts you can use with AI image generation models (like Midjourney, DALL-E 3, or Stable Diffusion) to replicate that sleek, modern **Glassmorphism / Neon Dark Mode** UI style for **BRAINX**:
- 
-### 🎨 Master Prompt: Complete App Screen Layout
- 
-**Prompt:** A high-fidelity modern mobile app UI/UX design for a brain training and trivia dashboard named "BRAINX", portrait orientation, 9:16 aspect ratio. **Theme & Aesthetics:** Ultra-modern dark mode, deep slate navy background (`#0D1117`) with subtle background glows in cyan (`#00F2FE`) and lime green (`#39FF14`). Glassmorphism aesthetic featuring frosted glass container cards with smooth rounded corners (24px radius), subtle translucent borders, and inner glowing accents. **Header & App Bar:** Clean dark app bar at the top featuring a minimalist glowing brain icon logo, bold crisp title "BRAINX", and a sleek profile badge on the right. **Progress Section:** A horizontal frosted-glass dashboard card at the top displaying gamification stats: "2 DAY STREAK" with a glowing fire icon, a sleek progress pill bar for "DAILY GOAL 2/3", and "BRAIN SCORE 54" with a glowing brain icon. **Cards & Tiles:** Elevated floating cards for "Today's Challenge" with vivid 3D illustration thumbnails (a thinking man with a lightbulb, 3D colorful geometric puzzles). Semi-transparent background panels with neon badge tags like "GK LIVE" and "LOGIC". A prominent primary hero banner for "Quick Brain Workout" featuring a vibrant gradient "START WORKOUT" button with a smooth neon lime to electric green gradient (`#8AFF00` to `#00FF87`). **Bottom Navigation:** Floating blurred glass bottom navigation bar with minimal line icons for Home, Games, and Profile, with the active tab highlighted in neon green. Clean, crisp typography, premium digital art style, Figma showcase quality, 8k resolution, photorealistic mobile UI mockup.
- 
-### 🧩 Modular Prompts (For Specific Elements)
- 
-If you are generating individual UI assets, components, or style guidelines in design tools, use these specific modular prompts:
- 
-#### 1. Background Color Theme & Atmosphere
- 
-**Prompt:** Minimalist app UI background texture, dark mode, deep space navy blue charcoal background (`#0A0E1A`), faint ambient soft light blobs in neon cyan and lime green out of focus in the background, sleek subtle radial gradients, ultra-clean, high-end digital mobile app background, 8k.
- 
-#### 2. App Bar & Navigation Section
- 
-**Prompt:** Top mobile app bar UI design, dark transparent glassmorphism background with blurred backdrop, left-aligned glowing neon green vector logo of a brain-lightbulb hybrid, bold modern sans-serif typography reading "BRAINX", right-aligned rounded user avatar pill container with name tag, ultra-clean mobile header layout, UI component mockup.
- 
-#### 3. Cards & Tile Design Style
- 
-**Prompt:** Mobile UI card component, dark mode glassmorphism panel, semi-transparent black background with 20% opacity, soft backdrop blur effect, thin 1px glowing subtle stroke border, 24px rounded corners, vibrant 3D renders inside the card, floating neon badge tags in top corners, high contrast crisp text, UI design system element.
- 
-### 🛠️ Key Style Tokens (To use in custom prompts or code)
- 
- 
-- **Design Trend:** Glassmorphism / Dark Mode Neumorphism / Cyber-Minimalism
- 
-- **Primary Accent Colors:** Neon Lime (`#39FF14`), Electric Cyan (`#00F2FE`), Deep Violet Glow (`#7B2CBF`)
- 
-- **Background Surface:** Slate Dark (`#0B0E14`), Panel Glass (`rgba(255, 255, 255, 0.05)`)
- 
-- **Effects:** Backdrop Blur (`blur(20px)`), Soft Drop Shadow (`0 8px 32px 0 rgba(0,0,0,0.37)`), Corner Radius (`20px` to `28px`)
+Build a polished, production-quality mobile brain-training game called:
+
+SYNAPSE RECALL
+
+Tagline:
+"Remember. Rebuild. Repeat."
+
+This game is part of my BRAINX brain-games app.
+
+The goal is to create a game that feels like it was designed by a professional mobile game/UI team—not a basic prototype.
+
+The game should be visually premium, highly understandable, satisfying to play, replayable, and consistent with the existing BRAINX visual identity.
+
+============================================================
+1. CORE GAME CONCEPT
+============================================================
+
+Synapse Recall is a visual working-memory game.
+
+The player is shown a sequence/pattern of abstract visual objects for a short period.
+
+The objects disappear.
+
+The player must reproduce the correct sequence.
+
+The game starts very simple and gradually introduces more difficult memory mechanics.
+
+IMPORTANT:
+
+Do NOT make the game consist only of colored balls.
+
+Instead use premium abstract geometric symbols/objects.
+
+Examples:
+
+◆
+▲
+●
+✦
+⬡
+◇
+☾
+✚
+⬢
+
+Each object can have:
+
+- shape
+- color
+- subtle depth
+- subtle glow
+- optional position
+
+The visual language should feel futuristic, clean and premium.
+
+Avoid:
+- emoji as final production assets
+- realistic objects
+- photographs
+- human faces
+- childish cartoon graphics
+- generic stock illustrations
+
+Use custom vector/flat-3D style geometric game assets.
+
+============================================================
+2. COGNITIVE SKILL
+============================================================
+
+Primary skill:
+
+MEMORY / WORKING MEMORY
+
+Secondary skills as difficulty increases:
+
+- visual memory
+- sequence memory
+- spatial memory
+- attention
+- pattern recognition
+
+Do not claim that the game measures IQ or scientifically diagnoses cognitive ability.
+
+Use language such as:
+
+"Train your memory"
+
+"Challenge your working memory"
+
+"Improve your recall"
+
+============================================================
+3. GAME EXPERIENCE
+============================================================
+
+The game should create this loop:
+
+START
+↓
+SHORT COUNTDOWN
+↓
+MEMORIZE
+↓
+SEQUENCE DISAPPEARS
+↓
+RECALL
+↓
+PLAYER REBUILDS SEQUENCE
+↓
+RESULT
+↓
+NEXT ROUND
+↓
+DIFFICULTY INCREASES
+↓
+SESSION COMPLETE
+↓
+RESULTS
+
+The player should understand what to do within seconds.
+
+Do not force the user through a long tutorial.
+
+============================================================
+4. GAME INTRO SCREEN
+============================================================
+
+Create a premium introduction screen.
+
+Display:
+
+SYNAPSE RECALL
+
+Remember.
+Rebuild.
+Repeat.
+
+A beautiful abstract brain/synapse-inspired geometric illustration.
+
+Then:
+
+"Remember the pattern.
+Rebuild it in the correct order."
+
+Primary button:
+
+START
+
+Optional small information:
+
+"~2–4 min"
+
+Do not overload this screen.
+
+============================================================
+5. VISUAL IDENTITY
+============================================================
+
+Match the BRAINX design system:
+
+Background:
+Deep navy / charcoal
+
+Primary accent:
+Neon lime
+
+Secondary accents:
+Cyan
+Purple
+Subtle pink where appropriate
+
+Style:
+Dark premium
+Modern
+Futuristic
+Minimal
+Glassmorphism-inspired
+Soft depth
+Subtle gradients
+Rounded surfaces
+
+Use glow carefully.
+
+DO NOT make everything neon.
+
+The game should feel premium rather than cyberpunk-heavy.
+
+============================================================
+6. MEMORY OBJECT DESIGN
+============================================================
+
+Do NOT use simple colored circles as the primary visual language.
+
+Create a collection of approximately 8–12 abstract geometric objects.
+
+Examples:
+
+Diamond
+Triangle
+Circle
+Star
+Hexagon
+Ring
+Cross
+Crescent
+Crystal
+Abstract node
+
+Each object should have a recognizable silhouette.
+
+Example:
+
+◆   ▲   ◉   ✦   ⬡   ◇   ☾   ⬢
+
+Use colors to differentiate objects but make sure the shape itself remains recognizable.
+
+The player should be able to distinguish:
+
+green diamond
+
+from:
+
+purple triangle
+
+from:
+
+cyan star
+
+without difficulty.
+
+The objects should have subtle 3D/vector depth.
+
+============================================================
+7. MEMORY BOARD
+============================================================
+
+Instead of always displaying objects in a boring horizontal row, use a beautiful central memory board.
+
+Example:
+
+              ROUND 04
+
+        ┌───────────────────┐
+        │                   │
+        │    ◆       ●      │
+        │                   │
+        │        ▲          │
+        │                   │
+        │   ✦           ◉   │
+        │                   │
+        └───────────────────┘
+
+              REMEMBER
+
+The board should have:
+
+- rounded corners
+- subtle glass surface
+- very subtle border
+- soft background glow
+- enough empty space
+- objects positioned clearly
+
+Do not make the board visually cluttered.
+
+============================================================
+8. DIFFICULTY PROGRESSION
+============================================================
+
+Start extremely easy.
+
+ROUND 1:
+
+Show 3 objects.
+
+Example:
+
+◆ → ▲ → ●
+
+Player recalls:
+
+◆ → ▲ → ●
+
+ROUND 2:
+
+4 objects.
+
+ROUND 3:
+
+5 objects.
+
+ROUND 4:
+
+6 objects.
+
+Continue progressively.
+
+However, difficulty should not rely only on sequence length.
+
+Gradually introduce:
+
+1. Longer sequences
+2. Shorter viewing time
+3. More visual distractors
+4. Similar shapes
+5. Different positions
+6. Spatial memory
+7. Combined shape + color memory
+8. More complex patterns
+
+Do NOT introduce all mechanics at once.
+
+The player should feel:
+
+"I can do one more."
+
+not:
+
+"This suddenly became impossible."
+
+============================================================
+9. DIFFICULTY LEVELS
+============================================================
+
+Create a scalable difficulty system.
+
+Conceptually:
+
+Level 1:
+3 items
+comfortable viewing time
+
+Level 2:
+4 items
+
+Level 3:
+5 items
+
+Level 4:
+6 items
+
+Level 5:
+7 items
+
+Level 6+:
+more difficult patterns
+
+The actual timings should be configurable constants/settings rather than scattered hardcoded values.
+
+Make the difficulty system easy to tune later.
+
+============================================================
+10. PHASE 1 — SEQUENCE MEMORY
+============================================================
+
+The first version should primarily test sequence memory.
+
+Example:
+
+MEMORIZE
+
+◆ → ▲ → ● → ✦
+
+After the timer:
+
+RECALL
+
+The player sees selectable tiles:
+
+┌────────┐ ┌────────┐ ┌────────┐
+│   ◆    │ │   ●    │ │   ✦    │
+└────────┘ └────────┘ └────────┘
+
+┌────────┐ ┌────────┐ ┌────────┐
+│   ▲    │ │   ◇    │ │   ⬡    │
+└────────┘ └────────┘ └────────┘
+
+The user taps:
+
+◆
+▲
+●
+✦
+
+The order matters.
+
+============================================================
+11. RECALL UI
+============================================================
+
+During recall, clearly show:
+
+RECALL
+
+"Rebuild the sequence"
+
+And progress:
+
+1 / 4
+
+After first selection:
+
+①
+
+After second:
+
+① ②
+
+After third:
+
+① ② ③
+
+After fourth:
+
+① ② ③ ④
+
+Selected tiles should visually communicate their position in the sequence.
+
+Example:
+
+┌────────┐
+│   ◆    │
+│    ①   │
+└────────┘
+
+This makes the interaction extremely clear.
+
+============================================================
+12. TOUCH INTERACTION
+============================================================
+
+Tiles must have comfortable touch targets.
+
+When tapped:
+
+- slight scale down
+- subtle glow
+- smooth return animation
+- sequence number appears
+- optional subtle haptic feedback
+
+Do not use tiny buttons.
+
+The entire tile should be tappable.
+
+============================================================
+13. MEMORY PHASE
+============================================================
+
+During MEMORIZE:
+
+Show the objects prominently.
+
+Use a countdown/progress indicator.
+
+Example:
+
+MEMORIZE
+
+◆ → ▲ → ● → ✦
+
+████████░░
+
+The viewing timer should be visible but subtle.
+
+Avoid making the timer stressful in early levels.
+
+============================================================
+14. TRANSITIONS
+============================================================
+
+Use polished transitions:
+
+START
+→ fade/scale
+
+MEMORIZE
+→ smooth object appearance
+
+MEMORIZE → RECALL
+→ objects fade/blur away
+
+RECALL
+→ tiles appear smoothly
+
+CORRECT
+→ soft success animation
+
+INCORRECT
+→ subtle shake
+
+NEXT ROUND
+→ smooth transition
+
+Do not use excessive particles or flashy effects.
+
+============================================================
+15. CORRECT ANSWER
+============================================================
+
+If the player recalls the sequence correctly:
+
+Display briefly:
+
+✓ PERFECT RECALL
+
++120
+
+🔥 Streak 3
+
+Then continue automatically or show:
+
+NEXT ROUND →
+
+Keep the transition fast.
+
+The player should maintain momentum.
+
+============================================================
+16. INCORRECT ANSWER
+============================================================
+
+Do not make the user feel punished.
+
+Show:
+
+Not quite.
+
+You remembered:
+
+3 / 5
+
+Correct sequence:
+
+◆ → ▲ → ● → ✦ → ◉
+
+Then:
+
+NEXT ROUND →
+
+Use encouraging language.
+
+Avoid:
+
+"FAIL"
+
+"WRONG!"
+
+"GAME OVER!"
+
+unless the actual session is ending.
+
+============================================================
+17. STREAK SYSTEM
+============================================================
+
+Track consecutive successful rounds.
+
+Example:
+
+🔥 1
+🔥 2
+🔥 3
+🔥 4
+
+When a new streak is reached, use a subtle animation.
+
+Do not dominate the screen with the streak.
+
+============================================================
+18. SCORING
+============================================================
+
+Use a fair score system.
+
+Score should consider:
+
+- sequence length
+- correct recall
+- progression
+- accuracy
+
+Longer successful sequences should be worth more.
+
+Do not reward only speed.
+
+Do not create a score that can be exploited by repeatedly playing easy rounds.
+
+Example conceptual values:
+
+3 items → +100
+4 items → +130
+5 items → +170
+6 items → +220
+7 items → +280
+
+Add a small perfect-round bonus.
+
+Keep the exact scoring values configurable.
+
+Do not expose the formula to the user.
+
+============================================================
+19. PRIMARY PERFORMANCE METRICS
+============================================================
+
+For Synapse Recall, do NOT use "fastest time" as the primary personal-best metric.
+
+Use:
+
+Longest Correct Sequence
+
+Example:
+
+LONGEST SEQUENCE
+
+7 items
+
+Also track:
+
+Session Score
+Accuracy
+Best Streak
+Memory Level
+
+These metrics should be based on actual gameplay data.
+
+Never use fake values.
+
+============================================================
+20. RESULT SCREEN
+============================================================
+
+Create a polished result screen.
+
+Example:
+
+SYNAPSE RECALL
+
+SESSION COMPLETE
+
+🧠 MEMORY LEVEL
+6
+
+🎯 ACCURACY
+84%
+
+🔥 BEST STREAK
+5
+
+🧩 LONGEST SEQUENCE
+7 items
+
+⭐ SCORE
+1,240
+
+If appropriate:
+
+NEW PERSONAL BEST 🎉
+
+Then:
+
+PLAY AGAIN
+
+and:
+
+DONE
+
+PLAY AGAIN should be the primary CTA.
+
+DONE should be secondary.
+
+============================================================
+21. PERSONAL BEST
+============================================================
+
+Only show:
+
+NEW PERSONAL BEST
+
+if the current result actually beats the previous record.
+
+Track:
+
+- longest sequence
+- highest session score
+- best streak
+
+The primary personal-best indicator should be:
+
+Longest Correct Sequence
+
+Example:
+
+Previous:
+6 items
+
+Current:
+7 items
+
+→ NEW PERSONAL BEST 🎉
+
+============================================================
+22. SESSION LENGTH
+============================================================
+
+Keep a normal session around:
+
+2–4 minutes.
+
+The game should feel suitable for:
+
+- quick sessions
+- daily brain training
+- Quick Brain Workout integration
+
+Do not make a single session excessively long.
+
+============================================================
+23. REPLAYABILITY
+============================================================
+
+Sequences should be generated dynamically.
+
+Do not always use the same fixed sequence.
+
+Use controlled randomization.
+
+Important:
+
+Avoid accidental unfair sequences.
+
+For example, do not generate:
+
+◆ ◆ ◆ ◆
+
+unless that is intentionally part of a later difficulty mode.
+
+Make sequences feel varied.
+
+============================================================
+24. FUTURE GAME MODES
+============================================================
+
+Design the architecture so future modes can be added.
+
+Potential future modes:
+
+Sequence Recall
+Position Recall
+Color Recall
+Reverse Recall
+Pattern Recall
+Dual Recall
+
+DO NOT implement all of these now.
+
+Only implement:
+
+SEQUENCE RECALL
+
+But make the underlying game architecture extensible.
+
+============================================================
+25. FUTURE SPATIAL MODE
+============================================================
+
+The architecture should allow a future mode where objects appear at different locations.
+
+Example:
+
+┌─────────────────────┐
+│ ◆                   │
+│                     │
+│          ▲          │
+│                     │
+│                ●    │
+└─────────────────────┘
+
+Then the user must remember the positions.
+
+This should be possible later without rewriting the entire game.
+
+============================================================
+26. GAME HOME/TITLE ART
+============================================================
+
+Create a beautiful visual identity for Synapse Recall.
+
+The game tile should show:
+
+- abstract connected geometric nodes
+- subtle brain/synapse concept
+- dark background
+- lime/cyan/purple accents
+- premium vector/3D illustration
+- no human face
+- no text embedded in the artwork
+- no buttons embedded in the artwork
+
+The artwork should match the other BRAINX game tiles.
+
+============================================================
+27. NO TEXT INSIDE GAME ART
+============================================================
+
+IMPORTANT:
+
+Game artwork/assets must NOT contain:
+
+- buttons
+- UI labels
+- "PLAY"
+- "START"
+- "SCORE"
+- random typography
+- fake interface elements
+
+All UI text must be rendered by the application.
+
+Artwork should remain reusable.
+
+============================================================
+28. UI TYPOGRAPHY
+============================================================
+
+Use the existing BRAINX typography/theme.
+
+Hierarchy:
+
+Game title
+↓
+Phase
+↓
+Instruction
+↓
+Game content
+↓
+Supporting information
+
+Keep text short.
+
+Never create long paragraphs during gameplay.
+
+============================================================
+29. ACCESSIBILITY
+============================================================
+
+Do not rely solely on color.
+
+Every memory object must have a distinctive shape/symbol.
+
+For example:
+
+green diamond
+purple triangle
+cyan star
+
+not:
+
+green circle
+red circle
+blue circle
+
+Use shape + color together.
+
+Maintain readable contrast.
+
+Use comfortable touch targets.
+
+============================================================
+30. HAPTICS
+============================================================
+
+If the existing app already supports haptics:
+
+Use subtle haptic feedback for:
+
+- selecting an object
+- correct sequence
+- incorrect sequence
+- level progression
+
+Do not overuse haptics.
+
+============================================================
+31. SOUND
+============================================================
+
+If an existing audio system exists, optionally support:
+
+- selection sound
+- correct sound
+- incorrect sound
+- level-up sound
+
+But the game must be completely playable without sound.
+
+Do not introduce unnecessary dependencies solely for audio.
+
+============================================================
+32. BRAINX INTEGRATION
+============================================================
+
+Before implementing:
+
+Inspect the existing BRAINX project.
+
+Find:
+
+- navigation architecture
+- game architecture
+- state management
+- theme
+- existing score system
+- XP system
+- Brain Score
+- Daily Goal
+- streak
+- game result handling
+- game tile components
+
+Reuse existing architecture.
+
+Do not create duplicate systems.
+
+If BRAINX already awards XP or Brain Score for games, integrate Synapse Recall into the existing system.
+
+Do not create a separate competing XP or Brain Score system.
+
+============================================================
+33. HOME SCREEN INTEGRATION
+============================================================
+
+Add Synapse Recall to the existing game collection.
+
+It should appear alongside:
+
+GK Quiz
+Arrow Puzzle
+Stroop Rush
+
+Use the same game-tile design system.
+
+The Synapse Recall artwork should visually belong to BRAINX.
+
+============================================================
+34. QUICK BRAIN WORKOUT COMPATIBILITY
+============================================================
+
+Make Synapse Recall available to the existing Quick Brain Workout system.
+
+The workout should eventually be able to select:
+
+GK Quiz
+Arrow Puzzle
+Stroop Rush
+Synapse Recall
+
+Do not break the existing workout.
+
+If the workout system currently assumes exactly three games, refactor it so games can be represented as a configurable list.
+
+Do not hardcode a three-game limitation.
+
+============================================================
+35. ERROR HANDLING
+============================================================
+
+Handle unexpected states gracefully.
+
+Examples:
+
+- game restarted
+- app goes to background
+- screen rotation if applicable
+- navigation interruption
+- missing saved score
+- corrupted/incomplete game state
+
+Do not crash.
+
+If the game state cannot be restored, safely restart the current round.
+
+============================================================
+36. STATE MANAGEMENT
+============================================================
+
+Keep the game state clearly separated into:
+
+- current phase
+- current round
+- sequence
+- player selections
+- score
+- streak
+- difficulty
+- result
+- session statistics
+
+Do not mix UI state and persistent statistics unnecessarily.
+
+============================================================
+37. RESPONSIVE DESIGN
+============================================================
+
+The game must work well on:
+
+- small Android phones
+- normal phones
+- large phones
+
+Do not use fixed absolute positioning for the entire game.
+
+Use responsive layouts.
+
+The memory board should resize naturally.
+
+Tiles should remain large enough for touch interaction.
+
+============================================================
+38. PERFORMANCE
+============================================================
+
+The game must feel instant.
+
+Avoid unnecessary rebuilds.
+
+Avoid heavy image assets when vector/drawn assets are sufficient.
+
+Animations should remain smooth.
+
+Do not introduce unnecessary packages.
+
+============================================================
+39. FIRST VERSION SCOPE
+============================================================
+
+IMPLEMENT NOW:
+
+✓ Introduction
+✓ Countdown
+✓ Sequence Recall
+✓ 3–7+ item progressive difficulty
+✓ Abstract geometric visual objects
+✓ Memorize phase
+✓ Recall phase
+✓ Ordered selection
+✓ Correct/incorrect feedback
+✓ Score
+✓ Streak
+✓ Session result
+✓ Longest sequence
+✓ Personal best
+✓ Replay
+✓ Exit
+✓ BRAINX theme
+✓ Smooth animations
+✓ Haptic support if already available
+✓ Existing XP/Brain Score integration if available
+✓ Existing navigation integration
+
+DO NOT IMPLEMENT NOW:
+
+✗ Multiplayer
+✗ Leaderboards
+✗ Position Recall
+✗ Reverse Recall
+✗ Multiple game modes
+✗ Complicated energy/lives system
+✗ Ads-specific logic
+✗ New backend
+✗ Fake statistics
+✗ IQ measurement
+✗ Scientific claims
+✗ Unnecessary tutorials
+✗ Excessive particle effects
+
+Build the architecture so these can be added later.
+
+============================================================
+40. QUALITY CHECK
+============================================================
+
+Before finishing, test the complete user journey:
+
+Open Synapse Recall
+↓
+Introduction
+↓
+Start
+↓
+3-2-1
+↓
+Memorize
+↓
+Recall
+↓
+Correct
+↓
+Next round
+↓
+Increasing difficulty
+↓
+Mistake
+↓
+Feedback
+↓
+Continue
+↓
+Session complete
+↓
+Results
+↓
+Play Again
+↓
+Done
+↓
+Return to previous screen
+
+Verify that:
+
+- no UI overlaps
+- no text is clipped
+- buttons are tappable
+- animations don't block interaction
+- timers reset correctly
+- sequences reset correctly
+- scores reset correctly when appropriate
+- personal best is persisted correctly
+- exiting does not corrupt state
+- replay starts a fresh session
+- difficulty progresses correctly
+
+============================================================
+41. FINAL UX GOAL
+============================================================
+
+The final experience should feel like:
+
+"One more round."
+
+The user should immediately understand:
+
+LOOK
+↓
+REMEMBER
+↓
+REBUILD
+
+The game should be:
+
+Simple to learn
+Hard to master
+Visually beautiful
+Fast to play
+Fair
+Satisfying
+Replayable
+
+It should feel like a premium brain game inside BRAINX—not a demo or a generic memory-card game.
+
+The most important principle:
+
+KEEP THE RULE SIMPLE, BUT MAKE THE GAME FEEL PREMIUM.
+
+Remember:
+
+The player is not just remembering colored balls.
+
+They are remembering:
+
+SHAPES
++
+COLORS
++
+SEQUENCES
++
+EVENTUALLY POSITIONS
+
+Start simple, then progressively challenge the player's working memory.

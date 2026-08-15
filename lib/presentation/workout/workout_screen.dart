@@ -68,6 +68,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         _ensureQuiz();
         break;
       case WorkoutGameId.stroopRush:
+      case WorkoutGameId.synapseRecall:
         break;
     }
   }
@@ -374,10 +375,10 @@ class _WorkoutIntro extends StatelessWidget {
           Center(
             child: Text(
               isBn
-                  ? 'একটি সেশনে ৩টি দক্ষতা প্রশিক্ষণ দিন'
+                  ? 'একটি সেশনে ${skills.length}টি দক্ষতা প্রশিক্ষণ দিন'
                   : isHi
-                      ? 'एक सेशन में 3 कौशल प्रशिक्षित करें'
-                      : 'Train 3 skills in one session',
+                      ? 'एक सेशन में ${skills.length} कौशल प्रशिक्षित करें'
+                      : 'Train ${skills.length} skills in one session',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,

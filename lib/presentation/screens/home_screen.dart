@@ -941,6 +941,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Navigator.pushNamed(context, '/stroop-rush');
           },
         ),
+        const SizedBox(height: 12),
+        _buildTrainYourBrainItem(
+          index: 3,
+          emoji: '🔗',
+          accent: const Color(0xFFB388FF),
+          skillName: isBn ? 'স্মৃতি' : isHi ? 'स्मृति' : 'Memory',
+          gameName: isBn ? 'সিন্যাপ্স রিকল' : isHi ? 'सिनैप्स रिकॉल' : 'Synapse Recall',
+          score: dailyProgress.pillarScore(BrainPillar.memory),
+          isBn: isBn,
+          isHi: isHi,
+          isDark: isDark,
+          onTap: () {
+            if (!DailyChallengeAuth.canStart(ref)) {
+              DailyChallengeAuth.requireLogin(context, ref);
+              return;
+            }
+            Navigator.pushNamed(context, '/synapse-recall');
+          },
+        ),
       ],
     );
   }
