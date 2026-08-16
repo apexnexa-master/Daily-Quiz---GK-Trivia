@@ -6,7 +6,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/scoring/brain_score.dart';
-import '../../../core/scoring/scoring_config.dart';
 import '../../../core/services/daily_progress_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../providers/scoring_providers.dart';

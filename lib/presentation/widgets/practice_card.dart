@@ -25,14 +25,8 @@ class _PracticeArenaCardState extends ConsumerState<PracticeArenaCard> {
 
     // UI translations
     final title = isBn ? 'অনুশীলন ক্ষেত্র' : isHi ? 'अभ्यास क्षेत्र' : 'Practice Arena';
-    final subtitle = isBn 
-        ? 'অসীমিত অনুশীলনের মাধ্যমে আপনার জ্ঞান বৃদ্ধি করুন' 
-        : isHi 
-            ? 'असीमित अभ्यास के साथ अपने ज्ञान को तेज करें' 
-            : 'Sharpen your knowledge with unlimited practice';
     final diffLabel = isBn ? 'অসুবিধা স্তর:' : isHi ? 'कठिनाई स्तर:' : 'Difficulty:';
     final quickPlayLabel = isBn ? 'দ্রুত খেলা শুরু করুন' : isHi ? 'त्वरित खेल शुरू करें' : 'Quick Play';
-    final customLabel = isBn ? 'কাস্টম কনফিগারেশন' : isHi ? 'कस्टम कॉन्फ़िगरेशन' : 'Custom Configuration';
 
     return Container(
       decoration: BoxDecoration(

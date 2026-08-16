@@ -2,7 +2,6 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/firestore_models.dart';
-import '../../data/local_quiz_data.dart';
 import 'question_service.dart';
 
 class BattleService {

@@ -193,7 +193,6 @@ class DailyRewardBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(gamificationNotifierProvider);
     final lang = ref.watch(languageProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
 

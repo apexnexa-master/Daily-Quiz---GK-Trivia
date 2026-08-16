@@ -24,7 +24,6 @@ class SettingsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
-    final soundSettings = ref.watch(soundSettingsProvider);
 
     final title = isBn
         ? 'সেটিংস'
@@ -90,33 +89,6 @@ class SettingsSection extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSwitchTile({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: iconColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: iconColor, size: 20),
-      ),
-      title: Text(
-        label,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-      ),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-      ),
     );
   }
 

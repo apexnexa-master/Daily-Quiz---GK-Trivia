@@ -72,13 +72,13 @@ class ScoringConfig {
   static const int historySize = 30;
 
   // ── XP (engagement, separate from Brain Score) ────────────────
-  static const int practiceXp = 20;
-  static const int dailyChallengeXp = 50;
-  static const int workoutXp = 60;
-  static const int dailyGoalXp = 30;
-  static const int perfectBonusXp = 10;
-  static const int battleXp = 20;
-  static const int dailyXpCap = 300;
+  static const int practiceXp = 10;
+  static const int dailyChallengeXp = 25;
+  static const int workoutXp = 30;
+  static const int dailyGoalXp = 15;
+  static const int perfectBonusXp = 5;
+  static const int battleXp = 10;
+  static const int dailyXpCap = 150;
 
   // Anti-farming for practice mode: the first few practice sessions pay full
   // XP, the next few pay half, everything after pays a quarter. The daily cap
@@ -89,7 +89,7 @@ class ScoringConfig {
 
   // Workout XP keeps a small performance-linked component on top of the base
   // so the results screen still shows meaningful "Brain Points".
-  static const double workoutPerformanceXpMultiplier = 0.2;
+  static const double workoutPerformanceXpMultiplier = 0.1;
 
   // ── Leaderboard ───────────────────────────────────────────────
   static const int dailyScoreMax = 1000;

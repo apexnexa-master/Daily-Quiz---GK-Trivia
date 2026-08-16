@@ -1,5 +1,4 @@
 // lib/core/services/gamification_service.dart
-import 'dart:math';
 import '../../data/models/gamification_models.dart';
 import 'gamification/user_stats_service.dart';
 import 'gamification/streak_service.dart';

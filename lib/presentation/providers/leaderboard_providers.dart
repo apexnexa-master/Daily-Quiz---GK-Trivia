@@ -2,10 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/local_stats_service.dart';
-import '../../data/models/firestore_models.dart';
 import '../../data/models/gamification_models.dart';
 import 'stats_providers.dart';
-import 'quiz_providers.dart';
 import 'auth_providers.dart';
 
 final localLeaderboardProvider = FutureProvider<List<LeaderboardEntryLocal>>((ref) async {

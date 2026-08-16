@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/app_providers.dart';
@@ -336,47 +335,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                 ),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverlappingAvatars() {
-    final urls = [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCImtVH3VgniNY-MaL-vFISxWYnFOmqW0ViSvlFmJUmxysOgNKIwA_Lh4o8803DZlQ0CoDS4LBUu10O3D5-L-WmEuQOCuQM84o-Qgxm0jJ3SEJjq4CsSg-NwoWFsLfmAwDfXfxnwXncMhvcdiEIDrAzj2HZkJb9dKkuSAjA0rQv-42GnD6U-BqJ2mDZmXmoYY-JlHWsYQXs3iE7u5U9cmU6cuY7YBadC9LTO2KbDd2sz1QtjyNRD3bJZQ',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBdDtvYV_GxPwceoL9_EBglntE1_F4wR2w0KJ7YTQQ2VZooOs58HdDUzKd3Ss6aNqbLueESiJpw9lq_GHTx71ARwLD0xxuDkD7t7X58ns9I-tIcAGii5Qkmd2n616-cZayBQPigPWlERIM3WG6Cz8Rkvw66SVgxl5_WFfXSE61E5qYLJgsFDbYo-Rou14_0avYmDAxrH0heOHCFNQxgBRJ9huM5gKPXgKzKVQAUOXVf2uV5m839TsSYww',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuBzyxMPoYjZB-I5DGLCjbllMYQ-4qmqxS0VRlJKsej5Z_gGLZpEbGuxs6__eiH3QVt-Dye9HH5KnfCKYcQFfN4cEraEoKCiFQqtid4c8oLaGlT7m6NBaoqHf4-lHWtstwes18UY8cpcA7LcLvgxNllozmUzoZVxsFOeNjHRU3MkPmMeQKM2-N1uwLbOWrxjHjmq9qH31TIUJW-oeU5jRZNOaMZ0w6SGMeHRs8kNJF1hyV-i1sotFMxkcA',
-    ];
-
-    return SizedBox(
-      width: 56,
-      height: 24,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            child: CircleAvatar(
-              radius: 12,
-              backgroundImage: NetworkImage(urls[0]),
-              backgroundColor: AppColors.bgDark,
-            ),
-          ),
-          Positioned(
-            left: 16,
-            child: CircleAvatar(
-              radius: 12,
-              backgroundImage: NetworkImage(urls[1]),
-              backgroundColor: AppColors.bgDark,
-            ),
-          ),
-          Positioned(
-            left: 32,
-            child: CircleAvatar(
-              radius: 12,
-              backgroundImage: NetworkImage(urls[2]),
-              backgroundColor: AppColors.bgDark,
             ),
           ),
         ],

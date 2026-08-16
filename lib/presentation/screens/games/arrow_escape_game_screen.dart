@@ -580,21 +580,6 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
     _bloc.add(UndoEvent());
   }
 
-  void _requestHint() {
-    final state = _bloc.state;
-    if (state.status == GameStatus.won) return;
-    _bloc.add(UseHintEvent());
-  }
-
-  void _showInsufficientCoins() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Not enough coins! Solve more levels to earn coins.'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _timer?.cancel();

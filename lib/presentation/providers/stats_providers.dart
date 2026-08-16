@@ -4,8 +4,6 @@ import '../../core/services/local_stats_service.dart';
 import '../../core/services/question_tracking_service.dart';
 import '../../core/services/daily_progress_service.dart';
 import '../../core/constants/app_constants.dart';
-import '../../data/models/firestore_models.dart';
-import '../../data/models/gamification_models.dart';
 import 'quiz_providers.dart';
 import 'app_providers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

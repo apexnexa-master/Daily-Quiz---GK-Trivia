@@ -66,9 +66,9 @@ void main() {
       for (var i = 0; i < 5; i++) {
         await XPService.instance.award(SessionMode.dailyChallenge);
       }
-      // 250 XP banked, a 50 XP award is fully granted...
+      // Banked the cap minus one award; a full award is granted...
       final ok = await XPService.instance.award(SessionMode.dailyChallenge);
-      expect(ok.granted, 50);
+      expect(ok.granted, ScoringConfig.dailyChallengeXp);
       expect(ok.capped, isFalse);
       // ...and the next one only gets the remaining 0.
       final capped = await XPService.instance.award(SessionMode.dailyChallenge);
@@ -85,7 +85,8 @@ void main() {
         plannedCount: 3,
       );
       expect(award.granted,
-          ScoringConfig.workoutXp + (100 * 0.2).round());
+          ScoringConfig.workoutXp +
+              (100 * ScoringConfig.workoutPerformanceXpMultiplier).round());
     });
 
     test('perfect session adds the perfect bonus', () async {
@@ -96,18 +97,19 @@ void main() {
       );
       expect(
         award.granted,
-        ScoringConfig.workoutXp + (100 * 0.2).round() + ScoringConfig.perfectBonusXp,
+        ScoringConfig.workoutXp +
+            (100 * ScoringConfig.workoutPerformanceXpMultiplier).round() +
+            ScoringConfig.perfectBonusXp,
       );
     });
 
     test('respects the daily cap', () async {
-      // Bank 290 of 300, then a ~90 XP workout is capped at 10.
-      for (var i = 0; i < 4; i++) {
+      // Fill the full daily cap with daily challenges, then a workout earns 0.
+      for (var i = 0;
+          i < ScoringConfig.dailyXpCap ~/ ScoringConfig.dailyChallengeXp;
+          i++) {
         await XPService.instance.award(SessionMode.dailyChallenge);
       }
-      await XPService.instance.award(SessionMode.dailyChallenge);
-      // 250 now; add one more 50 → 300.
-      await XPService.instance.award(SessionMode.dailyChallenge);
       final award = await XPService.instance.awardWorkout(
         overallScore: 100,
         completedCount: 2,

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../providers/app_providers.dart';
+import '../providers/scoring_providers.dart';
 import '../widgets/profile/brain_and_skills_section.dart';
 import '../widgets/profile/competition_section.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,20 +29,29 @@ class StatsScreen extends ConsumerWidget {
           children: [
             _buildHeader(context, isBn, isHi, isDark),
             Expanded(
-              child: CustomScrollView(
-                slivers: [
-                  SliverPadding(
-                    padding: AppSpacing.paddingScreen,
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        BrainAndSkillsSection(lang: lang, isDark: isDark),
-                        const SizedBox(height: 24),
-                        CompetitionSection(lang: lang, isDark: isDark),
-                        const SizedBox(height: 32),
-                      ]),
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                onRefresh: () async {
+                  ref.invalidate(brainStatsProvider);
+                  ref.invalidate(myWeeklyRankProvider);
+                  await Future.delayed(const Duration(milliseconds: 500));
+                },
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverPadding(
+                      padding: AppSpacing.paddingScreen,
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          BrainAndSkillsSection(lang: lang, isDark: isDark),
+                          const SizedBox(height: 24),
+                          CompetitionSection(lang: lang, isDark: isDark),
+                          const SizedBox(height: 32),
+                        ]),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

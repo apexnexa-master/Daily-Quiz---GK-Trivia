@@ -1,13 +1,9 @@
 // lib/core/services/sharing_service.dart
 // Social sharing service for scorecards and challenges
 
-import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import '../theme/app_theme.dart';
 
 class SharingService {
   static final SharingService instance = SharingService._();

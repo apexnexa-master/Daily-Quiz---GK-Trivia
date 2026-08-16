@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_animations.dart';
 import '../providers/app_providers.dart';
 import '../../routes/app_router.dart';
 

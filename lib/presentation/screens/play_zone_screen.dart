@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
 import '../providers/app_providers.dart';
 import '../../core/services/quiz/practice_quiz_service.dart';
 import '../../routes/app_router.dart';
@@ -47,7 +46,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final lang = ref.watch(languageProvider);
-    final quizAsync = ref.watch(todayQuizProvider);
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
 
@@ -727,42 +725,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
               color: isDark
                   ? AppColors.textSecondaryDark
                   : AppColors.textSecondaryLight,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBadge(IconData icon, String label, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.surfaceElevatedDark
-            : AppColors.surfaceElevatedLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-            color: isDark ? AppColors.outlineVariant : Colors.black12,
-            width: 0.8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon,
-              size: 10,
-              color: isDark
-                  ? AppColors.textTertiaryDark
-                  : AppColors.textTertiaryLight),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: isDark
-                  ? AppColors.textTertiaryDark
-                  : AppColors.textTertiaryLight,
             ),
           ),
         ],

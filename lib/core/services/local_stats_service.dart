@@ -3,14 +3,12 @@ import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import 'gamification_service.dart';
-import '../../data/models/firestore_models.dart';
 
 class LocalStatsService {
   LocalStatsService._();
   static final LocalStatsService instance = LocalStatsService._();
 
   static const String _boxName = 'local_stats';
-  static const String _keyStreak = 'streak_data';
   static const String _keyLeaderboard = 'leaderboard_data';
   static const String _keyPersonalBest = 'personal_best';
   static const String _keyTotalQuizzes = 'total_quizzes';

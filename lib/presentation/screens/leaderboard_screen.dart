@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_icons.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/services/local_stats_service.dart';
 import '../../core/scoring/leaderboard_service.dart';
@@ -588,31 +586,17 @@ class LeaderboardScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Name and Time
+          // Name
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry.playerName,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${entry.timeTaken}s',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? Colors.white54 : Colors.grey,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+            child: Text(
+              entry.playerName,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           // Score Pill
@@ -761,7 +745,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'XP (practice 20, daily challenge 50, workout 60, battle 20, capped at 300 per day) is earned separately and NEVER affects leaderboard ranking or the points shown on this board.',
+                'XP (practice 10, daily challenge 25, workout 30, battle 10, capped at 150 per day) is earned separately and NEVER affects leaderboard ranking or the points shown on this board.',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,

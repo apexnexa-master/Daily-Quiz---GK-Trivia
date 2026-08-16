@@ -91,7 +91,6 @@ class UserStatsService {
   }
 
   String _generateReferralCodeInitial() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final now = DateTime.now().millisecondsSinceEpoch.toString();
     return 'GKQ${now.substring(now.length - 6).toUpperCase()}';
   }

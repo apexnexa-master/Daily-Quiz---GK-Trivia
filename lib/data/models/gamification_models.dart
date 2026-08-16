@@ -97,13 +97,6 @@ class UserStatsModel extends Equatable {
       ];
 }
 
-class _DefaultDate implements DateTime {
-  const _DefaultDate();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => DateTime(2000);
-}
-
 enum AchievementType {
   firstQuiz,
   streak7Days,

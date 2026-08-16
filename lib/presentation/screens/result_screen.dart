@@ -554,11 +554,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
       bool isBn,
       bool isHi) {
     final isPractice = session.quiz.quizId.startsWith('practice_');
-    final playAgainLabel = isBn
-        ? (isPractice ? 'আবার অনুশীলন করুন' : 'আবার খেলুন')
-        : isHi
-            ? (isPractice ? 'फिर से अभ्यास करें' : 'फिर से खेलें')
-            : (isPractice ? 'Practice Again' : 'Play Again');
 
     return Column(
       children: [

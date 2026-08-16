@@ -129,6 +129,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ref.invalidate(gamificationNotifierProvider);
                       ref.invalidate(dailyProgressProvider);
                       ref.invalidate(currentUserProvider);
+                      ref.invalidate(brainStatsProvider);
+                      ref.invalidate(myWeeklyRankProvider);
                       await _loadSavedIdentity();
                       await Future.delayed(const Duration(milliseconds: 500));
                     },
@@ -335,7 +337,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         TextButton.icon(
-          onPressed: () => Navigator.pushNamed(context, '/stats'),
+          onPressed: () {
+            ref.invalidate(brainStatsProvider);
+            ref.invalidate(myWeeklyRankProvider);
+            Navigator.pushNamed(context, '/stats');
+          },
           icon: Icon(
             Icons.view_agenda_rounded,
             size: 16,
@@ -1051,10 +1057,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 4),
             Text(
               isBn
-                  ? 'প্র্যাকটিস +২০, ডেইলি চ্যালেঞ্জ +৫০, ওয়ার্কআউট +৬০, ব্যাটল +২০ (প্রতিদিন সর্বোচ্চ ৩০০)।'
+                  ? 'প্র্যাকটিস +১০, ডেইলি চ্যালেঞ্জ +২৫, ওয়ার্কআউট +৩০, ব্যাটল +১০ (প্রতিদিন সর্বোচ্চ ১৫০)।'
                   : isHi
-                      ? 'प्रैक्टिस +20, डेली चैलेंज +50, वर्कआउट +60, बैटल +20 (रोज़ अधिकतम 300)।'
-                      : 'Practice +20, Daily Challenge +50, Workout +60, Battle +20 (max 300/day).',
+                      ? 'प्रैक्टिस +10, डेली चैलेंज +25, वर्कआउट +30, बैटल +10 (रोज़ अधिकतम 150)।'
+                      : 'Practice +10, Daily Challenge +25, Workout +30, Battle +10 (max 150/day).',
               style: TextStyle(
                 fontSize: 12,
                 height: 1.4,
@@ -1567,222 +1573,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildProgressCard(
-      double accuracy, bool isBn, bool isHi, bool isDark) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.cardDark.withValues(alpha: 0.55)
-            : Colors.white.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.06),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // SVG Circular Progress simulation
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 72,
-                height: 72,
-                child: CircularProgressIndicator(
-                  value: accuracy > 0 ? (accuracy / 100) : 0.15,
-                  strokeWidth: 7,
-                  backgroundColor: isDark
-                      ? AppColors.surfaceElevatedDark
-                      : AppColors.surfaceElevatedLight,
-                  color: AppColors.primary,
-                  strokeCap: StrokeCap.round,
-                ),
-              ),
-              Text(
-                accuracy > 0 ? '${accuracy.toInt()}%' : '-',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isBn
-                      ? 'আজকের অগ্রগতি'
-                      : isHi
-                          ? 'आज की प्रगति'
-                          : "Today's Accuracy",
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isBn
-                      ? 'আপনার কুইজের সঠিকতার পরিমাপের গড় স্কোর।'
-                      : isHi
-                          ? 'पिछले खेलों में आपके सटीकता स्तर की गणना।'
-                          : 'Average performance level across recent training logs.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.textSecondaryLight,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAchievementsSection(bool isBn, bool isHi, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardDark,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.outlineVariant, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                isBn
-                    ? 'সাম্প্রতিক অর্জন'
-                    : isHi
-                        ? 'हाल की उपलब्धियां'
-                        : 'Recent Achievements',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pushNamed(context, '/achievements'),
-                child: Text(
-                  isBn
-                      ? 'সব দেখুন'
-                      : isHi
-                          ? 'सभी देखें'
-                          : 'View All',
-                  style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildAchievementBadge(
-                  icon: Icons.emoji_events_rounded,
-                  title: 'Focus Master',
-                  desc: '10 games without error',
-                  color: Colors.amber,
-                ),
-                const SizedBox(width: 12),
-                _buildAchievementBadge(
-                  icon: Icons.timer_rounded,
-                  title: 'Speed Demon',
-                  desc: 'Top 1% in Reaction Test',
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 12),
-                _buildAchievementBadge(
-                  icon: Icons.auto_awesome_rounded,
-                  title: 'Logic Leap',
-                  desc: 'Leveled up to Tier 3',
-                  color: Colors.purpleAccent,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAchievementBadge({
-    required IconData icon,
-    required String title,
-    required String desc,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.bgDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.outlineVariant, width: 0.8),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                desc,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: AppColors.textTertiaryDark,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Slowly counts up to [value] whenever it appears or changes.

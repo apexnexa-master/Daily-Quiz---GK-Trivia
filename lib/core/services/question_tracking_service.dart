@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'gamification_service.dart';
-import '../../data/models/firestore_models.dart';
-import '../../data/models/gamification_models.dart';
 
 class QuestionTrackingService {
   QuestionTrackingService._();
@@ -11,7 +9,6 @@ class QuestionTrackingService {
   static const String _boxName = 'question_tracking';
   static const String _keyAnsweredQuestions = 'answered_questions';
   static const String _keyPerModeStats = 'mode_stats';
-  static const String _keyAchievements = 'achievements';
 
   late Box<String> _box;
 
@@ -133,74 +130,6 @@ class QuestionTrackingService {
     // Delegated to GamificationService during quiz rewards calculation
   }
 
-  static final List<Achievement> _defaultAchievements = [
-    Achievement(
-        id: 'first_quiz',
-        title: 'First Steps',
-        description: 'Complete your first quiz',
-        icon: '🎯',
-        isUnlocked: false),
-    Achievement(
-        id: 'quiz_10',
-        title: 'Getting Started',
-        description: 'Complete 10 quizzes',
-        icon: '📚',
-        isUnlocked: false),
-    Achievement(
-        id: 'quiz_50',
-        title: 'Quiz Enthusiast',
-        description: 'Complete 50 quizzes',
-        icon: '🏅',
-        isUnlocked: false),
-    Achievement(
-        id: 'quiz_100',
-        title: 'Quiz Master',
-        description: 'Complete 100 quizzes',
-        icon: '👑',
-        isUnlocked: false),
-    Achievement(
-        id: 'streak_3',
-        title: 'On Fire',
-        description: 'Maintain a 3-day streak',
-        icon: '🔥',
-        isUnlocked: false),
-    Achievement(
-        id: 'streak_7',
-        title: 'Week Warrior',
-        description: 'Maintain a 7-day streak',
-        icon: '⚡',
-        isUnlocked: false),
-    Achievement(
-        id: 'streak_30',
-        title: 'Monthly Champion',
-        description: 'Maintain a 30-day streak',
-        icon: '🌟',
-        isUnlocked: false),
-    Achievement(
-        id: 'perfect_score',
-        title: 'Perfectionist',
-        description: 'Score 100% on any quiz',
-        icon: '💯',
-        isUnlocked: false),
-    Achievement(
-        id: 'all_modes',
-        title: 'Versatile Learner',
-        description: 'Attempt all exam modes',
-        icon: '🎓',
-        isUnlocked: false),
-    Achievement(
-        id: 'general_master',
-        title: 'GK Expert',
-        description: 'Score 80%+ in General Knowledge',
-        icon: '🧠',
-        isUnlocked: false),
-    Achievement(
-        id: 'wbpsc_aspirant',
-        title: 'WBPSC Aspirant',
-        description: 'Score 70%+ in WBPSC mode',
-        icon: '🏛️',
-        isUnlocked: false),
-  ];
 }
 
 class ModeStats {

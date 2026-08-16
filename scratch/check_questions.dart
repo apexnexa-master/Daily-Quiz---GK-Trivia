@@ -20,7 +20,6 @@ void main() async {
         final List<dynamic> list = jsonDecode(content);
         for (final item in list) {
           totalFound++;
-          final id = item['id'] ?? '';
           final text = item['text'] ?? {};
           final options = item['options'] ?? {};
           final correctIndex = item['correctIndex'] ?? item['correct_index'];
