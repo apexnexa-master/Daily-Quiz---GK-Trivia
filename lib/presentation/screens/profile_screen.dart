@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/theme_manager.dart';
 import '../../core/theme/app_animations.dart';
+import '../../core/constants/app_constants.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -70,7 +71,7 @@ class ProfileScreen extends ConsumerWidget {
                     const SizedBox(height: 32),
                     Center(
                       child: Text(
-                        'BrainX v1.5.0',
+                        '${AppConstants.appName} v1.5.0',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,

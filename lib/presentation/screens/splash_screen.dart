@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/constants/app_constants.dart';
 import '../providers/app_providers.dart';
 import '../../routes/app_router.dart';
 
@@ -95,7 +96,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     child: Column(
                       children: [
                         Text(
-                          'BrainX',
+                          AppConstants.appName,
                           style: TextStyle(
                             fontSize: 38,
                             fontWeight: FontWeight.w900,

@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';
+import '../constants/app_constants.dart';
 
 class SharingService {
   static final SharingService instance = SharingService._();
@@ -21,7 +22,7 @@ class SharingService {
     final emoji = _getResultEmoji(percentage);
 
     final text = '''
-🎯 **BrainX Results**
+🎯 **${AppConstants.appName} Results**
 
 📚 Exam: $examMode
 ✅ Score: $score/$total ($percentage%)
@@ -30,10 +31,10 @@ class SharingService {
 $emoji ${_getResultMessage(percentage)}
 
 ${referralCode != null ? '🎁 Use my referral code: $referralCode\n' : ''}
-📲 Download BrainX App: https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
+📲 Download ${AppConstants.appName} App: https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
 ''';
 
-    await Share.share(text, subject: '🎯 My BrainX Score!');
+    await Share.share(text, subject: '🎯 My ${AppConstants.appName} Score!');
   }
 
   Future<void> shareChallenge({
@@ -45,7 +46,7 @@ ${referralCode != null ? '🎁 Use my referral code: $referralCode\n' : ''}
     final percentage = ((score / total) * 100).toInt();
 
     final text = '''
-⚔️ **BrainX Challenge!**
+⚔️ **${AppConstants.appName} Challenge!**
 
 📚 Exam: $examMode
 ✅ I scored $score/$total ($percentage%)
@@ -69,11 +70,11 @@ https://dailyquiz.nexasoft.com/challenge/$challengeId
 📈 Current Streak: $streak days
 🏆 Longest Streak: $longestStreak days
 
-💪 Taking BrainX daily! Join me!
+💪 Taking ${AppConstants.appName} daily! Join me!
 📲 https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
 ''';
 
-    await Share.share(text, subject: '🔥 My BrainX Streak!');
+    await Share.share(text, subject: '🔥 My ${AppConstants.appName} Streak!');
   }
 
   Future<void> shareAchievement({
@@ -85,7 +86,7 @@ https://dailyquiz.nexasoft.com/challenge/$challengeId
 
 $icon $title
 
-I'm crushing it on BrainX! 🚀
+I'm crushing it on ${AppConstants.appName}! 🚀
 📲 https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
 ''';
 
@@ -98,7 +99,7 @@ I'm crushing it on BrainX! 🚀
     final text = '''
 ⭐ **Level Up!** 
 
-I just reached Level $newLevel on BrainX!
+I just reached Level $newLevel on ${AppConstants.appName}!
 
 🎯 Take daily quizzes and level up!
 📲 https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
@@ -113,14 +114,14 @@ I just reached Level $newLevel on BrainX!
     final text = '''
 🎁 **Invite & Earn!**
 
-Join BrainX using my referral code and get 50 🪙 coins!
+Join ${AppConstants.appName} using my referral code and get 50 🪙 coins!
 
  code: $referralCode
 
 📲 Download: https://play.google.com/store/apps/details?id=com.nexasoft.dailyquiz
 ''';
 
-    await Share.share(text, subject: '🎁 Join BrainX with me!');
+    await Share.share(text, subject: '🎁 Join ${AppConstants.appName} with me!');
   }
 
   String _getResultEmoji(int percentage) {
@@ -183,7 +184,7 @@ class ShareableScoreCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'BrainX',
+            AppConstants.appName,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w800,

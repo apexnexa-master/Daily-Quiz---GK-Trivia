@@ -121,18 +121,25 @@ class GameCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: surfaceColor,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? [const Color(0xFF1B2628), const Color(0xFF151D1E)]
+              : [Colors.white, const Color(0xFFFAFAFA)],
+        ),
         borderRadius: BorderRadius.circular(radius),
         boxShadow: [
           if (!isMuted)
             BoxShadow(
-              color: effectiveAccent.withValues(alpha: isDark ? 0.10 : 0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: effectiveAccent.withValues(alpha: isDark ? 0.22 : 0.12),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
             ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -440,7 +447,7 @@ class GameCard extends StatelessWidget {
       {bool fillInfo = false, bool compact = false}) {
     if (compact) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+        padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,7 +457,7 @@ class GameCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.montserrat(
-                fontSize: 13.5,
+                fontSize: 13,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -0.2,
                 color: isMuted
@@ -458,7 +465,7 @@ class GameCard extends StatelessWidget {
                     : (isDark ? Colors.white : AppColors.textPrimaryLight),
               ),
             ),
-            if (fillInfo) const Spacer() else const SizedBox(height: 3),
+            if (fillInfo) const Spacer() else const SizedBox(height: 2),
             Row(
               children: [
                 if (footer != null && footer!.isNotEmpty) ...[
@@ -564,22 +571,32 @@ class GameCard extends StatelessWidget {
   Widget _buildActionButton(bool isDark, Color accent) {
     final isMuted = isLocked || isComingSoon;
     return Container(
-      width: compact ? 22 : 34,
-      height: compact ? 22 : 34,
+      width: compact ? 24 : 36,
+      height: compact ? 24 : 36,
       decoration: BoxDecoration(
         color: isMuted
             ? (isDark
                 ? Colors.white.withValues(alpha: 0.06)
                 : Colors.grey.shade100)
-            : accent,
+            : null,
+        gradient: isMuted
+            ? null
+            : LinearGradient(
+                colors: [accent, accent.withValues(alpha: 0.85)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         shape: BoxShape.circle,
+        border: isMuted
+            ? Border.all(color: Colors.white.withValues(alpha: 0.1))
+            : Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.2),
         boxShadow: isMuted
             ? null
             : [
                 BoxShadow(
-                  color: accent.withValues(alpha: 0.35),
-                  blurRadius: compact ? 6 : 10,
-                  offset: const Offset(0, 3),
+                  color: accent.withValues(alpha: 0.45),
+                  blurRadius: compact ? 8 : 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
       ),
@@ -588,7 +605,7 @@ class GameCard extends StatelessWidget {
         color: isMuted
             ? (isDark ? Colors.white24 : Colors.grey.shade400)
             : Colors.black,
-        size: compact ? 12 : 17,
+        size: compact ? 13 : 18,
       ),
     );
   }

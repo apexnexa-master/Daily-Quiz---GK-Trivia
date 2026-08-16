@@ -31,9 +31,14 @@ class QuickBrainWorkoutCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.14),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
+            color: AppColors.neonLime.withValues(alpha: 0.35),
+            blurRadius: 36,
+            offset: const Offset(0, 14),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -48,8 +53,59 @@ class QuickBrainWorkoutCard extends StatelessWidget {
               fit: BoxFit.fill,
             ),
           ),
-          // Overlay text in the banner's free top-right corner (clear of the
-          // left-side icons and the bottom-right Start button).
+          // Subtle gradient overlay for extra visual depth and text clarity
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.15),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.25),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Top-left badge: Daily Workout indicator
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppColors.neonLime.withValues(alpha: 0.4),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.bolt_rounded,
+                    color: AppColors.neonLime,
+                    size: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isBn ? 'দৈনিক সেশন' : isHi ? 'दैनिक सत्र' : 'DAILY COMBO',
+                    style: const TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Overlay text in the banner's free top-right corner
           Positioned.fill(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(0, 12, 16, 0),
@@ -69,12 +125,12 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                               color: AppColors.neonLime,
                               shadows: [
                                 Shadow(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  blurRadius: 6,
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                  blurRadius: 8,
                                 ),
                                 Shadow(
-                                  color: AppColors.neonLime.withValues(alpha: 0.4),
-                                  blurRadius: 12,
+                                  color: AppColors.neonLime.withValues(alpha: 0.5),
+                                  blurRadius: 16,
                                 ),
                               ],
                             ),
@@ -91,12 +147,12 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                         color: Colors.white,
                         shadows: [
                           Shadow(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            blurRadius: 8,
+                            color: Colors.black.withValues(alpha: 0.7),
+                            blurRadius: 10,
                           ),
                           Shadow(
-                            color: Colors.black.withValues(alpha: 0.35),
-                            blurRadius: 2,
+                            color: Colors.black.withValues(alpha: 0.4),
+                            blurRadius: 3,
                           ),
                         ],
                       ),
@@ -106,16 +162,17 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.38),
+                        color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.18),
+                          color: Colors.white.withValues(alpha: 0.22),
+                          width: 1,
                         ),
                       ),
                       child: Text(
                         subtitle,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.2,
                           color: Colors.white.withValues(alpha: 0.95),
@@ -137,23 +194,38 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
                 decoration: BoxDecoration(
                   gradient: AppColors.workoutGradient,
-                  borderRadius: BorderRadius.circular(13),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    width: 1.2,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.neonLime.withValues(alpha: 0.45),
-                      blurRadius: 16,
-                      offset: const Offset(0, 5),
+                      color: AppColors.neonLime.withValues(alpha: 0.55),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
-                child: Text(
-                  isBn ? 'শুরু করুন' : isHi ? 'शुरू करें' : 'START',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
-                    color: Colors.black,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.black,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isBn ? 'শুরু করুন' : isHi ? 'शुरू करें' : 'START',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

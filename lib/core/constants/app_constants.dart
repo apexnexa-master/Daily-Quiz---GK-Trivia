@@ -6,7 +6,7 @@ class AppConstants {
   AppConstants._();
 
   // ── App Info ──────────────────────────────────────────────
-  static const String appName = 'BrainX';
+  static const String appName = 'MindSprint';
   static const String appPackage = 'com.nexasoft.dailyquiz';
   static const int quizQuestionCount = 10;
   static const int questionTimerSeconds = 15;

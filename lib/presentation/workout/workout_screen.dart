@@ -820,7 +820,10 @@ class _WorkoutIntro extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          _DailyGoalMini(progress: progress, isBn: isBn, isHi: isHi),
+          Visibility(
+            visible: !progress.isDailyGoalComplete,
+            child: _DailyGoalMini(progress: progress, isBn: isBn, isHi: isHi),
+          ),
           const SizedBox(height: 24),
           Text(
             isBn
@@ -1499,10 +1502,13 @@ class _WorkoutResults extends ConsumerWidget {
           if (pointsGained > 0)
             _BrainPointsChip(points: pointsGained, isBn: isBn, isHi: isHi),
           const SizedBox(height: 16),
-          _DailyGoalCard(
-            progress: dailyProgress,
-            isBn: isBn,
-            isHi: isHi,
+          Visibility(
+            visible: !dailyProgress.isDailyGoalComplete,
+            child: _DailyGoalCard(
+              progress: dailyProgress,
+              isBn: isBn,
+              isHi: isHi,
+            ),
           ),
           if (showNewGoalCompletion) ...[
             const SizedBox(height: 12),

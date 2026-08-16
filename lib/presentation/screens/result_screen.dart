@@ -658,13 +658,13 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                 onTap: () async {
                   final percentage = ((score / session.quiz.questionCount) * 100).round();
                   final emoji = percentage >= 80 ? '🌟' : percentage >= 60 ? '👍' : percentage >= 40 ? '💪' : '📚';
-                  await Share.share(
-                    isBn
-                        ? 'BrainX-এ আমি ${score}/${session.quiz.questionCount} ($percentage%) $emoji পেয়েছি! 🎯 তুমি পারবে?\n\n#BrainX #DailyQuiz #IndiaQuiz'
-                        : isHi
-                            ? 'मैंने BrainX में ${score}/${session.quiz.questionCount} ($percentage%) $emoji स्कोर किया! 🎯 क्या आप कर सकते हैं?\n\n#BrainX #DailyQuiz #IndiaQuiz'
-                            : 'I scored ${score}/${session.quiz.questionCount} ($percentage%) $emoji on BrainX! 🎯\n\nCan you beat me?\n\n#BrainX #DailyQuiz #IndiaQuiz',
-                  );
+                   await Share.share(
+                     isBn
+                         ? '${AppConstants.appName}-এ আমি ${score}/${session.quiz.questionCount} ($percentage%) $emoji পেয়েছি! 🎯 তুমি পারবে?\n\n#${AppConstants.appName} #DailyQuiz #IndiaQuiz'
+                         : isHi
+                             ? 'मैंने ${AppConstants.appName} में ${score}/${session.quiz.questionCount} ($percentage%) $emoji स्कोर किया! 🎯 क्या आप कर सकते हैं?\n\n#${AppConstants.appName} #DailyQuiz #IndiaQuiz'
+                             : 'I scored ${score}/${session.quiz.questionCount} ($percentage%) $emoji on ${AppConstants.appName}! 🎯\n\nCan you beat me?\n\n#${AppConstants.appName} #DailyQuiz #IndiaQuiz',
+                   );
                 },
               ),
             ),
