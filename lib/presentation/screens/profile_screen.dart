@@ -50,14 +50,14 @@ class ProfileScreen extends ConsumerWidget {
                   delegate: SliverChildListDelegate([
                     if (user.isAnonymous) ...[
                       StaggeredListItem(
-                        index: 5,
+                        index: 3,
                         child: _UpgradePrompt(lang: lang, isDark: isDark),
                       ),
                       const SizedBox(height: 24),
                     ],
                     // Settings
                     StaggeredListItem(
-                      index: 6,
+                      index: 4,
                       child: SettingsSection(
                         lang: lang,
                         themeMode: themeMode,
@@ -66,7 +66,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
                     StaggeredListItem(
-                      index: 7,
+                      index: 5,
                       child: _SignOutSection(lang: lang, ref: ref, isDark: isDark),
                     ),
                     const SizedBox(height: 32),

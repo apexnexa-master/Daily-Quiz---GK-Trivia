@@ -228,6 +228,9 @@ class QuizService {
   }
 
   // ── Submit Score to Global Leaderboard (Firestore) ──────────
+  // Routes through the server-verified `submitChallengeScore` Cloud Function
+  // (spec §33). Clients can no longer write the leaderboard directly, so the
+  // score is sanitized + the one-official-attempt rule enforced server-side.
   Future<void> submitScoreToLeaderboard({
     required String playerName,
     required int score,
@@ -237,48 +240,17 @@ class QuizService {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final now = DateTime.now();
-    final weekNumber = ((now.difference(DateTime(now.year, 1, 1)).inDays + 1) / 7).ceil();
-    final weekId = '${now.year}-W$weekNumber';
-
-    final entryId = '${user.uid}_$today';
-
     try {
-      final docRef = _db.collection(AppConstants.colLeaderboard).doc(entryId);
-      final docSnap = await docRef.get();
-
-      int finalScore = score;
-      int finalTime = timeTaken;
-      List<String> completedChallenges = [challengeId];
-
-      if (docSnap.exists) {
-        final data = docSnap.data();
-        if (data != null) {
-          final prevChallenges = List<String>.from(data['completed_challenges'] ?? []);
-          if (prevChallenges.contains(challengeId)) {
-            return;
-          }
-          finalScore += (data['score'] as num).toInt();
-          finalTime += (data['time_taken'] as num).toInt();
-          completedChallenges.addAll(prevChallenges);
-        }
-      }
-
-      await docRef.set({
-        'uid': user.uid,
-        'display_name': playerName.isNotEmpty && playerName != 'You' ? playerName : (user.displayName ?? 'Guest'),
-        'photo_url': user.photoURL,
-        'score': finalScore,
-        'time_taken': finalTime,
-        'quiz_date': today,
-        'week_id': weekId,
-        'exam_mode': 'GENERAL',
-        'rank': 99,
-        'completed_challenges': completedChallenges,
-      }, SetOptions(merge: true));
+      final callable = _functions.httpsCallable('submitChallengeScore');
+      await callable.call<Map<String, dynamic>>({
+        'score': score,
+        'challengeId': challengeId,
+        'timeTaken': timeTaken,
+      });
     } catch (_) {
-      // Silently ignore write failures (e.g. offline)
+      // Silently ignore failures (offline, not deployed, quota, etc.) — the
+      // local board already captured this attempt and the server is the
+      // source of truth for the global board.
     }
   }
 

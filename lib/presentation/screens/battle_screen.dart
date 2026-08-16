@@ -9,7 +9,6 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/app_providers.dart';
-import '../providers/auth_providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
@@ -19,6 +18,8 @@ import '../../data/local_quiz_data.dart';
 import '../../core/services/battle_service.dart';
 import '../../core/services/question_service.dart';
 import '../../core/services/daily_progress_service.dart';
+import '../../core/scoring/game_performance.dart';
+import '../../core/scoring/progression_service.dart';
 import '../widgets/game_card.dart';
 
 enum BattleArenaState {
@@ -586,15 +587,23 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
       }
     });
 
-    // Track daily goal, streak & brain score (Speed pillar)
+    // Normalized performance score (0-100) shared across every game.
     final battleTotal =
         _totalQuestions > 0 ? _totalQuestions : _selectedQuestionCount;
-    final battlePct =
-        battleTotal > 0 ? (_playerScore / battleTotal * 100).round() : 0;
-    DailyProgressService.instance.recordGameCompletion(
-      pillar: BrainPillar.speed,
-      scorePct: battlePct,
-      gameType: GameType.battle,
+    final input = BattlePerformanceInput(
+      correct: _playerScore,
+      total: battleTotal,
+    );
+    unawaited(
+      ProgressionService.instance.recordSession(
+        SessionRecord(
+          gameId: 'battle',
+          mode: SessionMode.battle,
+          gameType: GameType.battle,
+          primaryPillar: BrainPillar.speed,
+          performance: input,
+        ),
+      ),
     );
     ref.invalidate(dailyProgressProvider);
 

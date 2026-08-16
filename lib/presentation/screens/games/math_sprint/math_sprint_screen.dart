@@ -22,6 +22,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/services/daily_progress_service.dart';
 import '../../../../core/services/game_sfx.dart';
+import '../../../../core/scoring/game_performance.dart';
+import '../../../../core/scoring/progression_service.dart';
 import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -352,11 +354,24 @@ class _MathSprintScreenState extends ConsumerState<MathSprintScreen>
     }
 
     GameSfxService.instance.play(GameSfx.gameOver);
-    _workoutScore = _engine.accuracy;
-    DailyProgressService.instance.recordGameCompletion(
-      pillar: BrainPillar.speed,
-      scorePct: _workoutScore,
-      gameType: GameType.math,
+    final input = MathPerformanceInput(
+      correct: _engine.totalCorrect,
+      totalAttempts: _engine.totalAttempts,
+      maxLevel: _engine.level,
+    );
+    _workoutScore = GamePerformanceService.calculate(input);
+    unawaited(
+      ProgressionService.instance.recordSession(
+        SessionRecord(
+          gameId: 'math',
+          mode: _workoutStep != null
+              ? SessionMode.workoutGame
+              : SessionMode.practice,
+          gameType: GameType.math,
+          primaryPillar: BrainPillar.speed,
+          performance: input,
+        ),
+      ),
     );
     try {
       ProviderScope.containerOf(context, listen: false)

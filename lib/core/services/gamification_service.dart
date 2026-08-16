@@ -56,10 +56,17 @@ class GamificationService {
       _achievementsService.updateAchievementProgress(type, count);
 
   // ── Quiz Completion Rewards ──────────────────────────────────
+  /// Computes coins/achievements for a finished quiz.
+  ///
+  /// [awardXp] is true for the legacy quiz path. The new scoring engine routes
+  /// all XP through `XPService` (central config + daily cap), so screens that
+  /// record a session via `ProgressionService` pass `awardXp: false` to avoid
+  /// double-awarding XP while still receiving coins and achievement unlocks.
   Future<QuizRewards> calculateQuizRewards({
     required int score,
     required int totalQuestions,
     required int timeTaken,
+    bool awardXp = true,
   }) async {
     final stats = await updateStreak();
 
@@ -94,10 +101,10 @@ class GamificationService {
       bonusXP += stats.currentStreak * 2;
     }
 
-    // Update stats
+    // Update stats (XP only when this path is the XP authority)
     final newStats = stats.copyWith(
       totalQuizzes: stats.totalQuizzes + 1,
-      xp: stats.xp + baseXP + bonusXP,
+      xp: awardXp ? stats.xp + baseXP + bonusXP : stats.xp,
       coins: stats.coins + baseCoins + bonusCoins,
     );
     await saveUserStats(newStats);
@@ -123,7 +130,7 @@ class GamificationService {
     }
 
     return QuizRewards(
-      xpEarned: baseXP + bonusXP,
+      xpEarned: awardXp ? baseXP + bonusXP : 0,
       coinsEarned: baseCoins + bonusCoins,
       isPerfect: score == totalQuestions,
       speedBonus: timeTaken < 60 ? 10 : 0, // speed bonus value

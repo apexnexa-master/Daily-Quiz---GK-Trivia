@@ -23,6 +23,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/services/daily_progress_service.dart';
 import '../../../../core/services/game_sfx.dart';
+import '../../../../core/scoring/game_performance.dart';
+import '../../../../core/scoring/progression_service.dart';
 import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../games/widgets/countdown_overlay.dart';
@@ -76,6 +78,7 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
 
   WorkoutStep? _workoutStep;
   bool _gameFinished = false;
+  int _workoutScore = 0;
 
   bool get _isBn => _lang == 'bn';
   bool get _isHi => _lang == 'hi';
@@ -279,18 +282,38 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
       prefs.setInt(SynapseConfig.prefBestStreak, stats.bestStreak);
     }
 
-    // Share the session with the BRAINX daily-goal / brain-score system
-    // (Memory pillar). Accuracy is the 0-100 performance metric.
-    // Fire-and-forget: a failure here (e.g. storage/cloud hiccup) must never
-    // block the results screen from appearing.
+    // Normalized performance score (0-100) shared across every game.
+    final maxLen = math.max(
+      stats.longestCorrectSequence,
+      stats.maxLevelReached <= 0
+          ? 0
+          : SynapseConfig.roundLengths[
+              (stats.maxLevelReached - 1).clamp(
+                  0, SynapseConfig.roundLengths.length - 1)],
+    );
+    final input = SynapsePerformanceInput(
+      maxSequenceLength: maxLen,
+      correctRounds: stats.correctRounds,
+      totalRounds: stats.totalRounds,
+    );
+    final perf = GamePerformanceService.calculate(input);
+    _workoutScore = perf;
+
+    // Share the session with the BRAINX scoring engine (Memory pillar).
+    // recordSession is failure-tolerant by design and never throws, and it is
+    // fire-and-forget so a hiccup can never block the results screen.
     unawaited(
-      DailyProgressService.instance
-          .recordGameCompletion(
-            pillar: BrainPillar.memory,
-            scorePct: stats.accuracy,
-            gameType: GameType.synapse,
-          )
-          .catchError((Object _) => const DailyProgress()),
+      ProgressionService.instance.recordSession(
+        SessionRecord(
+          gameId: 'synapse',
+          mode: _workoutStep != null
+              ? SessionMode.workoutGame
+              : SessionMode.practice,
+          gameType: GameType.synapse,
+          primaryPillar: BrainPillar.memory,
+          performance: input,
+        ),
+      ),
     );
     try {
       ProviderScope.containerOf(context, listen: false)
@@ -328,7 +351,7 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
   void _exit() {
     GameSfxService.instance.play(GameSfx.tap);
     if (_workoutStep != null) {
-      Navigator.pop(context, _engine.stats.workoutScore);
+      Navigator.pop(context, _workoutScore);
     } else {
       Navigator.pop(context);
     }
@@ -445,7 +468,7 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
             onPressed: () {
               GameSfxService.instance.play(GameSfx.tap);
               if (_gameFinished && _workoutStep != null) {
-                Navigator.pop(context, _engine.stats.workoutScore);
+                Navigator.pop(context, _workoutScore);
               } else {
                 Navigator.pop(context);
               }

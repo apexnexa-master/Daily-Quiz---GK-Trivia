@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Launch splash screen: gradient matching the Flutter splash + centered logo. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/splash_background" />
+    <item android:drawable="@drawable/splash_background_gradient" />
+    <item
+        android:drawable="@drawable/splash_logo"
+        android:gravity="center"
+        android:width="170dp"
+        android:height="170dp" />
 </layer-list>

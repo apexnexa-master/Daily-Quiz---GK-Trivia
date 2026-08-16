@@ -94,4 +94,62 @@ class AnalyticsService {
       AppLogger.error('Failed to log Ad Watched', error: e, name: 'ANALYTICS');
     }
   }
+
+  /// Fired for every scored session so the scoring system can be audited
+  /// (spec §40): average performance, mode mix, challenge participation and
+  /// suspicious submissions can all be monitored from these events.
+  Future<void> logSessionScored({
+    required String gameId,
+    required String mode,
+    required int performanceScore,
+    required int challengeScore,
+    required int durationSeconds,
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'session_scored',
+        parameters: {
+          'game_id': gameId,
+          'mode': mode,
+          'performance_score': performanceScore,
+          'challenge_score': challengeScore,
+          'session_duration': durationSeconds,
+        },
+      );
+      AppLogger.info(
+        'Logged Session Scored: $gameId perf=$performanceScore '
+        'challenge=$challengeScore',
+        name: 'ANALYTICS',
+      );
+    } catch (e) {
+      AppLogger.error('Failed to log Session Scored', error: e, name: 'ANALYTICS');
+    }
+  }
+
+  /// Fired when a workout completes (spec §40 workout completion rate).
+  Future<void> logWorkoutCompleted({
+    required int overallScore,
+    required int completedCount,
+    required int plannedCount,
+    required int xpGranted,
+  }) async {
+    try {
+      await _analytics.logEvent(
+        name: 'workout_completed',
+        parameters: {
+          'overall_score': overallScore,
+          'completed_count': completedCount,
+          'planned_count': plannedCount,
+          'xp_granted': xpGranted,
+        },
+      );
+      AppLogger.info(
+        'Logged Workout Completed: score=$overallScore '
+        '($completedCount/$plannedCount)',
+        name: 'ANALYTICS',
+      );
+    } catch (e) {
+      AppLogger.error('Failed to log Workout Completed', error: e, name: 'ANALYTICS');
+    }
+  }
 }

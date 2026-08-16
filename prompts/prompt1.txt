@@ -1,1181 +1,1809 @@
-Build a polished, production-quality mobile brain-training game called:
+You are a senior mobile/backend architect and gamification systems designer.
 
-SYNAPSE RECALL
+I am building a brain-training and mini-game application.
 
-Tagline:
-"Remember. Rebuild. Repeat."
+The app currently contains these games:
 
-This game is part of my BRAINX brain-games app.
+1. GK Quiz
+2. Arrow Puzzle
+3. Stroop Rush
+4. Synapse Recall / Memory game
 
-The goal is to create a game that feels like it was designed by a professional mobile game/UI team—not a basic prototype.
+More games will be added in the future.
 
-The game should be visually premium, highly understandable, satisfying to play, replayable, and consistent with the existing BRAINX visual identity.
+The application has three major gameplay modes:
 
-============================================================
-1. CORE GAME CONCEPT
-============================================================
+1. Practice
+2. Daily Challenge
+3. Quick Brain Workout
 
-Synapse Recall is a visual working-memory game.
+I need you to redesign and implement the complete scoring, progression, Brain Score, XP, Daily Goal, Streak, and Leaderboard system.
 
-The player is shown a sequence/pattern of abstract visual objects for a short period.
+The most important requirement is FAIRNESS.
 
-The objects disappear.
-
-The player must reproduce the correct sequence.
-
-The game starts very simple and gradually introduces more difficult memory mechanics.
-
-IMPORTANT:
-
-Do NOT make the game consist only of colored balls.
-
-Instead use premium abstract geometric symbols/objects.
-
-Examples:
-
-◆
-▲
-●
-✦
-⬡
-◇
-☾
-✚
-⬢
-
-Each object can have:
-
-- shape
-- color
-- subtle depth
-- subtle glow
-- optional position
-
-The visual language should feel futuristic, clean and premium.
-
-Avoid:
-- emoji as final production assets
-- realistic objects
-- photographs
-- human faces
-- childish cartoon graphics
-- generic stock illustrations
-
-Use custom vector/flat-3D style geometric game assets.
-
-============================================================
-2. COGNITIVE SKILL
-============================================================
-
-Primary skill:
-
-MEMORY / WORKING MEMORY
-
-Secondary skills as difficulty increases:
-
-- visual memory
-- sequence memory
-- spatial memory
-- attention
-- pattern recognition
-
-Do not claim that the game measures IQ or scientifically diagnoses cognitive ability.
-
-Use language such as:
-
-"Train your memory"
-
-"Challenge your working memory"
-
-"Improve your recall"
-
-============================================================
-3. GAME EXPERIENCE
-============================================================
-
-The game should create this loop:
-
-START
-↓
-SHORT COUNTDOWN
-↓
-MEMORIZE
-↓
-SEQUENCE DISAPPEARS
-↓
-RECALL
-↓
-PLAYER REBUILDS SEQUENCE
-↓
-RESULT
-↓
-NEXT ROUND
-↓
-DIFFICULTY INCREASES
-↓
-SESSION COMPLETE
-↓
-RESULTS
-
-The player should understand what to do within seconds.
-
-Do not force the user through a long tutorial.
-
-============================================================
-4. GAME INTRO SCREEN
-============================================================
-
-Create a premium introduction screen.
-
-Display:
-
-SYNAPSE RECALL
-
-Remember.
-Rebuild.
-Repeat.
-
-A beautiful abstract brain/synapse-inspired geometric illustration.
-
-Then:
-
-"Remember the pattern.
-Rebuild it in the correct order."
-
-Primary button:
-
-START
-
-Optional small information:
-
-"~2–4 min"
-
-Do not overload this screen.
-
-============================================================
-5. VISUAL IDENTITY
-============================================================
-
-Match the BRAINX design system:
-
-Background:
-Deep navy / charcoal
-
-Primary accent:
-Neon lime
-
-Secondary accents:
-Cyan
-Purple
-Subtle pink where appropriate
-
-Style:
-Dark premium
-Modern
-Futuristic
-Minimal
-Glassmorphism-inspired
-Soft depth
-Subtle gradients
-Rounded surfaces
-
-Use glow carefully.
-
-DO NOT make everything neon.
-
-The game should feel premium rather than cyberpunk-heavy.
-
-============================================================
-6. MEMORY OBJECT DESIGN
-============================================================
-
-Do NOT use simple colored circles as the primary visual language.
-
-Create a collection of approximately 8–12 abstract geometric objects.
-
-Examples:
-
-Diamond
-Triangle
-Circle
-Star
-Hexagon
-Ring
-Cross
-Crescent
-Crystal
-Abstract node
-
-Each object should have a recognizable silhouette.
-
-Example:
-
-◆   ▲   ◉   ✦   ⬡   ◇   ☾   ⬢
-
-Use colors to differentiate objects but make sure the shape itself remains recognizable.
-
-The player should be able to distinguish:
-
-green diamond
-
-from:
-
-purple triangle
-
-from:
-
-cyan star
-
-without difficulty.
-
-The objects should have subtle 3D/vector depth.
-
-============================================================
-7. MEMORY BOARD
-============================================================
-
-Instead of always displaying objects in a boring horizontal row, use a beautiful central memory board.
-
-Example:
-
-              ROUND 04
-
-        ┌───────────────────┐
-        │                   │
-        │    ◆       ●      │
-        │                   │
-        │        ▲          │
-        │                   │
-        │   ✦           ◉   │
-        │                   │
-        └───────────────────┘
-
-              REMEMBER
-
-The board should have:
-
-- rounded corners
-- subtle glass surface
-- very subtle border
-- soft background glow
-- enough empty space
-- objects positioned clearly
-
-Do not make the board visually cluttered.
-
-============================================================
-8. DIFFICULTY PROGRESSION
-============================================================
-
-Start extremely easy.
-
-ROUND 1:
-
-Show 3 objects.
-
-Example:
-
-◆ → ▲ → ●
-
-Player recalls:
-
-◆ → ▲ → ●
-
-ROUND 2:
-
-4 objects.
-
-ROUND 3:
-
-5 objects.
-
-ROUND 4:
-
-6 objects.
-
-Continue progressively.
-
-However, difficulty should not rely only on sequence length.
-
-Gradually introduce:
-
-1. Longer sequences
-2. Shorter viewing time
-3. More visual distractors
-4. Similar shapes
-5. Different positions
-6. Spatial memory
-7. Combined shape + color memory
-8. More complex patterns
-
-Do NOT introduce all mechanics at once.
-
-The player should feel:
-
-"I can do one more."
-
-not:
-
-"This suddenly became impossible."
-
-============================================================
-9. DIFFICULTY LEVELS
-============================================================
-
-Create a scalable difficulty system.
-
-Conceptually:
-
-Level 1:
-3 items
-comfortable viewing time
-
-Level 2:
-4 items
-
-Level 3:
-5 items
-
-Level 4:
-6 items
-
-Level 5:
-7 items
-
-Level 6+:
-more difficult patterns
-
-The actual timings should be configurable constants/settings rather than scattered hardcoded values.
-
-Make the difficulty system easy to tune later.
-
-============================================================
-10. PHASE 1 — SEQUENCE MEMORY
-============================================================
-
-The first version should primarily test sequence memory.
-
-Example:
-
-MEMORIZE
-
-◆ → ▲ → ● → ✦
-
-After the timer:
-
-RECALL
-
-The player sees selectable tiles:
-
-┌────────┐ ┌────────┐ ┌────────┐
-│   ◆    │ │   ●    │ │   ✦    │
-└────────┘ └────────┘ └────────┘
-
-┌────────┐ ┌────────┐ ┌────────┐
-│   ▲    │ │   ◇    │ │   ⬡    │
-└────────┘ └────────┘ └────────┘
-
-The user taps:
-
-◆
-▲
-●
-✦
-
-The order matters.
-
-============================================================
-11. RECALL UI
-============================================================
-
-During recall, clearly show:
-
-RECALL
-
-"Rebuild the sequence"
-
-And progress:
-
-1 / 4
-
-After first selection:
-
-①
-
-After second:
-
-① ②
-
-After third:
-
-① ② ③
-
-After fourth:
-
-① ② ③ ④
-
-Selected tiles should visually communicate their position in the sequence.
-
-Example:
-
-┌────────┐
-│   ◆    │
-│    ①   │
-└────────┘
-
-This makes the interaction extremely clear.
-
-============================================================
-12. TOUCH INTERACTION
-============================================================
-
-Tiles must have comfortable touch targets.
-
-When tapped:
-
-- slight scale down
-- subtle glow
-- smooth return animation
-- sequence number appears
-- optional subtle haptic feedback
-
-Do not use tiny buttons.
-
-The entire tile should be tappable.
-
-============================================================
-13. MEMORY PHASE
-============================================================
-
-During MEMORIZE:
-
-Show the objects prominently.
-
-Use a countdown/progress indicator.
-
-Example:
-
-MEMORIZE
-
-◆ → ▲ → ● → ✦
-
-████████░░
-
-The viewing timer should be visible but subtle.
-
-Avoid making the timer stressful in early levels.
-
-============================================================
-14. TRANSITIONS
-============================================================
-
-Use polished transitions:
-
-START
-→ fade/scale
-
-MEMORIZE
-→ smooth object appearance
-
-MEMORIZE → RECALL
-→ objects fade/blur away
-
-RECALL
-→ tiles appear smoothly
-
-CORRECT
-→ soft success animation
-
-INCORRECT
-→ subtle shake
-
-NEXT ROUND
-→ smooth transition
-
-Do not use excessive particles or flashy effects.
-
-============================================================
-15. CORRECT ANSWER
-============================================================
-
-If the player recalls the sequence correctly:
-
-Display briefly:
-
-✓ PERFECT RECALL
-
-+120
-
-🔥 Streak 3
-
-Then continue automatically or show:
-
-NEXT ROUND →
-
-Keep the transition fast.
-
-The player should maintain momentum.
-
-============================================================
-16. INCORRECT ANSWER
-============================================================
-
-Do not make the user feel punished.
-
-Show:
-
-Not quite.
-
-You remembered:
-
-3 / 5
-
-Correct sequence:
-
-◆ → ▲ → ● → ✦ → ◉
-
-Then:
-
-NEXT ROUND →
-
-Use encouraging language.
-
-Avoid:
-
-"FAIL"
-
-"WRONG!"
-
-"GAME OVER!"
-
-unless the actual session is ending.
-
-============================================================
-17. STREAK SYSTEM
-============================================================
-
-Track consecutive successful rounds.
-
-Example:
-
-🔥 1
-🔥 2
-🔥 3
-🔥 4
-
-When a new streak is reached, use a subtle animation.
-
-Do not dominate the screen with the streak.
-
-============================================================
-18. SCORING
-============================================================
-
-Use a fair score system.
-
-Score should consider:
-
-- sequence length
-- correct recall
-- progression
-- accuracy
-
-Longer successful sequences should be worth more.
-
-Do not reward only speed.
-
-Do not create a score that can be exploited by repeatedly playing easy rounds.
-
-Example conceptual values:
-
-3 items → +100
-4 items → +130
-5 items → +170
-6 items → +220
-7 items → +280
-
-Add a small perfect-round bonus.
-
-Keep the exact scoring values configurable.
-
-Do not expose the formula to the user.
-
-============================================================
-19. PRIMARY PERFORMANCE METRICS
-============================================================
-
-For Synapse Recall, do NOT use "fastest time" as the primary personal-best metric.
-
-Use:
-
-Longest Correct Sequence
-
-Example:
-
-LONGEST SEQUENCE
-
-7 items
-
-Also track:
-
-Session Score
-Accuracy
-Best Streak
-Memory Level
-
-These metrics should be based on actual gameplay data.
-
-Never use fake values.
-
-============================================================
-20. RESULT SCREEN
-============================================================
-
-Create a polished result screen.
-
-Example:
-
-SYNAPSE RECALL
-
-SESSION COMPLETE
-
-🧠 MEMORY LEVEL
-6
-
-🎯 ACCURACY
-84%
-
-🔥 BEST STREAK
-5
-
-🧩 LONGEST SEQUENCE
-7 items
-
-⭐ SCORE
-1,240
-
-If appropriate:
-
-NEW PERSONAL BEST 🎉
-
-Then:
-
-PLAY AGAIN
-
-and:
-
-DONE
-
-PLAY AGAIN should be the primary CTA.
-
-DONE should be secondary.
-
-============================================================
-21. PERSONAL BEST
-============================================================
-
-Only show:
-
-NEW PERSONAL BEST
-
-if the current result actually beats the previous record.
-
-Track:
-
-- longest sequence
-- highest session score
-- best streak
-
-The primary personal-best indicator should be:
-
-Longest Correct Sequence
-
-Example:
-
-Previous:
-6 items
-
-Current:
-7 items
-
-→ NEW PERSONAL BEST 🎉
-
-============================================================
-22. SESSION LENGTH
-============================================================
-
-Keep a normal session around:
-
-2–4 minutes.
-
-The game should feel suitable for:
-
-- quick sessions
-- daily brain training
-- Quick Brain Workout integration
-
-Do not make a single session excessively long.
-
-============================================================
-23. REPLAYABILITY
-============================================================
-
-Sequences should be generated dynamically.
-
-Do not always use the same fixed sequence.
-
-Use controlled randomization.
-
-Important:
-
-Avoid accidental unfair sequences.
-
-For example, do not generate:
-
-◆ ◆ ◆ ◆
-
-unless that is intentionally part of a later difficulty mode.
-
-Make sequences feel varied.
-
-============================================================
-24. FUTURE GAME MODES
-============================================================
-
-Design the architecture so future modes can be added.
-
-Potential future modes:
-
-Sequence Recall
-Position Recall
-Color Recall
-Reverse Recall
-Pattern Recall
-Dual Recall
-
-DO NOT implement all of these now.
-
-Only implement:
-
-SEQUENCE RECALL
-
-But make the underlying game architecture extensible.
-
-============================================================
-25. FUTURE SPATIAL MODE
-============================================================
-
-The architecture should allow a future mode where objects appear at different locations.
-
-Example:
-
-┌─────────────────────┐
-│ ◆                   │
-│                     │
-│          ▲          │
-│                     │
-│                ●    │
-└─────────────────────┘
-
-Then the user must remember the positions.
-
-This should be possible later without rewriting the entire game.
-
-============================================================
-26. GAME HOME/TITLE ART
-============================================================
-
-Create a beautiful visual identity for Synapse Recall.
-
-The game tile should show:
-
-- abstract connected geometric nodes
-- subtle brain/synapse concept
-- dark background
-- lime/cyan/purple accents
-- premium vector/3D illustration
-- no human face
-- no text embedded in the artwork
-- no buttons embedded in the artwork
-
-The artwork should match the other BRAINX game tiles.
-
-============================================================
-27. NO TEXT INSIDE GAME ART
-============================================================
-
-IMPORTANT:
-
-Game artwork/assets must NOT contain:
-
-- buttons
-- UI labels
-- "PLAY"
-- "START"
-- "SCORE"
-- random typography
-- fake interface elements
-
-All UI text must be rendered by the application.
-
-Artwork should remain reusable.
-
-============================================================
-28. UI TYPOGRAPHY
-============================================================
-
-Use the existing BRAINX typography/theme.
-
-Hierarchy:
-
-Game title
-↓
-Phase
-↓
-Instruction
-↓
-Game content
-↓
-Supporting information
-
-Keep text short.
-
-Never create long paragraphs during gameplay.
-
-============================================================
-29. ACCESSIBILITY
-============================================================
-
-Do not rely solely on color.
-
-Every memory object must have a distinctive shape/symbol.
+Different games have completely different scoring systems and difficulty levels, so raw game scores MUST NOT be directly compared with each other.
 
 For example:
 
-green diamond
-purple triangle
-cyan star
+- GK Quiz may produce 9/10
+- Arrow Puzzle may produce a time such as 3.2 seconds
+- Stroop Rush may produce 740 points
+- Synapse Recall may produce a sequence length of 7
 
-not:
+These raw values cannot be used directly to calculate a global leaderboard.
 
-green circle
-red circle
-blue circle
+The architecture must therefore normalize game performance before using it for cross-game metrics.
 
-Use shape + color together.
+Do not create a system where users can easily exploit easy games by repeatedly playing them.
 
-Maintain readable contrast.
+The system should reward:
 
-Use comfortable touch targets.
+- actual performance
+- consistency
+- improvement
+- meaningful daily participation
+- skill development
 
-============================================================
-30. HAPTICS
-============================================================
+It should NOT simply reward:
 
-If the existing app already supports haptics:
+- number of games played
+- number of clicks
+- repeatedly playing the easiest game
+- spending the most time in the app
 
-Use subtle haptic feedback for:
+==================================================
+CORE DESIGN
+==================================================
 
-- selecting an object
-- correct sequence
-- incorrect sequence
-- level progression
+Create four separate concepts:
 
-Do not overuse haptics.
+A. GAME SCORE
+B. BRAIN SCORE
+C. XP
+D. COMPETITIVE / LEADERBOARD SCORE
 
-============================================================
-31. SOUND
-============================================================
+Also maintain:
 
-If an existing audio system exists, optionally support:
+E. DAILY GOAL
+F. STREAK
+G. COGNITIVE SKILL RATINGS
 
-- selection sound
-- correct sound
-- incorrect sound
-- level-up sound
+These concepts must remain logically separate.
 
-But the game must be completely playable without sound.
+Do not mix them together.
 
-Do not introduce unnecessary dependencies solely for audio.
+==================================================
+1. GAME SCORE
+==================================================
 
-============================================================
-32. BRAINX INTEGRATION
-============================================================
-
-Before implementing:
-
-Inspect the existing BRAINX project.
-
-Find:
-
-- navigation architecture
-- game architecture
-- state management
-- theme
-- existing score system
-- XP system
-- Brain Score
-- Daily Goal
-- streak
-- game result handling
-- game tile components
-
-Reuse existing architecture.
-
-Do not create duplicate systems.
-
-If BRAINX already awards XP or Brain Score for games, integrate Synapse Recall into the existing system.
-
-Do not create a separate competing XP or Brain Score system.
-
-============================================================
-33. HOME SCREEN INTEGRATION
-============================================================
-
-Add Synapse Recall to the existing game collection.
-
-It should appear alongside:
-
-GK Quiz
-Arrow Puzzle
-Stroop Rush
-
-Use the same game-tile design system.
-
-The Synapse Recall artwork should visually belong to BRAINX.
-
-============================================================
-34. QUICK BRAIN WORKOUT COMPATIBILITY
-============================================================
-
-Make Synapse Recall available to the existing Quick Brain Workout system.
-
-The workout should eventually be able to select:
-
-GK Quiz
-Arrow Puzzle
-Stroop Rush
-Synapse Recall
-
-Do not break the existing workout.
-
-If the workout system currently assumes exactly three games, refactor it so games can be represented as a configurable list.
-
-Do not hardcode a three-game limitation.
-
-============================================================
-35. ERROR HANDLING
-============================================================
-
-Handle unexpected states gracefully.
+Every individual game session has a game-specific raw score.
 
 Examples:
 
-- game restarted
-- app goes to background
-- screen rotation if applicable
-- navigation interruption
-- missing saved score
-- corrupted/incomplete game state
+GK Quiz:
+- correct answers
+- total questions
+- accuracy
+- response time
+- question difficulty
 
-Do not crash.
+Arrow Puzzle:
+- puzzle difficulty
+- completion time
+- number of moves
+- mistakes
+- hints used
+- completion status
 
-If the game state cannot be restored, safely restart the current round.
-
-============================================================
-36. STATE MANAGEMENT
-============================================================
-
-Keep the game state clearly separated into:
-
-- current phase
-- current round
-- sequence
-- player selections
-- score
-- streak
+Stroop Rush:
+- correct responses
+- incorrect responses
+- reaction time
 - difficulty
-- result
-- session statistics
+- streak
 
-Do not mix UI state and persistent statistics unnecessarily.
+Synapse Recall:
+- sequence length
+- accuracy
+- mistakes
+- difficulty
+- response time
 
-============================================================
-37. RESPONSIVE DESIGN
-============================================================
+The raw score should be stored because it is useful for showing the result to the user.
 
-The game must work well on:
+However:
 
-- small Android phones
-- normal phones
-- large phones
+NEVER use raw game score directly for cross-game comparisons.
 
-Do not use fixed absolute positioning for the entire game.
+==================================================
+2. NORMALIZED PERFORMANCE SCORE
+==================================================
 
-Use responsive layouts.
+Every game must convert its raw result into:
 
-The memory board should resize naturally.
+Performance Score = 0–100
 
-Tiles should remain large enough for touch interaction.
+This score represents how well the user performed in that specific session.
 
-============================================================
-38. PERFORMANCE
-============================================================
+Each game can have its own formula.
 
-The game must feel instant.
+The formula should consider the characteristics that actually matter for that game.
 
-Avoid unnecessary rebuilds.
+Do not force the same raw formula on every game.
 
-Avoid heavy image assets when vector/drawn assets are sufficient.
+--------------------------------------------------
+GK QUIZ
+--------------------------------------------------
 
-Animations should remain smooth.
+Possible inputs:
 
-Do not introduce unnecessary packages.
+accuracy
+question difficulty
+response speed
 
-============================================================
-39. FIRST VERSION SCOPE
-============================================================
+Example conceptual formula:
 
-IMPLEMENT NOW:
+accuracyWeight = 0.60
+difficultyWeight = 0.25
+speedWeight = 0.15
 
-✓ Introduction
-✓ Countdown
-✓ Sequence Recall
-✓ 3–7+ item progressive difficulty
-✓ Abstract geometric visual objects
-✓ Memorize phase
-✓ Recall phase
-✓ Ordered selection
-✓ Correct/incorrect feedback
-✓ Score
-✓ Streak
-✓ Session result
-✓ Longest sequence
-✓ Personal best
-✓ Replay
-✓ Exit
-✓ BRAINX theme
-✓ Smooth animations
-✓ Haptic support if already available
-✓ Existing XP/Brain Score integration if available
-✓ Existing navigation integration
-
-DO NOT IMPLEMENT NOW:
-
-✗ Multiplayer
-✗ Leaderboards
-✗ Position Recall
-✗ Reverse Recall
-✗ Multiple game modes
-✗ Complicated energy/lives system
-✗ Ads-specific logic
-✗ New backend
-✗ Fake statistics
-✗ IQ measurement
-✗ Scientific claims
-✗ Unnecessary tutorials
-✗ Excessive particle effects
-
-Build the architecture so these can be added later.
-
-============================================================
-40. QUALITY CHECK
-============================================================
-
-Before finishing, test the complete user journey:
-
-Open Synapse Recall
-↓
-Introduction
-↓
-Start
-↓
-3-2-1
-↓
-Memorize
-↓
-Recall
-↓
-Correct
-↓
-Next round
-↓
-Increasing difficulty
-↓
-Mistake
-↓
-Feedback
-↓
-Continue
-↓
-Session complete
-↓
-Results
-↓
-Play Again
-↓
-Done
-↓
-Return to previous screen
-
-Verify that:
-
-- no UI overlaps
-- no text is clipped
-- buttons are tappable
-- animations don't block interaction
-- timers reset correctly
-- sequences reset correctly
-- scores reset correctly when appropriate
-- personal best is persisted correctly
-- exiting does not corrupt state
-- replay starts a fresh session
-- difficulty progresses correctly
-
-============================================================
-41. FINAL UX GOAL
-============================================================
-
-The final experience should feel like:
-
-"One more round."
-
-The user should immediately understand:
-
-LOOK
-↓
-REMEMBER
-↓
-REBUILD
-
-The game should be:
-
-Simple to learn
-Hard to master
-Visually beautiful
-Fast to play
-Fair
-Satisfying
-Replayable
-
-It should feel like a premium brain game inside BRAINX—not a demo or a generic memory-card game.
-
-The most important principle:
-
-KEEP THE RULE SIMPLE, BUT MAKE THE GAME FEEL PREMIUM.
-
-Remember:
-
-The player is not just remembering colored balls.
-
-They are remembering:
-
-SHAPES
+Performance Score =
+accuracyComponent * 0.60
 +
-COLORS
+difficultyComponent * 0.25
 +
-SEQUENCES
-+
-EVENTUALLY POSITIONS
+speedComponent * 0.15
 
-Start simple, then progressively challenge the player's working memory.
+The final value must be clamped between 0 and 100.
+
+Do not allow the score to exceed 100.
+
+--------------------------------------------------
+ARROW PUZZLE
+--------------------------------------------------
+
+Arrow Puzzle MUST NOT be scored purely based on time.
+
+This is extremely important.
+
+An easy puzzle solved in 2 seconds should not automatically beat a hard puzzle solved in 8 seconds.
+
+Every Arrow Puzzle should have a difficulty rating.
+
+Example:
+
+difficulty = 1–10
+
+or
+
+difficultyScore = 0–100
+
+The performance calculation should consider:
+
+- puzzle difficulty
+- completion
+- completion time relative to expected time for that difficulty
+- mistakes
+- moves
+- hints
+
+For example:
+
+Performance =
+difficulty-adjusted efficiency
++
+completion quality
++
+accuracy
+-
+mistake penalties
+-
+hint penalties
+
+Normalize the final result to 0–100.
+
+The expected completion time should depend on puzzle difficulty.
+
+For example:
+
+Easy puzzle:
+expected time = 3 seconds
+
+Hard puzzle:
+expected time = 10 seconds
+
+A user solving the hard puzzle in 8 seconds should be able to score higher than a user solving the easy puzzle in 2 seconds.
+
+Do not use a simple:
+
+100 - time
+
+formula.
+
+--------------------------------------------------
+STROOP RUSH
+--------------------------------------------------
+
+Use:
+
+- accuracy
+- reaction time
+- difficulty
+- incorrect answers
+- streak/consistency
+
+Example conceptual weighting:
+
+accuracy = 50%
+reaction speed = 30%
+difficulty = 20%
+
+Normalize the result to 0–100.
+
+Avoid making raw reaction time the only factor.
+
+--------------------------------------------------
+SYNAPSE RECALL
+--------------------------------------------------
+
+Use:
+
+- maximum sequence length
+- accuracy
+- difficulty
+- mistakes
+- response time
+
+Example:
+
+sequence performance = 50%
+accuracy = 30%
+difficulty = 20%
+
+Normalize to 0–100.
+
+The exact weights can be adjusted later.
+
+==================================================
+3. COGNITIVE SKILLS
+==================================================
+
+Do not calculate the Brain Score directly from every individual game.
+
+Instead, map games to cognitive skills.
+
+Initially use:
+
+1. Knowledge
+2. Logic
+3. Memory
+4. Speed
+5. Focus
+
+Games can contribute to one or more skills.
+
+Example mapping:
+
+GK Quiz:
+Knowledge = primary
+Focus = secondary
+
+Arrow Puzzle:
+Logic = primary
+Speed = secondary
+
+Stroop Rush:
+Focus = primary
+Speed = primary
+
+Synapse Recall:
+Memory = primary
+Focus = secondary
+
+The system must support multiple skills per game.
+
+Do not hard-code the architecture so that only four games are possible.
+
+New games should be able to define which skills they affect.
+
+==================================================
+4. SKILL RATING
+==================================================
+
+Each user should have a rating for each cognitive skill.
+
+Example:
+
+Knowledge = 75
+Logic = 82
+Memory = 67
+Speed = 71
+Focus = 78
+
+Each skill rating must be between 0 and 100.
+
+Do NOT simply replace the skill rating with the latest game performance.
+
+Instead use a gradual update.
+
+Recommended concept:
+
+New Skill Rating =
+Old Skill Rating * 0.85
++
+New Performance * 0.15
+
+Example:
+
+Old Logic = 70
+New Arrow Puzzle Performance = 90
+
+New Logic =
+70 * 0.85
++
+90 * 0.15
+
+= 73
+
+This prevents huge jumps.
+
+However, for a brand-new user with very little data, allow faster adjustment.
+
+For example:
+
+First few sessions can use a higher learning rate.
+
+As the number of sessions increases, gradually reduce the learning rate.
+
+==================================================
+5. MULTI-SKILL GAME CONTRIBUTION
+==================================================
+
+If a game affects multiple skills, divide its contribution using weights.
+
+Example:
+
+Arrow Puzzle:
+
+Logic = 70%
+Speed = 30%
+
+If Performance Score = 90:
+
+Logic contribution =
+90 * 0.70
+
+Speed contribution =
+90 * 0.30
+
+Then update each skill rating separately.
+
+The system must ensure that the sum of game skill weights equals 1.0.
+
+Reject or correct invalid configurations.
+
+==================================================
+6. BRAIN SCORE
+==================================================
+
+Brain Score is the user's overall cognitive performance indicator.
+
+It is NOT:
+
+- IQ
+- total XP
+- total games played
+- leaderboard score
+
+It represents the user's current demonstrated performance across cognitive skills.
+
+Initially:
+
+Knowledge = 20%
+Logic = 20%
+Memory = 20%
+Speed = 20%
+Focus = 20%
+
+Brain Score =
+weighted average of skill ratings.
+
+Example:
+
+Knowledge = 74
+Logic = 82
+Memory = 67
+Speed = 71
+Focus = 78
+
+Brain Score =
+(74 + 82 + 67 + 71 + 78) / 5
+
+= 74.4
+
+Display:
+
+Brain Score: 74
+
+Round appropriately.
+
+==================================================
+7. BRAIN SCORE MUST BE SLOW MOVING
+==================================================
+
+Do not allow one game to drastically change Brain Score.
+
+Example:
+
+Brain Score = 74
+
+One bad game should NOT cause:
+
+74 → 50
+
+One excellent game should NOT cause:
+
+74 → 95
+
+Skill ratings should change gradually.
+
+The overall Brain Score should therefore also change gradually.
+
+Show trends such as:
+
++4 this week
+
+rather than dramatic changes after every game.
+
+==================================================
+8. INITIAL BRAIN SCORE
+==================================================
+
+A new user should not immediately receive a highly authoritative Brain Score after one game.
+
+Use one of the following states:
+
+BUILDING PROFILE
+
+or
+
+PROVISIONAL SCORE
+
+Example:
+
+Brain Score
+52
+Building your profile...
+
+After enough sessions:
+
+Brain Score
+68
+Based on 18 sessions
+
+The system should track:
+
+total sessions
+unique games played
+skill coverage
+
+A Brain Score becomes "established" only after enough data exists across multiple skills.
+
+Do not require an excessive number of sessions.
+
+The threshold should be configurable.
+
+Example:
+
+minimumSessions = 5
+
+minimumSkillsRepresented = 3
+
+These values should be configurable from one place.
+
+==================================================
+9. BRAIN SCORE TREND
+==================================================
+
+Track:
+
+- current Brain Score
+- previous Brain Score
+- weekly starting score
+- weekly change
+- historical snapshots
+
+Example:
+
+Brain Score:
+72
+
+This week:
++4
+
+Previous week:
+68
+
+Store historical data so the app can display a graph later.
+
+Do not recalculate historical scores incorrectly whenever formulas change.
+
+If scoring formulas change in the future, consider storing a scoring version.
+
+Example:
+
+scoringVersion = 1
+
+==================================================
+10. XP
+==================================================
+
+XP is completely separate from Brain Score.
+
+XP measures engagement/progression.
+
+XP NEVER decreases.
+
+Examples:
+
+Complete Practice Game:
++20 XP
+
+Complete Daily Challenge:
++50 XP
+
+Complete Quick Workout:
++60 XP
+
+Complete Daily Goal:
++30 XP
+
+Perfect Performance:
++10 XP
+
+Streak milestone:
+bonus XP
+
+The exact values must be configurable.
+
+Do not hard-code XP values throughout the application.
+
+Create a central configuration.
+
+Example:
+
+XP_CONFIG
+
+practiceCompletion = 20
+dailyChallengeCompletion = 50
+workoutCompletion = 60
+dailyGoalCompletion = 30
+perfectPerformanceBonus = 10
+
+==================================================
+11. XP ANTI-FARMING
+==================================================
+
+Do not allow unlimited XP farming by repeatedly playing the easiest game.
+
+Introduce a daily XP cap or diminishing rewards.
+
+Example:
+
+First 5 meaningful practice sessions:
+100% XP
+
+Next sessions:
+reduced XP
+
+Or:
+
+dailyGameplayXpCap = 300
+
+Daily Challenge and Workout should have their own meaningful rewards.
+
+Do not punish legitimate users unnecessarily.
+
+The goal is to prevent abuse, not prevent playing.
+
+==================================================
+12. PRACTICE MODE
+==================================================
+
+Practice exists for:
+
+- learning
+- improving skills
+- experimenting
+- replaying games
+
+Practice should produce:
+
+YES:
+- Game Score
+- Performance Score
+- Brain Score contribution
+- XP
+
+NO:
+- direct leaderboard points
+
+This distinction is extremely important.
+
+A user must not be able to play an easy puzzle 100 times and dominate the leaderboard.
+
+==================================================
+13. DAILY CHALLENGE
+==================================================
+
+Daily Challenge is the competitive mode.
+
+Every user must receive the same challenge for the same date.
+
+Example:
+
+2026-08-16
+
+Daily Challenge ID:
+DC-20260816-01
+
+All users receive the same:
+
+- game
+- challenge configuration
+- difficulty
+- question set/puzzle
+- scoring rules
+
+Do not allow users to receive different random challenges and then compare them on the same leaderboard.
+
+If the backend content is temporarily unavailable, use a deterministic fallback mechanism so every user still gets the same challenge for the same date.
+
+==================================================
+14. DAILY CHALLENGE SCORE
+==================================================
+
+Daily Challenge must produce:
+
+Normalized Challenge Score = 0–1000
+
+This is separate from the game's raw score.
+
+Example:
+
+GK Quiz:
+Raw = 9/10
+Performance = 88/100
+Challenge Score = 880/1000
+
+Arrow Puzzle:
+Raw time = 8.4 sec
+Performance = 92/100
+Challenge Score = 920/1000
+
+Synapse Recall:
+Performance = 89/100
+Challenge Score = 890/1000
+
+This allows different games to be compared.
+
+Do NOT compare raw scores across games.
+
+==================================================
+15. DAILY CHALLENGE AND BRAIN SCORE
+==================================================
+
+Daily Challenge contributes to Brain Score.
+
+The normalized performance also updates the relevant cognitive skills.
+
+Example:
+
+Daily Arrow Puzzle:
+
+Performance = 92
+
+Logic contribution:
+primary
+
+Speed contribution:
+secondary
+
+Update the corresponding skill ratings.
+
+==================================================
+16. DAILY CHALLENGE AND LEADERBOARD
+==================================================
+
+Daily Challenge DOES contribute to leaderboard ranking.
+
+Practice does not.
+
+Workout does not directly contribute to leaderboard ranking.
+
+The Daily Challenge is the controlled competitive environment.
+
+==================================================
+17. LEADERBOARD SYSTEM
+==================================================
+
+Do NOT use Brain Score as the leaderboard score.
+
+Create a separate competitive metric.
+
+For the initial version, call it:
+
+BRAIN Rating
+
+or
+
+Challenge Score
+
+I recommend:
+
+BRAIN Rating
+
+However, do not implement a complex ELO system yet because there is no direct player-vs-player competition.
+
+Initially use normalized Daily Challenge scores.
+
+==================================================
+18. DAILY LEADERBOARD
+==================================================
+
+Daily leaderboard:
+
+Sort users by today's Daily Challenge Score descending.
+
+Example:
+
+#1 Player A — 982
+#2 Player B — 971
+#3 Player C — 965
+...
+#384 You — 742
+
+Only one valid submission per user should count.
+
+If multiple submissions are technically allowed, use the best valid score OR explicitly define a limited number of attempts.
+
+Do not allow unlimited attempts to determine the leaderboard.
+
+For fairness, I recommend:
+
+One official Daily Challenge attempt.
+
+Optional practice/retry should not affect the official leaderboard.
+
+==================================================
+19. WEEKLY LEADERBOARD
+==================================================
+
+Do not simply accumulate unlimited game scores.
+
+Instead use a limited number of Daily Challenges.
+
+Recommended:
+
+Weekly Score =
+best 5 Daily Challenge scores during the week.
+
+Example:
+
+Monday = 850
+Tuesday = 920
+Wednesday = 780
+Thursday = 900
+Friday = 870
+
+Weekly Score =
+4320
+
+Only the best 5 count.
+
+This prevents users from winning merely because they played every hour.
+
+It rewards performance.
+
+==================================================
+20. WEEKLY LEADERBOARD RESET
+==================================================
+
+Create a weekly leaderboard.
+
+Example:
+
+weekId = 2026-W34
+
+At the end of the week:
+
+- finalize rankings
+- store the user's best rank
+- award weekly rewards if desired
+- create the next week's leaderboard
+
+Do not delete historical data.
+
+Store finalized results separately.
+
+==================================================
+21. ALL-TIME LEADERBOARD
+==================================================
+
+Do NOT simply create:
+
+total points since account creation
+
+because older accounts will have an unfair advantage.
+
+Instead consider:
+
+Highest Weekly Rank
+Best Weekly Score
+Best Daily Challenge Score
+
+These are better long-term achievement metrics.
+
+An all-time cumulative leaderboard can be added later if needed.
+
+==================================================
+22. WORKOUT MODE
+==================================================
+
+Quick Brain Workout is for engagement and balanced training.
+
+Example:
+
+3 games:
+
+GK Quiz
+Synapse Recall
+Stroop Rush
+
+The workout should intentionally cover multiple cognitive skills.
+
+Example:
+
+Knowledge
+Memory
+Speed
+
+At completion show:
+
+WORKOUT COMPLETE
+
+Knowledge: 82
+Memory: 74
+Speed: 88
+
+Workout Score: 81
+
+Rewards:
+
++60 XP
++1 Daily Goal
+Brain Score updated
+Skill ratings updated
+Streak progress updated
+
+Workout should NOT directly add leaderboard points.
+
+==================================================
+23. WORKOUT SCORE
+==================================================
+
+Workout Score is a normalized 0–100 score.
+
+It can be calculated from the component game Performance Scores.
+
+Example:
+
+Game 1 = 82
+Game 2 = 74
+Game 3 = 88
+
+Workout Score =
+weighted average
+
+Do not let one game dominate unless intentionally configured.
+
+If the workout is designed to cover different skills, each game can have equal weight.
+
+Example:
+
+82 + 74 + 88
+= 244 / 3
+= 81.3
+
+Display:
+
+Workout Score: 81
+
+==================================================
+24. DAILY GOAL
+==================================================
+
+Daily Goal should represent meaningful activities, not raw points.
+
+Example:
+
+Goal:
+
+Complete 3 activities today
+
+Progress:
+
+1/3
+2/3
+3/3
+
+Possible activities:
+
+- Daily Challenge
+- Practice
+- Quick Workout
+
+Avoid:
+
+"Earn 700 points"
+
+because users don't understand what they should actually do.
+
+The goal should guide behavior.
+
+Example:
+
+TODAY'S GOAL
+
+2/3 complete
+
+✓ Daily Challenge
+✓ Practice Game
+○ Quick Workout
+
+==================================================
+25. STREAK
+==================================================
+
+Streak measures consistency.
+
+A user should maintain a streak by completing at least one meaningful activity per day.
+
+Do NOT require a high score.
+
+Example:
+
+User plays one game and completes it:
+
+Streak continues.
+
+User performs badly:
+
+Streak still continues.
+
+The purpose is habit formation, not performance punishment.
+
+Store:
+
+currentStreak
+longestStreak
+lastActivityDate
+
+Use date-based logic.
+
+Ensure timezone handling is correct.
+
+Use the user's configured/local timezone where appropriate.
+
+Do not calculate streak based on UTC alone if that creates incorrect day boundaries for users.
+
+==================================================
+26. USER-FACING PROFILE / STATS
+==================================================
+
+Create a detailed statistics page.
+
+Top section:
+
+BRAIN SCORE
+72
+
++4 this week
+
+Then:
+
+COGNITIVE SKILLS
+
+Knowledge       75
+Logic           84
+Memory          78
+Speed           63
+Focus           69
+
+Use progress bars or radial visualization.
+
+Then:
+
+ACTIVITY
+
+Games Played
+32
+
+Workout Sessions
+8
+
+Daily Challenges
+6
+
+Training Time
+74 min
+
+Then:
+
+CONSISTENCY
+
+Current Streak
+4 days
+
+Longest Streak
+12 days
+
+Then:
+
+COMPETITION
+
+Weekly Rank
+#384
+
+Best Rank
+#217
+
+Best Daily Score
+943
+
+This creates meaningful long-term progression.
+
+==================================================
+27. HOME SCREEN METRICS
+==================================================
+
+Keep the Home screen simple.
+
+Top metrics:
+
+🔥 Streak
+🎯 Daily Goal
+🧠 Brain Score
+
+Do NOT put XP and leaderboard rating in the main top metric row.
+
+They belong in profile/progression/leaderboard areas.
+
+Home should answer:
+
+"What should I do now?"
+
+Not overwhelm the user with statistics.
+
+==================================================
+28. LEADERBOARD UX
+==================================================
+
+Do not show a huge list.
+
+Show:
+
+TOP PLAYERS
+
+#1
+#2
+#3
+
+Then:
+
+...
+
+USER'S POSITION
+
+#384
+You
+
+Show a few users above and below the current user.
+
+Example:
+
+#381 User
+#382 User
+#383 User
+#384 YOU
+#385 User
+#386 User
+#387 User
+
+Also show:
+
+"12 points to #350"
+
+This creates motivation.
+
+==================================================
+29. ANTI-CHEAT / VALIDATION
+==================================================
+
+Leaderboard data must never be blindly trusted from the client.
+
+Do not allow Flutter/mobile client to simply write:
+
+score = 999999
+
+to Firestore.
+
+Validate competitive submissions.
+
+Validate:
+
+- userId
+- challengeId
+- date
+- challenge configuration
+- maximum possible score
+- number of attempts
+- completion status
+- suspicious completion time
+- invalid negative values
+- impossible performance
+- duplicate submissions
+
+For competitive scores, prefer trusted backend/server-side validation.
+
+If Firebase is used, use secure Firestore rules and/or Cloud Functions/backend services.
+
+The client should not be able to directly overwrite:
+
+leaderboardRank
+weeklyScore
+brainRating
+officialChallengeScore
+
+These should be calculated or updated by trusted server-side logic.
+
+==================================================
+30. DATA MODEL
+==================================================
+
+Design the data model so that more games can be added without rewriting the scoring architecture.
+
+Suggested structures:
+
+USERS
+
+userId
+brainScore
+xp
+currentStreak
+longestStreak
+lastActivityDate
+brainScoreStatus
+
+SKILL_RATINGS
+
+userId
+knowledge
+logic
+memory
+speed
+focus
+updatedAt
+
+GAME_SESSIONS
+
+sessionId
+userId
+gameId
+mode
+difficulty
+rawScore
+performanceScore
+accuracy
+duration
+mistakes
+hintsUsed
+xpEarned
+brainScoreContribution
+scoringVersion
+createdAt
+
+DAILY_CHALLENGES
+
+challengeId
+date
+gameId
+difficulty
+configuration
+scoringVersion
+createdAt
+
+CHALLENGE_RESULTS
+
+resultId
+userId
+challengeId
+rawScore
+performanceScore
+normalizedChallengeScore
+submittedAt
+validated
+
+WEEKLY_LEADERBOARDS
+
+weekId
+userId
+weeklyScore
+rank
+bestDailyScore
+dailyChallengesCount
+
+WORKOUT_SESSIONS
+
+workoutId
+userId
+gameResults
+workoutScore
+skillsAffected
+xpEarned
+createdAt
+
+BRAIN_SCORE_HISTORY
+
+userId
+date
+brainScore
+knowledge
+logic
+memory
+speed
+focus
+scoringVersion
+
+==================================================
+31. SCORING CONFIGURATION
+==================================================
+
+Do not scatter scoring constants throughout the code.
+
+Create a centralized configuration.
+
+Example:
+
+SCORING_CONFIG
+
+Practice:
+xp = 20
+
+Daily Challenge:
+xp = 50
+
+Workout:
+xp = 60
+
+Daily Goal:
+xp = 30
+
+Skill weights:
+
+knowledge = 0.20
+logic = 0.20
+memory = 0.20
+speed = 0.20
+focus = 0.20
+
+Skill update:
+
+normalLearningRate = 0.15
+newUserLearningRate = 0.30
+
+Leaderboard:
+
+dailyScoreMax = 1000
+weeklyBestChallenges = 5
+
+XP:
+
+dailyXpCap = 300
+
+All values must be easy to modify later.
+
+==================================================
+32. SCORING VERSIONING
+==================================================
+
+Every score calculation must have a scoringVersion.
+
+Example:
+
+scoringVersion = 1
+
+If formulas are changed later:
+
+scoringVersion = 2
+
+Old scores must remain historically consistent.
+
+Do not silently recalculate old leaderboard scores using a new formula.
+
+==================================================
+33. IDEMPOTENCY
+==================================================
+
+Critical backend requirement:
+
+The same Daily Challenge result must not be processed twice.
+
+If a request is accidentally sent twice:
+
+DO NOT:
+
+double award XP
+double update Brain Score
+double update leaderboard
+double update streak
+
+Use a unique result/session ID or idempotency key.
+
+The processing should be idempotent.
+
+==================================================
+34. TRANSACTIONAL UPDATES
+==================================================
+
+When completing a Daily Challenge, the system may need to update:
+
+- challenge result
+- Brain Score
+- skill ratings
+- XP
+- daily goal
+- streak
+- weekly leaderboard
+
+These updates should be handled safely.
+
+Avoid partial updates where:
+
+XP is awarded but leaderboard isn't updated.
+
+Use transactions/batched writes/server-side processing where appropriate for the chosen backend.
+
+==================================================
+35. GAME CONFIGURATION
+==================================================
+
+Every game should have metadata.
+
+Example:
+
+GAME_CONFIG:
+
+GK_QUIZ
+
+primarySkill = KNOWLEDGE
+secondarySkill = FOCUS
+modeSupport = PRACTICE, DAILY, WORKOUT
+
+ARROW_PUZZLE
+
+primarySkill = LOGIC
+secondarySkill = SPEED
+modeSupport = PRACTICE, DAILY, WORKOUT
+
+STROOP_RUSH
+
+primarySkill = FOCUS
+secondarySkill = SPEED
+modeSupport = PRACTICE, DAILY, WORKOUT
+
+SYNAPSE_RECALL
+
+primarySkill = MEMORY
+secondarySkill = FOCUS
+modeSupport = PRACTICE, DAILY, WORKOUT
+
+This architecture must allow:
+
+NEW_GAME
+
+without changing the Brain Score engine.
+
+==================================================
+36. FUTURE GAME SUPPORT
+==================================================
+
+Design the system so I can later add:
+
+Math games
+Reaction games
+Pattern recognition
+Word games
+Spatial reasoning
+Memory games
+Attention games
+
+Each game only needs to provide:
+
+raw result
+performance calculation
+skill mapping
+
+The central progression engine should handle:
+
+Brain Score
+XP
+skill updates
+history
+analytics
+
+==================================================
+37. IMPORTANT FAIRNESS RULES
+==================================================
+
+NEVER:
+
+- compare raw scores between different games
+- allow practice scores directly onto leaderboard
+- allow unlimited leaderboard attempts
+- allow easy puzzles to dominate harder puzzles
+- make Brain Score jump drastically
+- make XP equal Brain Score
+- make streak depend on performance
+- make leaderboard depend purely on number of games played
+- trust client-submitted competitive scores
+- let users directly modify leaderboard values
+
+ALWAYS:
+
+- normalize game performance
+- use difficulty
+- separate performance from engagement
+- separate personal score from competition
+- validate competitive scores
+- use deterministic Daily Challenges
+- use server-side/trusted leaderboard updates
+- version scoring algorithms
+- maintain historical records
+
+==================================================
+38. FINAL USER EXPERIENCE
+==================================================
+
+The user should understand the system intuitively.
+
+Home:
+
+🔥 3 DAY STREAK
+🎯 DAILY GOAL 2/3
+🧠 BRAIN SCORE 72
+
+Daily Challenge:
+
+"Compete today"
+
+Quick Workout:
+
+"Train 3 skills"
+
+Practice:
+
+"Improve your skills"
+
+Profile:
+
+"See your Brain Score and progress"
+
+Leaderboard:
+
+"See how you rank"
+
+The user should NOT need to understand the technical formulas.
+
+The formulas are for the backend.
+
+==================================================
+39. RESULT SCREEN
+==================================================
+
+After every game show:
+
+GAME COMPLETE
+
+Your Score
+87
+
+Performance
+Excellent
+
+Then:
+
+Skill Impact
+
+Logic +2
+Speed +1
+
+Rewards
+
++20 XP
+
+If Daily Challenge:
+
+Challenge Score
+870 / 1000
+
+Leaderboard
+#384
+
+If Practice:
+
+"Practice complete"
+
++20 XP
+
+Brain Score updated
+
+If Workout:
+
+Workout Score
+81
+
+Skills trained:
+Memory
+Focus
+Speed
+
++60 XP
+
+Daily Goal:
+3/3
+
+==================================================
+40. ANALYTICS
+==================================================
+
+Track enough information to understand whether the scoring system is healthy.
+
+Track:
+
+game completion rate
+average performance score
+average difficulty
+average session duration
+daily challenge participation
+daily challenge completion rate
+average leaderboard score
+XP earned
+Brain Score distribution
+skill rating distribution
+streak retention
+daily goal completion
+workout completion
+practice-to-challenge conversion
+
+Also monitor:
+
+- users repeatedly playing one easy game
+- abnormal scores
+- abnormal completion times
+- suspicious leaderboard submissions
+- users gaining XP unusually quickly
+
+Use analytics to tune the system.
+
+==================================================
+41. TEST CASES
+==================================================
+
+Create unit tests for:
+
+1. GK normalization
+2. Arrow Puzzle difficulty normalization
+3. Stroop normalization
+4. Synapse normalization
+5. Skill rating update
+6. Brain Score calculation
+7. XP calculation
+8. XP cap
+9. Daily Goal
+10. Streak
+11. Daily Challenge score
+12. Weekly leaderboard calculation
+13. duplicate challenge submission
+14. invalid score
+15. impossible score
+16. new user Brain Score
+17. scoring version
+18. multi-skill game contribution
+
+Test edge cases.
+
+Examples:
+
+score = 0
+score = maximum
+negative score
+extremely high score
+missing duration
+missing difficulty
+duplicate request
+same challenge submitted twice
+user crosses midnight
+user changes timezone
+new user
+user with only one game
+user with no skill data
+
+==================================================
+42. IMPLEMENTATION APPROACH
+==================================================
+
+Before writing code:
+
+1. Inspect the existing project.
+2. Identify:
+   - current game models
+   - existing score calculation
+   - Firebase/Firestore structure
+   - existing user profile
+   - existing daily challenge
+   - existing workout
+   - existing leaderboard if any
+   - existing streak
+   - existing daily goal
+3. Do not unnecessarily rewrite working game logic.
+4. Reuse existing models where reasonable.
+5. Introduce a centralized scoring/progression layer.
+
+First create:
+
+GamePerformanceService
+
+SkillRatingService
+
+BrainScoreService
+
+XPService
+
+DailyChallengeService
+
+LeaderboardService
+
+StreakService
+
+DailyGoalService
+
+WorkoutService
+
+Do not duplicate scoring logic across UI screens.
+
+==================================================
+43. IMPORTANT ARCHITECTURAL PRINCIPLE
+==================================================
+
+The game should produce a raw result.
+
+The scoring engine should transform it.
+
+Conceptually:
+
+GAME
+↓
+RAW RESULT
+↓
+GAME-SPECIFIC PERFORMANCE CALCULATOR
+↓
+PERFORMANCE SCORE 0–100
+↓
+SKILL RATING UPDATE
+↓
+BRAIN SCORE UPDATE
+↓
+XP / GOAL / STREAK
+↓
+IF DAILY CHALLENGE:
+NORMALIZED CHALLENGE SCORE 0–1000
+↓
+LEADERBOARD
+
+Keep these responsibilities separate.
+
+==================================================
+44. DO NOT OVERENGINEER
+==================================================
+
+For the first production version:
+
+DO NOT implement:
+
+- ELO
+- complex AI scoring
+- machine learning
+- player matchmaking
+- complicated rating systems
+- unnecessary microservices
+
+Start with:
+
+- normalized performance
+- skill ratings
+- Brain Score
+- XP
+- Daily Goal
+- Streak
+- Daily Challenge
+- weekly leaderboard
+- anti-cheat validation
+- scoring versioning
+
+This is enough.
+
+==================================================
+45. DELIVERABLES
+==================================================
+
+After analyzing the existing codebase, provide:
+
+1. Current scoring architecture
+2. Problems found
+3. Proposed architecture
+4. Data model changes
+5. Scoring formulas
+6. API/service changes
+7. Firebase/Firestore changes if applicable
+8. Security rule changes
+9. Migration strategy for existing users
+10. Unit tests
+11. Integration tests
+12. UI changes
+13. Example user flows
+14. Example calculations
+15. Edge cases
+16. Performance considerations
+
+Do NOT blindly start rewriting the entire project.
+
+First explain what needs to change and why.
+
+Then implement incrementally.
+
+==================================================
+46. MOST IMPORTANT FINAL REQUIREMENT
+==================================================
+
+The final system must create a clear separation:
+
+BRAIN SCORE
+=
+How well the user is performing cognitively.
+
+XP
+=
+How much the user has engaged with the app.
+
+DAILY GOAL
+=
+Whether the user completed today's intended activities.
+
+STREAK
+=
+Whether the user is consistently returning.
+
+LEADERBOARD
+=
+How well the user performed in controlled competitive Daily Challenges.
+
+GAME SCORE
+=
+How well the user performed in one particular game.
+
+These must never be treated as the same thing.
+
+The system should be fair, scalable, resistant to farming, easy to explain to users, and easy to extend when new brain games are added.
+
+Implement the architecture cleanly and production-ready.

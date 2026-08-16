@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
+import '../providers/scoring_providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/quiz_scheduler_service.dart';
 import '../../core/utils/offline_manager.dart';
@@ -11,7 +12,6 @@ import '../../core/services/daily_progress_service.dart';
 import '../widgets/game_card.dart';
 import '../widgets/workout_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
 import '../utils/daily_challenge_auth.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -58,6 +58,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final lang = ref.watch(languageProvider);
     final quizAsync = ref.watch(todayQuizProvider);
     final dailyProgressAsync = ref.watch(dailyProgressProvider);
+    final brainStatsAsync = ref.watch(brainStatsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final isBn = lang == 'bn';
@@ -65,13 +66,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // Retrieve username and photo from currentUserProvider
     final currentUser = ref.watch(currentUserProvider).value;
-    final username = currentUser?.displayName ?? _savedUsername;
 
     // Daily progress metrics (streak, daily goal, brain score)
     final dailyProgress = dailyProgressAsync.value ?? const DailyProgress();
     final streak = dailyProgress.currentStreak;
     // Metrics are hidden for guests and logged-out users.
     final isGuest = currentUser?.isAnonymous ?? true;
+    // Gamification stats drive the XP matrix (level + total XP).
+    final gamificationStats = ref.watch(gamificationNotifierProvider).value;
+    final xp = gamificationStats?.xp ?? 0;
+    final level = gamificationStats?.level ?? 1;
 
     return Scaffold(
       body: Stack(
@@ -109,7 +113,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               children: [
                 // Custom Header Bar matching BrainX branding
-                _buildTopAppBar(context),
+                _buildTopAppBar(context, streak, isBn, isHi),
                 const NetworkStatusBanner(),
 
                 Expanded(
@@ -136,46 +140,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               horizontal: 16, vertical: 12),
                           sliver: SliverList(
                             delegate: SliverChildListDelegate([
-                              // Small Greeting Row
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    isBn
-                                        ? 'নমস্কার, $username'
-                                        : isHi
-                                            ? 'नमस्ते, $username'
-                                            : 'Hello, $username',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w800,
-                                      color: isDark
-                                          ? Colors.white70
-                                          : AppColors.textSecondaryLight,
-                                    ),
-                                  ),
-                                  Text(
-                                    DateFormat('EEEE, MMM d')
-                                        .format(DateTime.now()),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: isDark
-                                          ? AppColors.textTertiaryDark
-                                          : AppColors.textTertiaryLight,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
                               // Top Metrics Bento Bar (guests see a login prompt instead)
                               if (isGuest)
                                 _buildGuestLoginCard(
                                     context, isBn, isHi, isDark)
-                              else
+                              else ...[
+                                _buildBrainSkillsHeader(
+                                    context, isBn, isHi, isDark),
+                                const SizedBox(height: 10),
                                 _buildMetricsBentoBox(
-                                    streak, dailyProgress, isBn, isHi, isDark),
+                                  dailyProgress,
+                                  brainStatsAsync.value,
+                                  xp,
+                                  level,
+                                  isBn,
+                                  isHi,
+                                  isDark,
+                                ),
+                              ],
                               const SizedBox(height: 20),
 
                               // Main Bento Layout
@@ -209,77 +191,102 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildTopAppBar(BuildContext context) {
+  Widget _buildTopAppBar(BuildContext context, int streak, bool isBn, bool isHi) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentUser = ref.watch(currentUserProvider).value;
     final photoUrl = (currentUser?.photoUrl?.isNotEmpty == true)
         ? currentUser!.photoUrl!
         : (_savedPhotoUrl.isNotEmpty ? _savedPhotoUrl : null);
+    final username = currentUser?.displayName ?? _savedUsername;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Brand name (BRAINX)
-          Text(
-            'BRAINX',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.5,
-              color: AppColors.primary,
-              shadows: isDark
-                  ? const [Shadow(color: AppColors.neonLime, blurRadius: 14)]
-                  : null,
-            ),
-          ),
-          // Profile glass button (right side) — shows the user's photo when
-          // available, otherwise the default person icon.
+          // Streak pill — fire symbol + number only; tap to learn how it grows.
           GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/profile'),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                child: Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: (isDark ? Colors.white : Colors.black)
-                        .withValues(alpha: isDark ? 0.06 : 0.04),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.neonCyan.withValues(alpha: 0.25)
-                          : Colors.black.withValues(alpha: 0.06),
-                      width: 1,
+            onTap: () => _showStreakDialog(context, streak, isBn, isHi, isDark),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: isDark ? 0.08 : 0.04),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFFF97316).withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.08),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.local_fire_department_rounded,
+                    size: 16,
+                    color: Color(0xFFF97316),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$streak',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
                     ),
                   ),
-                  child: photoUrl != null
-                      ? ClipOval(
-                          child: SizedBox(
-                            width: 30,
-                            height: 30,
-                            child: Image.network(
+                ],
+              ),
+            ),
+          ),
+          // Avatar + name pill (same component style as the streak pill).
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/profile'),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(6, 4, 12, 4),
+              decoration: BoxDecoration(
+                color: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: isDark ? 0.08 : 0.04),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.neonCyan.withValues(alpha: 0.25)
+                      : Colors.black.withValues(alpha: 0.08),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ClipOval(
+                    child: SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: photoUrl != null
+                          ? Image.network(
                               photoUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Icon(
-                                Icons.person_rounded,
-                                color: isDark
-                                    ? AppColors.primary
-                                    : AppColors.primaryDark,
-                                size: 26,
-                              ),
-                            ),
-                          ),
-                        )
-                      : Icon(
-                          Icons.person_rounded,
-                          color: isDark
-                              ? AppColors.primary
-                              : AppColors.primaryDark,
-                          size: 26,
-                        ),
-                ),
+                              errorBuilder: (_, __, ___) =>
+                                  _avatarPlaceholder(isDark),
+                            )
+                          : _avatarPlaceholder(isDark),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      username,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -288,9 +295,72 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildMetricsBentoBox(int streak, DailyProgress dailyProgress,
-      bool isBn, bool isHi, bool isDark) {
-    final brainScore = dailyProgress.brainScore;
+  Widget _avatarPlaceholder(bool isDark) {
+    return Container(
+      color: (isDark ? AppColors.primary : AppColors.primaryDark)
+          .withValues(alpha: 0.15),
+      child: Icon(
+        Icons.person_rounded,
+        color: isDark ? AppColors.primary : AppColors.primaryDark,
+        size: 20,
+      ),
+    );
+  }
+
+  Widget _buildBrainSkillsHeader(
+      BuildContext context, bool isBn, bool isHi, bool isDark) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child:
+                  const Icon(Icons.insights_rounded, size: 16, color: AppColors.primary),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              isBn ? 'মস্তিষ্ক ও দক্ষতা' : isHi ? 'मस्तिष्क और कौशल' : 'Brain Skills',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+          ],
+        ),
+        TextButton.icon(
+          onPressed: () => Navigator.pushNamed(context, '/stats'),
+          icon: Icon(
+            Icons.view_agenda_rounded,
+            size: 16,
+            color: isDark ? AppColors.primary : AppColors.primaryDark,
+          ),
+          label: Text(
+            isBn ? 'সব দেখুন' : isHi ? 'सभी देखें' : 'View All',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: isDark ? AppColors.primary : AppColors.primaryDark,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricsBentoBox(DailyProgress dailyProgress,
+      BrainStatsBundle? brainStats, int xp, int level, bool isBn, bool isHi, bool isDark) {
+    // Engine Brain Score with a safe legacy fallback (before the first scored
+    // session the engine has no data yet).
+    final engine = brainStats?.brain.score ?? 0;
+    final brainScore =
+        engine > 0 ? engine : (dailyProgress.brainScore.clamp(0, 100));
     final gamesCompleted =
         dailyProgress.dailyGamesCompleted.clamp(0, dailyProgress.dailyGoal);
     final dailyGoal = dailyProgress.dailyGoal;
@@ -330,18 +400,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildMetricItem(
-                icon: Icons.local_fire_department_rounded,
-                iconColor: const Color(0xFFF97316),
-                label: isBn
-                    ? 'দিনের ধারা'
-                    : isHi
-                        ? 'दिन की स्ट्रीक'
-                        : 'Day Streak',
-                value: '$streak',
-                isDark: isDark,
-              ),
-              const SizedBox(width: 8),
               // Daily Goal with mini progress bar
               Expanded(
                 child: GestureDetector(
@@ -432,7 +490,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 onTap: () => _showBrainScoreDialog(
-                    context, dailyProgress, isBn, isHi, isDark),
+                    context, dailyProgress, brainStats, isBn, isHi, isDark),
+              ),
+              const SizedBox(width: 8),
+              _buildMetricItem(
+                icon: Icons.bolt_rounded,
+                iconColor: const Color(0xFFF59E0B),
+                label: isBn ? 'অভিজ্ঞতা' : isHi ? 'एक्सपी' : 'XP',
+                value: '$xp',
+                isDark: isDark,
+                onTap: () =>
+                    _showXpDialog(context, xp, level, isBn, isHi, isDark),
               ),
             ],
           ),
@@ -520,6 +588,113 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'लॉगिन'
                       : 'Login',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showStreakDialog(
+      BuildContext context, int streak, bool isBn, bool isHi, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+        title: Row(
+          children: [
+            const Icon(
+              Icons.local_fire_department_rounded,
+              color: Color(0xFFF97316),
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              isBn ? 'দিনের ধারা' : isHi ? 'दिन की स्ट्रीक' : 'Day Streak',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isBn ? 'বর্তমান ধারা' : isHi ? 'वर्तमान स्ट्रीक' : 'Current Streak',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white54 : Colors.grey.shade600,
+                  ),
+                ),
+                Text(
+                  '$streak',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFFF97316),
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Text(
+              isBn
+                  ? 'কীভাবে ধারা বাড়ে?'
+                  : isHi
+                      ? 'स्ट्रीक कैसे बढ़ती है?'
+                      : 'How streaks increase',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isBn
+                  ? 'প্রতিদিন অন্তত ১টি গেম খেললে ধারা বাড়ে। টানা প্রতিদিন খেললে ধারা +১ করে বাড়ে।'
+                  : isHi
+                      ? 'हर दिन कम से कम 1 गेम खेलने पर स्ट्रीक बढ़ती है। लगातार खेलने से स्ट्रीक +1 बढ़ती है।'
+                      : 'Play at least 1 game every day to grow your streak. Each consecutive day adds +1.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.4,
+                color: isDark ? Colors.white70 : Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isBn
+                  ? 'একদিন না খেললে ধারা ০-তে রিসেট হয়ে যায়।'
+                  : isHi
+                      ? 'एक दिन न खेलने पर स्ट्रीक 0 पर रीसेट हो जाती है।'
+                      : 'Missing a day resets your streak back to 0.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.4,
+                color: isDark ? Colors.white70 : Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              isBn
+                  ? 'বন্ধ করুন'
+                  : isHi
+                      ? 'बंद करें'
+                      : 'Close',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -624,14 +799,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showBrainScoreDialog(BuildContext context, DailyProgress progress,
-      bool isBn, bool isHi, bool isDark) {
+      BrainStatsBundle? brainStats, bool isBn, bool isHi, bool isDark) {
     const pillars = [
       (BrainPillar.knowledge, '🧠', 'Knowledge', 'জ্ঞান', 'ज्ञान'),
       (BrainPillar.logic, '🧩', 'Logic', 'যুক্তি', 'तर्क'),
       (BrainPillar.speed, '⚡', 'Speed', 'গতি', 'गति'),
       (BrainPillar.memory, '🧠', 'Memory', 'স্মৃতি', 'स्मृति'),
-      (BrainPillar.reaction, '🎯', 'Reaction', 'প্রতিক্রিয়া', 'প্রतिक्रिया'),
+      (BrainPillar.reaction, '🎯', 'Reaction', 'প্রতিক্রিয়া', 'प्रतिक्रिया'),
     ];
+
+    // Engine data wins once it exists; the legacy pillar history is only a
+    // fallback for brand-new users.
+    final engine = brainStats?.brain;
+    final ratings = engine?.ratings;
+    final score = (engine?.score ?? 0) > 0
+        ? engine!.score
+        : progress.brainScore;
 
     showDialog(
       context: context,
@@ -661,7 +844,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _AnimatedCountUp(
-              value: progress.brainScore,
+              value: score,
               style: TextStyle(
                 fontSize: 40,
                 fontWeight: FontWeight.w900,
@@ -672,10 +855,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 4),
             Text(
               isBn
-                  ? 'আপনার সাম্প্রতিক পারফরম্যান্সের গড় (প্রতি স্তম্ভে সর্বশেষ ১০টি গেম)'
+                  ? 'সর্বশেষ পারফরম্যান্স থেকে ক্রমবর্ধমান স্কোর (প্রতি স্তম্ভে একটি সেশনের ইতিহাস)'
                   : isHi
-                      ? 'आपके हालिया प्रदर्शन का औसत (प्रत्येक स्तंभ के अंतिम 10 गेम)'
-                      : 'Average of your recent performance (last 10 games per pillar)',
+                      ? 'हालिया प्रदर्शन से क्रमिक स्कोर (प्रति स्तंभ सत्र इतिहास)'
+                      : 'Progressive score from your recent performance (session history per pillar)',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 11,
@@ -685,8 +868,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 16),
             ...pillars.map((p) {
               final (key, emoji, en, bn, hi) = p;
-              final score = progress.pillarScore(key);
-              final hasData = (progress.pillarScores[key]?.isNotEmpty ?? false);
+              final hasData = ratings?.hasData(key) ??
+                  (progress.pillarScores[key]?.isNotEmpty ?? false);
+              final score = ratings != null && ratings.hasData(key)
+                  ? ratings.rating(key).round()
+                  : progress.pillarScore(key);
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
@@ -717,7 +903,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ? Colors.white.withValues(alpha: 0.08)
                               : Colors.black.withValues(alpha: 0.05),
                           valueColor:
-                              AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              const AlwaysStoppedAnimation<Color>(AppColors.primary),
                           minHeight: 6,
                         ),
                       ),
@@ -745,6 +931,172 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               );
             }),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              isBn
+                  ? 'বন্ধ করুন'
+                  : isHi
+                      ? 'बंद करें'
+                      : 'Close',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showXpDialog(BuildContext context, int xp, int level, bool isBn, bool isHi,
+      bool isDark) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: isDark ? AppColors.cardDark : Colors.white,
+        title: Row(
+          children: [
+            const Icon(Icons.bolt_rounded, color: Color(0xFFF59E0B), size: 22),
+            const SizedBox(width: 8),
+            Text(
+              isBn ? 'অভিজ্ঞতা (XP)' : isHi ? 'एक्सपी (XP)' : 'XP',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isBn ? 'মোট XP' : isHi ? 'कुल XP' : 'Total XP',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white54 : Colors.grey.shade600,
+                  ),
+                ),
+                Text(
+                  '$xp XP',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFFF59E0B),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isBn ? 'স্তর' : isHi ? 'स्तर' : 'Level',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white54 : Colors.grey.shade600,
+                  ),
+                ),
+                Text(
+                  '$level',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Text(
+              isBn ? 'XP কী?' : isHi ? 'XP क्या है?' : 'What is XP?',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isBn
+                  ? 'XP হলো ব্যস্ততা পয়েন্ট — আপনি গেম খেলে যা পান।'
+                  : isHi
+                      ? 'XP अभ्यास अंक हैं जो गेम खेलने पर मिलते हैं।'
+                      : 'XP are engagement points you earn simply by playing.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.4,
+                color: isDark ? Colors.white70 : Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              isBn ? 'কীভাবে পান?' : isHi ? 'कैसे कमाएँ?' : 'How to earn?',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isBn
+                  ? 'প্র্যাকটিস +২০, ডেইলি চ্যালেঞ্জ +৫০, ওয়ার্কআউট +৬০, ব্যাটল +২০ (প্রতিদিন সর্বোচ্চ ৩০০)।'
+                  : isHi
+                      ? 'प्रैक्टिस +20, डेली चैलेंज +50, वर्कआउट +60, बैटल +20 (रोज़ अधिकतम 300)।'
+                      : 'Practice +20, Daily Challenge +50, Workout +60, Battle +20 (max 300/day).',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.4,
+                color: isDark ? Colors.white70 : Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              isBn ? 'কী কাজে লাগে?' : isHi ? 'इसका उपयोग?' : 'What is it useful for?',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isBn
+                  ? 'স্তর বাড়ায়; স্তর ১০/২৫/৫০-এ অর্জন আনলক হয়, যা কয়েন ও XP দেয়।'
+                  : isHi
+                      ? 'स्तर बढ़ाता है; स्तर 10/25/50 पर उपलब्धियाँ अनलॉक होती हैं, जो सिक्के व XP देती हैं।'
+                      : "Raises your level; Lv 10/25/50 unlock achievements that reward coins + XP.",
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.4,
+                color: isDark ? Colors.white70 : Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              isBn
+                  ? 'লিডারবোর্ড র‍্যাংকিং বা মস্তিষ্ক স্কোরে XP অন্তর্ভুক্ত হয় না।'
+                  : isHi
+                      ? 'XP लीडरबोर्ड रैंकिंग या मस्तिष्क स्कोर में शामिल नहीं होता।'
+                      : 'XP is never part of leaderboard ranking or your Brain Score.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : Colors.grey.shade700,
+              ),
+            ),
           ],
         ),
         actions: [

@@ -18,6 +18,7 @@ import 'core/services/daily_progress_service.dart';
 import 'core/services/bookmark_service.dart';
 import 'core/services/quiz_service.dart';
 import 'core/services/quiz/practice_quiz_service.dart';
+import 'core/scoring/progression_service.dart';
 import 'core/utils/offline_manager.dart';
 import 'presentation/providers/app_providers.dart';
 import 'routes/app_router.dart';
@@ -50,6 +51,7 @@ void main() async {
     CloudSyncService.instance.init(),
     BookmarkService().init(),
     DailyProgressService.instance.init(),
+    ProgressionService.instance.init(),
     LocalQuizData.init(),
     PracticeQuizService.instance.init(),
   ]);

@@ -333,6 +333,96 @@ async function updateUserStats(uid: string, score: number): Promise<void> {
 }
 
 // ══════════════════════════════════════════════════════════════
+// 6. SUBMIT CHALLENGE SCORE (server-verified, spec §33)
+//    The ONLY writer to the leaderboard collection — client rules forbid
+//    direct writes. Validates a normalized 0-1000 Daily Challenge score for
+//    TODAY's IST date, enforces one official attempt per challenge per user,
+//    and writes/merges the daily entry atomically. Retries are marked
+//    non-official and never inflate the score.
+// ══════════════════════════════════════════════════════════════
+const CHALLENGE_ID_PATTERN = /^DC-\d{8}-[a-z_]+$/;
+
+export const submitChallengeScore = functions
+  .region('asia-south1')
+  .https
+  .onCall(async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Must be logged in');
+    }
+
+    const score = data?.score;
+    const challengeId = data?.challengeId as string | undefined;
+    const timeTaken = data?.timeTaken as number | undefined;
+
+    if (typeof score !== 'number' || !Number.isInteger(score) ||
+        score < 0 || score > 1000) {
+      throw new functions.https.HttpsError(
+        'invalid-argument', 'score must be an integer in 0..1000');
+    }
+    if (typeof challengeId !== 'string' || !CHALLENGE_ID_PATTERN.test(challengeId)) {
+      throw new functions.https.HttpsError(
+        'invalid-argument', 'challengeId must be a valid daily challenge id');
+    }
+    const t = (typeof timeTaken === 'number' && timeTaken >= 0) ? Math.floor(timeTaken) : 0;
+
+    const today = getISTDate();
+    if (!challengeId.startsWith(`DC-${today}-`)) {
+      throw new functions.https.HttpsError(
+        'invalid-argument', 'challenge is not valid for today');
+    }
+
+    const uid = context.auth.uid;
+    const entryId = `${uid}_${today}`;
+    const entryRef = db.collection('leaderboard').doc(entryId);
+
+    try {
+      const result = await db.runTransaction(async (tx) => {
+        const doc = await tx.get(entryRef);
+        const existing = doc.data() || {};
+        const prevChallenges = Array.isArray(existing.completed_challenges)
+          ? existing.completed_challenges as string[]
+          : [];
+
+        if (prevChallenges.includes(challengeId)) {
+          return { official: false, score, alreadyCompleted: true };
+        }
+
+        const prevScore = typeof existing.score === 'number' ? existing.score : 0;
+        const prevTime = typeof existing.time_taken === 'number' ? existing.time_taken : 0;
+
+        const weekId = getWeekId(today);
+        tx.set(entryRef, {
+          uid,
+          display_name: existing.display_name ||
+            (await getDisplayName(uid)),
+          photo_url: existing.photo_url || null,
+          score: prevScore + score,
+          time_taken: prevTime + t,
+          quiz_date: today,
+          week_id: weekId,
+          exam_mode: 'GENERAL',
+          rank: 99,
+          verified: true,
+          completed_challenges: [...prevChallenges, challengeId],
+          submitted_at: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+
+        return { official: true, score, alreadyCompleted: false };
+      });
+
+      return result;
+    } catch (err) {
+      functions.logger.error('submitChallengeScore failed', err);
+      throw new functions.https.HttpsError('internal', 'Submission failed');
+    }
+  });
+
+async function getDisplayName(uid: string): Promise<string> {
+  const snap = await db.collection('users').doc(uid).get();
+  return snap.data()?.display_name || 'Guest';
+}
+
+// ══════════════════════════════════════════════════════════════
 // 5. CHALLENGE GENERATOR
 //    Creates a challenge doc + returns an App Links deep link.
 //    Uses Android App Links (NOT deprecated Firebase Dynamic Links).

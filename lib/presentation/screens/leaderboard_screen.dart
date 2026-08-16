@@ -7,6 +7,7 @@ import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/services/local_stats_service.dart';
+import '../../core/scoring/leaderboard_service.dart';
 import '../providers/app_providers.dart';
 import '../widgets/shimmer_loading.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -38,19 +39,33 @@ class LeaderboardScreen extends ConsumerWidget {
                   // Filter and aggregate entries based on the selected tab
                   List<LeaderboardEntryLocal> filteredEntries = [];
                   final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-                  final now = DateTime.now();
 
                   if (selectedTab == 0) {
                     filteredEntries = entries.where((e) => e.date == todayStr).toList();
                   } else if (selectedTab == 1) {
-                    final weeklyRaw = entries.where((e) {
-                      final parsedDate = DateTime.tryParse(e.date);
-                      if (parsedDate == null) return false;
-                      return now.difference(parsedDate).inDays < 7;
-                    }).toList();
-                    filteredEntries = _aggregateEntries(weeklyRaw);
+                    // Weekly board = best 5 daily scores per player (§19), not
+                    // a sum of every play. The engine handles the window.
+                    filteredEntries = LeaderboardService
+                        .aggregateWeekly(entries)
+                        .map((a) => LeaderboardEntryLocal(
+                              playerName: a.playerName,
+                              score: a.score,
+                              timeTaken: a.timeTaken,
+                              date: todayStr,
+                            ))
+                        .toList();
                   } else {
-                    filteredEntries = _aggregateEntries(entries);
+                    // All-time board uses the same best-5 rule to avoid
+                    // lifetime accumulation (§21).
+                    filteredEntries = LeaderboardService
+                        .aggregateAllTime(entries)
+                        .map((a) => LeaderboardEntryLocal(
+                              playerName: a.playerName,
+                              score: a.score,
+                              timeTaken: a.timeTaken,
+                              date: todayStr,
+                            ))
+                        .toList();
                   }
 
                   if (filteredEntries.isEmpty) {
@@ -78,6 +93,7 @@ class LeaderboardScreen extends ConsumerWidget {
 
   Widget _buildHeader(
       BuildContext context, WidgetRef ref, String lang, bool isDark, bool isBn, bool isHi) {
+    final selectedTab = ref.watch(leaderboardTabProvider);
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 8, 20, 16),
       decoration: BoxDecoration(
@@ -151,13 +167,46 @@ class LeaderboardScreen extends ConsumerWidget {
               children: [
                 _buildTab(ref, 0, isBn ? 'আজ' : isHi ? 'आज' : 'Today'),
                 _buildTab(ref, 1, isBn ? 'এই সপ্তাহ' : isHi ? 'इस सप्ताह' : 'This Week'),
-                _buildTab(ref, 2, isBn ? 'সর্বকালের' : isHi ? 'ऑल টাইম' : 'All Time'),
+                _buildTab(ref, 2, isBn ? 'সর্বকালের' : isHi ? 'ऑल टाइम' : 'All Time'),
               ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _getBoardSubtitle(selectedTab, isBn, isHi),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Colors.white70,
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _getBoardSubtitle(int tab, bool isBn, bool isHi) {
+    switch (tab) {
+      case 0:
+        return isBn
+            ? 'শুধুমাত্র আজকের অফিসিয়াল ডেইলি চ্যালেঞ্জ পয়েন্ট দেখানো হয়েছে'
+            : isHi
+                ? 'केवल आज के आधिकारिक डेली चैलेंज पॉइंट दिखाए गए हैं'
+                : "Only today's official Daily Challenge points are shown";
+      case 1:
+        return isBn
+            ? 'সাপ্তাহিক = সেরা ৫টি ডেইলি চ্যালেঞ্জ স্কোর'
+            : isHi
+                ? 'साप्ताहिक = शीर्ष 5 डेली चैलेंज स्कोर'
+                : 'Weekly = best 5 Daily Challenge scores';
+      default:
+        return isBn
+            ? 'সর্বকালের = সেরা ৫টি ডেইলি চ্যালেঞ্জ স্কোর'
+            : isHi
+                ? 'ऑल टाइम = शीर्ष 5 डेली चैलेंज स्कोर'
+                : 'All-time = best 5 Daily Challenge scores';
+    }
   }
 
   Widget _buildTab(WidgetRef ref, int index, String text) {
@@ -596,38 +645,6 @@ class LeaderboardScreen extends ConsumerWidget {
     return AppColors.error;
   }
 
-  List<LeaderboardEntryLocal> _aggregateEntries(List<LeaderboardEntryLocal> rawEntries) {
-    final Map<String, List<LeaderboardEntryLocal>> grouped = {};
-    for (final entry in rawEntries) {
-      grouped.putIfAbsent(entry.playerName, () => []).add(entry);
-    }
-
-    final List<LeaderboardEntryLocal> aggregated = [];
-    grouped.forEach((playerName, playerEntries) {
-      int totalScore = 0;
-      int totalTime = 0;
-      for (final entry in playerEntries) {
-        totalScore += entry.score;
-        totalTime += entry.timeTaken;
-      }
-      aggregated.add(LeaderboardEntryLocal(
-        playerName: playerName,
-        score: totalScore,
-        timeTaken: totalTime,
-        date: playerEntries.first.date,
-      ));
-    });
-
-    // Sort by total score descending, then by total time taken ascending
-    aggregated.sort((a, b) {
-      final scoreCompare = b.score.compareTo(a.score);
-      if (scoreCompare != 0) return scoreCompare;
-      return a.timeTaken.compareTo(b.timeTaken);
-    });
-
-    return aggregated;
-  }
-
   void _showLeaderboardRulesDialog(BuildContext context, bool isDark, bool isBn, bool isHi) {
     showDialog(
       context: context,
@@ -668,7 +685,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                "Only today's challenge games (GK Live Challenge and Arrow Puzzle 3D Daily Challenge) count towards the leaderboard rankings. Practice modes or campaign levels do not award leaderboard points.",
+                "Only official Daily Challenge submissions (GK Live Challenge and Arrow Puzzle 3D Daily Challenge) award leaderboard points. Practice modes and campaign levels never count. Each challenge grants one official attempt per day — retries can improve your personal best but never award extra points.",
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,
@@ -676,7 +693,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                '2. CUMULATIVE POINT ACCUMULATION:',
+                '2. WEEKLY BEST 5:',
                 style: GoogleFonts.montserrat(
                   fontWeight: FontWeight.w900,
                   fontSize: 11,
@@ -686,7 +703,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                "Points from each completed today's challenge are added together. Higher cumulative points decide weekly and all-time leaderboard standings.",
+                "Your top 5 Daily Challenge scores of the week are added together for the weekly board (grinding easy games won't help). The all-time board uses the same best-5 rule over your history, so older accounts don't automatically win. Every row shows only the points that actually count — never practice or XP.",
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,
@@ -694,7 +711,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                '3. SPEED & ACCURACY SCORING:',
+                '3. HOW POINTS WORK:',
                 style: GoogleFonts.montserrat(
                   fontWeight: FontWeight.w900,
                   fontSize: 11,
@@ -704,9 +721,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '• Time is critical: Solving/answering in less time gives you significant speed bonuses.\n'
-                '• For GK Live: Score is based on correct answers + time bonus (remaining seconds).\n'
-                '• For Arrow Puzzle 3D: Points = Base Score (100) - Moves Penalty + Speed Bonus (up to 50 points based on completion time).',
+                'Each official challenge is scored as performance 0–100 (accuracy, speed, difficulty, efficiency) and then scaled ×10 into 0–1000 leaderboard points. The points shown on the board are exactly these scaled challenge points.',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,
@@ -714,7 +729,47 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                '4. TIE-BREAKER RULE:',
+                '4. SCORING MATRIX (per game):',
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  color: Colors.purple,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '• GK Quiz & Battle: Accuracy 60% + Difficulty 25% + Speed 15% (30s per question budget).\n'
+                '• Arrow Puzzle 3D: Difficulty 40% + Time 30% + Moves 20% + Quality 10%.\n'
+                '• Stroop Test: Accuracy 50% + Reaction 30% + Difficulty 20%.\n'
+                '• Synapse Recall: Sequence 50% + Accuracy 30% + Difficulty 20%.\n'
+                '• Math Speed: Accuracy 50% + Speed 30% + Difficulty 20% (6s per problem budget).',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                '5. XP IS NOT INCLUDED:',
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  color: Colors.blueAccent,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'XP (practice 20, daily challenge 50, workout 60, battle 20, capped at 300 per day) is earned separately and NEVER affects leaderboard ranking or the points shown on this board.',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: isDark ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                '6. RANKING & TIES:',
                 style: GoogleFonts.montserrat(
                   fontWeight: FontWeight.w900,
                   fontSize: 11,
@@ -724,7 +779,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'If multiple players have the same total score, the player who solved the challenges with the lowest overall time taken is ranked higher.',
+                'Players are ranked by competition rules: your rank is 1 + the number of players with a strictly higher score, so equal scores share the same rank. If scores are tied, the player with the lowest overall time taken is ranked higher.',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,

@@ -5,19 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/app_providers.dart';
-import '../providers/auth_providers.dart';
+import '../providers/scoring_providers.dart';
 import '../widgets/result/score_circle.dart';
-import '../widgets/result/xp_breakdown_card.dart';
 import '../widgets/result/question_review_card.dart';
 import '../../core/services/ad_service.dart';
+import '../../core/services/quiz_service.dart';
 import '../../core/services/question_tracking_service.dart';
 import '../../core/services/daily_progress_service.dart';
-import '../../core/services/quiz_scheduler_service.dart';
-import '../../core/services/gamification_service.dart';
+import '../../core/scoring/brain_score.dart';
+import '../../core/scoring/daily_challenge_service.dart';
+import '../../core/scoring/game_performance.dart';
+import '../../core/scoring/progression_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_icons.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/services/quiz/practice_quiz_service.dart';
 import '../../data/models/gamification_models.dart';
@@ -187,6 +188,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
   late Animation<Offset> _entranceSlide;
   bool _hasUpdatedStats = false;
   QuizRewards? _rewards;
+  SessionOutcome? _outcome;
 
   @override
   void initState() {
@@ -265,15 +267,50 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         final examMode = session.quiz.examMode;
         final trackingService = QuestionTrackingService.instance;
 
-        // Track daily goal, streak & brain score (Knowledge pillar)
-        await DailyProgressService.instance.recordGameCompletion(
-          pillar: BrainPillar.knowledge,
-          scorePct: (pct * 100).round(),
-          gameType: session.quiz.quizId.startsWith('practice_')
-              ? GameType.quiz
-              : GameType.challenge,
+        // Track daily goal, streak & brain score through the progression engine
+        final isPractice = session.quiz.quizId.startsWith('practice_');
+        final outcome = await ProgressionService.instance.recordSession(
+          SessionRecord(
+            gameId: 'quiz',
+            mode: isPractice
+                ? SessionMode.practice
+                : SessionMode.dailyChallenge,
+            gameType: isPractice ? GameType.quiz : GameType.challenge,
+            primaryPillar: BrainPillar.knowledge,
+            performance: QuizPerformanceInput(
+              correct: score,
+              total: total,
+              timeTakenSeconds: totalTimeTaken,
+              avgDifficulty: _averageQuizDifficulty(session),
+            ),
+            isDailyChallenge: !isPractice,
+            challengeId: 'gk_challenge',
+            playerName: ref.read(authServiceProvider).currentUser?.displayName,
+            durationSeconds: totalTimeTaken,
+          ),
         );
+        if (mounted) {
+          setState(() {
+            _outcome = outcome;
+          });
+        }
         ref.invalidate(dailyProgressProvider);
+
+        // Push the normalized challenge score (0-1000) to the global
+        // leaderboard. Only the standalone daily challenge does this —
+        // workout quizzes never reach this screen, and raw per-game points
+        // are never uploaded anywhere.
+        final user = ref.read(authServiceProvider).currentUser;
+        if (!isPractice && user != null && outcome.challengeScore > 0) {
+          unawaited(
+            QuizService().submitScoreToLeaderboard(
+              playerName: user.displayName ?? 'You',
+              score: outcome.challengeScore,
+              timeTaken: totalTimeTaken,
+              challengeId: DailyChallengeService.todaysChallengeId('quiz'),
+            ),
+          );
+        }
 
         // Mark questions as answered
         final questionIds = session.quiz.questions.map((q) => q.id).toList();
@@ -322,6 +359,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             score: score,
             totalQuestions: total,
             timeTaken: totalTimeTaken,
+            awardXp: false,
           );
           if (mounted) {
             setState(() {
@@ -402,6 +440,8 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                       _buildActionButtons(context, ref, session, score, lang, isDark, isBn, isHi),
                       const SizedBox(height: 20),
                       _buildStatsRow(score, total, totalTimeTaken, streak, _rewards, lang, isDark, isBn, isHi),
+                      const SizedBox(height: 20),
+                      _buildProgressionCard(lang, isDark, isBn, isHi),
                       const SizedBox(height: 24),
                       _buildReviewSection(session, lang, isDark, isBn, isHi),
                       const SizedBox(height: 60),
@@ -415,6 +455,23 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         ],
       ),
     );
+  }
+
+  /// Average question difficulty 0-100 (easy 40 / medium 70 / hard 90),
+  /// falling back to medium when the quiz has no difficulty metadata.
+  double _averageQuizDifficulty(QuizSessionState session) {
+    final questions = session.quiz.questions;
+    if (questions.isEmpty) return 70;
+    var sum = 0.0;
+    for (final q in questions) {
+      final d = q.difficulty.toLowerCase();
+      sum += d == 'hard'
+          ? 90
+          : d == 'easy'
+              ? 40
+              : 70;
+    }
+    return sum / questions.length;
   }
 
   Widget _buildScoreCard(int score, int total, double pct, String lang,
@@ -777,7 +834,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
                 _buildMiniStatPill(
                   icon: AppIcons.xp,
                   iconColor: Colors.amber,
-                  value: '+${rewards?.xp ?? (score * 10)} XP',
+                  value: '+${_outcome?.xp.granted ?? rewards?.xp ?? (score * 10)} XP',
                   label: isBn ? 'অর্জিত এক্সপি' : isHi ? 'एक्सपी प्राप्त' : 'XP Gained',
                   isDark: isDark,
                 ),
@@ -866,8 +923,229 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
     );
   }
 
-  Widget _buildReviewSection(QuizSessionState session, String lang, bool isDark,
-      bool isBn, bool isHi) {
+  Widget _buildProgressionCard(String lang, bool isDark, bool isBn, bool isHi) {
+    final outcome = _outcome;
+    if (outcome == null) return const SizedBox.shrink();
+    final rankAsync = ref.watch(myWeeklyRankProvider);
+
+    final skillNames = <String, String>{
+      BrainPillar.knowledge:
+          isBn ? 'জ্ঞান' : isHi ? 'ज्ञान' : 'Knowledge',
+      BrainPillar.logic: isBn ? 'যুক্তি' : isHi ? 'तर्क' : 'Logic',
+      BrainPillar.memory: isBn ? 'স্মৃতি' : isHi ? 'स्मृति' : 'Memory',
+      BrainPillar.speed: isBn ? 'গতি' : isHi ? 'गति' : 'Speed',
+      BrainPillar.reaction:
+          isBn ? 'ফোকাস' : isHi ? 'फोकस' : 'Focus',
+    };
+
+    final deltas = outcome.skillDeltas.entries.toList()
+      ..sort((a, b) => b.value.abs().compareTo(a.value.abs()));
+    final showChallenge = outcome.challengeScore > 0;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF151D30) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.04),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.02),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.psychology_alt_rounded,
+                  color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                isBn ? 'প্রগ্রেশন' : isHi ? 'प्रगति' : 'Progression',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                ),
+              ),
+              const Spacer(),
+              if (showChallenge) ...[
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${isBn ? 'চ্যালেঞ্জ' : isHi ? 'चुनौती' : 'Challenge'}: ${outcome.challengeScore}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                if (rankAsync.value case final rank? when rank.rank > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      rank.pointsToNext > 0
+                          ? '#${rank.rank} · +${rank.pointsToNext}'
+                          : '#${rank.rank}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? AppColors.warning : AppColors.warningDark,
+                      ),
+                    ),
+                  ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (deltas.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final delta in deltas)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: delta.value >= 0
+                          ? AppColors.success.withValues(alpha: 0.12)
+                          : AppColors.error.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${skillNames[delta.key] ?? delta.key} '
+                      '${delta.value >= 0 ? '+' : ''}${delta.value.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: delta.value >= 0
+                            ? AppColors.success
+                            : AppColors.error,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _buildProgressionMiniStat(
+                  label: isBn ? 'ব্রেন স্কোর' : isHi ? 'ब्रेन स्कोर' : 'Brain Score',
+                  value: '${outcome.brain.score}',
+                  sub: outcome.brain.weeklyChange >= 0
+                      ? '+${outcome.brain.weeklyChange} ${isBn ? 'এই সপ্তাহ' : isHi ? 'इस सप्ताह' : 'this week'}'
+                      : '${outcome.brain.weeklyChange} ${isBn ? 'এই সপ্তাহ' : isHi ? 'इस सप्ताह' : 'this week'}',
+                  icon: Icons.auto_awesome_rounded,
+                  iconColor: AppColors.primary,
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildProgressionMiniStat(
+                  label: isBn ? 'অবস্থা' : isHi ? 'स्थिति' : 'Status',
+                  value: outcome.brain.status == BrainScoreStatus.established
+                      ? (isBn ? 'স্থিতিশীল' : isHi ? 'स्थापित' : 'Established')
+                      : (isBn ? 'প্রোফাইল তৈরি হচ্ছে' : isHi ? 'प्रोफ़ाइल बन रही है' : 'Building profile'),
+                  sub: outcome.dailyGoalComplete
+                      ? (isBn ? 'দৈনিক লক্ষ্য সম্পন্ন' : isHi ? 'दैनिक लक्ष्य पूरा' : 'Daily goal complete')
+                      : '${outcome.dailyGoalProgress}/${outcome.dailyGoalTotal}',
+                  icon: Icons.flag_rounded,
+                  iconColor: AppColors.warning,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressionMiniStat({
+    required String label,
+    required String value,
+    required String sub,
+    required IconData icon,
+    required Color iconColor,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A2338) : const Color(0xFFF6F8FC),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: iconColor),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              color: isDark ? Colors.white : AppColors.textPrimaryLight,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            sub,
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white38 : Colors.grey.shade500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewSection(QuizSessionState session, String lang,
+      bool isDark, bool isBn, bool isHi) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -8,11 +8,12 @@ import '../widgets/quiz/quiz_timer_bar.dart';
 import '../widgets/quiz/quiz_progress_stepper.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/theme/theme_manager.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/daily_progress_service.dart';
+import '../../core/scoring/game_performance.dart';
+import '../../core/scoring/progression_service.dart';
 import '../workout/workout_models.dart';
 import '../workout/workout_progress_banner.dart';
 
@@ -42,6 +43,19 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
   bool _isPaused = false;
 
   WorkoutStep? _workoutStep;
+
+  /// Average question difficulty 0-100 (easy 40 / medium 70 / hard 90),
+  /// falling back to medium when the quiz has no difficulty metadata.
+  double _averageQuizDifficulty() {
+    final questions = ref.read(quizSessionProvider)?.quiz.questions ?? [];
+    if (questions.isEmpty) return 70;
+    var sum = 0.0;
+    for (final q in questions) {
+      final d = q.difficulty.toLowerCase();
+      sum += d == 'hard' ? 90 : d == 'easy' ? 40 : 70;
+    }
+    return sum / questions.length;
+  }
 
   @override
   void didChangeDependencies() {
@@ -179,18 +193,38 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
       final score = ref.read(quizSessionProvider)?.result?.score ?? 0;
       if (_workoutStep != null) {
         // Inside a workout we don't navigate to the standalone result screen;
-        // record the same brain-score / daily-goal data and hand back the score.
+        // record the same progression data and hand back the normalized
+        // performance score (0-100), not the raw correct-answer count.
+        final session = ref.read(quizSessionProvider);
+        final total = session?.quiz.questionCount ?? 0;
+        final perf = GamePerformanceService.calculate(
+          QuizPerformanceInput(
+            correct: score,
+            total: total,
+            timeTakenSeconds: _totalTimeTaken,
+            avgDifficulty: _averageQuizDifficulty(),
+          ),
+        );
         // A 0% run is not a meaningful session, so it must not advance the goal.
-        if (score > 0) {
-          await DailyProgressService.instance.recordGameCompletion(
-            pillar: BrainPillar.knowledge,
-            scorePct: score,
-            gameType: GameType.challenge,
+        if (perf > 0) {
+          await ProgressionService.instance.recordSession(
+            SessionRecord(
+              gameId: 'quiz',
+              mode: SessionMode.workoutGame,
+              gameType: GameType.challenge,
+              primaryPillar: BrainPillar.knowledge,
+              performance: QuizPerformanceInput(
+                correct: score,
+                total: total,
+                timeTakenSeconds: _totalTimeTaken,
+                avgDifficulty: _averageQuizDifficulty(),
+              ),
+            ),
           );
         }
         if (!mounted) return;
         ref.invalidate(dailyProgressProvider);
-        Navigator.pop(context, score);
+        Navigator.pop(context, perf);
       } else {
         Navigator.pushReplacementNamed(context, '/result');
       }

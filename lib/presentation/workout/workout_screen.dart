@@ -16,6 +16,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/services/daily_progress_service.dart';
 import '../../core/services/quiz/practice_quiz_service.dart';
+import '../../core/scoring/progression_service.dart';
 import '../../data/models/firestore_models.dart';
 import '../providers/app_providers.dart';
 import '../screens/games/arrow_puzzle/engine/data/campaign_data.dart';
@@ -215,7 +216,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       } else {
         // No quiz available — treat as skipped so the workout still flows.
         _recordResult(game, null);
-        _afterGame(index);
+        await _afterGame(index);
         return;
       }
     }
@@ -232,7 +233,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     if (!mounted) return;
 
     _recordResult(game, result);
-    _afterGame(index);
+    await _afterGame(index);
   }
 
   void _recordResult(WorkoutGameDef game, int? score) {
@@ -241,42 +242,41 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     ref.invalidate(dailyProgressProvider);
   }
 
-  void _afterGame(int index) {
+  Future<void> _afterGame(int index) async {
     setState(() {
       _currentIndex = index + 1;
       if (_currentIndex >= _preset!.games.length) {
         _phase = _WorkoutPhase.results;
-        _awardPointsIfNeeded();
       } else {
         _phase = _WorkoutPhase.transition;
         _prewarmGame(_currentIndex);
       }
     });
+    if (_currentIndex >= _preset!.games.length) {
+      await _awardPointsIfNeeded();
+    }
   }
 
-  void _awardPointsIfNeeded() {
+  Future<void> _awardPointsIfNeeded() async {
     if (_awardedPoints) return;
     _awardedPoints = true;
-    var points = 0;
-    var scoredGames = 0;
-    for (final r in _results) {
-      // A game that produced no score (0% or abandoned) earns nothing.
-      if (!r.completed || r.score! <= 0) continue;
-      scoredGames++;
-      // Performance-based points: a perfect 100% run earns up to 80 points.
-      points += (r.score! * 0.8).round();
-    }
-    if (scoredGames > 0) {
-      // Consistency bonus for every game that actually scored points.
-      points += scoredGames * 20;
-      // Perfect-session bonus when every planned game earned points.
-      if (scoredGames == _results.length) {
-        points += 30;
-      }
-    }
-    _pointsGained = points;
-    if (points > 0) {
-      ref.read(gamificationNotifierProvider.notifier).addXP(points);
+    // Component games hand back normalized 0-100 scores; the workout is
+    // rewarded once by the central XPService (config + daily cap).
+    final scores = _results
+        .where((r) => r.completed && r.score! > 0)
+        .map((r) => r.score!)
+        .toList();
+    final overall =
+        scores.isEmpty ? 0 : (scores.reduce((a, b) => a + b) ~/ scores.length);
+    final award = await ProgressionService.instance.awardWorkout(
+      overallScore: overall,
+      completedCount: scores.length,
+      plannedCount: _results.length,
+    );
+    if (mounted) {
+      setState(() {
+        _pointsGained = award.granted;
+      });
     }
   }
 

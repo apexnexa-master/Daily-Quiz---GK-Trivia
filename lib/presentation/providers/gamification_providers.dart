@@ -109,10 +109,13 @@ final referralCodeProvider = Provider<String>((ref) {
 
 final quizRewardsProvider = FutureProvider.family<QuizRewards, QuizRewardParams>((ref, params) async {
   final service = ref.watch(gamificationServiceProvider);
+  // XP flows exclusively through XPService (ProgressionService); reward
+  // lookups must not double-award it.
   return service.calculateQuizRewards(
     score: params.score,
     totalQuestions: params.totalQuestions,
     timeTaken: params.timeTaken,
+    awardXp: false,
   );
 });
 

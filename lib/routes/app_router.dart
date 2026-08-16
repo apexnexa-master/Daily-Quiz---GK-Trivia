@@ -8,6 +8,7 @@ import '../presentation/screens/login_screen.dart';
 import '../presentation/screens/leaderboard_screen.dart';
 import '../presentation/screens/splash_screen.dart';
 import '../presentation/screens/profile_screen.dart';
+import '../presentation/screens/stats_screen.dart';
 import '../presentation/screens/battle_screen.dart';
 import '../presentation/screens/achievements_screen.dart';
 import '../presentation/screens/onboarding_screen.dart';
@@ -33,6 +34,7 @@ class AppRouter {
   static const String result = '/result';
   static const String leaderboard = '/leaderboard';
   static const String profile = '/profile';
+  static const String stats = '/stats';
   static const String battle = '/battle';
   static const String achievements = '/achievements';
   static const String onboarding = '/onboarding';
@@ -70,6 +72,8 @@ class AppRouter {
         return _build(const LeaderboardScreen(), settings);
       case profile:
         return _build(const ProfileScreen(), settings);
+      case stats:
+        return _build(const StatsScreen(), settings);
       case feedback:
         return _build(const FeedbackScreen(), settings);
       case knowledge:

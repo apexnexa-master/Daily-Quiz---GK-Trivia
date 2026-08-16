@@ -9,6 +9,7 @@
 // gradient word card, per-color accent answer tiles, glass HUD and a shared
 // countdown + results system. All animations are opacity/transform based.
 
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
@@ -22,6 +23,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/ad_service.dart';
 import '../../../core/services/daily_progress_service.dart';
 import '../../../core/services/game_sfx.dart';
+import '../../../core/scoring/game_performance.dart';
+import '../../../core/scoring/progression_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../games/widgets/countdown_overlay.dart';
 import '../../providers/app_providers.dart';
@@ -553,14 +556,36 @@ class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
       prefs.setInt('stroop_best_score', _score);
     }
 
-    _workoutScore = _accuracy.round();
+    final perf = GamePerformanceService.calculate(
+      StroopPerformanceInput(
+        correct: _correct,
+        totalAttempts: _totalAttempts,
+        avgReactionMs:
+            _avgReactionSeconds > 0 ? _avgReactionSeconds * 1000 : null,
+        difficulty: _speedPips,
+      ),
+    );
+    _workoutScore = perf;
     GameSfxService.instance.play(GameSfx.gameOver);
 
-    // Track daily goal, streak & brain score (Reaction pillar)
-    DailyProgressService.instance.recordGameCompletion(
-      pillar: BrainPillar.reaction,
-      scorePct: _workoutScore,
-      gameType: GameType.stroop,
+    unawaited(
+      ProgressionService.instance.recordSession(
+        SessionRecord(
+          gameId: 'stroop',
+          mode: _workoutStep != null
+              ? SessionMode.workoutGame
+              : SessionMode.practice,
+          gameType: GameType.stroop,
+          primaryPillar: BrainPillar.reaction,
+          performance: StroopPerformanceInput(
+            correct: _correct,
+            totalAttempts: _totalAttempts,
+            avgReactionMs:
+                _avgReactionSeconds > 0 ? _avgReactionSeconds * 1000 : null,
+            difficulty: _speedPips,
+          ),
+        ),
+      ),
     );
     try {
       ProviderScope.containerOf(context, listen: false)

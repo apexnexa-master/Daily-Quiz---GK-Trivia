@@ -15,10 +15,10 @@ import 'arrow_puzzle/engine/logic/game_solver.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_animations.dart';
 import '../../../../core/services/ad_service.dart';
-import '../../../../core/services/local_stats_service.dart';
-import '../../../../core/services/quiz_service.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/daily_progress_service.dart';
+import '../../../../core/scoring/game_performance.dart';
+import '../../../../core/scoring/progression_service.dart';
 import '../../providers/app_providers.dart';
 import '../../workout/workout_models.dart';
 import '../../workout/workout_progress_banner.dart';
@@ -512,37 +512,56 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
     );
     _saveProgress();
 
-    final basePoints = 100;
-    final extraMoves = result.movesUsed > result.targetMoves ? (result.movesUsed - result.targetMoves) : 0;
-    final movesPenalty = extraMoves * 2;
-    final baseScore = (basePoints - movesPenalty).clamp(20, 100);
-    final speedBonus = _elapsedSeconds < 180 ? ((180 - _elapsedSeconds) * 50 ~/ 180) : 0;
-    final totalPoints = baseScore + speedBonus;
-    _lastCompletionScore = baseScore;
+    // Normalized performance score (0-100) shared across every game. The
+    // leaderboard is only ever fed from this score via the progression engine.
+    final input = ArrowPerformanceInput(
+      level: result.levelId,
+      completed: true,
+      timeSeconds: _elapsedSeconds,
+      movesUsed: result.movesUsed,
+      targetMoves: result.targetMoves,
+      hintsUsed: result.usedHint ? 1 : 0,
+    );
+    final perf = GamePerformanceService.calculate(input);
+    _lastCompletionScore = perf;
 
-    if (_isDailyChallenge) {
+    // A workout arrow is never a leaderboard "challenge", even though the
+    // workout launches it with the daily-challenge flag.
+    final isOfficialChallenge = _isDailyChallenge && _workoutStep == null;
+    if (isOfficialChallenge) {
       final auth = AuthService();
       final user = auth.currentUser;
       final playerName = user?.displayName ?? 'You';
-
-      LocalStatsService.instance.addScoreToLeaderboard(playerName, totalPoints, _elapsedSeconds, 'arrow_puzzle');
-
-      if (user != null) {
-        QuizService().submitScoreToLeaderboard(
-          playerName: playerName,
-          score: totalPoints,
-          timeTaken: _elapsedSeconds,
-          challengeId: 'arrow_puzzle',
-        );
-      }
+      unawaited(
+        ProgressionService.instance.recordSession(
+          SessionRecord(
+            gameId: 'arrow',
+            mode: SessionMode.dailyChallenge,
+            gameType: GameType.arrow,
+            primaryPillar: BrainPillar.logic,
+            performance: input,
+            isDailyChallenge: true,
+            challengeId: 'arrow_puzzle',
+            playerName: playerName,
+            durationSeconds: _elapsedSeconds,
+          ),
+        ),
+      );
+    } else {
+      unawaited(
+        ProgressionService.instance.recordSession(
+          SessionRecord(
+            gameId: 'arrow',
+            mode: _workoutStep != null
+                ? SessionMode.workoutGame
+                : SessionMode.practice,
+            gameType: GameType.arrow,
+            primaryPillar: BrainPillar.logic,
+            performance: input,
+          ),
+        ),
+      );
     }
-
-    // Track daily goal, streak & brain score (Logic pillar)
-    DailyProgressService.instance.recordGameCompletion(
-      pillar: BrainPillar.logic,
-      scorePct: totalPoints,
-      gameType: GameType.arrow,
-    );
     try {
       ProviderScope.containerOf(context, listen: false)
           .invalidate(dailyProgressProvider);
