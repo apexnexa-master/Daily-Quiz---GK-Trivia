@@ -10,7 +10,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/app_providers.dart';
 import '../providers/auth_providers.dart';
-import '../utils/account_linker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
@@ -1724,10 +1723,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
                 : 'Sign In Required'),
         content: Text(
           isBn
-              ? 'অনলাইন ১ বনাম ১ ম্যাচ খেলতে আপনাকে গুগল অ্যাকাউন্ট লিংক করতে হবে।'
+              ? 'অনলাইন ১ বনাম ১ ম্যাচ খেলতে আপনাকে লগইন করতে হবে।'
               : isHi
-                  ? 'ऑनलाइन 1 बनाम 1 खेलने के लिए आपको Google अकाउंट लिंक करना होगा।'
-                  : 'You must link your Google account to host or join online matches.',
+                  ? 'ऑनलाइन 1 बनाम 1 खेलने के लिए आपको लॉगिन करना होगा।'
+                  : 'You must sign in to host or join online matches.',
         ),
         actions: [
           TextButton(
@@ -1739,9 +1738,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
                     : 'Close'),
           ),
           ElevatedButton(
-            onPressed: () async {
+            onPressed: () {
               Navigator.pop(context); // Close dialog
-              await AccountLinker.linkAccount(context, ref);
+              Navigator.pushNamed(context, '/login');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -1752,10 +1751,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
             ),
             child: Text(
               isBn
-                  ? 'অ্যাকাউন্ট সংযুক্ত করুন'
+                  ? 'লগইন'
                   : isHi
-                      ? 'खाता लिंक करें'
-                      : 'Link Account',
+                      ? 'लॉगिन'
+                      : 'Login',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),

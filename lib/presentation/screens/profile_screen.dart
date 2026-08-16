@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
 import '../widgets/profile/profile_overview.dart';
 import '../widgets/profile/settings_section.dart';
-import '../utils/account_linker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_spacing.dart';
@@ -52,7 +51,7 @@ class ProfileScreen extends ConsumerWidget {
                     if (user.isAnonymous) ...[
                       StaggeredListItem(
                         index: 5,
-                        child: _UpgradePrompt(lang: lang, ref: ref, isDark: isDark),
+                        child: _UpgradePrompt(lang: lang, isDark: isDark),
                       ),
                       const SizedBox(height: 24),
                     ],
@@ -115,11 +114,9 @@ class ProfileScreen extends ConsumerWidget {
 
 class _UpgradePrompt extends StatelessWidget {
   final String lang;
-  final WidgetRef ref;
   final bool isDark;
   const _UpgradePrompt({
     required this.lang,
-    required this.ref,
     required this.isDark,
   });
 
@@ -158,7 +155,11 @@ class _UpgradePrompt extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isBn ? 'অ্যাকাউন্ট সংযুক্ত করুন' : 'Link Your Account',
+                  isBn
+                      ? 'আপনার অগ্রগতি সংরক্ষণ করতে লগইন করুন'
+                      : isHi
+                          ? 'अपनी प्रगति सहेजने के लिए लॉगिन करें'
+                          : 'Sign In to Save Your Progress',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -168,10 +169,10 @@ class _UpgradePrompt extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   isBn
-                      ? 'আপনার অগ্রগতি সংরক্ষণ করতে'
+                      ? 'দৈনিক চ্যালেঞ্জ খেলুন এবং লিডারবোর্ডে উপরে উঠুন'
                       : isHi
-                          ? 'अपनी प्रगति स्थायी रूप से सहेजें'
-                          : 'To save your progress permanently',
+                          ? 'दैनिक चुनौतियां खेलें और लीडरबोर्ड पर चढ़ें'
+                          : 'Play daily challenges and climb the leaderboard.',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.warning.withValues(alpha: 0.8) : AppColors.warningDark.withValues(alpha: 0.8),
@@ -182,9 +183,7 @@ class _UpgradePrompt extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           ElevatedButton(
-            onPressed: () async {
-              await AccountLinker.linkAccount(context, ref);
-            },
+            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.warning,
               foregroundColor: Colors.black,
@@ -194,7 +193,7 @@ class _UpgradePrompt extends StatelessWidget {
               ),
             ),
             child: Text(
-              isBn ? 'সংযুক্ত করুন' : 'Link',
+              isBn ? 'লগইন' : 'Login',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),

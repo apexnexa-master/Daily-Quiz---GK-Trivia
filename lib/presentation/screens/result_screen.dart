@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/app_providers.dart';
 import '../providers/auth_providers.dart';
-import '../utils/account_linker.dart';
 import '../widgets/result/score_circle.dart';
 import '../widgets/result/xp_breakdown_card.dart';
 import '../widgets/result/question_review_card.dart';
@@ -953,10 +952,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
         ),
         content: Text(
           isBn
-              ? 'বিশ্বব্যাপী লিডারবোর্ডে আপনার স্থান সংরক্ষণ করতে এখনই আপনার গুগল অ্যাকাউন্টটি যুক্ত করুন।'
+              ? 'বিশ্বব্যাপী লিডারবোর্ডে আপনার স্থান সংরক্ষণ করতে এখনই লগইন করুন।'
               : isHi
-                  ? 'वैश्विक लीडरबोर्ड पर अपना रैंक सुरक्षित करने के लिए अभी अपना Google खाता लिंक करें।'
-                  : 'Link your Google account now to save your achievements and rank on the global leaderboard permanently!',
+                  ? 'वैश्विक लीडरबोर्ड पर अपना रैंक सुरक्षित करने के लिए अभी लॉगिन करें।'
+                  : 'Login now to save your achievements and rank on the global leaderboard!',
           style: TextStyle(
             fontSize: 14,
             height: 1.4,
@@ -975,9 +974,9 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             ),
           ),
           ElevatedButton(
-            onPressed: () async {
+            onPressed: () {
               Navigator.pop(dialogContext);
-              await AccountLinker.linkAccount(context, ref);
+              Navigator.pushNamed(context, '/login');
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -989,10 +988,10 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             ),
             child: Text(
               isBn
-                  ? 'যুক্ত করুন'
+                  ? 'লগইন'
                   : isHi
-                      ? 'लिंक करें'
-                      : 'Link Account',
+                      ? 'लॉगिन'
+                      : 'Login',
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
           ),

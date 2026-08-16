@@ -1527,7 +1527,7 @@ Can you beat me? 🚀
       subtitle: _t(
         'Math sprint complete.',
         'গণিত স্প্রিন্ট সম্পন্ন।',
-        'गणित स्प्रिंट पूरा हुआ।',
+        'গণিত স্প্রিন্ট সম্পন্ন।',
       ),
       score: _engine.score,
       isNewBest: _isNewBest,
@@ -1539,6 +1539,10 @@ Can you beat me? 🚀
       onPlayAgain: _playAgain,
       onShare: _shareScore,
       onExit: _exitGame,
+      continueLabel: _workoutStep != null
+          ? _t('CONTINUE', 'চালিয়ে যান', 'जारी रखें')
+          : null,
+      onContinue: _workoutStep != null ? _exitGame : null,
     );
   }
 

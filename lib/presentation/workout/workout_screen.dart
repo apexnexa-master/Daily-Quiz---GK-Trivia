@@ -6,6 +6,7 @@
 // `WorkoutStep`), waits for the popped 0-100 score, then shows a short
 // transition before the next game and a final results summary with Brain Points.
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -28,11 +29,11 @@ class WorkoutScreen extends ConsumerStatefulWidget {
   ConsumerState<WorkoutScreen> createState() => _WorkoutScreenState();
 }
 
-enum _WorkoutPhase { intro, transition, results }
+enum _WorkoutPhase { pick, intro, transition, results }
 
 class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
-  late final WorkoutPreset _preset;
-  _WorkoutPhase _phase = _WorkoutPhase.intro;
+  WorkoutPreset? _preset;
+  _WorkoutPhase _phase = _WorkoutPhase.pick;
   final List<WorkoutGameResult> _results = [];
   int _currentIndex = 0;
   bool _awardedPoints = false;
@@ -42,41 +43,36 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   int? _arrowLevelId;
   bool _arrowReady = false;
   Future<QuizModel?>? _quizPreloadFuture;
+  bool _quizReady = false;
 
   @override
   void initState() {
     super.initState();
     _checkInitialDailyGoal();
-    // An explicit preset overrides the auto-picked random selection. By
-    // default the app picks 3 random games so each session feels fresh.
-    _preset = widget.presetId != WorkoutPresets.balancedId
-        ? WorkoutPresets.byId(widget.presetId)
-        : _randomPreset();
-    _prewarmGame(0);
-  }
-
-  /// Picks 3 random playable games for this session. New games added to
-  /// [WorkoutPresets.allGames] automatically join the pool.
-  WorkoutPreset _randomPreset() {
-    final pool = List<WorkoutGameDef>.of(WorkoutPresets.allGames)..shuffle();
-    return WorkoutPresets.fromGames(pool.take(3).toList());
   }
 
   /// Pre-warms the next game while the current phase is visible so that
   /// switching feels instant: the arrow-puzzle level is generated on a
   /// background isolate and the GK quiz session is fetched ahead of time.
   void _prewarmGame(int index) {
-    final game = _preset.games[index];
+    final game = _preset!.games[index];
     switch (game.id) {
       case WorkoutGameId.arrowPuzzle:
         _arrowLevelId = Random().nextInt(CampaignCatalog().totalLevels) + 1;
         _arrowReady = false;
-        CampaignCatalog.generateInBackground(_arrowLevelId!).then((_) {
-          if (mounted && !_arrowReady) setState(() => _arrowReady = true);
-        });
+        CampaignCatalog.generateInBackground(_arrowLevelId!)
+            .then((_) {
+              if (mounted && !_arrowReady) setState(() => _arrowReady = true);
+            })
+            .catchError((_) {
+              if (mounted && !_arrowReady) setState(() => _arrowReady = true);
+            });
         break;
       case WorkoutGameId.gkQuiz:
-        _ensureQuiz();
+        _quizReady = false;
+        _ensureQuiz().then((_) {
+          if (mounted && !_quizReady) setState(() => _quizReady = true);
+        });
         break;
       case WorkoutGameId.stroopRush:
       case WorkoutGameId.synapseRecall:
@@ -87,6 +83,23 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
   Future<QuizModel?> _ensureQuiz() {
     return _quizPreloadFuture ??= _fetchQuiz();
+  }
+
+  /// Whether the upcoming game is prepared enough to launch. Arrow levels are
+  /// generated on a background isolate and GK quiz sessions are fetched ahead
+  /// of time; the transition's Continue button stays disabled until ready.
+  bool get _nextReady {
+    final game = _preset!.games[_currentIndex];
+    switch (game.id) {
+      case WorkoutGameId.arrowPuzzle:
+        return _arrowReady;
+      case WorkoutGameId.gkQuiz:
+        return _quizReady;
+      case WorkoutGameId.stroopRush:
+      case WorkoutGameId.synapseRecall:
+      case WorkoutGameId.mathSprint:
+        return true;
+    }
   }
 
   Future<QuizModel?> _fetchQuiz() async {
@@ -190,9 +203,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   }
 
   Future<void> _launchGame(int index) async {
-    final game = _preset.games[index];
+    final game = _preset!.games[index];
     final step =
-        WorkoutStep(game: game, index: index, total: _preset.games.length);
+        WorkoutStep(game: game, index: index, total: _preset!.games.length);
 
     // GK Quiz needs a prepared quiz session before the quiz screen loads.
     if (game.id == WorkoutGameId.gkQuiz) {
@@ -231,7 +244,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   void _afterGame(int index) {
     setState(() {
       _currentIndex = index + 1;
-      if (_currentIndex >= _preset.games.length) {
+      if (_currentIndex >= _preset!.games.length) {
         _phase = _WorkoutPhase.results;
         _awardPointsIfNeeded();
       } else {
@@ -290,9 +303,24 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               switchInCurve: Curves.easeOutCubic,
               switchOutCurve: Curves.easeInCubic,
               child: switch (_phase) {
+                _WorkoutPhase.pick => _WorkoutGamePicker(
+                    key: const ValueKey('picker'),
+                    lang: _lang,
+                    overridePreset: widget.presetId != WorkoutPresets.balancedId
+                        ? WorkoutPresets.byId(widget.presetId)
+                        : null,
+                    onPicked: (preset) {
+                      setState(() {
+                        _preset = preset;
+                        _phase = _WorkoutPhase.intro;
+                      });
+                      _prewarmGame(0);
+                    },
+                    onBack: () async => await _onWillPop(),
+                  ),
                 _WorkoutPhase.intro => _WorkoutIntro(
                     key: const ValueKey('intro'),
-                    preset: _preset,
+                    preset: _preset!,
                     progress: dailyProgress,
                     lang: _lang,
                     onStart: () => _launchGame(0),
@@ -302,17 +330,17 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                     key: ValueKey('transition-$_currentIndex'),
                     completed: _results[_currentIndex - 1].game,
                     completedScore: _results[_currentIndex - 1].score,
-                    next: _preset.games[_currentIndex],
+                    next: _preset!.games[_currentIndex],
                     index: _currentIndex + 1,
-                    total: _preset.games.length,
+                    total: _preset!.games.length,
                     lang: _lang,
-                    nextReady: _arrowReady,
+                    nextReady: _nextReady,
                     onContinue: () => _launchGame(_currentIndex),
                   ),
                 _WorkoutPhase.results => _WorkoutResults(
                     key: const ValueKey('results'),
                     session:
-                        WorkoutSessionResult(preset: _preset, games: _results),
+                        WorkoutSessionResult(preset: _preset!, games: _results),
                     isBn: _isBn,
                     isHi: _isHi,
                     pointsGained: _pointsGained,
@@ -325,6 +353,338 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Game-picking gimmick
+// ─────────────────────────────────────────────────────────────────────────────
+class _WorkoutGamePicker extends StatefulWidget {
+  final String lang;
+  final WorkoutPreset? overridePreset;
+  final void Function(WorkoutPreset preset) onPicked;
+  final Future<void> Function() onBack;
+
+  const _WorkoutGamePicker({
+    super.key,
+    required this.lang,
+    this.overridePreset,
+    required this.onPicked,
+    required this.onBack,
+  });
+
+  @override
+  State<_WorkoutGamePicker> createState() => _WorkoutGamePickerState();
+}
+
+class _WorkoutGamePickerState extends State<_WorkoutGamePicker> {
+  final List<int> _reelIndex = [0, 1, 2];
+  final List<bool> _locked = [false, false, false];
+  List<WorkoutGameDef>? _picked;
+  Timer? _ticker;
+  final List<Timer?> _settleTimers = [null, null, null];
+  Timer? _revealTimer;
+
+  bool get isBn => widget.lang == 'bn';
+  bool get isHi => widget.lang == 'hi';
+
+  @override
+  void initState() {
+    super.initState();
+    final pool = List<WorkoutGameDef>.of(WorkoutPresets.allGames)..shuffle();
+    _picked = widget.overridePreset?.games ??
+        WorkoutPresets.fromGames(pool.take(3).toList()).games;
+
+    // Advance every unlocked reel with a per-reel offset so the spin looks
+    // organic instead of marching in lock-step.
+    _ticker = Timer.periodic(const Duration(milliseconds: 120), (_) {
+      if (!mounted) return;
+      setState(() {
+        for (int i = 0; i < _reelIndex.length; i++) {
+          if (_locked[i]) continue;
+          _reelIndex[i] =
+              (_reelIndex[i] + 1 + i) % WorkoutPresets.allGames.length;
+        }
+      });
+    });
+
+    // Lock the reels one at a time onto their picked game, then reveal.
+    const settleDelays = [
+      Duration(milliseconds: 1500),
+      Duration(milliseconds: 1900),
+      Duration(milliseconds: 2300)
+    ];
+    for (int i = 0; i < settleDelays.length; i++) {
+      _settleTimers[i] = Timer(settleDelays[i], () => _settleReel(i));
+    }
+    _revealTimer = Timer(const Duration(milliseconds: 2500), _revealPick);
+  }
+
+  void _settleReel(int reel) {
+    if (!mounted || _picked == null) return;
+    setState(() {
+      _reelIndex[reel] = WorkoutPresets.allGames.indexOf(_picked![reel]);
+      _locked[reel] = true;
+    });
+  }
+
+  void _revealPick() {
+    _ticker?.cancel();
+    if (!mounted || _picked == null) return;
+    widget.onPicked(WorkoutPresets.fromGames(_picked!));
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    for (final t in _settleTimers) {
+      t?.cancel();
+    }
+    _revealTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          IconButton(
+            onPressed: () => widget.onBack(),
+            style: IconButton.styleFrom(
+              backgroundColor: (isDark ? Colors.white : Colors.black)
+                  .withValues(alpha: 0.06),
+            ),
+            icon: Icon(
+              Icons.close_rounded,
+              color: isDark ? Colors.white : AppColors.textPrimaryLight,
+            ),
+          ),
+          const Spacer(),
+          Center(
+            child: PulseWidget(
+              child: Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary.withValues(alpha: isDark ? 0.25 : 0.18),
+                      AppColors.secondary
+                          .withValues(alpha: isDark ? 0.12 : 0.08),
+                    ],
+                  ),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.6),
+                      width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary
+                          .withValues(alpha: isDark ? 0.3 : 0.15),
+                      blurRadius: 28,
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.casino_rounded,
+                    color: AppColors.primary, size: 38),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Center(
+            child: Text(
+              isBn
+                  ? 'গেম বাছাই হচ্ছে…'
+                  : isHi
+                      ? 'गेम चुन रहे हैं…'
+                      : 'CHOOSING GAMES…',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.4,
+                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Center(
+            child: Text(
+              isBn
+                  ? 'আপনার জন্য ৩টি গেম বেছে নেওয়া হচ্ছে'
+                  : isHi
+                      ? 'आपके लिए 3 गेम चुने जा रहे हैं'
+                      : 'Choosing 3 games for you',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
+              ),
+            ),
+          ),
+          const SizedBox(height: 30),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (int i = 0; i < 3; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                _GameReel(
+                  game: WorkoutPresets.allGames[_reelIndex[i]],
+                  number: i + 1,
+                  locked: _locked[i],
+                  isDark: isDark,
+                  lang: widget.lang,
+                ),
+              ],
+            ],
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+}
+
+class _GameReel extends StatelessWidget {
+  final WorkoutGameDef game;
+  final int number;
+  final bool locked;
+  final bool isDark;
+  final String lang;
+  const _GameReel({
+    required this.game,
+    required this.number,
+    required this.locked,
+    required this.isDark,
+    required this.lang,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = game.skill.accent;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AnimatedScale(
+          scale: locked ? 1.0 : 0.96,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 96,
+            height: 124,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: locked
+                    ? [
+                        accent.withValues(alpha: isDark ? 0.30 : 0.22),
+                        accent.withValues(alpha: isDark ? 0.12 : 0.06),
+                      ]
+                    : [
+                        (isDark ? Colors.white : Colors.black)
+                            .withValues(alpha: isDark ? 0.06 : 0.04),
+                        (isDark ? Colors.white : Colors.black)
+                            .withValues(alpha: isDark ? 0.03 : 0.02),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: accent.withValues(alpha: locked ? 0.95 : 0.3),
+                width: locked ? 2 : 1.2,
+              ),
+              boxShadow: locked
+                  ? [
+                      BoxShadow(
+                        color: accent.withValues(alpha: isDark ? 0.5 : 0.35),
+                        blurRadius: 22,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Stack(
+              children: [
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        game.skill.emoji,
+                        style: const TextStyle(fontSize: 26),
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          game.title(lang),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: locked
+                                ? accent
+                                : (isDark
+                                    ? AppColors.textSecondaryDark
+                                    : AppColors.textSecondaryLight),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (locked)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.success,
+                      ),
+                      child: const Icon(Icons.lock_rounded,
+                          size: 13, color: Colors.white),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: locked ? 1 : 0.5,
+          child: Text(
+            '$number',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: locked
+                  ? accent
+                  : (isDark
+                      ? AppColors.textTertiaryDark
+                      : AppColors.textTertiaryLight),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -475,11 +835,8 @@ class _WorkoutIntro extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          for (final skill in skills) ...[
-            _SkillRow(
-                skill: skill,
-                game: preset.games.firstWhere((g) => g.skill == skill),
-                lang: lang),
+          for (final game in preset.games) ...[
+            _GameRow(game: game, lang: lang),
             const SizedBox(height: 10),
           ],
           const Spacer(),
@@ -664,16 +1021,15 @@ class _Chip extends StatelessWidget {
   }
 }
 
-class _SkillRow extends StatelessWidget {
-  final WorkoutSkill skill;
+class _GameRow extends StatelessWidget {
   final WorkoutGameDef game;
   final String lang;
-  const _SkillRow(
-      {required this.skill, required this.game, required this.lang});
+  const _GameRow({required this.game, required this.lang});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final skill = game.skill;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -700,7 +1056,7 @@ class _SkillRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  skill.label(lang),
+                  game.title(lang),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -708,7 +1064,7 @@ class _SkillRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  game.title(lang),
+                  skill.label(lang),
                   style: TextStyle(
                     fontSize: 11,
                     color: skill.accent,
@@ -819,10 +1175,16 @@ class _WorkoutTransition extends StatelessWidget {
           Center(
             child: Text(
               isBn
-                  ? '${completed.skill.emoji} ${completed.skill.label(lang)} সম্পন্ন!'
+                  ? completedScore != null
+                      ? '${completed.skill.emoji} ${completed.skill.label(lang)} সম্পন্ন!'
+                      : '${completed.skill.emoji} ${completed.skill.label(lang)} এড়িয়ে গেছে'
                   : isHi
-                      ? '${completed.skill.emoji} ${completed.skill.label(lang)} पूर्ण!'
-                      : '✓ ${completed.skill.label(lang)} COMPLETED!',
+                      ? completedScore != null
+                          ? '${completed.skill.emoji} ${completed.skill.label(lang)} पूर्ण!'
+                          : '${completed.skill.emoji} ${completed.skill.label(lang)} छोड़ा गया'
+                      : completedScore != null
+                          ? '✓ ${completed.skill.label(lang)} COMPLETED!'
+                          : 'SKIPPED ${completed.skill.label(lang)}',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
@@ -964,7 +1326,7 @@ class _WorkoutTransition extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 36),
-          if (next.id == WorkoutGameId.arrowPuzzle && !nextReady) ...[
+          if (!nextReady) ...[
             Center(
               child: Container(
                 padding:
@@ -1007,33 +1369,36 @@ class _WorkoutTransition extends StatelessWidget {
             const SizedBox(height: 12),
           ],
           AnimatedScaleButton(
-            onTap: onContinue,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary
-                        .withValues(alpha: isDark ? 0.3 : 0.18),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  isBn
-                      ? 'চালিয়ে যান →'
-                      : isHi
-                          ? 'जारी रखें →'
-                          : 'CONTINUE →',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
-                    color: Colors.black,
+            onTap: nextReady ? onContinue : null,
+            child: Opacity(
+              opacity: nextReady ? 1 : 0.5,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary
+                          .withValues(alpha: isDark ? 0.3 : 0.18),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    isBn
+                        ? 'চালিয়ে যান →'
+                        : isHi
+                            ? 'जारी रखें →'
+                            : 'CONTINUE →',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                      color: Colors.black,
+                    ),
                   ),
                 ),
               ),
@@ -1418,7 +1783,11 @@ class _BrainPointsChip extends StatelessWidget {
               duration: const Duration(milliseconds: 1000),
               curve: Curves.easeOutCubic,
               builder: (context, animated, _) => Text(
-                '+${animated.round()} Brain Points',
+                isBn
+                    ? '+${animated.round()} ব্রেন পয়েন্ট'
+                    : isHi
+                        ? '+${animated.round()} ब्रेन पॉइंट्स'
+                        : '+${animated.round()} Brain Points',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w900,

@@ -461,25 +461,28 @@ class GameCard extends StatelessWidget {
             if (fillInfo) const Spacer() else const SizedBox(height: 3),
             Row(
               children: [
-                Expanded(
-                  child: Text(
-                    footer ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      color: isMuted
-                          ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                          : (isDark
-                              ? AppColors.textSecondaryDark
-                                  .withValues(alpha: 0.75)
-                              : AppColors.textSecondaryLight
-                                  .withValues(alpha: 0.8)),
+                if (footer != null && footer!.isNotEmpty) ...[
+                  Expanded(
+                    child: Text(
+                      footer!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: isMuted
+                            ? (isDark ? Colors.white24 : Colors.grey.shade400)
+                            : (isDark
+                                ? AppColors.textSecondaryDark
+                                    .withValues(alpha: 0.75)
+                                : AppColors.textSecondaryLight
+                                    .withValues(alpha: 0.8)),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 6),
+                  const SizedBox(width: 6),
+                ] else
+                  const Spacer(),
                 _buildActionButton(isDark, accent),
               ],
             ),
@@ -528,25 +531,28 @@ class GameCard extends StatelessWidget {
           if (fillInfo) const Spacer() else const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  footer ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.bold,
-                    color: isMuted
-                        ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                        : (isDark
-                            ? AppColors.textSecondaryDark
-                                .withValues(alpha: 0.75)
-                            : AppColors.textSecondaryLight
-                                .withValues(alpha: 0.8)),
+              if (footer != null && footer!.isNotEmpty) ...[
+                Expanded(
+                  child: Text(
+                    footer!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.bold,
+                      color: isMuted
+                          ? (isDark ? Colors.white24 : Colors.grey.shade400)
+                          : (isDark
+                              ? AppColors.textSecondaryDark
+                                  .withValues(alpha: 0.75)
+                              : AppColors.textSecondaryLight
+                                  .withValues(alpha: 0.8)),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
+                const SizedBox(width: 8),
+              ] else
+                const Spacer(),
               _buildActionButton(isDark, accent),
             ],
           ),

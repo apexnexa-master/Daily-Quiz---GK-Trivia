@@ -11,6 +11,9 @@ class SynapseConfig {
   /// [roundLengths][N-1] objects.
   static const int sessionRounds = 8;
 
+  /// Lives per session. Each wrong recall costs one; losing all ends the run.
+  static const int startingLives = 3;
+
   /// Objects shown per round (progressive difficulty, starting easy).
   static const List<int> roundLengths = [2, 3, 4, 5, 6, 7, 8, 9];
 

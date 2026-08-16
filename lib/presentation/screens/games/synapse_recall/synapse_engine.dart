@@ -55,6 +55,12 @@ class SynapseSessionStats {
   int longestCorrectSequence = 0;
   int maxLevelReached = 0;
 
+  /// Remaining lives. Decremented on each wrong recall; reaching zero ends
+  /// the session (game over) before all rounds are cleared.
+  int lives = SynapseConfig.startingLives;
+
+  bool get outOfLives => lives <= 0;
+
   int get accuracy =>
       totalRounds == 0 ? 0 : ((correctRounds / totalRounds) * 100).round();
 

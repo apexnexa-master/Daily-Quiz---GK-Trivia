@@ -169,8 +169,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ],
                               ),
                               const SizedBox(height: 10),
-                              // Top Metrics Bento Bar (hidden for guests)
-                              if (!isGuest)
+                              // Top Metrics Bento Bar (guests see a login prompt instead)
+                              if (isGuest)
+                                _buildGuestLoginCard(
+                                    context, isBn, isHi, isDark)
+                              else
                                 _buildMetricsBentoBox(
                                     streak, dailyProgress, isBn, isHi, isDark),
                               const SizedBox(height: 20),
@@ -434,6 +437,92 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildGuestLoginCard(
+      BuildContext context, bool isBn, bool isHi, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.warning.withValues(alpha: isDark ? 0.15 : 0.08),
+            AppColors.warning.withValues(alpha: isDark ? 0.08 : 0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.warning.withValues(alpha: isDark ? 0.3 : 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child:
+                const Icon(Icons.link_rounded, color: AppColors.warning, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isBn
+                      ? 'আপনার অগ্রগতি সংরক্ষণ করতে লগইন করুন'
+                      : isHi
+                          ? 'अपनी प्रगति सहेजने के लिए लॉगिन करें'
+                          : 'Sign In to Save Your Progress',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppColors.warning : AppColors.warningDark,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  isBn
+                      ? 'দৈনিক চ্যালেঞ্জ খেলুন এবং লিডারবোর্ডে উপরে উঠুন'
+                      : isHi
+                          ? 'दैनिक चुनौतियां खेलें और लीडरबोर्ड पर चढ़ें'
+                          : 'Play daily challenges and climb the leaderboard.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppColors.warning.withValues(alpha: 0.8)
+                        : AppColors.warningDark.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () => Navigator.pushNamed(context, '/login'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.warning,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              isBn
+                  ? 'লগইন'
+                  : isHi
+                      ? 'लॉगिन'
+                      : 'Login',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -927,12 +1016,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               : isHi
                   ? 'अगले स्तर पर अनलॉक'
                   : 'Unlocks next level')
-          : footerText ??
-              (isBn
-                  ? 'সাথে সাথেই ফলাফল'
-                  : isHi
-                      ? 'तुरंत परिणाम'
-                      : 'Instant results'),
+          : footerText,
       onTap: onTap,
     );
   }
@@ -970,113 +1054,134 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          clipBehavior: Clip.none,
-          child: Row(
-            children: [
-              _buildHotGameTile(
-                context: context,
-                isDark: isDark,
-                isBn: isBn,
-                isHi: isHi,
-                badgeText: isBn
-                    ? 'গণিত'
-                    : isHi
-                        ? 'गणित'
-                        : 'MATH',
-                title: isBn
-                    ? 'ম্যাথ স্প্রিন্ট'
-                    : isHi
-                        ? 'मैथ स्प्रिंट'
-                        : 'Math Sprint',
-                subtitle: isBn
-                    ? 'গতি ও হিসাব পরীক্ষা'
-                    : isHi
-                        ? 'त्वरित गणना खेल'
-                        : 'Mental arithmetic sprint',
-                accent: accentPurple,
-                imagePath: 'assets/icon/mathSpeed2.PNG',
-                onTap: () => Navigator.pushNamed(context, '/math-sprint'),
-              ),
-              const SizedBox(width: 12),
-              _buildHotGameTile(
-                context: context,
-                isDark: isDark,
-                isBn: isBn,
-                isHi: isHi,
-                badgeText: isBn
-                    ? 'গতি'
-                    : isHi
-                        ? 'गति'
-                        : 'SPEED',
-                title: isBn
-                    ? 'স্ট্রুপ রাশ'
-                    : isHi
-                        ? 'स्ट्रूप रश'
-                        : 'Stroop Rush',
-                subtitle: isBn
-                    ? 'প্রতিক্রিয়া ও ফোকাস গতি'
-                    : isHi
-                        ? 'प्रतिक्रिया व फोकस गति'
-                        : 'Reaction & focus speed',
-                accent: accentOrange,
-                imagePath: 'assets/icon/stroopRush2.PNG',
-                onTap: () => Navigator.pushNamed(context, '/stroop-rush'),
-              ),
-              const SizedBox(width: 12),
-              _buildHotGameTile(
-                context: context,
-                isDark: isDark,
-                isBn: isBn,
-                isHi: isHi,
-                badgeText: isBn
-                    ? 'যুক্তি'
-                    : isHi
-                        ? 'तर्क'
-                        : 'LOGIC',
-                title: isBn
-                    ? 'দিকনির্দেশ ধাঁধা'
-                    : isHi
-                        ? 'दिशा पहेली'
-                        : 'Arrow Puzzle 3D',
-                subtitle: isBn
-                    ? 'তর্ক ও প্যাটার্ন ওরিয়েন্টেশন'
-                    : isHi
-                        ? 'तार्किक भूलभुलैया'
-                        : 'Directional speed tracking',
-                accent: accentCyan,
-                imagePath: 'assets/icon/arrows3.PNG',
-                onTap: () => Navigator.pushNamed(context, '/arrow-puzzle'),
-              ),
-              const SizedBox(width: 12),
-              _buildHotGameTile(
-                context: context,
-                isDark: isDark,
-                isBn: isBn,
-                isHi: isHi,
-                badgeText: isBn
-                    ? 'জ্ঞান'
-                    : isHi
-                        ? 'ज्ञान'
-                        : 'KNOWLEDGE',
-                title: isBn
-                    ? 'জিকে কুইজ'
-                    : isHi
-                        ? 'जीके क्विज़'
-                        : 'GK Quiz',
-                subtitle: isBn
-                    ? 'সাধারণ জ্ঞান কুইজ'
-                    : isHi
-                        ? 'सामान्य ज्ञान क्विज़'
-                        : 'General knowledge quiz',
-                accent: accentLime,
-                imagePath: 'assets/icon/quiz3.png',
-                onTap: () => Navigator.pushNamed(context, '/quiz'),
-              ),
-            ],
+        GridView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            mainAxisExtent: 172,
           ),
+          children: [
+            _buildHotGameTile(
+              context: context,
+              isDark: isDark,
+              isBn: isBn,
+              isHi: isHi,
+              badgeText: isBn
+                  ? 'গণিত'
+                  : isHi
+                      ? 'गणित'
+                      : 'MATH',
+              title: isBn
+                  ? 'ম্যাথ স্প্রিন্ট'
+                  : isHi
+                      ? 'मैथ स्प्रिंट'
+                      : 'Math Sprint',
+              subtitle: isBn
+                  ? 'গতি ও হিসাব পরীক্ষা'
+                  : isHi
+                      ? 'त्वरित गणना खेल'
+                      : 'Mental arithmetic sprint',
+              accent: accentPurple,
+              imagePath: 'assets/icon/mathSpeed2.PNG',
+              footer: isBn
+                  ? 'মানসিক গণিত'
+                  : isHi
+                      ? 'मानसिक गणित'
+                      : 'Mental math',
+              onTap: () => Navigator.pushNamed(context, '/math-sprint'),
+            ),
+            _buildHotGameTile(
+              context: context,
+              isDark: isDark,
+              isBn: isBn,
+              isHi: isHi,
+              badgeText: isBn
+                  ? 'গতি'
+                  : isHi
+                      ? 'गति'
+                      : 'SPEED',
+              title: isBn
+                  ? 'স্ট্রুপ রাশ'
+                  : isHi
+                      ? 'स्ट्रूप रश'
+                      : 'Stroop Rush',
+              subtitle: isBn
+                  ? 'প্রতিক্রিয়া ও ফোকাস গতি'
+                  : isHi
+                      ? 'प्रतिक्रिया व फोकस गति'
+                      : 'Reaction & focus speed',
+              accent: accentOrange,
+              imagePath: 'assets/icon/stroopRush2.PNG',
+              footer: isBn
+                  ? 'ফোকাস ও প্রতিক্রিয়া'
+                  : isHi
+                      ? 'फोकस व प्रतिक्रिया'
+                      : 'Focus & reaction',
+              onTap: () => Navigator.pushNamed(context, '/stroop-rush'),
+            ),
+            _buildHotGameTile(
+              context: context,
+              isDark: isDark,
+              isBn: isBn,
+              isHi: isHi,
+              badgeText: isBn
+                  ? 'যুক্তি'
+                  : isHi
+                      ? 'तर्क'
+                      : 'LOGIC',
+              title: isBn
+                  ? 'দিকনির্দেশ ধাঁধা'
+                  : isHi
+                      ? 'दिशा पहेली'
+                      : 'Arrow Puzzle 3D',
+              subtitle: isBn
+                  ? 'তর্ক ও প্যাটার্ন ওরিয়েন্টেশন'
+                  : isHi
+                      ? 'तार्किक भूलभुलैया'
+                      : 'Directional speed tracking',
+              accent: accentCyan,
+              imagePath: 'assets/icon/arrows3.PNG',
+              footer: isBn
+                  ? 'যুক্তি ও দিকনির্দেশ'
+                  : isHi
+                      ? 'तर्क व दिशा'
+                      : 'Logic & orientation',
+              onTap: () => Navigator.pushNamed(context, '/arrow-puzzle'),
+            ),
+            _buildHotGameTile(
+              context: context,
+              isDark: isDark,
+              isBn: isBn,
+              isHi: isHi,
+              badgeText: isBn
+                  ? 'জ্ঞান'
+                  : isHi
+                      ? 'ज्ञान'
+                      : 'KNOWLEDGE',
+              title: isBn
+                  ? 'জিকে কুইজ'
+                  : isHi
+                      ? 'जीके क्विज़'
+                      : 'GK Quiz',
+              subtitle: isBn
+                  ? 'সাধারণ জ্ঞান কুইজ'
+                  : isHi
+                      ? 'सामान्य ज्ञान क्विज़'
+                      : 'General knowledge quiz',
+              accent: accentLime,
+              imagePath: 'assets/icon/quiz3.png',
+              footer: isBn
+                  ? 'দৈনিক জ্ঞান'
+                  : isHi
+                      ? 'दैनिक ज्ञान'
+                      : 'Daily knowledge',
+              onTap: () => Navigator.pushNamed(context, '/quiz'),
+            ),
+          ],
         ),
       ],
     );
@@ -1090,25 +1195,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String badgeText,
     required String title,
     required String subtitle,
+    required String footer,
     required Color accent,
     required VoidCallback onTap,
     String? imagePath,
   }) {
     return GameCard(
-      width: 220,
+      fillHeight: true,
       compact: true,
-      coverAspectRatio: 2.6,
+      coverHeight: 116,
       imagePath: imagePath,
       accent: accent,
       badge: badgeText,
       isLive: true,
       title: title,
       subtitle: subtitle,
-      footer: isBn
-          ? 'খেলুন'
-          : isHi
-              ? 'खेलें'
-              : 'PLAY',
+      footer: footer,
       onTap: onTap,
     );
   }

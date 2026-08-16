@@ -56,11 +56,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         : isHi
             ? 'प्ले ज़ोन'
             : 'Play Zone';
-    final screenSubtitle = isBn
-        ? 'আপনার মানসিক দক্ষতা বৃদ্ধি করতে অংশ নিন দৈনিক অনুশীলনে।'
-        : isHi
-            ? 'दैनिक प्रदर्शन अभ्यासों के साथ अपनी मानसिक तीक्ष्णता को बढ़ाएं।'
-            : 'Hone your mental acuity with daily performance drills.';
 
     // Challenge data list
     final allChallenges = [
@@ -149,29 +144,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
       ),
       ChallengeData(
         title: isBn
-            ? 'ডিস্ট্রাকশন ব্লক'
-            : isHi
-                ? 'डिस्ट्रैक्शन ब्लॉक'
-                : 'Distraction Block',
-        description: isBn
-            ? 'চারপাশের অপ্রাসঙ্গিক বিভ্রান্তি উপেক্ষা করে নির্দিষ্ট বিষয়ে ফোকাস করুন।'
-            : isHi
-                ? 'संज्ञानात्मक शोर के क्षेत्र में प्रासंगिक संकेतों को अलग करके ध्यान बढ़ाएं।'
-                : 'Enhance focus by isolating relevant signals in a field of cognitive noise.',
-        category: 'Focus',
-        duration: '3m',
-        icon: Icons.track_changes_rounded,
-        isLocked: false,
-        onTap: () {
-          Navigator.pushNamed(context, '/game-placeholder', arguments: {
-            'title': 'Distraction Block',
-            'description':
-                'Enhance focus by isolating relevant signals in a field of cognitive noise.',
-          });
-        },
-      ),
-      ChallengeData(
-        title: isBn
             ? 'ম্যাথ স্প্রিন্ট'
             : isHi
                 ? 'मैथ स्प्रिंट'
@@ -244,50 +216,33 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
             children: [
               // Header Title
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 20, 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () {
-                            if (Navigator.canPop(context)) {
-                              Navigator.pop(context);
-                            } else {
-                              ref.read(navigationTabProvider.notifier).state =
-                                  0;
-                            }
-                          },
-                          icon: Icon(Icons.arrow_back_rounded,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.textPrimaryLight),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          screenTitle,
-                          style: GoogleFonts.montserrat(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.textPrimaryLight,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Text(
-                        screenSubtitle,
-                        style: TextStyle(
-                          fontSize: 12.5,
+                    IconButton(
+                      onPressed: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        } else {
+                          ref.read(navigationTabProvider.notifier).state = 0;
+                        }
+                      },
+                      icon: Icon(Icons.arrow_back_rounded,
                           color: isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondaryLight,
+                              ? Colors.white
+                              : AppColors.textPrimaryLight),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        screenTitle,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: isDark
+                              ? Colors.white
+                              : AppColors.textPrimaryLight,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
@@ -298,13 +253,13 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
               // Search Bar
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 child: Container(
                   decoration: BoxDecoration(
                     color: isDark
                         ? const Color(0xFF151D1E).withValues(alpha: 0.65)
                         : Colors.white.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isDark
                           ? AppColors.outlineVariant.withValues(alpha: 0.2)
@@ -329,7 +284,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                     },
                     style: TextStyle(
                       color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                      fontSize: 14,
+                      fontSize: 13,
                     ),
                     decoration: InputDecoration(
                       hintText: isBn
@@ -341,14 +296,14 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                         color: isDark
                             ? AppColors.textTertiaryDark
                             : AppColors.textTertiaryLight,
-                        fontSize: 14,
+                        fontSize: 13,
                       ),
                       prefixIcon: Icon(
                         Icons.search_rounded,
                         color: isDark
                             ? AppColors.textSecondaryDark
                             : AppColors.textSecondaryLight,
-                        size: 20,
+                        size: 18,
                       ),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
@@ -357,7 +312,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                 color: isDark
                                     ? AppColors.textSecondaryDark
                                     : AppColors.textSecondaryLight,
-                                size: 18,
+                                size: 16,
                               ),
                               onPressed: () {
                                 _searchController.clear();
@@ -369,7 +324,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                           : null,
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                          horizontal: 14, vertical: 8),
                     ),
                   ),
                 ),
@@ -377,18 +332,19 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
 
               // Filter horizontal scroll bar
               SizedBox(
-                height: 52,
+                height: 42,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   itemCount: _categories.length,
                   itemBuilder: (context, index) {
                     final cat = _categories[index];
                     final isSelected = _selectedCategory == cat;
+                    final label = _categoryLabel(cat, isBn, isHi);
 
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.only(right: 6),
                       child: GestureDetector(
                         onTap: () {
                           setState(() => _selectedCategory = cat);
@@ -396,14 +352,14 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 6),
+                              horizontal: 12, vertical: 4),
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? (isDark
                                     ? AppColors.primary
                                     : AppColors.primary)
                                 : Colors.transparent,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isSelected
                                   ? AppColors.primary
@@ -416,9 +372,9 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                           ),
                           child: Center(
                             child: Text(
-                              cat,
+                              label,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 color: isSelected
                                     ? Colors.black
@@ -458,25 +414,27 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                 isHi: isHi,
                               ),
                               const SizedBox(height: 10),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                clipBehavior: Clip.none,
-                                child: Row(
-                                  children: knowledgeGames.map((game) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 12),
-                                      child: _buildPlayZoneGameTile(
-                                        context: context,
-                                        isDark: isDark,
-                                        data: game,
-                                        isBn: isBn,
-                                        isHi: isHi,
-                                        imagePath: 'assets/icon/quiz3.png',
-                                      ),
-                                    );
-                                  }).toList(),
+                              GridView(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: EdgeInsets.zero,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  mainAxisExtent: 172,
                                 ),
+                                children: knowledgeGames.map((game) {
+                                  return _buildPlayZoneGameTile(
+                                    context: context,
+                                    isDark: isDark,
+                                    data: game,
+                                    isBn: isBn,
+                                    isHi: isHi,
+                                    imagePath: 'assets/icon/quiz3.png',
+                                  );
+                                }).toList(),
                               ),
                               const SizedBox(height: 28),
                             ],
@@ -494,30 +452,32 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                 isHi: isHi,
                               ),
                               const SizedBox(height: 10),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                clipBehavior: Clip.none,
-                                child: Row(
-                                  children: logicMemoryGames.map((game) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 12),
-                                      child: _buildPlayZoneGameTile(
-                                        context: context,
-                                        isDark: isDark,
-                                        data: game,
-                                        isBn: isBn,
-                                        isHi: isHi,
-                                        imagePath: isDark
-                                            ? 'assets/icon/logic_mascot_dark.jpg'
-                                            : 'assets/icon/logic_mascot_light.jpg',
-                                        cover: game.category == 'Memory'
-                                            ? const SynapseRecallCover()
-                                            : null,
-                                      ),
-                                    );
-                                  }).toList(),
+                              GridView(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: EdgeInsets.zero,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  mainAxisExtent: 172,
                                 ),
+                                children: logicMemoryGames.map((game) {
+                                  return _buildPlayZoneGameTile(
+                                    context: context,
+                                    isDark: isDark,
+                                    data: game,
+                                    isBn: isBn,
+                                    isHi: isHi,
+                                    imagePath: isDark
+                                        ? 'assets/icon/logic_mascot_dark.jpg'
+                                        : 'assets/icon/logic_mascot_light.jpg',
+                                    cover: game.category == 'Memory'
+                                        ? const SynapseRecallCover()
+                                        : null,
+                                  );
+                                }).toList(),
                               ),
                               const SizedBox(height: 28),
                             ],
@@ -535,27 +495,29 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                 isHi: isHi,
                               ),
                               const SizedBox(height: 10),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                clipBehavior: Clip.none,
-                                child: Row(
-                                  children: focusGames.map((game) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 12),
-                                      child: _buildPlayZoneGameTile(
-                                        context: context,
-                                        isDark: isDark,
-                                        data: game,
-                                        isBn: isBn,
-                                        isHi: isHi,
-                                        imagePath: isDark
-                                            ? 'assets/icon/logic_mascot_dark.jpg'
-                                            : 'assets/icon/logic_mascot_light.jpg',
-                                      ),
-                                    );
-                                  }).toList(),
+                              GridView(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: EdgeInsets.zero,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  mainAxisExtent: 172,
                                 ),
+                                children: focusGames.map((game) {
+                                  return _buildPlayZoneGameTile(
+                                    context: context,
+                                    isDark: isDark,
+                                    data: game,
+                                    isBn: isBn,
+                                    isHi: isHi,
+                                    imagePath: isDark
+                                        ? 'assets/icon/logic_mascot_dark.jpg'
+                                        : 'assets/icon/logic_mascot_light.jpg',
+                                  );
+                                }).toList(),
                               ),
                               const SizedBox(height: 28),
                             ],
@@ -573,25 +535,27 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                 isHi: isHi,
                               ),
                               const SizedBox(height: 10),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                clipBehavior: Clip.none,
-                                child: Row(
-                                  children: mathGames.map((game) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 12),
-                                      child: _buildPlayZoneGameTile(
-                                        context: context,
-                                        isDark: isDark,
-                                        data: game,
-                                        isBn: isBn,
-                                        isHi: isHi,
-                                        imagePath: 'assets/icon/mathSpeed2.PNG',
-                                      ),
-                                    );
-                                  }).toList(),
+                              GridView(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: EdgeInsets.zero,
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  mainAxisExtent: 172,
                                 ),
+                                children: mathGames.map((game) {
+                                  return _buildPlayZoneGameTile(
+                                    context: context,
+                                    isDark: isDark,
+                                    data: game,
+                                    isBn: isBn,
+                                    isHi: isHi,
+                                    imagePath: 'assets/icon/mathSpeed2.PNG',
+                                  );
+                                }).toList(),
                               ),
                             ],
                           ],
@@ -627,6 +591,42 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
     );
   }
 
+  String _categoryLabel(String key, bool isBn, bool isHi) {
+    if (isBn) {
+      switch (key) {
+        case 'All':
+          return 'সব';
+        case 'Knowledge':
+          return 'জ্ঞান';
+        case 'Logic':
+          return 'যুক্তি';
+        case 'Memory':
+          return 'স্মৃতি';
+        case 'Focus':
+          return 'ফোকাস';
+        case 'Math':
+          return 'গণিত';
+      }
+    }
+    if (isHi) {
+      switch (key) {
+        case 'All':
+          return 'सभी';
+        case 'Knowledge':
+          return 'ज्ञान';
+        case 'Logic':
+          return 'तर्क';
+        case 'Memory':
+          return 'स्मृति';
+        case 'Focus':
+          return 'फोकस';
+        case 'Math':
+          return 'गणित';
+      }
+    }
+    return key;
+  }
+
   Widget _buildPlayZoneGameTile({
     required BuildContext context,
     required bool isDark,
@@ -650,9 +650,9 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                     : const Color(0xFFECB2FF)))));
 
     return GameCard(
-      width: 260,
+      fillHeight: true,
       compact: true,
-      coverAspectRatio: 2.6,
+      coverHeight: 116,
       imagePath: cover == null ? resolvedImagePath : null,
       cover: cover,
       accent: categoryColor,

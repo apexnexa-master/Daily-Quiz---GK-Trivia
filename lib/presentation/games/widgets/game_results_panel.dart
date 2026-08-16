@@ -39,6 +39,12 @@ class GameResultsPanel extends StatefulWidget {
   final VoidCallback? onShare;
   final VoidCallback onExit;
 
+  /// When set, the panel renders a single primary "Continue" action instead of
+  /// the play-again / share / exit stack. Used while a game runs inside a
+  /// workout: the player must advance to the next game, not replay this one.
+  final String? continueLabel;
+  final VoidCallback? onContinue;
+
   const GameResultsPanel({
     super.key,
     required this.title,
@@ -53,6 +59,8 @@ class GameResultsPanel extends StatefulWidget {
     required this.onPlayAgain,
     this.onShare,
     required this.onExit,
+    this.continueLabel,
+    this.onContinue,
   });
 
   @override
@@ -332,6 +340,56 @@ class _GameResultsPanelState extends State<GameResultsPanel>
   }
 
   Widget _buildActions(bool isDark) {
+    if (widget.onContinue != null) {
+      return SizedBox(
+        height: 56,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFD4FF50), Color(0xFF00E7A0)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            borderRadius: BorderRadius.circular(AppSpacing.rLg),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: widget.onContinue,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.black,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.rLg),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.arrow_forward_rounded, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  widget.continueLabel!,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

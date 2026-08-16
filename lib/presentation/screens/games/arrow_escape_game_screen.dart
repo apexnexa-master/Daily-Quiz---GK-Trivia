@@ -1100,59 +1100,80 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                   ),
                 ],
                 const SizedBox(height: 24),
-                Row(
-                  children: [
-                    if (!_isDailyChallenge) ...[
+                if (_workoutStep != null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pop(context, _lastCompletionScore),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'CONTINUE',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  )
+                else
+                  Row(
+                    children: [
+                      if (!_isDailyChallenge) ...[
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              _loadLevel(_currentLevelId);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.24) : Colors.black.withValues(alpha: 0.24)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: Text(
+                              'Retry',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
                       Expanded(
-                        child: OutlinedButton(
+                        child: ElevatedButton(
                           onPressed: () {
-                            _loadLevel(_currentLevelId);
+                            if (!_isDailyChallenge && _currentLevelId < _catalog.totalLevels) {
+                              _loadLevel(_currentLevelId + 1);
+                            } else {
+                              Navigator.pop(context, _lastCompletionScore);
+                            }
                           },
-                          style: OutlinedButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.24) : Colors.black.withValues(alpha: 0.24)),
+                            backgroundColor: AppColors.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
                           child: Text(
-                            'Retry',
-                            style: TextStyle(
+                            (!_isDailyChallenge && _currentLevelId < _catalog.totalLevels) ? 'Next Level' : 'Exit',
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.7),
+                              color: Colors.white,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
                     ],
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (!_isDailyChallenge && _currentLevelId < _catalog.totalLevels) {
-                            _loadLevel(_currentLevelId + 1);
-                          } else {
-                            Navigator.pop(context, _lastCompletionScore);
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          (!_isDailyChallenge && _currentLevelId < _catalog.totalLevels) ? 'Next Level' : 'Exit',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
               ],
             ),
           ),

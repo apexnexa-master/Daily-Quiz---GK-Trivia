@@ -227,6 +227,11 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
     } else {
       GameSfxService.instance.play(GameSfx.wrong);
       HapticFeedback.mediumImpact();
+      _engine.stats.lives--;
+      if (_engine.stats.lives <= 0) {
+        _finishSession();
+        return;
+      }
       _shake.forward(from: 0);
       setState(() => _phase = _SynapsePhase.incorrect);
     }
@@ -242,21 +247,15 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
     }
   }
 
-  /// Replays the current round (same sequence) so the player can solve it.
+  /// Replays the current round number with a *brand new* sequence so the
+  /// player never gets the same question twice and must clear this round
+  /// before the next one unlocks.
   void _retryRound() {
     _autoAdvanceTimer?.cancel();
     GameSfxService.instance.play(GameSfx.tap);
     final round = _round;
     if (!mounted || round == null) return;
-    setState(() {
-      _selection = [];
-      _lastResult = null;
-      _phase = _SynapsePhase.memorize;
-    });
-    _boardIn.forward(from: 0);
-    _memorize.duration =
-        Duration(milliseconds: (round.viewSeconds * 1000).round());
-    _memorize.forward(from: 0);
+    _startRound(round.number);
   }
 
   Future<void> _finishSession() async {
@@ -282,10 +281,16 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
 
     // Share the session with the BRAINX daily-goal / brain-score system
     // (Memory pillar). Accuracy is the 0-100 performance metric.
-    DailyProgressService.instance.recordGameCompletion(
-      pillar: BrainPillar.memory,
-      scorePct: stats.accuracy,
-      gameType: GameType.synapse,
+    // Fire-and-forget: a failure here (e.g. storage/cloud hiccup) must never
+    // block the results screen from appearing.
+    unawaited(
+      DailyProgressService.instance
+          .recordGameCompletion(
+            pillar: BrainPillar.memory,
+            scorePct: stats.accuracy,
+            gameType: GameType.synapse,
+          )
+          .catchError((Object _) => const DailyProgress()),
     );
     try {
       ProviderScope.containerOf(context, listen: false)
@@ -310,7 +315,8 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
         ..correctRounds = 0
         ..totalRounds = 0
         ..longestCorrectSequence = 0
-        ..maxLevelReached = 0;
+        ..maxLevelReached = 0
+        ..lives = SynapseConfig.startingLives;
       _gameFinished = false;
       _isNewBest = false;
       _selection = [];
@@ -507,12 +513,6 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
             ),
             const SizedBox(width: 8),
           ],
-          _buildChip(
-            Icons.psychology_rounded,
-            '$_bestLongestSequence',
-            isDark ? AppColors.primary : AppColors.primaryDark,
-            isDark,
-          ),
         ],
       ),
     );
@@ -551,17 +551,6 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
         children: [
           Expanded(
             child: _buildStatBox(
-              _t('ROUND', 'রাউন্ড', 'राउंड'),
-              '${_roundNumber.toString().padLeft(2, '0')} / ${SynapseConfig.sessionRounds}',
-              Icons.tag_rounded,
-              const Color(0xFF00F1FE),
-              isDark,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: _buildStatBox(
               _t('SCORE', 'স্কোর', 'स्कोर'),
               '${_engine.stats.score}',
               Icons.bolt_rounded,
@@ -569,8 +558,29 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
               isDark,
             ),
           ),
+          const SizedBox(width: 12),
+          _buildLivesHearts(isDark),
         ],
       ),
+    );
+  }
+
+  Widget _buildLivesHearts(bool isDark) {
+    final lives = _engine.stats.lives;
+    final dim = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.12);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < SynapseConfig.startingLives; i++)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: Icon(
+              Icons.favorite_rounded,
+              size: 18,
+              color: i < lives ? const Color(0xFFF43F5E) : dim,
+            ),
+          ),
+      ],
     );
   }
 
@@ -1305,6 +1315,25 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
                         ],
                       ),
                       const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (var i = 0; i < SynapseConfig.startingLives; i++)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 3),
+                              child: Icon(
+                                Icons.favorite_rounded,
+                                size: 18,
+                                color: i < _engine.stats.lives
+                                    ? const Color(0xFFF43F5E)
+                                    : (isDark
+                                        ? Colors.white24
+                                        : Colors.black12),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
                       AnimatedScaleButton(
                         onTap: _retryRound,
                         child: Container(
@@ -1340,26 +1369,6 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
                         ),
                       ),
                       const SizedBox(height: 10),
-                      AnimatedScaleButton(
-                        onTap: _nextRound,
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 44,
-                          child: Center(
-                            child: Text(
-                              _t('Skip → next round', 'স্কিপ → পরের রাউন্ড',
-                                  'छोड़ें → अगला राउंड'),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
-                                color: textTertiary,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -1446,7 +1455,9 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _t('SESSION COMPLETE', 'সেশন সম্পন্ন', 'सत्र पूर्ण'),
+                      _engine.stats.outOfLives
+                          ? _t('GAME OVER', 'গেম ওভার', 'खेल समाप्त')
+                          : _t('SESSION COMPLETE', 'সেশন সম্পন্ন', 'सत्र पूर्ण'),
                       style: GoogleFonts.montserrat(
                         fontSize: 24,
                         fontWeight: FontWeight.w900,
