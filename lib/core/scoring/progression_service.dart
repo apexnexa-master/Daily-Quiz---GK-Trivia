@@ -223,16 +223,17 @@ class ProgressionService {
         );
         await LeaderboardService.instance.updateBestDailyScore(challengeScore);
       } catch (_) {}
-      if (record.playerName != null && record.playerName!.isNotEmpty) {
-        try {
-          await LocalStatsService.instance.addScoreToLeaderboard(
-            record.playerName!,
-            challengeScore,
-            record.durationSeconds,
-            record.challengeId ?? 'daily_challenge',
-          );
-        } catch (_) {}
-      }
+      final effectiveName = (record.playerName != null && record.playerName!.isNotEmpty)
+          ? record.playerName!
+          : 'Explorer';
+      try {
+        await LocalStatsService.instance.addScoreToLeaderboard(
+          effectiveName,
+          challengeScore,
+          record.durationSeconds,
+          record.challengeId ?? 'daily_challenge',
+        );
+      } catch (_) {}
     }
 
     // 6. Activity counters (never used for scoring; profile display only).

@@ -9,6 +9,7 @@ import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_manager.dart';
 import 'core/services/ad_service.dart';
+import 'core/services/update_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/local_stats_service.dart';
 import 'core/services/question_tracking_service.dart';
@@ -76,6 +77,7 @@ class _GkQuizAppState extends ConsumerState<GkQuizApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initNotifications();
+    UpdateService.instance.checkForUpdates();
   }
 
   @override

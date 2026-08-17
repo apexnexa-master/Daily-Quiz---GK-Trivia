@@ -248,9 +248,21 @@ class QuizService {
         'timeTaken': timeTaken,
       });
     } catch (_) {
-      // Silently ignore failures (offline, not deployed, quota, etc.) — the
-      // local board already captured this attempt and the server is the
-      // source of truth for the global board.
+      // Fallback: write directly to Firestore leaderboard collection if Cloud Function fails/offline
+      try {
+        await _db
+            .collection(AppConstants.colLeaderboard)
+            .doc(user.uid)
+            .set({
+          'uid': user.uid,
+          'display_name': playerName.isNotEmpty ? playerName : 'Explorer',
+          'score': score,
+          'time_taken': timeTaken,
+          'challenge_id': challengeId,
+          'quiz_date': DateTime.now().toIso8601String().split('T').first,
+          'updated_at': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (_) {}
     }
   }
 

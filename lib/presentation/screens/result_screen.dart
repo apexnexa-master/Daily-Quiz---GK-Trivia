@@ -285,7 +285,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             ),
             isDailyChallenge: !isPractice,
             challengeId: 'gk_challenge',
-            playerName: ref.read(authServiceProvider).currentUser?.displayName,
+            playerName: ref.read(authServiceProvider).currentUser?.displayName ?? 'Explorer',
             durationSeconds: totalTimeTaken,
           ),
         );
