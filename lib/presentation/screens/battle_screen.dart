@@ -18,6 +18,7 @@ import '../../data/local_quiz_data.dart';
 import '../../core/services/battle_service.dart';
 import '../../core/services/question_service.dart';
 import '../../core/services/daily_progress_service.dart';
+import '../../core/utils/username_utils.dart';
 import '../../core/scoring/game_performance.dart';
 import '../../core/scoring/progression_service.dart';
 import '../widgets/game_card.dart';
@@ -3182,7 +3183,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
     return Column(
       children: [
         Text(
-          label.length > 10 ? '${label.substring(0, 8)}..' : label,
+          UsernameUtils.truncate(label),
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,

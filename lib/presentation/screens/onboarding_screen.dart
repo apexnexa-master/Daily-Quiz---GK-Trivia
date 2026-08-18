@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/username_utils.dart';
 import '../providers/app_providers.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -117,13 +118,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _completeSetup() async {
     final username = _usernameController.text.trim();
-    if (username.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a username'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+    final error = await UsernameUtils.validateWithUniqueness(username);
+    if (error != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
       return;
     }
 
@@ -276,12 +280,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           ),
                           child: TextField(
                             controller: _usernameController,
+                            maxLength: UsernameUtils.maxLength,
                             style: TextStyle(color: fgColor, fontSize: 16),
                             decoration: InputDecoration(
                               hintText: 'MindAthlete123',
                               hintStyle: TextStyle(color: fgColor.withValues(alpha: 0.3)),
                               border: InputBorder.none,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                              counterText: '',
                               suffixIcon: Icon(
                                 Icons.edit_rounded,
                                 color: AppColors.primary.withValues(alpha: 0.5),

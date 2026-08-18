@@ -13,6 +13,7 @@ import '../widgets/game_card.dart';
 import '../widgets/workout_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/daily_challenge_auth.dart';
+import '../../routes/app_router.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -243,52 +244,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           // Avatar + name pill (same component style as the streak pill).
-          GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/profile'),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(6, 4, 12, 4),
-              decoration: BoxDecoration(
-                color: (isDark ? Colors.white : Colors.black)
-                    .withValues(alpha: isDark ? 0.08 : 0.04),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.neonCyan.withValues(alpha: 0.25)
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 1,
+          Flexible(
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/profile'),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(6, 4, 12, 4),
+                decoration: BoxDecoration(
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withValues(alpha: isDark ? 0.08 : 0.04),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.neonCyan.withValues(alpha: 0.25)
+                        : Colors.black.withValues(alpha: 0.08),
+                    width: 1,
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ClipOval(
-                    child: SizedBox(
-                      width: 26,
-                      height: 26,
-                      child: photoUrl != null
-                          ? Image.network(
-                              photoUrl,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  _avatarPlaceholder(isDark),
-                            )
-                          : _avatarPlaceholder(isDark),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      username,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipOval(
+                      child: SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: photoUrl != null
+                            ? Image.network(
+                                photoUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    _avatarPlaceholder(isDark),
+                              )
+                            : _avatarPlaceholder(isDark),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        username,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1246,7 +1249,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   quizAsync.whenData((quiz) {
                     if (quiz != null) {
                       ref.read(quizSessionProvider.notifier).startQuiz(quiz);
-                      Navigator.pushNamed(context, '/quiz');
+                      Navigator.pushNamed(context, AppRouter.introGkQuiz);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -1288,7 +1291,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     DailyChallengeAuth.requireLogin(context, ref);
                     return;
                   }
-                  Navigator.pushNamed(context, '/arrow-puzzle', arguments: {
+                  Navigator.pushNamed(context, AppRouter.introArrowPuzzle, arguments: {
                     'isDailyChallenge': true,
                   });
                 },
@@ -1319,7 +1322,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 isLocked: false,
                 isLive: false,
                 onTap: () {
-                  Navigator.pushNamed(context, '/math-sprint');
+                  Navigator.pushNamed(context, AppRouter.introMathSprint);
                 },
                 isBn: isBn,
                 isHi: isHi,
@@ -1450,7 +1453,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   : isHi
                       ? 'मानसिक गणित'
                       : 'Mental math',
-              onTap: () => Navigator.pushNamed(context, '/math-sprint'),
+              onTap: () => Navigator.pushNamed(context, AppRouter.introMathSprint),
             ),
             _buildHotGameTile(
               context: context,
@@ -1479,7 +1482,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   : isHi
                       ? 'फोकस व प्रतिक्रिया'
                       : 'Focus & reaction',
-              onTap: () => Navigator.pushNamed(context, '/stroop-rush'),
+              onTap: () => Navigator.pushNamed(context, AppRouter.introStroopRush),
             ),
             _buildHotGameTile(
               context: context,
@@ -1508,7 +1511,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   : isHi
                       ? 'तर्क व दिशा'
                       : 'Logic & orientation',
-              onTap: () => Navigator.pushNamed(context, '/arrow-puzzle'),
+              onTap: () => Navigator.pushNamed(context, AppRouter.introArrowPuzzle),
             ),
             _buildHotGameTile(
               context: context,
@@ -1537,7 +1540,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   : isHi
                       ? 'दैनिक ज्ञान'
                       : 'Daily knowledge',
-              onTap: () => Navigator.pushNamed(context, '/quiz'),
+              onTap: () => Navigator.pushNamed(context, AppRouter.introGkQuiz),
             ),
           ],
         ),

@@ -95,7 +95,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         isLocked: false,
         isImplemented: true,
         onTap: () {
-          Navigator.pushNamed(context, '/arrow-puzzle');
+          Navigator.pushNamed(context, AppRouter.introArrowPuzzle);
         },
       ),
       ChallengeData(
@@ -115,7 +115,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         isLocked: false,
         isImplemented: true,
         onTap: () {
-          Navigator.pushNamed(context, '/synapse-recall');
+          Navigator.pushNamed(context, AppRouter.introSynapseRecall);
         },
       ),
       ChallengeData(
@@ -137,7 +137,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         isLocked: false,
         isImplemented: true,
         onTap: () {
-          Navigator.pushNamed(context, '/stroop-rush');
+          Navigator.pushNamed(context, AppRouter.introStroopRush);
         },
       ),
       ChallengeData(
@@ -157,7 +157,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         isLocked: false,
         isImplemented: true,
         onTap: () {
-          Navigator.pushNamed(context, AppRouter.mathSprint);
+          Navigator.pushNamed(context, AppRouter.introMathSprint);
         },
       ),
       ChallengeData(

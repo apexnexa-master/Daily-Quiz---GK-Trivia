@@ -1,5 +1,6 @@
 // lib/routes/app_router.dart
 import 'package:flutter/material.dart';
+import '../data/game_intro_data.dart';
 import '../presentation/screens/main_navigation_screen.dart';
 import '../presentation/screens/home_screen.dart';
 import '../presentation/screens/quiz_screen.dart';
@@ -13,6 +14,7 @@ import '../presentation/screens/battle_screen.dart';
 import '../presentation/screens/achievements_screen.dart';
 import '../presentation/screens/onboarding_screen.dart';
 import '../presentation/screens/feedback_screen.dart';
+import '../presentation/screens/game_intro_screen.dart';
 // Premium screen - not used
 // import '../presentation/screens/premium_screen.dart';
 import '../presentation/screens/admin_screen.dart';
@@ -48,6 +50,12 @@ class AppRouter {
   static const String synapseRecall = '/synapse-recall';
   static const String mathSprint = '/math-sprint';
   static const String workout = '/workout';
+
+  static const String introArrowPuzzle = '/intro/arrow-puzzle';
+  static const String introStroopRush = '/intro/stroop-rush';
+  static const String introSynapseRecall = '/intro/synapse-recall';
+  static const String introMathSprint = '/intro/math-sprint';
+  static const String introGkQuiz = '/intro/gk-quiz';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     // Intercept deep links of format: /challenge/{roomId}
@@ -110,6 +118,34 @@ class AppRouter {
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return _buildFade(
           WorkoutScreen(presetId: args['presetId'] ?? 'balanced'),
+          settings,
+        );
+      case introArrowPuzzle:
+        return _buildFade(
+          GameIntroScreen(
+            gameData: GameIntroData.games['arrow-puzzle']!,
+            routeArgs: settings.arguments as Map<String, dynamic>?,
+          ),
+          settings,
+        );
+      case introStroopRush:
+        return _buildFade(
+          GameIntroScreen(gameData: GameIntroData.games['stroop-rush']!),
+          settings,
+        );
+      case introSynapseRecall:
+        return _buildFade(
+          GameIntroScreen(gameData: GameIntroData.games['synapse-recall']!),
+          settings,
+        );
+      case introMathSprint:
+        return _buildFade(
+          GameIntroScreen(gameData: GameIntroData.games['math-sprint']!),
+          settings,
+        );
+      case introGkQuiz:
+        return _buildFade(
+          GameIntroScreen(gameData: GameIntroData.games['gk-quiz']!),
           settings,
         );
       default:

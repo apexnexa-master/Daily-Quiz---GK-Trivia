@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/username_utils.dart';
 import '../../providers/app_providers.dart';
 
 class ProfileOverview extends ConsumerWidget {
@@ -179,6 +180,7 @@ class ProfileOverview extends ConsumerWidget {
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (dialogCtx, setModalState) {
+          final nameLen = controller.text.length;
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             backgroundColor: isDark ? AppColors.cardDark : Colors.white,
@@ -198,13 +200,23 @@ class ProfileOverview extends ConsumerWidget {
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: controller,
+                  maxLength: UsernameUtils.maxLength,
                   style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  onChanged: (_) => setModalState(() {}),
                   decoration: InputDecoration(
                     labelText: 'Display Name',
                     hintText: 'Enter new username',
+                    counterText: '${controller.text.length}/${UsernameUtils.maxLength}',
+                    counterStyle: TextStyle(
+                      fontSize: 11,
+                      color: nameLen > UsernameUtils.maxLength * 0.8
+                          ? AppColors.error
+                          : (isDark ? Colors.white54 : Colors.black38),
+                    ),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   ),
@@ -228,8 +240,9 @@ class ProfileOverview extends ConsumerWidget {
                     ? null
                     : () async {
                         final newName = controller.text.trim();
-                        if (newName.isEmpty) {
-                          setModalState(() => errorMsg = 'Name cannot be empty');
+                        final error = await UsernameUtils.validateWithUniqueness(newName);
+                        if (error != null) {
+                          setModalState(() => errorMsg = error);
                           return;
                         }
 
@@ -451,37 +464,47 @@ class ProfileOverview extends ConsumerWidget {
                   const SizedBox(height: 12),
                   
                   // User details text with Edit Username icon
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        user.displayName?.isNotEmpty == true ? user.displayName! : 'Quiz Warrior',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.2,
+                  ClipRect(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            UsernameUtils.truncate(
+                              user.displayName?.isNotEmpty == true ? user.displayName! : 'Quiz Warrior',
+                            ),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
-                      ),
-                      if (!user.isAnonymous) ...[
-                        const SizedBox(width: 4),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _showEditUsernameDialog(context, ref, user.displayName ?? ''),
-                            borderRadius: BorderRadius.circular(100),
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              child: const Icon(
-                                Icons.edit_rounded, 
-                                color: Colors.white70, 
-                                size: 14,
+                        if (!user.isAnonymous) ...[
+                          const SizedBox(width: 4),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showEditUsernameDialog(context, ref, user.displayName ?? ''),
+                              borderRadius: BorderRadius.circular(100),
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                child: const Icon(
+                                  Icons.edit_rounded,
+                                  color: Colors.white70,
+                                  size: 14,
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                   if (user.email != null && user.email.isNotEmpty) ...[
                     const SizedBox(height: 2),
