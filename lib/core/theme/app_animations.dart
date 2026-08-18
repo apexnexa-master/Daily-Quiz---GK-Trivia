@@ -1,5 +1,6 @@
 // lib/core/theme/app_animations.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppAnimations {
   AppAnimations._();
@@ -162,6 +163,7 @@ class _AnimatedScaleButtonState extends State<AnimatedScaleButton>
 
   void _onTapUp(TapUpDetails details) {
     if (widget.onTap != null) {
+      HapticFeedback.lightImpact();
       _controller.reverse().then((_) {
         if (mounted) widget.onTap!();
       });

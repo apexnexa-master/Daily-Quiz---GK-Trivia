@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
+import '../utils/app_logger.dart';
 import 'admin_service.dart';
 
 class AuthResult {
@@ -181,7 +182,9 @@ class AuthService {
       await prefs.remove('onboarding_complete');
       await prefs.remove('temp_username');
       await prefs.remove('temp_photo_url');
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to clear local data on sign-out', error: e, stackTrace: st, name: 'AuthService');
+    }
   }
 
   Future<void> _upsertUserDoc(User user, {required bool isAnonymous}) async {

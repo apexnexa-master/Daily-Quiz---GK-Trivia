@@ -9,6 +9,7 @@ import '../../../core/scoring/brain_score.dart';
 import '../../../core/services/daily_progress_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../providers/scoring_providers.dart';
+import '../shimmer_loading.dart';
 
 class BrainAndSkillsSection extends ConsumerWidget {
   final String lang;
@@ -69,12 +70,51 @@ class _ProfileCardPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 120,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? AppColors.cardDark : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.grey.withValues(alpha: 0.08),
+        ),
       ),
-      child: const Center(child: CircularProgressIndicator()),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const ShimmerCircle(size: 48),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ShimmerBox(height: 18, borderRadius: BorderRadius.circular(4)),
+                    const SizedBox(height: 8),
+                    ShimmerBox(width: 80, height: 12, borderRadius: BorderRadius.circular(4)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...List.generate(3, (_) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                ShimmerBox(width: 80, height: 12, borderRadius: BorderRadius.circular(4)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ShimmerBox(height: 8, borderRadius: BorderRadius.circular(4)),
+                ),
+                const SizedBox(width: 12),
+                ShimmerBox(width: 30, height: 12, borderRadius: BorderRadius.circular(4)),
+              ],
+            ),
+          )),
+        ],
+      ),
     );
   }
 }

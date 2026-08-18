@@ -1,6 +1,7 @@
 // lib/presentation/providers/gamification_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/gamification_service.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/models/gamification_models.dart';
 import 'app_providers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,7 +25,9 @@ final userStatsProvider = FutureProvider<UserStatsModel>((ref) async {
           referralCount: data['referral_count'] ?? 0,
         );
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to fetch user stats from Firestore', error: e, stackTrace: st, name: 'GamificationProviders');
+    }
   }
   final service = ref.watch(gamificationServiceProvider);
   return service.getUserStats();
@@ -62,28 +65,36 @@ class GamificationNotifier extends StateNotifier<AsyncValue<UserStatsModel>> {
     try {
       final stats = await _service.addXP(xp);
       state = AsyncValue.data(stats);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to add XP', error: e, stackTrace: st, name: 'GamificationNotifier');
+    }
   }
 
   Future<void> addCoins(int coins) async {
     try {
       final stats = await _service.addCoins(coins);
       state = AsyncValue.data(stats);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to add coins', error: e, stackTrace: st, name: 'GamificationNotifier');
+    }
   }
 
   Future<void> useLife() async {
     try {
       final stats = await _service.useLife();
       state = AsyncValue.data(stats);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to use life', error: e, stackTrace: st, name: 'GamificationNotifier');
+    }
   }
 
   Future<void> addLife() async {
     try {
       final stats = await _service.addLife();
       state = AsyncValue.data(stats);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to add life', error: e, stackTrace: st, name: 'GamificationNotifier');
+    }
   }
 
   Future<void> refresh() async {

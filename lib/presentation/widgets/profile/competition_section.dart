@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../providers/scoring_providers.dart';
+import '../shimmer_loading.dart';
 
 class CompetitionSection extends ConsumerWidget {
   final String lang;
@@ -143,12 +144,28 @@ class CompetitionSection extends ConsumerWidget {
             );
           },
           loading: () => Container(
-            height: 120,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isDark ? AppColors.cardDark : Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.grey.withValues(alpha: 0.08),
+              ),
             ),
-            child: const Center(child: CircularProgressIndicator()),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(3, (_) => Column(
+                children: [
+                  const ShimmerCircle(size: 32),
+                  const SizedBox(height: 8),
+                  ShimmerBox(width: 40, height: 14, borderRadius: BorderRadius.circular(4)),
+                  const SizedBox(height: 4),
+                  ShimmerBox(width: 60, height: 10, borderRadius: BorderRadius.circular(4)),
+                ],
+              )),
+            ),
           ),
           error: (_, __) => const SizedBox.shrink(),
         ),

@@ -1,6 +1,7 @@
 // lib/presentation/screens/quiz_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
 import '../widgets/quiz/question_card.dart';
@@ -281,6 +282,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
     final question = session.quiz.questions[qIndex];
     final isCorrect = aIndex == question.correctIndex;
 
+    // Haptic feedback: heavy for correct, medium for wrong
+    if (isCorrect) {
+      HapticFeedback.heavyImpact();
+    } else {
+      HapticFeedback.mediumImpact();
+    }
+
     ref.read(quizSessionProvider.notifier).selectAnswer(qIndex, aIndex);
 
     setState(() {
@@ -363,19 +371,31 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
         return _buildQuizCompleteLoader();
       }
       return Scaffold(
+        backgroundColor: _isDark ? AppColors.bgDark : AppColors.bgLight,
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
+              const SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(height: 20),
               Text(
                 isBn
                     ? 'ফলাফল লোড হচ্ছে...'
                     : isHi
                         ? 'परिणाम लोड हो रहा है...'
                         : 'Loading results...',
-                style: TextStyle(color: _isDark ? Colors.white70 : Colors.grey.shade600),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: _isDark ? Colors.white70 : Colors.grey.shade600,
+                ),
               ),
             ],
           ),

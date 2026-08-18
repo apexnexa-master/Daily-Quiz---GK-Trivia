@@ -21,6 +21,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/services/quiz/practice_quiz_service.dart';
+import '../../core/utils/app_logger.dart';
 import '../../data/models/gamification_models.dart';
 
 class ConfettiOverlay extends StatefulWidget {
@@ -234,7 +235,31 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
 
     if (session?.result == null) {
       return Scaffold(
-        body: const Center(child: CircularProgressIndicator()),
+        backgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 3,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                isBn ? 'ফলাফল লোড হচ্ছে...' : isHi ? 'परिणाम लोड हो रहा है...' : 'Loading results...',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white70 : Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -366,17 +391,23 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
               _rewards = rewards;
             });
           }
-        } catch (_) {}
+        } catch (e, st) {
+          AppLogger.error('Failed to calculate quiz rewards', error: e, stackTrace: st, name: 'ResultScreen');
+        }
 
         // Sync local stats to cloud
         try {
           await ref.read(cloudSyncServiceProvider).syncStatsToCloud();
-        } catch (_) {}
+        } catch (e, st) {
+          AppLogger.error('Failed to sync stats to cloud', error: e, stackTrace: st, name: 'ResultScreen');
+        }
 
         // Refresh gamification stats notifier
         try {
           await ref.read(gamificationNotifierProvider.notifier).refresh();
-        } catch (_) {}
+        } catch (e, st) {
+          AppLogger.error('Failed to refresh gamification stats', error: e, stackTrace: st, name: 'ResultScreen');
+        }
 
         // Refresh providers
         ref.invalidate(localStreakProvider);

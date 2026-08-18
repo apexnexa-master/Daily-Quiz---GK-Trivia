@@ -1,10 +1,11 @@
 // lib/presentation/screens/splash_screen.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
-import '../providers/app_providers.dart';
 import '../../routes/app_router.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -45,7 +46,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
       final prefs = await SharedPreferences.getInstance();
       final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
-      final user = ref.read(authStateProvider).value;
+
+      // Use FirebaseAuth directly for reliable synchronous auth check.
+      // The StreamProvider may still be loading on cold start, causing
+      // ref.read(authStateProvider).value to return null even when the
+      // user is actually logged in.
+      final user = FirebaseAuth.instance.currentUser;
 
       if (user == null) {
         Navigator.pushReplacementNamed(context, AppRouter.login);
@@ -142,7 +148,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 opacity: _fadeAnimation,
                 child: Center(
                   child: Text(
-                    'v1.0.2',
+                    'v${AppConstants.appVersion}',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

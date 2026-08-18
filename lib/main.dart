@@ -21,6 +21,7 @@ import 'core/services/quiz_service.dart';
 import 'core/services/quiz/practice_quiz_service.dart';
 import 'core/scoring/progression_service.dart';
 import 'core/utils/offline_manager.dart';
+import 'core/utils/app_logger.dart';
 import 'presentation/providers/app_providers.dart';
 import 'routes/app_router.dart';
 import 'firebase_options.dart';
@@ -90,7 +91,9 @@ class _GkQuizAppState extends ConsumerState<GkQuizApp>
     try {
       final auth = ref.read(authServiceProvider);
       await NotificationService.instance.initialize(auth);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to initialize notifications', error: e, stackTrace: st, name: 'GkQuizApp');
+    }
   }
 
   @override
@@ -116,6 +119,7 @@ class _GkQuizAppState extends ConsumerState<GkQuizApp>
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      locale: const Locale('en'),
       supportedLocales: const [Locale('en'), Locale('hi'), Locale('bn')],
       builder: (context, child) {
         return MediaQuery(

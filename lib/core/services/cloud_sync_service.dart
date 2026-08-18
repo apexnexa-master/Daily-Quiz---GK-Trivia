@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../utils/app_logger.dart';
 
 class CloudSyncService {
   static final CloudSyncService instance = CloudSyncService._();
@@ -186,7 +187,9 @@ class CloudSyncService {
           .collection('bookmarks')
           .doc(questionId)
           .set(questionData);
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to sync bookmark added', error: e, stackTrace: st, name: 'CloudSync');
+    }
   }
 
   Future<void> syncBookmarkRemoved(String questionId) async {
@@ -198,7 +201,9 @@ class CloudSyncService {
           .collection('bookmarks')
           .doc(questionId)
           .delete();
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to sync bookmark removed', error: e, stackTrace: st, name: 'CloudSync');
+    }
   }
 
   Future<void> syncBookmarks() async {
@@ -226,6 +231,8 @@ class CloudSyncService {
           await syncBookmarkAdded(key as String, Map<String, dynamic>.from(localBookmarks[key]));
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.error('Failed to sync bookmarks', error: e, stackTrace: st, name: 'CloudSync');
+    }
   }
 }

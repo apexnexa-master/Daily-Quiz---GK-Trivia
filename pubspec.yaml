@@ -1,7 +1,7 @@
 name: gk_quiz_app
 description: MindSprint - Brain Training & General Knowledge App
 publish_to: 'none'
-version: 1.5.1+9
+version: 1.5.2+10
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
