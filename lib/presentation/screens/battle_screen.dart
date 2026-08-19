@@ -1100,11 +1100,11 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
     final user = ref.watch(currentUserProvider).value;
 
     return PopScope(
-      canPop: !_isOnlineMode ||
+      canPop: widget.isTab || !_isOnlineMode ||
           _arenaState == BattleArenaState.selectMode ||
           _isBattleOver,
       onPopInvokedWithResult: (bool didPop, Object? result) {
-        if (!didPop) {
+        if (!didPop && !widget.isTab) {
           _showExitDialog(context);
         }
       },

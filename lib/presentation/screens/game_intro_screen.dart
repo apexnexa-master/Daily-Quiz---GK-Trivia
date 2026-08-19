@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,9 +20,10 @@ class GameIntroScreen extends ConsumerStatefulWidget {
 }
 
 class _GameIntroScreenState extends ConsumerState<GameIntroScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _orbController;
   late Animation<double> _orbScale;
+  late AnimationController _spinController;
 
   @override
   void initState() {
@@ -32,11 +35,16 @@ class _GameIntroScreenState extends ConsumerState<GameIntroScreen>
     _orbScale = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _orbController, curve: Curves.easeInOut),
     );
+    _spinController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 14),
+    )..repeat();
   }
 
   @override
   void dispose() {
     _orbController.dispose();
+    _spinController.dispose();
     super.dispose();
   }
 
@@ -212,6 +220,9 @@ class _GameIntroScreenState extends ConsumerState<GameIntroScreen>
   }
 
   Widget _buildHeroOrb(bool isDark, GameIntroData gd) {
+    if (gd.showOrbitingOperators) {
+      return _buildOrbitingOrb(isDark, gd);
+    }
     return AnimatedBuilder(
       animation: _orbScale,
       builder: (context, child) {
@@ -249,6 +260,88 @@ class _GameIntroScreenState extends ConsumerState<GameIntroScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildOrbitingOrb(bool isDark, GameIntroData gd) {
+    return SizedBox(
+      width: 160,
+      height: 160,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 104,
+            height: 104,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  gd.accentColor,
+                  gd.secondaryColor ?? gd.accentColor,
+                ],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: gd.accentColor.withValues(alpha: isDark ? 0.4 : 0.3),
+                  blurRadius: 34,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(
+              gd.icon,
+              size: 50,
+              color: Colors.black,
+            ),
+          ),
+          AnimatedBuilder(
+            animation: _spinController,
+            builder: (context, _) {
+              final angle = _spinController.value * 2 * pi;
+              return Transform.rotate(
+                angle: angle,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _orbitSymbol('+', const Offset(70, 0), const Color(0xFF00F1FE)),
+                    _orbitSymbol('−', const Offset(-70, 0), const Color(0xFFFF5FA8)),
+                    _orbitSymbol('×', const Offset(0, 70), const Color(0xFFD4FF50)),
+                    _orbitSymbol('÷', const Offset(0, -70), const Color(0xFFA78BFA)),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _orbitSymbol(String symbol, Offset offset, Color color) {
+    return Transform.translate(
+      offset: offset,
+      child: Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.16),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: 0.55), width: 1.2),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 12),
+          ],
+        ),
+        child: Text(
+          symbol,
+          style: GoogleFonts.montserrat(
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            color: color,
+          ),
+        ),
+      ),
     );
   }
 

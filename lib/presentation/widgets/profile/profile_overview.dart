@@ -487,18 +487,18 @@ class ProfileOverview extends ConsumerWidget {
                         ),
                         if (!user.isAnonymous) ...[
                           const SizedBox(width: 4),
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => _showEditUsernameDialog(context, ref, user.displayName ?? ''),
-                              borderRadius: BorderRadius.circular(100),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(
-                                  Icons.edit_rounded,
-                                  color: Colors.white70,
-                                  size: 14,
-                                ),
+                          GestureDetector(
+                            onTap: () => _showEditUsernameDialog(context, ref, user.displayName ?? ''),
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.edit_rounded,
+                                color: Colors.white,
+                                size: 13,
                               ),
                             ),
                           ),

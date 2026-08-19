@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_screen.dart';
 import 'play_zone_screen.dart';
@@ -53,7 +54,13 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       }
     });
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _showQuitDialog(context, isDark);
+      },
+      child: Scaffold(
       extendBody: true,
       body: PageView(
         controller: _pageController,
@@ -151,6 +158,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -234,6 +242,69 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showQuitDialog(BuildContext context, bool isDark) {
+    final lang = ref.read(languageProvider);
+    final isBn = lang == 'bn';
+    final isHi = lang == 'hi';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: isDark ? const Color(0xFF1A1D23) : Colors.white,
+        title: Text(
+          isBn ? 'বিদায় নিচ্ছেন?' : isHi ? 'जा रहे हैं?' : 'Leaving so soon?',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : AppColors.textPrimaryLight,
+          ),
+        ),
+        content: Text(
+          isBn
+              ? 'আপনি কি সত্যিই মাইন্ডসপ্রিন্ট ছেড়ে যেতে চান? আপনার মস্তিষ্ক এখনো প্রশিক্ষণ প্রয়োজন!'
+              : isHi
+                  ? 'क्या आप सच में MindSprint छोड़ना चाहते हैं? आपके दिमाग को अभी और ट्रेनिंग की ज़रूरत है!'
+                  : 'Are you sure you want to quit MindSprint?\nYour brain still needs training!',
+          style: TextStyle(
+            fontSize: 14,
+            height: 1.5,
+            color: isDark ? Colors.white70 : Colors.black54,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              isBn ? 'থাকুন' : isHi ? 'रुकें' : 'Stay',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              SystemNavigator.pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              isBn ? 'বিদায়' : isHi ? 'बाहर' : 'Quit',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }

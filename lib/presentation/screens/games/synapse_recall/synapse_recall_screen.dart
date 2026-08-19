@@ -124,6 +124,11 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
       duration: const Duration(milliseconds: 520),
     );
     _loadBests();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _phase == _SynapsePhase.intro) {
+        _startGame();
+      }
+    });
   }
 
   @override

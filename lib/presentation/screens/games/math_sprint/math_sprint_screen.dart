@@ -129,8 +129,13 @@ class _MathSprintScreenState extends ConsumerState<MathSprintScreen>
     _introSpin = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 14),
-    )..repeat();
+    );
     _loadBest();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _phase == _Phase.intro) {
+        setState(() => _showCountdown = true);
+      }
+    });
   }
 
   @override
@@ -477,7 +482,7 @@ Can you beat me? 🚀
           ),
           _buildFloaters(),
           if (_showLevelBanner) _buildLevelBanner(isDark),
-          if (_phase == _Phase.intro) _buildIntro(isDark),
+          if (_phase == _Phase.intro && !_showCountdown) _buildIntro(isDark),
           if (_phase == _Phase.finished) _buildResults(isDark),
           if (_paused) _buildPauseOverlay(isDark),
           if (_showCountdown)

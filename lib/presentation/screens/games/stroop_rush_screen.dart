@@ -218,6 +218,11 @@ class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
     _init();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _intro) {
+        _startGame();
+      }
+    });
   }
 
   Future<void> _init() async {
@@ -752,9 +757,12 @@ Can you beat me? 🚀
                       if (_workoutStep != null)
                         WorkoutProgressBanner(step: _workoutStep!),
                       _buildHeader(isDark),
-                      _buildStatsRow(isDark),
-                      Expanded(child: _buildWordStage(isDark)),
-                      _buildAnswerArea(isDark),
+                      if (!_showCountdown) ...[
+                        _buildStatsRow(isDark),
+                        Expanded(child: _buildWordStage(isDark)),
+                        _buildAnswerArea(isDark),
+                      ] else
+                        const Spacer(),
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -770,7 +778,7 @@ Can you beat me? 🚀
             ),
           if (_showComboMilestone) _buildComboMilestoneOverlay(isDark),
           if (_ruleFlash) _buildRuleFlashOverlay(isDark),
-          if (_intro) _buildIntroOverlay(isDark),
+          if (_intro && !_showCountdown) _buildIntroOverlay(isDark),
           if (_paused && !_finished) _buildPauseOverlay(isDark),
           if (_finished) _buildResultOverlay(isDark),
         ],

@@ -19,6 +19,7 @@ class GameIntroData {
   final List<String> rulesHi;
   final String targetRoute;
   final Map<String, dynamic>? targetArgs;
+  final bool showOrbitingOperators;
 
   const GameIntroData({
     required this.id,
@@ -39,6 +40,7 @@ class GameIntroData {
     required this.rulesHi,
     required this.targetRoute,
     this.targetArgs,
+    this.showOrbitingOperators = false,
   });
 
   static const Map<String, GameIntroData> games = {
@@ -201,6 +203,7 @@ class GameIntroData {
         '3 गलतियों में खेल खत्म',
       ],
       targetRoute: '/math-sprint',
+      showOrbitingOperators: true,
     ),
     'gk-quiz': GameIntroData(
       id: 'gk-quiz',
