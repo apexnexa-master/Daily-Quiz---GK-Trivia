@@ -245,5 +245,85 @@ class GameIntroData {
       ],
       targetRoute: '/quiz',
     ),
+    'flow-free': GameIntroData(
+      id: 'flow-free',
+      title: 'FLOW FREE',
+      titleBn: 'ফ্লো ফ্রি',
+      titleHi: 'फ्लो फ्री',
+      tagline: 'Connect colors. Fill the grid.',
+      taglineBn: 'রঙ সংযোগ করুন। গ্রিড পূরণ করুন।',
+      taglineHi: 'रंग जोड़ें। ग्रिड भरें।',
+      icon: Icons.water_drop_rounded,
+      accentColor: Color(0xFF00E5FF),
+      secondaryColor: Color(0xFF0091EA),
+      brainBenefit:
+          'Trains spatial reasoning and path planning. Connecting color pairs without crossing paths strengthens your parietal cortex — the brain region responsible for spatial awareness, logical sequencing, and multi-step planning.',
+      brainBenefitBn:
+          'স্থানিক যুক্তি ও পথ পরিকল্পনা প্রশিক্ষণ দেয়। রঙের জোড়া ছাড়াই পথ সংযোগ করা প্যারিটাল কর্টেক্সকে শক্তিশালী করে।',
+      brainBenefitHi:
+          'स्थानिक तर्क और पथ योजना का प्रशिक्षण करता है। रंग जोड़ों को बिना क्रॉस किए जोड़ना पैरिएटल कॉर्टेक्स को मजबूत करता है।',
+      rules: [
+        'Draw paths to connect matching colored dots',
+        'Paths cannot cross each other',
+        'Fill every cell in the grid',
+        'Grids get larger with more colors',
+        'Fewer moves earn higher scores',
+      ],
+      rulesBn: [
+        'মিলিয়ে রঙের ডট সংযোগ করতে পথ আঁকুন',
+        'পথ পরস্পরকে ছুঁতে পারে না',
+        'গ্রিডের প্রতিটি কোষ পূরণ করুন',
+        'গ্রিড বড় হলে আরও রঙ থাকে',
+        'কম মুভে বেশি স্কোর',
+      ],
+      rulesHi: [
+        'मैचिंग रंग के डॉट्स जोड़ने के लिए पथ खींचें',
+        'पथ एक-दूसरे को छू नहीं सकते',
+        'ग्रिड की हर सेल भरें',
+        'ग्रिड बड़ा होने पर ज़्यादा रंग होते हैं',
+        'कम चालों में ज़्यादा स्कोर',
+      ],
+      targetRoute: '/flow-free',
+    ),
+    'one-line': GameIntroData(
+      id: 'one-line',
+      title: 'ONE LINE',
+      titleBn: 'ওয়ান লাইন',
+      titleHi: 'वन लाइन',
+      tagline: 'Draw the impossible shape.',
+      taglineBn: 'অসম্ভব আকৃতি আঁকুন।',
+      taglineHi: 'असंभव आकृति बनाएँ।',
+      icon: Icons.draw_rounded,
+      accentColor: Color(0xFFE040FB),
+      secondaryColor: Color(0xFFAA00FF),
+      brainBenefit:
+          'Develops graph thinking and spatial awareness. Tracing complex shapes with a single continuous stroke engages your prefrontal cortex and strengthens problem-solving through Euler path reasoning.',
+      brainBenefitBn:
+          'গ্রাফ চিন্তা ও স্থানিক সচেতনতা বিকাশ করে। একটি ধারাবাহিক স্ট্রোকে জটিল আকৃতি ট্রেস করা প্রিফ্রন্টাল কর্টেক্সকে সক্রিয় করে।',
+      brainBenefitHi:
+          'ग्राफ सोच और स्थानिक जागरूकता विकसित करता है। एक निरंतर स्ट्रोक में जटिल आकृतियाँ बनाना प्रीफ्रंटल कॉर्टेक्स को सक्रिय करता है।',
+      rules: [
+        'Trace the shape with a single continuous stroke',
+        'Every edge must be traversed exactly once',
+        'You cannot lift your finger',
+        'Shapes get more complex each level',
+        'Find the right starting point',
+      ],
+      rulesBn: [
+        'একটি ধারাবাহিক স্ট্রোকে আকৃতি ট্রেস করুন',
+        'প্রতিটি প্রান্ত ঠিক একবার পার হতে হবে',
+        'আঙুল তুলতে পারবেন না',
+        'প্রতিটি লেভেলে জটিল আকৃতি',
+        'সঠিক শুরুর পয়েন্ট খুঁজুন',
+      ],
+      rulesHi: [
+        'एक निरंतर स्ट्रोक में आकृति ट्रेस करें',
+        'हर किनारा ठीक एक बार पार किया जाना चाहिए',
+        'उंगली नहीं उठा सकते',
+        'हर लेवल पर जटिल आकृतियाँ',
+        'सही शुरुआती बिंदु खोजें',
+      ],
+      targetRoute: '/one-line',
+    ),
   };
 }

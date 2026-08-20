@@ -30,6 +30,8 @@ class GameType {
   static const String synapse = 'synapse';
   static const String math = 'math';
   static const String battle = 'battle';
+  static const String flowFree = 'flowFree';
+  static const String oneLine = 'oneLine';
 }
 
 class DailyProgress {

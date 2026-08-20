@@ -197,6 +197,84 @@ class MathPerformanceInput extends GamePerformanceInput {
   }
 }
 
+/// Flow Free — connect color dots by filling the entire grid.
+class FlowFreePerformanceInput extends GamePerformanceInput {
+  final int gridSize;
+  final int colorsCount;
+  final bool completed;
+  final int timeSeconds;
+  final int movesUsed;
+  final int optimalMoves;
+  final int mistakes;
+
+  const FlowFreePerformanceInput({
+    required this.gridSize,
+    required this.colorsCount,
+    this.completed = false,
+    this.timeSeconds = 0,
+    this.movesUsed = 0,
+    this.optimalMoves = 0,
+    this.mistakes = 0,
+  });
+
+  @override
+  int normalize() {
+    final difficultyFactor =
+        ((gridSize - 3) * 0.15 + colorsCount * 0.12).clamp(0.0, 1.0);
+    final completionScore = completed ? 0.4 : 0.0;
+    final efficiencyScore = optimalMoves > 0
+        ? (clamp01(optimalMoves / movesUsed.clamp(1, 999))) * 0.3
+        : 0.0;
+    final speedScore = completed
+        ? clamp01((gridSize * colorsCount * 5 - timeSeconds) /
+            (gridSize * colorsCount * 5))
+        : 0.0;
+    final mistakePenalty = clamp01(1.0 - mistakes * 0.08) * 0.1;
+    final score = difficultyFactor * 0.1 +
+        completionScore +
+        efficiencyScore +
+        speedScore +
+        mistakePenalty;
+    return toPercent(score);
+  }
+}
+
+/// One-Line Drawing — trace a shape using a single continuous stroke.
+class OneLinePerformanceInput extends GamePerformanceInput {
+  final int shapeComplexity;
+  final int edgeCount;
+  final bool completed;
+  final int timeSeconds;
+  final int backtracks;
+  final int hintsUsed;
+
+  const OneLinePerformanceInput({
+    required this.shapeComplexity,
+    required this.edgeCount,
+    this.completed = false,
+    this.timeSeconds = 0,
+    this.backtracks = 0,
+    this.hintsUsed = 0,
+  });
+
+  @override
+  int normalize() {
+    final difficultyFactor = (shapeComplexity.clamp(1, 10) / 10.0);
+    final completionScore = completed ? 0.5 : 0.0;
+    final speedScore = completed
+        ? clamp01((edgeCount * 4 - timeSeconds) / (edgeCount * 4)) * 0.25
+        : 0.0;
+    final backtrackPenalty = clamp01(1.0 - backtracks * 0.1) * 0.15;
+    final hintPenalty = clamp01(1.0 - hintsUsed * 0.2) * 0.1;
+    final score = difficultyFactor * 0.1 +
+        completionScore +
+        speedScore +
+        backtrackPenalty +
+        hintPenalty;
+    return toPercent(score);
+  }
+}
+
 /// Battle Mode (GK quiz versus another player). Same formula as the quiz.
 class BattlePerformanceInput extends GamePerformanceInput {
   final int correct;

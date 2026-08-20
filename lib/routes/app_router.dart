@@ -24,6 +24,8 @@ import '../presentation/screens/games/arrow_escape_game_screen.dart';
 import '../presentation/screens/games/stroop_rush_screen.dart';
 import '../presentation/screens/games/synapse_recall/synapse_recall_screen.dart';
 import '../presentation/screens/games/math_sprint/math_sprint_screen.dart';
+import '../presentation/screens/games/flow_free/flow_free_screen.dart';
+import '../presentation/screens/games/one_line/one_line_screen.dart';
 import '../presentation/workout/workout_screen.dart';
 
 class AppRouter {
@@ -56,6 +58,10 @@ class AppRouter {
   static const String introSynapseRecall = '/intro/synapse-recall';
   static const String introMathSprint = '/intro/math-sprint';
   static const String introGkQuiz = '/intro/gk-quiz';
+  static const String flowFree = '/flow-free';
+  static const String oneLine = '/one-line';
+  static const String introFlowFree = '/intro/flow-free';
+  static const String introOneLine = '/intro/one-line';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     // Intercept deep links of format: /challenge/{roomId}
@@ -114,6 +120,10 @@ class AppRouter {
         return _buildFade(const SynapseRecallScreen(), settings);
       case mathSprint:
         return _buildFade(const MathSprintScreen(), settings);
+      case flowFree:
+        return _buildFade(const FlowFreeScreen(), settings);
+      case oneLine:
+        return _buildFade(const OneLineScreen(), settings);
       case workout:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return _buildFade(
@@ -146,6 +156,22 @@ class AppRouter {
       case introGkQuiz:
         return _buildFade(
           GameIntroScreen(gameData: GameIntroData.games['gk-quiz']!),
+          settings,
+        );
+      case introFlowFree:
+        return _buildFade(
+          GameIntroScreen(
+            gameData: GameIntroData.games['flow-free']!,
+            routeArgs: settings.arguments as Map<String, dynamic>?,
+          ),
+          settings,
+        );
+      case introOneLine:
+        return _buildFade(
+          GameIntroScreen(
+            gameData: GameIntroData.games['one-line']!,
+            routeArgs: settings.arguments as Map<String, dynamic>?,
+          ),
           settings,
         );
       default:

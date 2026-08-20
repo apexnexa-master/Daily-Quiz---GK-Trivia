@@ -177,6 +177,48 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         isLocked: true,
         onTap: () {},
       ),
+      ChallengeData(
+        title: isBn
+            ? 'ফ্লো ফ্রি'
+            : isHi
+                ? 'फ्लो फ्री'
+                : 'Flow Free',
+        description: isBn
+            ? 'রঙ সংযোগ করে গ্রিড পূরণ করুন। পথ ক্রস করতে পারে না।'
+            : isHi
+                ? 'रंग जोड़कर ग्रिड भरें। पथ क्रॉस नहीं कर सकते।'
+                : 'Connect matching colors by drawing paths that fill every cell without crossing.',
+        category: 'Logic',
+        duration: '3m',
+        icon: Icons.water_drop_rounded,
+        accentColor: const Color(0xFF00E5FF),
+        isLocked: false,
+        isImplemented: true,
+        onTap: () {
+          Navigator.pushNamed(context, AppRouter.introFlowFree);
+        },
+      ),
+      ChallengeData(
+        title: isBn
+            ? 'ওয়ান লাইন'
+            : isHi
+                ? 'वन लाइন'
+                : 'One Line',
+        description: isBn
+            ? 'একটি ধারাবাহিক স্ট্রোকে আকৃতি আঁকুন।'
+            : isHi
+                ? 'एक निरंतर स्ट्रोक में आकृति बनाएँ।'
+                : 'Trace complex shapes with a single continuous stroke without lifting your finger.',
+        category: 'Logic',
+        duration: '2m',
+        icon: Icons.draw_rounded,
+        accentColor: const Color(0xFFE040FB),
+        isLocked: false,
+        isImplemented: true,
+        onTap: () {
+          Navigator.pushNamed(context, AppRouter.introOneLine);
+        },
+      ),
     ];
 
     // Filtered challenges list based on category tab & search query

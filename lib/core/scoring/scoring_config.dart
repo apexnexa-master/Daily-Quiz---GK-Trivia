@@ -138,6 +138,10 @@ class ScoringConfig {
     'math': {skillSpeed: 0.70, skillLogic: 0.30},
     // Battle: Knowledge primary, Speed secondary.
     'battle': {skillKnowledge: 0.60, skillSpeed: 0.40},
+    // Flow Free: Logic primary, Memory secondary.
+    'flowFree': {skillLogic: 0.70, skillMemory: 0.30},
+    // One-Line Drawing: Logic primary, Speed secondary.
+    'oneLine': {skillLogic: 0.70, skillSpeed: 0.30},
   };
 
   /// Validates that every game's skill weights sum to 1.0 within a small
