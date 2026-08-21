@@ -42,6 +42,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   _Phase _phase = _Phase.intro;
   bool _showCountdown = false;
   bool _isNewBest = false;
+  bool _boardReady = false;
   int _currentLevelIndex = 0;
   int _best = 0;
   int _elapsedSeconds = 0;
@@ -54,6 +55,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   late final AnimationController _introSpin;
   late final AnimationController _boardPop;
   late final AnimationController _boardReveal;
+  late final AnimationController _dotsIn;
   late final AnimationController _boardFinish;
 
   bool get _isBn => _lang == 'bn';
@@ -77,8 +79,12 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     );
     _boardReveal = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
+      duration: const Duration(milliseconds: 900),
+    )..addStatusListener(_onRevealStatus);
+    _dotsIn = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    )..addStatusListener(_onDotsStatus);
     _boardFinish = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -94,6 +100,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     _introSpin.dispose();
     _boardPop.dispose();
     _boardReveal.dispose();
+    _dotsIn.dispose();
     _boardFinish.dispose();
     super.dispose();
   }
@@ -111,6 +118,25 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     _gameState = FlowGameState(_currentLevel);
     _elapsedSeconds = 0;
     _hasStartedDrawing = false;
+    _boardReady = false;
+    final cells = _currentLevel.rows * _currentLevel.cols;
+    _boardReveal.duration =
+        Duration(milliseconds: math.min(1500, 550 + cells * 11));
+  }
+
+  // ── Board intro choreography ────────────────────────────────────────────
+
+  void _onRevealStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    if (!mounted) return;
+    _dotsIn.forward(from: 0);
+  }
+
+  void _onDotsStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed) return;
+    if (!mounted || _phase != _Phase.playing) return;
+    setState(() => _boardReady = true);
+    _startClock();
   }
 
   // ── Flow control ──────────────────────────────────────────────────────
@@ -122,14 +148,16 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
 
   void _beginRun() {
     if (_phase == _Phase.playing) return;
+    _clockTimer?.cancel();
     setState(() {
       _showCountdown = false;
       _phase = _Phase.playing;
       _elapsedSeconds = 0;
       _hasStartedDrawing = false;
+      _boardReady = false;
     });
-    _startClock();
     _boardPop.forward(from: 0);
+    _dotsIn.reset();
     _boardReveal.forward(from: 0);
   }
 
@@ -221,7 +249,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   // ── Gesture handling ──────────────────────────────────────────────────
 
   void _onPointerDown(PointerDownEvent event) {
-    if (_phase != _Phase.playing) return;
+    if (_phase != _Phase.playing || !_boardReady) return;
     final cell = _getGridCell(event.localPosition);
     if (cell == null) return;
 
@@ -448,7 +476,8 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   }
 
   Widget _buildUndoButtonBottom(bool isDark) {
-    final enabled = _gameState.canUndo && _phase == _Phase.playing;
+    final enabled =
+        _gameState.canUndo && _phase == _Phase.playing && _boardReady;
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: GestureDetector(
@@ -529,20 +558,40 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
                     onPointerMove: _onPointerMove,
                     onPointerUp: _onPointerUp,
                     child: AnimatedBuilder(
-                      animation: _boardReveal,
-                      builder: (context, _) => CustomPaint(
-                        painter: FlowFreePainter(
-                          level: _currentLevel,
-                          paths: _gameState.paths,
-                          grid: _gameState.grid,
-                          activePairId: _gameState.activePairId,
-                          revealProgress:
-                              _boardReveal.isAnimating || _boardReveal.isCompleted
-                                  ? _boardReveal.value
-                                  : null,
-                        ),
-                        size: Size(maxSize, maxSize),
-                      ),
+                      animation: Listenable.merge([_boardReveal, _dotsIn]),
+                      builder: (context, _) {
+                        final hidden =
+                            _phase == _Phase.intro || _showCountdown;
+                        final building = !hidden &&
+                            (_boardReveal.isAnimating ||
+                                _boardReveal.value < 1.0);
+
+                        // Dots stay hidden (progress 0) until the grid build
+                        // finishes, then pop in via _dotsIn, then rest at null
+                        // (= fully shown, no per-frame dot math).
+                        final double? dotsProgress;
+                        if (!hidden && _dotsIn.isAnimating) {
+                          dotsProgress = _dotsIn.value;
+                        } else if (!hidden && !_dotsIn.isCompleted) {
+                          dotsProgress = 0.0;
+                        } else {
+                          dotsProgress = null;
+                        }
+
+                        return CustomPaint(
+                          painter: FlowFreePainter(
+                            level: _currentLevel,
+                            paths: _gameState.paths,
+                            grid: _gameState.grid,
+                            activePairId: _gameState.activePairId,
+                            hidden: hidden,
+                            buildProgress:
+                                building ? _boardReveal.value : null,
+                            dotsProgress: dotsProgress,
+                          ),
+                          size: Size(maxSize, maxSize),
+                        );
+                      },
                     ),
                   ),
                 ),

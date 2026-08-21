@@ -8,18 +8,43 @@ class FlowFreePainter extends CustomPainter {
   final Map<int, List<FlowCell>> paths;
   final int? activePairId;
   final List<List<int>> grid;
-  final double? revealProgress;
+
+  /// When true nothing is drawn at all (used during intro/countdown).
+  final bool hidden;
+
+  /// 0..1 grid construction animation. Null means the grid is fully built.
+  final double? buildProgress;
+
+  /// 0..1 endpoint dots pop-in. Null means dots are fully shown.
+  final double? dotsProgress;
 
   FlowFreePainter({
     required this.level,
     required this.paths,
     required this.grid,
     this.activePairId,
-    this.revealProgress,
+    this.hidden = false,
+    this.buildProgress,
+    this.dotsProgress,
   });
+
+  /// Diagonal wave: each cell pops in along its (row + col) anti-diagonal.
+  /// Every cell reaches full scale exactly when progress hits 1.0.
+  double _cellScale(int r, int c) {
+    if (buildProgress == null) return 1.0;
+    final span = level.rows + level.cols - 2;
+    final wave = span <= 0 ? 0.0 : (r + c) / span;
+    const window = 0.28;
+    final start = wave * (1.0 - window);
+    if (buildProgress! <= start) return 0.0;
+    final t = ((buildProgress! - start) / window).clamp(0.0, 1.0);
+    return Curves.easeOutBack.transform(t);
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (hidden) return;
+
     final cellW = size.width / level.cols;
     final cellH = size.height / level.rows;
     final cs = min(cellW, cellH);
@@ -27,8 +52,8 @@ class FlowFreePainter extends CustomPainter {
     final oy = (size.height - cs * level.rows) / 2;
 
     _drawGridShell(canvas, cs, ox, oy);
-    _drawCellGlows(canvas, cs, ox, oy);
     _drawGridLines(canvas, cs, ox, oy);
+    _drawCellGlows(canvas, cs, ox, oy);
     _drawPaths(canvas, cs, ox, oy);
     _drawEndpoints(canvas, cs, ox, oy);
   }
@@ -38,7 +63,6 @@ class FlowFreePainter extends CustomPainter {
   void _drawGridShell(Canvas canvas, double cs, double ox, double oy) {
     final w = cs * level.cols;
     final h = cs * level.rows;
-    final total = level.rows * level.cols;
 
     final shadowPaint = Paint()
       ..color = const Color(0xFF00E5FF).withValues(alpha: 0.06)
@@ -63,45 +87,31 @@ class FlowFreePainter extends CustomPainter {
     final cellBg = Paint();
     for (int r = 0; r < level.rows; r++) {
       for (int c = 0; c < level.cols; c++) {
-        final idx = r * level.cols + c;
-        if (revealProgress != null) {
-          final cellRevealAt = idx / (total * 0.7);
-          if (revealProgress! < cellRevealAt) continue;
-          final cellT = ((revealProgress! - cellRevealAt) / 0.3).clamp(0.0, 1.0);
-          final ease = Curves.easeOutBack.transform(cellT);
-          final padX = cs * (1 - ease) * 0.5;
-          final padY = cs * (1 - ease) * 0.5;
-          final brightness = ((r + c) % 2 == 0) ? 0xFF0B1017 : 0xFF0D131C;
-          cellBg.color = Color(brightness);
-          canvas.drawRRect(
-            RRect.fromRectAndRadius(
-              Rect.fromLTWH(
-                ox + c * cs + 0.6 + padX,
-                oy + r * cs + 0.6 + padY,
-                cs - 1.2 - padX * 2,
-                cs - 1.2 - padY * 2,
-              ),
-              const Radius.circular(2.5),
+        final scale = _cellScale(r, c);
+        if (scale <= 0) continue;
+        final pad = cs * (1 - scale) * 0.5;
+        final brightness = ((r + c) % 2 == 0) ? 0xFF152238 : 0xFF0A1322;
+        cellBg.color = Color(brightness);
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTWH(
+              ox + c * cs + 1 + pad,
+              oy + r * cs + 1 + pad,
+              cs - 2 - pad * 2,
+              cs - 2 - pad * 2,
             ),
-            cellBg,
-          );
-        } else {
-          final brightness = ((r + c) % 2 == 0) ? 0xFF0B1017 : 0xFF0D131C;
-          cellBg.color = Color(brightness);
-          canvas.drawRRect(
-            RRect.fromRectAndRadius(
-              Rect.fromLTWH(ox + c * cs + 0.6, oy + r * cs + 0.6, cs - 1.2, cs - 1.2),
-              const Radius.circular(2.5),
-            ),
-            cellBg,
-          );
-        }
+            const Radius.circular(3),
+          ),
+          cellBg,
+        );
       }
     }
 
+    final frameAlpha =
+        buildProgress == null ? 1.0 : (buildProgress! * 2).clamp(0.0, 1.0);
     final borderPaint = Paint()
-      ..color = const Color(0xFF1E2D3D)
-      ..strokeWidth = 1.2
+      ..color = const Color(0xFF33507A).withValues(alpha: frameAlpha)
+      ..strokeWidth = 1.4
       ..style = PaintingStyle.stroke;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
@@ -115,17 +125,12 @@ class FlowFreePainter extends CustomPainter {
   // ── Cell background glows ─────────────────────────────────────────────
 
   void _drawCellGlows(Canvas canvas, double cs, double ox, double oy) {
-    final total = level.rows * level.cols;
+    if (dotsProgress != null && dotsProgress! < 1.0) return;
+
     for (int r = 0; r < level.rows; r++) {
       for (int c = 0; c < level.cols; c++) {
-        final idx = r * level.cols + c;
-        double cellScale = 1.0;
-        if (revealProgress != null) {
-          final cellRevealAt = idx / (total * 0.7);
-          if (revealProgress! < cellRevealAt) continue;
-          final cellT = ((revealProgress! - cellRevealAt) / 0.3).clamp(0.0, 1.0);
-          cellScale = Curves.easeOutBack.transform(cellT);
-        }
+        final cellScale = _cellScale(r, c);
+        if (cellScale <= 0) continue;
 
         final pairId = grid[r][c];
         if (pairId < 0 || pairId >= level.pairs.length) continue;
@@ -182,9 +187,11 @@ class FlowFreePainter extends CustomPainter {
   // ── Grid lines ────────────────────────────────────────────────────────
 
   void _drawGridLines(Canvas canvas, double cs, double ox, double oy) {
+    final lineAlpha =
+        buildProgress == null ? 1.0 : (buildProgress! * 2.5).clamp(0.0, 1.0);
     final linePaint = Paint()
-      ..color = const Color(0xFF141E2A)
-      ..strokeWidth = 0.6
+      ..color = const Color(0xFF2A4266).withValues(alpha: lineAlpha)
+      ..strokeWidth = 0.8
       ..style = PaintingStyle.stroke;
 
     for (int r = 1; r < level.rows; r++) {
@@ -206,6 +213,8 @@ class FlowFreePainter extends CustomPainter {
   // ── Paths (pipes) ─────────────────────────────────────────────────────
 
   void _drawPaths(Canvas canvas, double cs, double ox, double oy) {
+    if (dotsProgress != null && dotsProgress! < 1.0) return;
+
     final dotRadius = cs * 0.22;
 
     for (final entry in paths.entries) {
@@ -346,7 +355,19 @@ class FlowFreePainter extends CustomPainter {
   // ── Endpoints ─────────────────────────────────────────────────────────
 
   void _drawEndpoints(Canvas canvas, double cs, double ox, double oy) {
-    for (final pair in level.pairs) {
+    final count = level.pairs.length;
+    for (int pi = 0; pi < count; pi++) {
+      final pair = level.pairs[pi];
+
+      double popScale = 1.0;
+      if (dotsProgress != null) {
+        final step = count > 1 ? 0.45 / (count - 1) : 0.0;
+        final start = pi * step;
+        if (dotsProgress! <= start) continue;
+        final t = ((dotsProgress! - start) / 0.55).clamp(0.0, 1.0);
+        popScale = Curves.easeOutBack.transform(t);
+      }
+
       final isActive = pair.id == activePairId;
       final path = paths[pair.id];
       final isCompleted = path != null &&
@@ -357,7 +378,8 @@ class FlowFreePainter extends CustomPainter {
       for (final cell in [pair.start, pair.end]) {
         final cx = ox + cell.col * cs + cs / 2;
         final cy = oy + cell.row * cs + cs / 2;
-        final radius = cs * (isActive ? 0.24 : 0.20);
+        final radius = cs * (isActive ? 0.24 : 0.20) * popScale;
+        if (radius <= 0) continue;
 
         final dotPaint = Paint()
           ..color = pair.color.withValues(alpha: isCompleted ? 0.7 : 1.0);
@@ -384,10 +406,12 @@ class FlowFreePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(FlowFreePainter oldDelegate) {
+    if (oldDelegate.hidden != hidden) return true;
     if (oldDelegate.activePairId != activePairId) return true;
     if (oldDelegate.paths.length != paths.length) return true;
     if (oldDelegate.grid != grid) return true;
-    if (oldDelegate.revealProgress != revealProgress) return true;
+    if (oldDelegate.buildProgress != buildProgress) return true;
+    if (oldDelegate.dotsProgress != dotsProgress) return true;
     for (final key in paths.keys) {
       final oldPath = oldDelegate.paths[key];
       final newPath = paths[key];
