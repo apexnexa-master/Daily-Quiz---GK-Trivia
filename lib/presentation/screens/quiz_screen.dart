@@ -458,11 +458,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen>
                             selectedAnswer: session.selectedAnswers[session.currentIndex],
                             onAnswerSelected: (i) => _onAnswerSelected(session.currentIndex, i),
                             isDark: _isDark,
-                            isBookmarked: ref.watch(bookmarksProvider).any((b) => b['id'] == question.id),
-                            onBookmarkTapped: () {
-                              final qData = question.toFirestore()..['id'] = question.id;
-                              ref.read(bookmarksProvider.notifier).toggle(question.id, qData);
-                            },
                             visibleOptions: _lifeline5050Used && _5050VisibleIndices.isNotEmpty
                                 ? _5050VisibleIndices
                                 : null,

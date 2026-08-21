@@ -223,6 +223,9 @@ class _GameIntroScreenState extends ConsumerState<GameIntroScreen>
     if (gd.showOrbitingOperators) {
       return _buildOrbitingOrb(isDark, gd);
     }
+    if (gd.showOrbitingDots) {
+      return _buildOrbitingDotOrb(isDark, gd);
+    }
     return AnimatedBuilder(
       animation: _orbScale,
       builder: (context, child) {
@@ -340,6 +343,86 @@ class _GameIntroScreenState extends ConsumerState<GameIntroScreen>
             fontWeight: FontWeight.w900,
             color: color,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrbitingDotOrb(bool isDark, GameIntroData gd) {
+    return SizedBox(
+      width: 150,
+      height: 150,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 104,
+            height: 104,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  gd.accentColor,
+                  gd.secondaryColor ?? gd.accentColor,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: gd.accentColor.withValues(alpha: isDark ? 0.45 : 0.35),
+                  blurRadius: 34,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(
+              gd.icon,
+              size: 50,
+              color: Colors.white,
+            ),
+          ),
+          AnimatedBuilder(
+            animation: _spinController,
+            builder: (context, _) {
+              final angle = _spinController.value * 2 * pi;
+              return Transform.rotate(
+                angle: angle,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _orbitDot(const Offset(64, 0), const Color(0xFF00E5FF)),
+                    _orbitDot(const Offset(-64, 0), const Color(0xFFFF6D00)),
+                    _orbitDot(const Offset(0, 64), const Color(0xFFE040FB)),
+                    _orbitDot(const Offset(0, -64), const Color(0xFFFFEB3B)),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _orbitDot(Offset offset, Color color) {
+    return Transform.translate(
+      offset: offset,
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.16),
+          shape: BoxShape.circle,
+          border:
+              Border.all(color: color.withValues(alpha: 0.55), width: 1.2),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 12),
+          ],
+        ),
+        child: Container(
+          margin: const EdgeInsets.all(6),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
       ),
     );

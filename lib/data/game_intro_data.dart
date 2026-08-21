@@ -20,6 +20,7 @@ class GameIntroData {
   final String targetRoute;
   final Map<String, dynamic>? targetArgs;
   final bool showOrbitingOperators;
+  final bool showOrbitingDots;
 
   const GameIntroData({
     required this.id,
@@ -41,6 +42,7 @@ class GameIntroData {
     required this.targetRoute,
     this.targetArgs,
     this.showOrbitingOperators = false,
+    this.showOrbitingDots = false,
   });
 
   static const Map<String, GameIntroData> games = {
@@ -284,6 +286,7 @@ class GameIntroData {
         'कम चालों में ज़्यादा स्कोर',
       ],
       targetRoute: '/flow-free',
+      showOrbitingDots: true,
     ),
     'one-line': GameIntroData(
       id: 'one-line',

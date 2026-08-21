@@ -173,8 +173,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               QuickBrainWorkoutCard(lang: lang),
                               const SizedBox(height: 24),
 
-                              // Hot Games — standalone quick-play games
-                              _buildHotGamesSection(
+                              // Recommended Games — standalone quick-play games
+                              _buildRecommendedGamesSection(
                                   context, isBn, isHi, isDark),
                               const SizedBox(height: 24),
 
@@ -1382,29 +1382,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ── Hot Games (standalone quick-play tiles) ──────────────────────────────
+  // ── Recommended Games (standalone quick-play tiles) ──────────────────────
 
-  Widget _buildHotGamesSection(
+  Widget _buildRecommendedGamesSection(
       BuildContext context, bool isBn, bool isHi, bool isDark) {
-    const accentLime = Color(0xFFD4FF50);
     const accentCyan = Color(0xFF00F1FE);
     const accentPurple = Color(0xFFECB2FF);
     const accentOrange = Color(0xFFF97316);
+    const accentEmerald = Color(0xFF34D399);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.local_fire_department_rounded,
-                color: Color(0xFFF97316), size: 18),
+            const Icon(Icons.recommend_rounded,
+                color: accentEmerald, size: 18),
             const SizedBox(width: 6),
             Text(
               isBn
-                  ? 'হট গেমস'
+                  ? 'রেকমেন্ডেড গেমস'
                   : isHi
-                      ? 'हॉट गेम्स'
-                      : 'HOT GAMES',
+                      ? 'सुझाए गए गेम्स'
+                      : 'RECOMMENDED',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w900,
@@ -1426,7 +1426,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             mainAxisExtent: 172,
           ),
           children: [
-            _buildHotGameTile(
+            _buildRecommendedGameTile(
+              context: context,
+              isDark: isDark,
+              isBn: isBn,
+              isHi: isHi,
+              badgeText: isBn
+                  ? 'পাজল'
+                  : isHi
+                      ? 'पहेली'
+                      : 'PUZZLE',
+              title: isBn
+                  ? 'ফ্লো ফ্রি'
+                  : isHi
+                      ? 'फ्लो फ्री'
+                      : 'Flow Free',
+              subtitle: isBn
+                  ? 'রঙের জোড়া জুড়ে গ্রিড পূরণ'
+                  : isHi
+                      ? 'रंगीन जोड़े जोड़ें'
+                      : 'Connect matching colors',
+              accent: accentEmerald,
+              cover: const _FlowFreeCover(),
+              footer: isBn
+                  ? 'পাইপ পাজল'
+                  : isHi
+                      ? 'पाइप पहेली'
+                      : 'Pipe puzzle',
+              onTap: () => Navigator.pushNamed(context, AppRouter.introFlowFree),
+            ),
+            _buildRecommendedGameTile(
               context: context,
               isDark: isDark,
               isBn: isBn,
@@ -1455,7 +1484,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       : 'Mental math',
               onTap: () => Navigator.pushNamed(context, AppRouter.introMathSprint),
             ),
-            _buildHotGameTile(
+            _buildRecommendedGameTile(
               context: context,
               isDark: isDark,
               isBn: isBn,
@@ -1484,7 +1513,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       : 'Focus & reaction',
               onTap: () => Navigator.pushNamed(context, AppRouter.introStroopRush),
             ),
-            _buildHotGameTile(
+            _buildRecommendedGameTile(
               context: context,
               isDark: isDark,
               isBn: isBn,
@@ -1513,42 +1542,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       : 'Logic & orientation',
               onTap: () => Navigator.pushNamed(context, AppRouter.introArrowPuzzle),
             ),
-            _buildHotGameTile(
-              context: context,
-              isDark: isDark,
-              isBn: isBn,
-              isHi: isHi,
-              badgeText: isBn
-                  ? 'জ্ঞান'
-                  : isHi
-                      ? 'ज्ञान'
-                      : 'KNOWLEDGE',
-              title: isBn
-                  ? 'জিকে কুইজ'
-                  : isHi
-                      ? 'जीके क्विज़'
-                      : 'GK Quiz',
-              subtitle: isBn
-                  ? 'সাধারণ জ্ঞান কুইজ'
-                  : isHi
-                      ? 'सामान्य ज्ञान क्विज़'
-                      : 'General knowledge quiz',
-              accent: accentLime,
-              imagePath: 'assets/icon/quiz3.png',
-              footer: isBn
-                  ? 'দৈনিক জ্ঞান'
-                  : isHi
-                      ? 'दैनिक ज्ञान'
-                      : 'Daily knowledge',
-              onTap: () => Navigator.pushNamed(context, AppRouter.introGkQuiz),
-            ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildHotGameTile({
+  Widget _buildRecommendedGameTile({
     required BuildContext context,
     required bool isDark,
     required bool isBn,
@@ -1560,12 +1560,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required Color accent,
     required VoidCallback onTap,
     String? imagePath,
+    Widget? cover,
   }) {
     return GameCard(
       fillHeight: true,
       compact: true,
       coverHeight: 116,
       imagePath: imagePath,
+      cover: cover,
       accent: accent,
       badge: badgeText,
       isLive: true,
@@ -1664,4 +1666,80 @@ class _GlowBlob extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Miniature Flow-Free board illustration for the recommended-tile cover.
+class _FlowFreeCover extends StatelessWidget {
+  const _FlowFreeCover();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _FlowFreeCoverPainter(),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _FlowFreeCoverPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bg = Paint()..color = const Color(0xFF0A1322);
+    canvas.drawRect(Offset.zero & size, bg);
+
+    const cols = 5;
+    const rows = 3;
+    final cell = size.width / cols;
+    final gridH = cell * rows;
+    final top = (size.height - gridH) / 2;
+
+    final gridLine = Paint()
+      ..color = const Color(0xFF22334F)
+      ..strokeWidth = 1;
+    for (int r = 0; r <= rows; r++) {
+      canvas.drawLine(
+          Offset(0, top + r * cell), Offset(size.width, top + r * cell), gridLine);
+    }
+    for (int c = 0; c <= cols; c++) {
+      canvas.drawLine(
+          Offset(c * cell, top), Offset(c * cell, top + gridH), gridLine);
+    }
+
+    void pipe(List<Offset> cells, Color color) {
+      Offset centerOf(Offset c) =>
+          Offset(c.dx * cell + cell / 2, top + c.dy * cell + cell / 2);
+      final path = Path()
+        ..moveTo(centerOf(cells.first).dx, centerOf(cells.first).dy);
+      for (final c in cells.skip(1)) {
+        path.lineTo(centerOf(c).dx, centerOf(c).dy);
+      }
+      final stroke = Paint()
+        ..color = color.withValues(alpha: 0.85)
+        ..strokeWidth = cell * 0.42
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      canvas.drawPath(path, stroke);
+
+      final dot = Paint()..color = color;
+      for (final c in [cells.first, cells.last]) {
+        canvas.drawCircle(centerOf(c), cell * 0.17, dot);
+      }
+    }
+
+    pipe(const [
+      Offset(0, 1),
+      Offset(1, 1),
+      Offset(1, 0),
+      Offset(2, 0),
+    ], const Color(0xFF00E5FF));
+    pipe(const [
+      Offset(4, 2),
+      Offset(3, 2),
+      Offset(3, 1),
+      Offset(2, 1),
+    ], const Color(0xFFEC4899));
+  }
+
+  @override
+  bool shouldRepaint(_FlowFreeCoverPainter oldDelegate) => false;
 }

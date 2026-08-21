@@ -175,8 +175,6 @@ class AuthService {
     try {
       await Hive.box<String>(AppConstants.hiveBoxQuiz).clear();
       await Hive.box<String>(AppConstants.hiveBoxUser).clear();
-      final bookmarksBox = await Hive.openBox('bookmarks');
-      await bookmarksBox.clear();
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('onboarding_complete');
@@ -296,8 +294,6 @@ class AuthService {
     try {
       await Hive.box<String>(AppConstants.hiveBoxQuiz).clear();
       await Hive.box<String>(AppConstants.hiveBoxUser).clear();
-      final bookmarksBox = await Hive.openBox('bookmarks');
-      await bookmarksBox.clear();
     } catch (_) {}
   }
 }

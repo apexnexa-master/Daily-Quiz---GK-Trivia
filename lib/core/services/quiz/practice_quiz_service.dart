@@ -182,7 +182,6 @@ class PracticeQuizService {
         'lastShownAt': null,
         'lastAnsweredAt': null,
         'favorite': false,
-        'bookmarked': false,
       };
     }
     return Map<String, dynamic>.from(jsonDecode(data));

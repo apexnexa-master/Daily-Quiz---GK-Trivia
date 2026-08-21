@@ -18,6 +18,12 @@ class FlowFreePainter extends CustomPainter {
   /// 0..1 endpoint dots pop-in. Null means dots are fully shown.
   final double? dotsProgress;
 
+  /// Empty cells to pulse when all pipes are connected but cells remain.
+  final List<FlowCell> blinkingCells;
+
+  /// Repeating 0..1 value driving the empty-cell pulse.
+  final double blinkPulse;
+
   FlowFreePainter({
     required this.level,
     required this.paths,
@@ -26,6 +32,8 @@ class FlowFreePainter extends CustomPainter {
     this.hidden = false,
     this.buildProgress,
     this.dotsProgress,
+    this.blinkingCells = const [],
+    this.blinkPulse = 0.0,
   });
 
   /// Diagonal wave: each cell pops in along its (row + col) anti-diagonal.
@@ -56,6 +64,34 @@ class FlowFreePainter extends CustomPainter {
     _drawCellGlows(canvas, cs, ox, oy);
     _drawPaths(canvas, cs, ox, oy);
     _drawEndpoints(canvas, cs, ox, oy);
+    _drawBlinkingCells(canvas, cs, ox, oy);
+  }
+
+  // ── Empty-cell warning pulse ──────────────────────────────────────────
+
+  void _drawBlinkingCells(Canvas canvas, double cs, double ox, double oy) {
+    if (blinkingCells.isEmpty) return;
+    final pulse = 0.5 - 0.5 * cos(blinkPulse * 2 * pi);
+    final fillAlpha = 0.10 + 0.26 * pulse;
+    final strokeAlpha = 0.30 + 0.60 * pulse;
+
+    final fillPaint = Paint()..color = const Color(0xFFFFB300).withValues(alpha: fillAlpha);
+    final strokePaint = Paint()
+      ..color = const Color(0xFFFFC947).withValues(alpha: strokeAlpha)
+      ..strokeWidth = 1.4
+      ..style = PaintingStyle.stroke;
+
+    for (final cell in blinkingCells) {
+      final rect = Rect.fromLTWH(
+        ox + cell.col * cs + 2,
+        oy + cell.row * cs + 2,
+        cs - 4,
+        cs - 4,
+      );
+      final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(3));
+      canvas.drawRRect(rrect, fillPaint);
+      canvas.drawRRect(rrect, strokePaint);
+    }
   }
 
   // ── Grid shell ────────────────────────────────────────────────────────
@@ -412,6 +448,8 @@ class FlowFreePainter extends CustomPainter {
     if (oldDelegate.grid != grid) return true;
     if (oldDelegate.buildProgress != buildProgress) return true;
     if (oldDelegate.dotsProgress != dotsProgress) return true;
+    if (oldDelegate.blinkPulse != blinkPulse) return true;
+    if (oldDelegate.blinkingCells.length != blinkingCells.length) return true;
     for (final key in paths.keys) {
       final oldPath = oldDelegate.paths[key];
       final newPath = paths[key];

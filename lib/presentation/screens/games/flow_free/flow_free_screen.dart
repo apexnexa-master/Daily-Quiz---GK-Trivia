@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/services/cloud_sync_service.dart';
 import '../../../../core/services/daily_progress_service.dart';
 import '../../../../core/services/game_sfx.dart';
 import '../../../../core/scoring/game_performance.dart';
@@ -24,9 +24,10 @@ import 'flow_free_generator.dart';
 import 'flow_free_engine.dart';
 import 'flow_free_painter.dart';
 
-const String _bestScoreKey = 'flow_free_best';
+const String _bestScoreKey = 'flow_free_best_v2';
+const String _levelKey = 'flow_free_level_v1';
 
-enum _Phase { intro, playing, finished }
+enum _Phase { playing, finished }
 
 class FlowFreeScreen extends ConsumerStatefulWidget {
   const FlowFreeScreen({super.key});
@@ -39,8 +40,9 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey _boardKey = GlobalKey();
 
-  _Phase _phase = _Phase.intro;
+  _Phase _phase = _Phase.playing;
   bool _showCountdown = false;
+  bool _runStarted = false;
   bool _isNewBest = false;
   bool _boardReady = false;
   int _currentLevelIndex = 0;
@@ -49,14 +51,19 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   bool _hasStartedDrawing = false;
 
   Timer? _clockTimer;
+  Timer? _autoStartTimer;
   late FlowGameState _gameState;
   late FlowLevel _currentLevel;
 
-  late final AnimationController _introSpin;
   late final AnimationController _boardPop;
   late final AnimationController _boardReveal;
   late final AnimationController _dotsIn;
   late final AnimationController _boardFinish;
+  late final AnimationController _warnPulse;
+
+  bool _cellWarningActive = false;
+  List<FlowCell> _warningCells = const [];
+  Timer? _warningTimer;
 
   bool get _isBn => _lang == 'bn';
   bool get _isHi => _lang == 'hi';
@@ -69,10 +76,6 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _introSpin = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 14),
-    )..repeat();
     _boardPop = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -89,19 +92,33 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
+    _warnPulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 950),
+    );
     _loadBest();
     _loadLevel(0);
+    _restoreProgress();
+    // Skip the in-game intro screen entirely — the shared GameIntroScreen is
+    // the single start screen. Kick off the countdown shortly after the route
+    // fade-in completes.
+    _autoStartTimer = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      setState(() => _showCountdown = true);
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _clockTimer?.cancel();
-    _introSpin.dispose();
+    _warningTimer?.cancel();
+    _autoStartTimer?.cancel();
     _boardPop.dispose();
     _boardReveal.dispose();
     _dotsIn.dispose();
     _boardFinish.dispose();
+    _warnPulse.dispose();
     super.dispose();
   }
 
@@ -109,6 +126,25 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() => _best = prefs.getInt(_bestScoreKey) ?? 0);
+  }
+
+  /// Resume at the player's saved level: local save first (instant, works
+  /// offline), then Firestore if it is further ahead. Skipped once a run has
+  /// already begun so an in-flight fetch never disrupts active play.
+  Future<void> _restoreProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    var startLevel = math.max(1, prefs.getInt(_levelKey) ?? 1);
+
+    final cloudLevel = await CloudSyncService.instance.fetchFlowFreeLevel();
+    if (cloudLevel != null && cloudLevel > startLevel) {
+      startLevel = cloudLevel;
+      unawaited(prefs.setInt(_levelKey, startLevel));
+    }
+
+    if (!mounted || _runStarted || _phase != _Phase.playing) return;
+    final startIndex = startLevel - 1;
+    if (startIndex == _currentLevelIndex) return;
+    setState(() => _loadLevel(startIndex));
   }
 
   void _loadLevel(int index) {
@@ -119,6 +155,8 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     _elapsedSeconds = 0;
     _hasStartedDrawing = false;
     _boardReady = false;
+    _runStarted = false;
+    _dismissCellWarning();
     final cells = _currentLevel.rows * _currentLevel.cols;
     _boardReveal.duration =
         Duration(milliseconds: math.min(1500, 550 + cells * 11));
@@ -139,18 +177,62 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     _startClock();
   }
 
-  // ── Flow control ──────────────────────────────────────────────────────
+  // ── "All pipes connected but cells empty" snackbar ─────────────────────
 
-  void _startPressed() {
-    GameSfxService.instance.play(GameSfx.tap);
-    setState(() => _showCountdown = true);
+  void _refreshCellWarning() {
+    final shouldWarn = !_gameState.isComplete &&
+        _gameState.paths.isNotEmpty &&
+        _gameState.allPairsConnected &&
+        _gameState.emptyCells.isNotEmpty;
+    if (shouldWarn) {
+      _showCellWarning();
+    } else {
+      _dismissCellWarning();
+    }
   }
 
+  void _showCellWarning() {
+    if (_cellWarningActive) {
+      _warningTimer?.cancel();
+      _scheduleWarningDismiss();
+      return;
+    }
+    setState(() {
+      _warningCells = _gameState.emptyCells;
+      _cellWarningActive = true;
+    });
+    _warnPulse.repeat();
+    GameSfxService.instance.play(GameSfx.wrong);
+    HapticFeedback.mediumImpact();
+    _scheduleWarningDismiss();
+  }
+
+  void _scheduleWarningDismiss() {
+    _warningTimer?.cancel();
+    _warningTimer = Timer(const Duration(milliseconds: 2400), () {
+      if (!mounted) return;
+      _dismissCellWarning();
+    });
+  }
+
+  void _dismissCellWarning() {
+    _warningTimer?.cancel();
+    _warningTimer = null;
+    if (!_cellWarningActive) return;
+    _cellWarningActive = false;
+    _warningCells = const [];
+    if (_warnPulse.isAnimating) _warnPulse.stop();
+    if (mounted) setState(() {});
+  }
+
+  // ── Flow control ──────────────────────────────────────────────────────
+
   void _beginRun() {
-    if (_phase == _Phase.playing) return;
+    if (_runStarted) return;
     _clockTimer?.cancel();
     setState(() {
       _showCountdown = false;
+      _runStarted = true;
       _phase = _Phase.playing;
       _elapsedSeconds = 0;
       _hasStartedDrawing = false;
@@ -184,6 +266,8 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
 
     GameSfxService.instance.play(GameSfx.levelUp);
 
+    _persistProgress();
+
     final input = FlowFreePerformanceInput(
       gridSize: _currentLevel.rows * _currentLevel.cols,
       colorsCount: _currentLevel.pairCount,
@@ -213,11 +297,35 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     _boardFinish.forward(from: 0);
   }
 
+  /// Store the level to start from next session: the one after the level just
+  /// cleared. Never regresses (replays of earlier levels keep the max), and
+  /// mirrors to Firestore for signed-in players.
+  Future<void> _persistProgress() async {
+    final nextStartLevel = _currentLevelIndex + 2;
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getInt(_levelKey) ?? 1;
+    final target = math.max(stored, nextStartLevel);
+    if (target == stored) return;
+    await prefs.setInt(_levelKey, target);
+    await CloudSyncService.instance.saveFlowFreeLevel(target);
+  }
+
+  // Compact scale: level 1 full clear lands around 60-90 pts instead of ~600.
   int _calculateScore() {
-    final base = _currentLevelIndex * 100 + 50;
-    final timeBonus = math.max(0, 300 - _elapsedSeconds * 2);
-    final completionBonus = _gameState.isComplete ? 300 : 0;
+    final base = _currentLevelIndex * 20 + 10;
+    final timeBonus = math.max(0, 60 - _elapsedSeconds);
+    final completionBonus = _gameState.isComplete ? 30 : 0;
     return math.max(0, base + timeBonus + completionBonus);
+  }
+
+  /// 1-3 stars for a completed level based on clear speed vs grid size.
+  /// Null while the level is not complete.
+  int? _computeStars() {
+    if (!_gameState.isComplete) return null;
+    final par = _currentLevel.rows * _currentLevel.cols;
+    if (_elapsedSeconds <= par) return 3;
+    if (_elapsedSeconds <= par * 2) return 2;
+    return 1;
   }
 
   void _playAgain() {
@@ -225,7 +333,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     _loadLevel(_currentLevelIndex);
     _clockTimer?.cancel();
     setState(() {
-      _phase = _Phase.intro;
+      _phase = _Phase.playing;
       _isNewBest = false;
       _showCountdown = true;
     });
@@ -236,7 +344,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     _loadLevel(_currentLevelIndex + 1);
     _clockTimer?.cancel();
     setState(() {
-      _phase = _Phase.intro;
+      _phase = _Phase.playing;
       _isNewBest = false;
       _showCountdown = true;
     });
@@ -260,6 +368,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     final pairId = _gameState.getPairIdAt(row, col);
     if (pairId != null || _isEndpointCell(row, col)) {
       if (!_hasStartedDrawing) _hasStartedDrawing = true;
+      _dismissCellWarning();
       _gameState.startDrawing(FlowCell(row, col));
       HapticFeedback.selectionClick();
       setState(() {});
@@ -298,11 +407,13 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   void _onPointerUp(PointerUpEvent event) {
     if (_phase != _Phase.playing || !_hasStartedDrawing) return;
     _gameState.finishDrawing();
-    setState(() {
-      if (_gameState.isComplete) {
-        _finishLevel();
-      }
-    });
+    if (_gameState.isComplete) {
+      _dismissCellWarning();
+      setState(() => _finishLevel());
+      return;
+    }
+    _refreshCellWarning();
+    setState(() {});
   }
 
   Offset? _getGridCell(Offset localPos) {
@@ -370,7 +481,6 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
                 ),
               ),
             ),
-          if (_phase == _Phase.intro && !_showCountdown) _buildIntro(isDark),
           if (_phase == _Phase.finished) _buildResults(isDark),
           if (_showCountdown)
             CountdownOverlay(
@@ -386,7 +496,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
 
   Widget _buildLevelChip(bool isDark) {
     return GestureDetector(
-      onTap: kDebugMode ? () => _showLevelPicker() : null,
+      onTap: _showLevelPicker,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
@@ -411,56 +521,135 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
                 color: isDark ? Colors.white : AppColors.textPrimaryLight,
               ),
             ),
-            if (kDebugMode) ...[
-              const SizedBox(width: 4),
-              Icon(Icons.edit, size: 10, color: Colors.white.withValues(alpha: 0.5)),
-            ],
+            const SizedBox(width: 2),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                size: 14, color: Colors.white.withValues(alpha: 0.5)),
           ],
         ),
       ),
     );
   }
 
-  void _showLevelPicker() {
-    final controller = TextEditingController(text: '${_currentLevelIndex + 1}');
-    showDialog(
+  /// Replay sheet: lists only the levels the player has already solved
+  /// (progress key stores the NEXT level to start from, so solved = 1..n-1).
+  Future<void> _showLevelPicker() async {
+    GameSfxService.instance.play(GameSfx.tap);
+    final prefs = await SharedPreferences.getInstance();
+    final solvedMax = math.max(0, (prefs.getInt(_levelKey) ?? 1) - 1);
+    if (!mounted) return;
+
+    const accent = Color(0xFF00E5FF);
+    await showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1F2E),
-        title: const Text('Jump to Level', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Level number (1-999)',
-            hintStyle: TextStyle(color: Colors.white38),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        return Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetCtx).size.height * 0.6,
           ),
-          onSubmitted: (val) {
-            final num = int.tryParse(val);
-            if (num != null && num >= 1) {
-              Navigator.pop(ctx);
-              _jumpToLevel(num - 1);
-            }
-          },
+          decoration: BoxDecoration(
+            color: const Color(0xFF141A26),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: accent.withValues(alpha: 0.25)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.replay_rounded, size: 16, color: accent),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _t('Replay Solved Levels', 'সমাধান করা স্তর',
+                            'हल किए गए स्तर'),
+                        style: GoogleFonts.montserrat(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(sheetCtx),
+                      child: Icon(Icons.close_rounded,
+                          size: 18, color: Colors.white.withValues(alpha: 0.4)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                if (solvedMax < 1)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    child: Center(
+                      child: Text(
+                        _t(
+                          'Complete a level to unlock replays!',
+                          'রিপ্লে আনলক করতে একটি স্তর সম্পূর্ণ করুন!',
+                          'रीप्ले अनलॉक करने के लिए एक स्तर पूरा करें!',
+                        ),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 12,
+                          color: Colors.white54,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          for (int n = 1; n <= solvedMax; n++)
+                            _buildReplayLevelDot(n, sheetCtx, accent),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildReplayLevelDot(int levelNumber, BuildContext sheetCtx, Color accent) {
+    final isCurrent = levelNumber == _currentLevelIndex + 1;
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(sheetCtx);
+        if (!isCurrent) _jumpToLevel(levelNumber - 1);
+      },
+      child: Container(
+        width: 46,
+        height: 46,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isCurrent ? accent : Colors.white.withValues(alpha: 0.06),
+          border: Border.all(
+            color: accent.withValues(alpha: isCurrent ? 1 : 0.3),
+            width: 1.2,
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+        child: Text(
+          '$levelNumber',
+          style: GoogleFonts.montserrat(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: isCurrent ? const Color(0xFF062033) : Colors.white70,
           ),
-          TextButton(
-            onPressed: () {
-              final num = int.tryParse(controller.text);
-              if (num != null && num >= 1) {
-                Navigator.pop(ctx);
-                _jumpToLevel(num - 1);
-              }
-            },
-            child: const Text('GO', style: TextStyle(color: Color(0xFF00E5FF))),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -469,7 +658,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     _loadLevel(index);
     _clockTimer?.cancel();
     setState(() {
-      _phase = _Phase.intro;
+      _phase = _Phase.playing;
       _isNewBest = false;
       _showCountdown = true;
     });
@@ -514,6 +703,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   void _undoLastMove() {
     if (_gameState.undo()) {
       HapticFeedback.selectionClick();
+      _refreshCellWarning();
       setState(() {});
     }
   }
@@ -538,18 +728,14 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
                 width: maxSize,
                 height: maxSize,
                 decoration: BoxDecoration(
-                  color: _phase == _Phase.intro
-                      ? Colors.transparent
-                      : (isDark ? Colors.white : Colors.black)
-                          .withValues(alpha: 0.04),
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(AppSpacing.rXl),
-                  border: _phase == _Phase.intro
-                      ? null
-                      : Border.all(
-                          color: (isDark ? Colors.white : Colors.black)
-                              .withValues(alpha: 0.08),
-                          width: 1,
-                        ),
+                  border: Border.all(
+                    color: (isDark ? Colors.white : Colors.black)
+                        .withValues(alpha: 0.08),
+                    width: 1,
+                  ),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppSpacing.rXl),
@@ -557,41 +743,61 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
                     onPointerDown: _onPointerDown,
                     onPointerMove: _onPointerMove,
                     onPointerUp: _onPointerUp,
-                    child: AnimatedBuilder(
-                      animation: Listenable.merge([_boardReveal, _dotsIn]),
-                      builder: (context, _) {
-                        final hidden =
-                            _phase == _Phase.intro || _showCountdown;
-                        final building = !hidden &&
-                            (_boardReveal.isAnimating ||
-                                _boardReveal.value < 1.0);
+                    child: Stack(
+                      children: [
+                        AnimatedBuilder(
+                          animation: Listenable.merge(
+                              [_boardReveal, _dotsIn, _warnPulse]),
+                          builder: (context, _) {
+                            // Nothing is painted until the countdown kicks
+                            // off the run (intro screen was removed — the
+                            // shared GameIntroScreen handles onboarding).
+                            final hidden = !_runStarted || _showCountdown;
+                            final building = !hidden &&
+                                (_boardReveal.isAnimating ||
+                                    _boardReveal.value < 1.0);
 
-                        // Dots stay hidden (progress 0) until the grid build
-                        // finishes, then pop in via _dotsIn, then rest at null
-                        // (= fully shown, no per-frame dot math).
-                        final double? dotsProgress;
-                        if (!hidden && _dotsIn.isAnimating) {
-                          dotsProgress = _dotsIn.value;
-                        } else if (!hidden && !_dotsIn.isCompleted) {
-                          dotsProgress = 0.0;
-                        } else {
-                          dotsProgress = null;
-                        }
+                            // Dots stay hidden (progress 0) until the grid
+                            // build finishes, then pop in via _dotsIn, then
+                            // rest at null (= fully shown).
+                            final double? dotsProgress;
+                            if (!hidden && _dotsIn.isAnimating) {
+                              dotsProgress = _dotsIn.value;
+                            } else if (!hidden && !_dotsIn.isCompleted) {
+                              dotsProgress = 0.0;
+                            } else {
+                              dotsProgress = null;
+                            }
 
-                        return CustomPaint(
-                          painter: FlowFreePainter(
-                            level: _currentLevel,
-                            paths: _gameState.paths,
-                            grid: _gameState.grid,
-                            activePairId: _gameState.activePairId,
-                            hidden: hidden,
-                            buildProgress:
-                                building ? _boardReveal.value : null,
-                            dotsProgress: dotsProgress,
+                            return CustomPaint(
+                              painter: FlowFreePainter(
+                                level: _currentLevel,
+                                paths: _gameState.paths,
+                                grid: _gameState.grid,
+                                activePairId: _gameState.activePairId,
+                                hidden: hidden,
+                                buildProgress:
+                                    building ? _boardReveal.value : null,
+                                dotsProgress: dotsProgress,
+                                blinkingCells: _cellWarningActive
+                                    ? _warningCells
+                                    : const [],
+                                blinkPulse: _warnPulse.value,
+                              ),
+                              size: Size(maxSize, maxSize),
+                            );
+                          },
+                        ),
+                        if (_phase == _Phase.playing)
+                          Positioned(
+                            left: 8,
+                            right: 8,
+                            top: 10,
+                            child: IgnorePointer(
+                              child: _buildCellWarningBar(),
+                            ),
                           ),
-                          size: Size(maxSize, maxSize),
-                        );
-                      },
+                      ],
                     ),
                   ),
                 ),
@@ -605,296 +811,74 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
 
   // ── Overlays ──────────────────────────────────────────────────────────
 
-  Widget _buildIntro(bool isDark) {
-    return Positioned.fill(
-      child: Material(
-        color: (isDark ? const Color(0xFF05080E) : Colors.white)
-            .withValues(alpha: isDark ? 0.95 : 0.97),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+  /// Slim snackbar pinned to the top edge of the board. Slides in when the
+  /// warning activates and slides out when it auto-dismisses. Purely visual
+  /// (IgnorePointer) so the user can keep drawing underneath at any moment.
+  Widget _buildCellWarningBar() {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 320),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        final slide = Tween<Offset>(
+          begin: const Offset(0, -1.4),
+          end: Offset.zero,
+        ).animate(animation);
+        return SlideTransition(
+          position: slide,
+          child: FadeTransition(opacity: animation, child: child),
+        );
+      },
+      child: _cellWarningActive
+          ? Container(
+              key: const ValueKey('cell-warning'),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: const Color(0xFF101826).withValues(alpha: 0.94),
+                borderRadius: BorderRadius.circular(AppSpacing.rRound),
+                border: Border.all(
+                  color: const Color(0xFFFFC947).withValues(alpha: 0.55),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        const Color(0xFFFFB300).withValues(alpha: 0.28),
+                    blurRadius: 18,
+                  ),
+                ],
+              ),
+              child: Row(
                 children: [
-                  _buildHeroOrb(isDark),
-                  AppSpacing.vXxl,
-                  ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF00E5FF), Color(0xFF76FF03)],
-                    ).createShader(bounds),
+                  const Icon(
+                    Icons.grid_on_rounded,
+                    size: 15,
+                    color: Color(0xFFFFC947),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
                     child: Text(
-                      _t('FLOW FREE', 'ফ্লো ফ্রি', 'फ्लो फ्री'),
+                      _t(
+                        'Fill every cell to complete!',
+                        'সম্পূর্ণ করতে প্রতিটি ঘর পূরণ করুন!',
+                        'पूरा करने के लिए हर खाना भरें!',
+                      ),
                       style: GoogleFonts.montserrat(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.5,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
                         color: Colors.white,
-                        shadows: const [
-                          Shadow(color: Color(0x5500E5FF), blurRadius: 26),
-                        ],
-                      ),
-                    ),
-                  ),
-                  AppSpacing.vSm,
-                  Text(
-                    _t(
-                      'Connect matching colors without crossing pipes.',
-                      'পাইপ ছাড়ার বিনা মিলিম রং সংযুক্ত করুন।',
-                      'पाइप को पार किए बिना मिलते रंगों को जोड़ें।',
-                    ),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark
-                          ? AppColors.textSecondaryDark
-                          : AppColors.textSecondaryLight,
-                    ),
-                  ),
-                  AppSpacing.vXxl,
-                  _buildRuleRow(
-                    icon: Icons.touch_app_rounded,
-                    color: const Color(0xFF00E5FF),
-                    text: _t(
-                      'Drag from a colored dot to draw a path.',
-                      'পাথ আঁকতে একটি রঙিন বিন্দু থেকে টেনে আনুন।',
-                      'पाथ बनाने के लिए रंगीन बिंदु से खींचें।',
-                    ),
-                    isDark: isDark,
-                  ),
-                  AppSpacing.vMd,
-                  _buildRuleRow(
-                    icon: Icons.block_rounded,
-                    color: AppColors.error,
-                    text: _t(
-                      'Paths cannot cross each other.',
-                      'পাথ একে অপরকে পার করতে পারে না।',
-                      'पाथ एक दूसरे को पार नहीं कर सकते।',
-                    ),
-                    isDark: isDark,
-                  ),
-                  AppSpacing.vMd,
-                  _buildRuleRow(
-                    icon: Icons.grid_on_rounded,
-                    color: const Color(0xFF76FF03),
-                    text: _t(
-                      'Fill every cell on the grid to complete the level.',
-                      'লেভেল সম্পূর্ণ করতে গ্রিডের প্রতিটি কোষ পূরণ করুন।',
-                      'स्तर पूरा करने के लिए ग्रिड की हर सेल भरें।',
-                    ),
-                    isDark: isDark,
-                  ),
-                  if (_best > 0) ...[
-                    AppSpacing.vXl,
-                    Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: _glass(isDark, AppColors.coin),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.emoji_events_rounded,
-                              size: 14, color: AppColors.coin),
-                          const SizedBox(width: 6),
-                          Text(
-                            _t(
-                                'Best: $_best', 'সেরা: $_best', 'सर्वश्रेष्ठ: $_best'),
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textSecondaryLight,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  AppSpacing.vXxl,
-                  SizedBox(
-                    width: double.infinity,
-                    height: 58,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00E5FF), Color(0xFF76FF03)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                        ),
-                        borderRadius: BorderRadius.circular(AppSpacing.rLg),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        onPressed: _startPressed,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppSpacing.rLg),
-                          ),
-                        ),
-                        child: Text(
-                          _t('START', 'শুরু করুন', 'शुरू करें'),
-                          style: GoogleFonts.montserrat(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.5,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  AppSpacing.vMd,
-                  TextButton(
-                    onPressed: _exitGame,
-                    child: Text(
-                      _t('BACK', 'ফিরে যান', 'वापस जाएं'),
-                      style: GoogleFonts.montserrat(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.textSecondaryLight,
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
+            )
+          : const SizedBox.shrink(key: ValueKey('cell-warning-off')),
     );
   }
 
-  Widget _buildHeroOrb(bool isDark) {
-    return SizedBox(
-      width: 150,
-      height: 150,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 104,
-            height: 104,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00E5FF), Color(0xFF76FF03)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.45),
-                  blurRadius: 34,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.water_drop_rounded,
-              size: 50,
-              color: Colors.white,
-            ),
-          ),
-          AnimatedBuilder(
-            animation: _introSpin,
-            builder: (context, _) {
-              final angle = _introSpin.value * 2 * math.pi;
-              return Transform.rotate(
-                angle: angle,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    _orbitDot(const Offset(64, 0), const Color(0xFF00E5FF)),
-                    _orbitDot(const Offset(-64, 0), const Color(0xFFFF6D00)),
-                    _orbitDot(const Offset(0, 64), const Color(0xFFE040FB)),
-                    _orbitDot(const Offset(0, -64), const Color(0xFFFFEB3B)),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _orbitDot(Offset offset, Color color) {
-    return Transform.translate(
-      offset: offset,
-      child: Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.16),
-          shape: BoxShape.circle,
-          border:
-              Border.all(color: color.withValues(alpha: 0.55), width: 1.2),
-          boxShadow: [
-            BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 12),
-          ],
-        ),
-        child: Container(
-          margin: const EdgeInsets.all(6),
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRuleRow({
-    required IconData icon,
-    required Color color,
-    required String text,
-    required bool isDark,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(AppSpacing.rLg),
-        border: Border.all(color: color.withValues(alpha: 0.30), width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 16, color: color),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : AppColors.textPrimaryLight,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildResults(bool isDark) {
     final score = _calculateScore();
@@ -903,13 +887,20 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
       title: completed
           ? _t('LEVEL COMPLETE!', 'লেভেল সম্পন্ন!', 'स्तर पूरा!')
           : _t('GREAT START!', 'দারুণ শুরু!', 'शानदार शुरुआत!'),
-      subtitle: _t(
-        '${_currentLevel.rows}x${_currentLevel.cols} — ${_currentLevel.pairCount} colors',
-        '${_currentLevel.rows}x${_currentLevel.cols} — ${_currentLevel.pairCount} রং',
-        '${_currentLevel.rows}x${_currentLevel.cols} — ${_currentLevel.pairCount} रंग',
-      ),
+      subtitle: completed
+          ? _t(
+              'Grid ${_currentLevel.rows}×${_currentLevel.cols} cleared!',
+              '${_currentLevel.rows}×${_currentLevel.cols} গ্রিড সম্পূর্ণ!',
+              '${_currentLevel.rows}×${_currentLevel.cols} ग्रिड पूरा!',
+            )
+          : _t(
+              'Fill every cell to clear the grid.',
+              'গ্রিড সম্পূর্ণ করতে প্রতিটি ঘর পূরণ করুন।',
+              'ग्रिड पूरा करने के लिए हर खाना भरें।',
+            ),
       score: score,
       isNewBest: _isNewBest,
+      stars: _computeStars(),
       stats: [
         GameResultStat(
           label: _t('TIME', 'সময়', 'समय'),
@@ -919,30 +910,29 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
         ),
         GameResultStat(
           label: _t('FILLED', 'পূরণ', 'भरा हुआ'),
-          value: '${_gameState.filledCells}/${_gameState.totalCells}',
+          value:
+              '${(_gameState.filledCells * 100 / _gameState.totalCells).round()}%',
           icon: Icons.grid_on_rounded,
           color: const Color(0xFF76FF03),
         ),
         GameResultStat(
-          label: _t('PAIRS', 'জোড়া', 'जोड़े'),
-          value: '${_currentLevel.pairCount}',
-          icon: Icons.water_drop_rounded,
-          color: const Color(0xFFE040FB),
+          label: _t('BEST', 'সেরা', 'सर्वश्रेष्ठ'),
+          value: '$_best',
+          icon: Icons.emoji_events_outlined,
+          color: AppColors.coin,
         ),
       ],
       playAgainLabel: _t('NEXT LEVEL', 'পরের স্তর', 'अगला स्तर'),
       shareLabel: _t('REPLAY', 'আবার খেলুন', 'फिर से खेलें'),
       exitLabel: _t('EXIT', 'বাহির', 'बाहर'),
-      footerHint: _t('Best: $_best', 'সেরা: $_best', 'सर्वश्रेष्ठ: $_best'),
+      footerHint: _t(
+        'Level ${_currentLevelIndex + 1} • ${_currentLevel.difficulty}',
+        'স্তর ${_currentLevelIndex + 1} • ${_currentLevel.difficulty}',
+        'स्तर ${_currentLevelIndex + 1} • ${_currentLevel.difficulty}',
+      ),
       onPlayAgain: completed ? _nextLevel : _playAgain,
       onShare: _playAgain,
       onExit: _exitGame,
     );
   }
-
-  BoxDecoration _glass(bool isDark, Color accent) => BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(AppSpacing.rRound),
-        border: Border.all(color: accent.withValues(alpha: 0.30), width: 1),
-      );
 }

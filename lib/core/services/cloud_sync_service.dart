@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../utils/app_logger.dart';
 
 class CloudSyncService {
   static final CloudSyncService instance = CloudSyncService._();
@@ -35,8 +34,6 @@ class CloudSyncService {
       final merged = _mergeStats(localStats, cloudData);
       await _uploadStatsToCloud(merged);
     }
-
-    await syncBookmarks();
   }
 
   Future<void> _uploadStatsToCloud(Map<String, dynamic> stats) async {
@@ -178,61 +175,28 @@ class CloudSyncService {
         .update({'lives': FieldValue.increment(1)});
   }
 
-  Future<void> syncBookmarkAdded(String questionId, Map<String, dynamic> questionData) async {
+  /// Flow Free: the 1-based level to start from next session.
+  /// Null when signed out, missing, or on error.
+  Future<int?> fetchFlowFreeLevel() async {
+    if (_currentUser == null) return null;
+    try {
+      final doc = await _db.collection('users').doc(_currentUser!.uid).get();
+      final value = doc.data()?['flow_free_level'];
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveFlowFreeLevel(int level) async {
     if (_currentUser == null) return;
     try {
       await _db
           .collection('users')
           .doc(_currentUser!.uid)
-          .collection('bookmarks')
-          .doc(questionId)
-          .set(questionData);
-    } catch (e, st) {
-      AppLogger.error('Failed to sync bookmark added', error: e, stackTrace: st, name: 'CloudSync');
-    }
-  }
-
-  Future<void> syncBookmarkRemoved(String questionId) async {
-    if (_currentUser == null) return;
-    try {
-      await _db
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .collection('bookmarks')
-          .doc(questionId)
-          .delete();
-    } catch (e, st) {
-      AppLogger.error('Failed to sync bookmark removed', error: e, stackTrace: st, name: 'CloudSync');
-    }
-  }
-
-  Future<void> syncBookmarks() async {
-    if (_currentUser == null) return;
-    try {
-      final querySnapshot = await _db
-          .collection('users')
-          .doc(_currentUser!.uid)
-          .collection('bookmarks')
-          .get();
-
-      final localBox = await Hive.openBox('bookmarks');
-      final localBookmarks = localBox.get('questions', defaultValue: <String, dynamic>{}) as Map;
-      final merged = Map<String, dynamic>.from(localBookmarks);
-
-      for (final doc in querySnapshot.docs) {
-        merged[doc.id] = doc.data();
-      }
-
-      await localBox.put('questions', merged);
-
-      final cloudDocIds = querySnapshot.docs.map((d) => d.id).toSet();
-      for (final key in localBookmarks.keys) {
-        if (!cloudDocIds.contains(key)) {
-          await syncBookmarkAdded(key as String, Map<String, dynamic>.from(localBookmarks[key]));
-        }
-      }
-    } catch (e, st) {
-      AppLogger.error('Failed to sync bookmarks', error: e, stackTrace: st, name: 'CloudSync');
-    }
+          .set({'flow_free_level': level}, SetOptions(merge: true));
+    } catch (_) {}
   }
 }

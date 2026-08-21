@@ -5,7 +5,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/theme_manager.dart';
 import '../../providers/app_providers.dart';
-import '../../screens/bookmarks_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsSection extends ConsumerWidget {
@@ -56,9 +55,6 @@ class SettingsSection extends ConsumerWidget {
               _divider(),
               // Language Tile
               _buildLanguageDropdownTile(ref),
-              _divider(),
-              // Saved Questions Tile
-              _buildSavedQuestionsTile(context, ref),
               _divider(),
               // Achievements Option Tile
               _buildAchievementsTile(context),
@@ -184,41 +180,6 @@ class SettingsSection extends ConsumerWidget {
       color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
       height: 1,
       indent: 56,
-    );
-  }
-
-  Widget _buildSavedQuestionsTile(BuildContext context, WidgetRef ref) {
-    final isBn = lang == 'bn';
-    final isHi = lang == 'hi';
-
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(Icons.bookmark_rounded, color: AppColors.primary, size: 20),
-      ),
-      title: Text(
-        isBn
-            ? 'সংরক্ষিত প্রশ্ন'
-            : isHi
-                ? 'सहेजे गए प्रश्न'
-                : 'Saved Questions',
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-      ),
-      trailing: Icon(
-        Icons.arrow_forward_ios_rounded,
-        size: 14,
-        color: isDark ? Colors.white30 : Colors.grey.shade400,
-      ),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const BookmarksScreen()),
-        );
-      },
     );
   }
 

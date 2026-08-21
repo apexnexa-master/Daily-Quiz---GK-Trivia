@@ -30,6 +30,9 @@ class GameResultsPanel extends StatefulWidget {
   final String? subtitle;
   final int score;
   final bool isNewBest;
+
+  /// Optional 1-3 star rating shown under the score. Null hides the row.
+  final int? stars;
   final List<GameResultStat> stats;
   final String playAgainLabel;
   final String? shareLabel;
@@ -51,6 +54,7 @@ class GameResultsPanel extends StatefulWidget {
     this.subtitle,
     required this.score,
     required this.isNewBest,
+    this.stars,
     required this.stats,
     required this.playAgainLabel,
     this.shareLabel,
@@ -127,6 +131,10 @@ class _GameResultsPanelState extends State<GameResultsPanel>
                         ],
                         AppSpacing.vLg,
                         _buildScore(),
+                        if (widget.stars != null) ...[
+                          AppSpacing.vSm,
+                          _buildStars(),
+                        ],
                         if (widget.subtitle != null) ...[
                           AppSpacing.vMd,
                           Text(
@@ -259,6 +267,38 @@ class _GameResultsPanelState extends State<GameResultsPanel>
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStars() {
+    final stars = widget.stars!.clamp(0, 3);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutBack,
+      builder: (context, t, _) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < 3; i++)
+              Transform.scale(
+                scale: Curves.easeOutBack
+                    .transform(((t * 3 - i).clamp(0.0, 1.0))),
+                child: Icon(
+                  i < stars
+                      ? Icons.star_rounded
+                      : Icons.star_outline_rounded,
+                  size: 34,
+                  color: i < stars
+                      ? const Color(0xFFFBBF24)
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white24
+                          : Colors.black26),
+                ),
+              ),
+          ],
         );
       },
     );

@@ -227,6 +227,37 @@ class FlowGameState {
     return v;
   }
 
+  bool pathConnectsPair(List<FlowCell> path, FlowPair pair) {
+    if (path.length < 2) return false;
+    final startsAtEndpoint =
+        (path.first.row == pair.start.row && path.first.col == pair.start.col) ||
+            (path.first.row == pair.end.row && path.first.col == pair.end.col);
+    final endsAtEndpoint =
+        (path.last.row == pair.start.row && path.last.col == pair.start.col) ||
+            (path.last.row == pair.end.row && path.last.col == pair.end.col);
+    return startsAtEndpoint && endsAtEndpoint;
+  }
+
+  /// True when every pair has a continuous pipe joining its two endpoints,
+  /// even while some cells of the grid are still empty.
+  bool get allPairsConnected {
+    for (final pair in level.pairs) {
+      final path = paths[pair.id];
+      if (path == null || !pathConnectsPair(path, pair)) return false;
+    }
+    return true;
+  }
+
+  List<FlowCell> get emptyCells {
+    final cells = <FlowCell>[];
+    for (int r = 0; r < level.rows; r++) {
+      for (int c = 0; c < level.cols; c++) {
+        if (grid[r][c] == -1) cells.add(FlowCell(r, c));
+      }
+    }
+    return cells;
+  }
+
   int get filledCells {
     int count = 0;
     for (int r = 0; r < level.rows; r++) {

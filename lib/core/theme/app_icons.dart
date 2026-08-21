@@ -34,9 +34,7 @@ class AppIcons {
   static const IconData correct = Icons.check_circle_rounded;
   static const IconData incorrect = Icons.cancel_rounded;
   static const IconData explanation = Icons.lightbulb_rounded;
-  static const IconData bookmarkActive = Icons.bookmark_rounded;
-  static const IconData bookmarkInactive = Icons.bookmark_border_rounded;
-  
+
   // Powerups / Lifelines
   static const IconData halfHalf = Icons.star_half_rounded;
   static const IconData skip = Icons.skip_next_rounded;

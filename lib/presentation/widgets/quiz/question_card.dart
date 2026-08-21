@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../../data/models/firestore_models.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/theme/app_icons.dart';
 import 'option_button.dart';
 
 class QuestionCard extends StatelessWidget {
@@ -12,8 +11,6 @@ class QuestionCard extends StatelessWidget {
   final int? selectedAnswer;
   final ValueChanged<int> onAnswerSelected;
   final bool isDark;
-  final bool isBookmarked;
-  final VoidCallback onBookmarkTapped;
   final Set<int>? visibleOptions;
   final AnimationController? correctAnimationController;
   final AnimationController? wrongAnimationController;
@@ -27,8 +24,6 @@ class QuestionCard extends StatelessWidget {
     required this.selectedAnswer,
     required this.onAnswerSelected,
     required this.isDark,
-    required this.isBookmarked,
-    required this.onBookmarkTapped,
     this.visibleOptions,
     this.correctAnimationController,
     this.wrongAnimationController,
@@ -132,27 +127,6 @@ class QuestionCard extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                           color: _difficultyColor(question.difficulty),
                           letterSpacing: 0.8,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: onBookmarkTapped,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: isBookmarked
-                              ? AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1)
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isBookmarked ? AppIcons.bookmarkActive : AppIcons.bookmarkInactive,
-                          color: isBookmarked
-                              ? AppColors.primary
-                              : (isDark ? Colors.white54 : Colors.grey.shade400),
-                          size: 20,
                         ),
                       ),
                     ),

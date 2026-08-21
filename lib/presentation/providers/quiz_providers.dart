@@ -4,7 +4,6 @@ import '../../core/services/quiz_service.dart';
 import '../../core/services/question_service.dart';
 import '../../core/services/local_stats_service.dart';
 import '../../core/services/quiz_scheduler_service.dart';
-import '../../core/services/bookmark_service.dart';
 import '../../core/constants/app_constants.dart';
 import '../../data/models/firestore_models.dart';
 
@@ -19,30 +18,6 @@ final localStatsProvider = Provider<LocalStatsService>((ref) => LocalStatsServic
 
 final examModeProvider = StateProvider<String>((ref) => 'GENERAL');
 final selectedCategoryProvider = StateProvider<String?>((ref) => null);
-
-// ── Bookmarks State ───────────────────────────────────────────
-class BookmarksNotifier extends StateNotifier<List<Map<String, dynamic>>> {
-  BookmarksNotifier() : super([]) {
-    _loadBookmarks();
-  }
-
-  void _loadBookmarks() {
-    state = BookmarkService().getAllBookmarks();
-  }
-
-  Future<void> toggle(String questionId, Map<String, dynamic> questionData) async {
-    await BookmarkService().toggleBookmark(questionId, questionData);
-    _loadBookmarks();
-  }
-
-  bool isBookmarked(String questionId) {
-    return BookmarkService().isBookmarked(questionId);
-  }
-}
-
-final bookmarksProvider = StateNotifierProvider<BookmarksNotifier, List<Map<String, dynamic>>>((ref) {
-  return BookmarksNotifier();
-});
 
 final todayQuizProvider = FutureProvider.autoDispose<QuizModel?>((ref) async {
   ref.keepAlive();
