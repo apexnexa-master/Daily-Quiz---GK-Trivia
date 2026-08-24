@@ -7,7 +7,7 @@ class AppConstants {
 
   // ── App Info ──────────────────────────────────────────────
   static const String appName = 'MindSprint';
-  static const String appVersion = '1.5.2';
+  static const String appVersion = '1.7.0';
   static const String appPackage = 'com.nexasoft.dailyquiz';
   static const int quizQuestionCount = 10;
   static const int questionTimerSeconds = 15;

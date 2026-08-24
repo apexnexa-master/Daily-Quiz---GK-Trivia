@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'home_screen.dart';
 import 'play_zone_screen.dart';
 import 'battle_screen.dart';
@@ -83,7 +84,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         child: Container(
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF0F171A).withValues(alpha: 0.6)
+                ? const Color(0xFF0D1428).withValues(alpha: 0.62)
                 : Colors.white.withValues(alpha: 0.65),
             borderRadius: BorderRadius.circular(26),
             border: Border.all(
@@ -222,16 +223,15 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               firstChild: Row(
                 children: [
                   const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: activeColor,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                      fontFamily: 'Outfit',
-                      letterSpacing: -0.2,
-                    ),
-                  ),
+                   Text(
+                     label,
+                     style: GoogleFonts.montserrat(
+                       color: activeColor,
+                       fontWeight: FontWeight.w900,
+                       fontSize: 12,
+                       letterSpacing: -0.2,
+                     ),
+                   ),
                 ],
               ),
               secondChild: const SizedBox.shrink(),
@@ -255,7 +255,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: isDark ? const Color(0xFF1A1D23) : Colors.white,
+        backgroundColor: isDark ? AppColors.cardDark : Colors.white,
         title: Text(
           isBn ? 'বিদায় নিচ্ছেন?' : isHi ? 'जा रहे हैं?' : 'Leaving so soon?',
           style: TextStyle(

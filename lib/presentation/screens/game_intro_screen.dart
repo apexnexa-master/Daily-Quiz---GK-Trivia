@@ -309,7 +309,7 @@ class _GameIntroScreenState extends ConsumerState<GameIntroScreen>
                   children: [
                     _orbitSymbol('+', const Offset(70, 0), const Color(0xFF00F1FE)),
                     _orbitSymbol('−', const Offset(-70, 0), const Color(0xFFFF5FA8)),
-                    _orbitSymbol('×', const Offset(0, 70), const Color(0xFFD4FF50)),
+                    _orbitSymbol('×', const Offset(0, 70), const Color(0xFF3EE6B0)),
                     _orbitSymbol('÷', const Offset(0, -70), const Color(0xFFA78BFA)),
                   ],
                 ),

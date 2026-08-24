@@ -1,17 +1,20 @@
 // lib/presentation/widgets/game_card.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Reusable premium game card used across every game listing in the app.
+/// Cinematic full-bleed game tile used across every game listing in the app.
 ///
-/// Visual hierarchy: Illustration cover -> Title -> Subtitle -> Metadata + action.
-/// All game tiles (daily challenge, play zone, battle, category grids) share
-/// this single design system so every tile looks consistent.
+/// The artwork fills the entire card (Netflix / Apple Arcade poster style);
+/// title, description and a small footer chip float over a soft bottom scrim.
+/// There is no separate play button - the whole tile is one tap target and a
+/// subtle chevron hints at navigation. All game tiles (daily challenges,
+/// play zone, battle, category grids) share this single design system.
 class GameCard extends StatelessWidget {
-  /// Asset image rendered as the illustration area at the top of the card.
+  /// Asset image rendered as the full-bleed artwork of the card.
   final String? imagePath;
 
   /// Custom cover widget (e.g. gradient + icon block for category tiles).
@@ -32,10 +35,10 @@ class GameCard extends StatelessWidget {
   /// Optional icon next to [meta].
   final IconData? metaIcon;
 
-  /// Small footer hint text shown above the action button.
+  /// Small footer hint rendered as an accent glass chip near the bottom.
   final String? footer;
 
-  /// Accent color driving border, badge, glow and action button.
+  /// Accent color driving badge ring, footer chip dot and glow shadow.
   final Color? accent;
 
   /// Locked state: dimmed cover, lock badge and disabled tap.
@@ -56,20 +59,19 @@ class GameCard extends StatelessWidget {
   /// Fixed card width. Omit to fill the available width.
   final double? width;
 
-  /// Height of the cover area when [coverAspectRatio] is not set.
+  /// Total tile height when [coverAspectRatio] is not set. The artwork now
+  /// fills the entire card, so this is the full card height.
   final double coverHeight;
 
-  /// When set, the cover height scales with the card width
-  /// (`width / aspectRatio`) keeping consistent proportions.
+  /// When set, the whole tile scales with its width (`width / aspectRatio`)
+  /// keeping consistent poster proportions.
   final double? coverAspectRatio;
 
-  /// Whether the card should stretch to fill its parent height and pin the
-  /// footer row to the bottom (used inside fixed-height grids).
+  /// Whether the card should stretch to fill its parent height
+  /// (used inside fixed-extent grids).
   final bool fillHeight;
 
-  /// Compact rendering: smaller paddings, fonts and controls so the card stays
-  /// short in dense grids (category tiles). Cover is expected to be a slim
-  /// accent band when combined with [coverAspectRatio] / [coverHeight].
+  /// Compact rendering: smaller type and spacing for dense grids.
   final bool compact;
 
   const GameCard({
@@ -89,7 +91,7 @@ class GameCard extends StatelessWidget {
     this.comingSoonLabel = 'COMING SOON',
     this.onTap,
     this.width,
-    this.coverHeight = 130,
+    this.coverHeight = 150,
     this.coverAspectRatio,
     this.fillHeight = false,
     this.compact = false,
@@ -112,52 +114,71 @@ class GameCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? const Color(0xFF151D1E) : Colors.white;
+    final baseColor = isDark ? AppColors.cardDark : Colors.white;
     final effectiveAccent = accent ?? AppColors.primary;
     final isMuted = isLocked || isComingSoon;
+
+    Widget stack = Stack(
+      children: [
+        Positioned.fill(child: _buildArtwork(isDark, effectiveAccent)),
+        Positioned.fill(child: _buildScrim(isDark)),
+        if (badge != null)
+          Positioned(
+            top: compact ? 8 : 10,
+            left: compact ? 8 : 10,
+            child: _buildBadge(
+                accent: effectiveAccent, compact: compact, isDark: isDark),
+          ),
+        if (meta != null)
+          Positioned(
+            top: compact ? 8 : 10,
+            right: compact ? 8 : 10,
+            child: _buildMetaPill(isDark, compact),
+          ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: _buildPosterContent(isDark, effectiveAccent, isMuted),
+        ),
+        if (isLocked) Positioned.fill(child: _buildLockedOverlay(isDark)),
+        if (isComingSoon) Positioned.fill(child: _buildComingSoonOverlay()),
+      ],
+    );
+
+    if (!fillHeight) {
+      stack = coverAspectRatio != null
+          ? AspectRatio(aspectRatio: coverAspectRatio!, child: stack)
+          : SizedBox(height: coverHeight, child: stack);
+    }
 
     final card = Container(
       width: width,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: surfaceColor,
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [const Color(0xFF1B2628), const Color(0xFF151D1E)]
-              : [Colors.white, const Color(0xFFFAFAFA)],
-        ),
+        color: baseColor,
         borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.07)
+              : Colors.black.withValues(alpha: 0.05),
+          width: 1,
+        ),
         boxShadow: [
           if (!isMuted)
             BoxShadow(
-              color: effectiveAccent.withValues(alpha: isDark ? 0.22 : 0.12),
-              blurRadius: 28,
-              offset: const Offset(0, 10),
+              color: effectiveAccent.withValues(alpha: isDark ? 0.14 : 0.10),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
-            blurRadius: 18,
+            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.06),
+            blurRadius: 20,
             offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: fillHeight ? MainAxisSize.max : MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCover(isDark, effectiveAccent, surfaceColor, compact),
-          if (fillHeight)
-            Expanded(
-              child: _buildInfoSection(isDark, effectiveAccent, isMuted,
-                  fillInfo: true, compact: compact),
-            )
-          else
-            _buildInfoSection(isDark, effectiveAccent, isMuted,
-                compact: compact),
-        ],
-      ),
+      child: stack,
     );
 
     return AnimatedScaleButton(
@@ -166,110 +187,285 @@ class GameCard extends StatelessWidget {
     );
   }
 
-  // ── Cover (illustration area) ─────────────────────────────────────────
+  // ── Artwork ────────────────────────────────────────────────────────────
 
-  Widget _buildCover(bool isDark, Color accent, Color surfaceColor, bool compact) {
-    final Widget coverContent;
-    if (cover != null) {
-      coverContent = cover!;
-    } else if (imagePath != null) {
-      coverContent = Image.asset(
-        imagePath!,
+  Widget _buildArtwork(bool isDark, Color accent) {
+    if (cover != null) return cover!;
+    // Light theme uses the pastel "morning" variants of the cover art.
+    String? artPath = imagePath;
+    if (!isDark &&
+        artPath != null &&
+        artPath.startsWith('assets/covers/') &&
+        artPath.endsWith('.svg') &&
+        !artPath.contains('covers/light/')) {
+      artPath = artPath.replaceFirst('assets/covers/', 'assets/covers/light/');
+    }
+    if (artPath != null && artPath.endsWith('.svg')) {
+      return SvgPicture.asset(
+        artPath,
         fit: BoxFit.cover,
         width: double.infinity,
+        height: double.infinity,
       );
-    } else {
-      coverContent = _buildIconCover(isDark, accent);
     }
-
-    final Widget coverBox;
-    if (coverAspectRatio != null) {
-      coverBox = AspectRatio(
-        aspectRatio: coverAspectRatio!,
-        child: coverContent,
-      );
-    } else {
-      coverBox = SizedBox(
-        height: coverHeight,
+    if (artPath != null) {
+      return Image.asset(
+        artPath,
+        fit: BoxFit.cover,
         width: double.infinity,
-        child: coverContent,
+        height: double.infinity,
       );
     }
-
-    return Stack(
-      children: [
-        coverBox,
-        // Bottom scrim blends the illustration into the info section.
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: compact ? 14 : 36,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  surfaceColor,
-                  surfaceColor.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          ),
-        ),
-        if (badge != null)
-          Positioned(
-            top: compact ? 4 : 10,
-            left: compact ? 6 : 10,
-            child: _buildBadge(isDark, accent, compact),
-          ),
-        if (meta != null)
-          Positioned(
-            top: compact ? 4 : 10,
-            right: compact ? 6 : 10,
-            child: _buildMetaPill(isDark, compact),
-          ),
-        if (isLocked) Positioned.fill(child: _buildLockedOverlay(isDark)),
-        if (isComingSoon) Positioned.fill(child: _buildComingSoonOverlay()),
-      ],
-    );
+    return _buildIconCover(isDark, accent);
   }
 
+  /// Fallback artwork when no image/cover is supplied: a calm accent mesh
+  /// with a ghosted watermark glyph that keeps the lower-left text zone clear.
   Widget _buildIconCover(bool isDark, Color accent) {
+    final base = isDark ? AppColors.cardDark : Colors.white;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            accent.withValues(alpha: isDark ? 0.30 : 0.24),
-            accent.withValues(alpha: isDark ? 0.12 : 0.08),
+            Color.lerp(base, accent, isDark ? 0.26 : 0.24)!,
+            Color.lerp(base, accent, isDark ? 0.08 : 0.08)!,
           ],
         ),
       ),
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: accent.withValues(alpha: 0.35),
-              width: 1,
+      child: Stack(
+        children: [
+          Positioned(
+            right: -28,
+            top: -30,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accent.withValues(alpha: isDark ? 0.14 : 0.16),
+              ),
             ),
           ),
-          child: Icon(
-            Icons.sports_esports_rounded,
-            color: accentForeground(accent, isDark),
-            size: 26,
+          Positioned(
+            left: -34,
+            top: 40,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accent.withValues(alpha: isDark ? 0.08 : 0.10),
+              ),
+            ),
           ),
+          Positioned(
+            right: 16,
+            top: 22,
+            child: Icon(
+              Icons.sports_esports_rounded,
+              size: 46,
+              color: accent.withValues(alpha: isDark ? 0.30 : 0.38),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Bottom scrim so overlaid text always stays legible over any artwork.
+  /// Dark theme: black veil under white text. Light theme: soft white veil
+  /// under ink text over the pastel covers.
+  Widget _buildScrim(bool isDark) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          stops: const [0.0, 0.55, 1.0],
+          colors: isDark
+              ? [
+                  Colors.black.withValues(alpha: 0.82),
+                  Colors.black.withValues(alpha: 0.32),
+                  Colors.black.withValues(alpha: 0.0),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.90),
+                  Colors.white.withValues(alpha: 0.34),
+                  Colors.white.withValues(alpha: 0.0),
+                ],
         ),
       ),
     );
   }
 
-  Widget _buildBadge(bool isDark, Color accent, bool compact) {
+  // ── Overlaid content ──────────────────────────────────────────────────
+
+  Widget _buildPosterContent(bool isDark, Color accent, bool isMuted) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          compact ? 11 : 14, 0, compact ? 10 : 13, compact ? 10 : 13),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title ?? '',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.montserrat(
+              fontSize: compact ? 13.5 : 15.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+              height: 1.1,
+              color: isMuted
+                  ? (isDark ? Colors.white54 : Colors.black45)
+                  : (isDark ? Colors.white : AppColors.textPrimaryLight),
+              shadows: isDark
+                  ? [
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        blurRadius: 8,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
+                  : null,
+            ),
+          ),
+          if (subtitle != null && subtitle!.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(
+              subtitle!,
+              maxLines: compact ? 1 : 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: compact ? 10 : 10.5,
+                height: 1.3,
+                color: isMuted
+                    ? (isDark ? Colors.white38 : Colors.black38)
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.75)
+                        : AppColors.textSecondaryLight),
+              ),
+            ),
+          ],
+          const SizedBox(height: 7),
+          Row(
+            children: [
+              if (footer != null && footer!.isNotEmpty)
+                Flexible(child: _buildFooterChip(accent, isMuted, isDark))
+              else
+                const Spacer(),
+              const SizedBox(width: 8),
+              _buildChevron(isMuted, compact, isDark),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooterChip(Color accent, bool isMuted, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.32)
+            : Colors.white.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isMuted
+              ? (isDark
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.08))
+              : accent.withValues(alpha: isDark ? 0.30 : 0.40),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isMuted
+                  ? (isDark ? Colors.white38 : Colors.black38)
+                  : _chipAccent(accent, isDark),
+            ),
+          ),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              footer!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: compact ? 8.5 : 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+                color: isMuted
+                    ? (isDark ? Colors.white54 : Colors.black45)
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.9)
+                        : AppColors.textPrimaryLight),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Accent color used inside chips/pills, readable on the pill surface.
+  static Color _chipAccent(Color accent, bool isDark) {
+    if (isDark) return _readableOnDark(accent);
+    final hsl = HSLColor.fromColor(accent);
+    if (hsl.lightness > 0.42) {
+      return hsl.withLightness(0.34).toColor();
+    }
+    return accent;
+  }
+
+  /// Minimal affordance replacing the old play button - the whole card is
+  /// already tappable, this only signals "there is more this way".
+  Widget _buildChevron(bool isMuted, bool compact, bool isDark) {
+    final size = compact ? 22.0 : 26.0;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.35)
+            : Colors.white.withValues(alpha: 0.88),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.16)
+              : Colors.black.withValues(alpha: 0.10),
+          width: 1,
+        ),
+      ),
+      child: Icon(
+        Icons.arrow_forward_rounded,
+        size: size * 0.52,
+        color: isMuted
+            ? (isDark ? Colors.white24 : Colors.black26)
+            : (isDark
+                ? Colors.white.withValues(alpha: 0.85)
+                : AppColors.textPrimaryLight),
+      ),
+    );
+  }
+
+  // ── Top pills ─────────────────────────────────────────────────────────
+  Widget _buildBadge({
+    required Color accent,
+    required bool compact,
+    required bool isDark,
+  }) {
     final isMuted = isLocked || isComingSoon;
     return Container(
       padding: EdgeInsets.symmetric(
@@ -277,25 +473,18 @@ class GameCard extends StatelessWidget {
         vertical: compact ? 3 : 5,
       ),
       decoration: BoxDecoration(
-        color: isMuted
-            ? (isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.grey.shade200)
-            : accent.withValues(alpha: isDark ? 0.18 : 0.14),
+        color: isDark
+            ? Colors.black.withValues(alpha: 0.42)
+            : Colors.white.withValues(alpha: 0.82),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isMuted
-              ? Colors.transparent
-              : accent.withValues(alpha: 0.4),
+              ? (isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.black.withValues(alpha: 0.08))
+              : accent.withValues(alpha: isDark ? 0.45 : 0.50),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -306,7 +495,7 @@ class GameCard extends StatelessWidget {
                 width: compact ? 5 : 6,
                 height: compact ? 5 : 6,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFEF4444),
+                  color: Color(0xFFFF6B81),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -320,13 +509,22 @@ class GameCard extends StatelessWidget {
               fontWeight: FontWeight.w900,
               letterSpacing: compact ? 0.5 : 0.7,
               color: isMuted
-                  ? (isDark ? Colors.white38 : Colors.grey.shade500)
-                  : accentForeground(accent, isDark),
+                  ? (isDark ? Colors.white54 : Colors.black45)
+                  : _chipAccent(accent, isDark),
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Brightens [accent] until it reads cleanly on dark artwork pills.
+  static Color _readableOnDark(Color accent) {
+    final hsl = HSLColor.fromColor(accent);
+    if (hsl.lightness < 0.72) {
+      return hsl.withLightness(0.78).toColor();
+    }
+    return accent;
   }
 
   Widget _buildMetaPill(bool isDark, bool compact) {
@@ -337,8 +535,8 @@ class GameCard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.black.withValues(alpha: 0.45)
-            : Colors.white.withValues(alpha: 0.85),
+            ? Colors.black.withValues(alpha: 0.42)
+            : Colors.white.withValues(alpha: 0.82),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark
@@ -361,7 +559,7 @@ class GameCard extends StatelessWidget {
           Text(
             meta!,
             style: TextStyle(
-              fontSize: compact ? 9 : 9.5,
+              fontSize: 9,
               fontWeight: FontWeight.bold,
               color: isDark ? Colors.white70 : Colors.black87,
             ),
@@ -370,6 +568,8 @@ class GameCard extends StatelessWidget {
       ),
     );
   }
+
+  // ── State overlays ────────────────────────────────────────────────────
 
   Widget _buildLockedOverlay(bool isDark) {
     return Container(
@@ -436,176 +636,6 @@ class GameCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  // ── Info section ──────────────────────────────────────────────────────
-
-  Widget _buildInfoSection(
-      bool isDark, Color accent, bool isMuted,
-      {bool fillInfo = false, bool compact = false}) {
-    if (compact) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.montserrat(
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.2,
-                color: isMuted
-                    ? (isDark ? Colors.white38 : Colors.grey.shade400)
-                    : (isDark ? Colors.white : AppColors.textPrimaryLight),
-              ),
-            ),
-            if (fillInfo) const Spacer() else const SizedBox(height: 2),
-            Row(
-              children: [
-                if (footer != null && footer!.isNotEmpty) ...[
-                  Expanded(
-                    child: Text(
-                      footer!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: isMuted
-                            ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                            : (isDark
-                                ? AppColors.textSecondaryDark
-                                    .withValues(alpha: 0.75)
-                                : AppColors.textSecondaryLight
-                                    .withValues(alpha: 0.8)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                ] else
-                  const Spacer(),
-                _buildActionButton(isDark, accent),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title ?? '',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.montserrat(
-              fontSize: 15.5,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.2,
-              color: isMuted
-                  ? (isDark ? Colors.white38 : Colors.grey.shade400)
-                  : (isDark ? Colors.white : AppColors.textPrimaryLight),
-            ),
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            height: 32,
-            child: Text(
-              subtitle ?? '',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                height: 1.35,
-                color: isMuted
-                    ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                    : (isDark
-                        ? AppColors.textSecondaryDark
-                        : AppColors.textSecondaryLight),
-              ),
-            ),
-          ),
-          if (fillInfo) const Spacer() else const SizedBox(height: 10),
-          Row(
-            children: [
-              if (footer != null && footer!.isNotEmpty) ...[
-                Expanded(
-                  child: Text(
-                    footer!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.bold,
-                      color: isMuted
-                          ? (isDark ? Colors.white24 : Colors.grey.shade400)
-                          : (isDark
-                              ? AppColors.textSecondaryDark
-                                  .withValues(alpha: 0.75)
-                              : AppColors.textSecondaryLight
-                                  .withValues(alpha: 0.8)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ] else
-                const Spacer(),
-              _buildActionButton(isDark, accent),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(bool isDark, Color accent) {
-    final isMuted = isLocked || isComingSoon;
-    return Container(
-      width: compact ? 24 : 36,
-      height: compact ? 24 : 36,
-      decoration: BoxDecoration(
-        color: isMuted
-            ? (isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.grey.shade100)
-            : null,
-        gradient: isMuted
-            ? null
-            : LinearGradient(
-                colors: [accent, accent.withValues(alpha: 0.85)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-        shape: BoxShape.circle,
-        border: isMuted
-            ? Border.all(color: Colors.white.withValues(alpha: 0.1))
-            : Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.2),
-        boxShadow: isMuted
-            ? null
-            : [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.45),
-                  blurRadius: compact ? 8 : 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: Icon(
-        isMuted ? Icons.lock_outline_rounded : Icons.play_arrow_rounded,
-        color: isMuted
-            ? (isDark ? Colors.white24 : Colors.grey.shade400)
-            : Colors.black,
-        size: compact ? 13 : 18,
       ),
     );
   }

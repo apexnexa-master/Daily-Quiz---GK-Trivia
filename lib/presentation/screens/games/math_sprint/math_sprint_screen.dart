@@ -55,14 +55,14 @@ class _MathSprintScreenState extends ConsumerState<MathSprintScreen>
   static const List<Color> _tileAccents = [
     Color(0xFF00F1FE),
     Color(0xFFA78BFA),
-    Color(0xFFD4FF50),
+    Color(0xFF3EE6B0),
     Color(0xFFFF5FA8),
   ];
 
   static const LinearGradient _scoreGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFFD4FF50), Color(0xFF00F1FE)],
+    colors: [Color(0xFF3EE6B0), Color(0xFF00F1FE)],
   );
 
   _Phase _phase = _Phase.intro;
@@ -568,7 +568,7 @@ Can you beat me? 🚀
                       color: Colors.white,
                       shadows: const [
                         Shadow(
-                          color: Color(0x66D4FF50),
+                          color: Color(0x663EE6B0),
                           blurRadius: 24,
                         ),
                       ],
@@ -763,12 +763,12 @@ Can you beat me? 🚀
         ? const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFD4FF50), Color(0xFF00F1FE)],
+            colors: [Color(0xFF3EE6B0), Color(0xFF00F1FE)],
           )
         : const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF3F6212), Color(0xFF0E7490)],
+            colors: [Color(0xFF065F46), Color(0xFF0E7490)],
           );
 
     return Padding(
@@ -1102,7 +1102,7 @@ Can you beat me? 🚀
                         letterSpacing: -0.5,
                         color: Colors.white,
                         shadows: const [
-                          Shadow(color: Color(0x55D4FF50), blurRadius: 26),
+                          Shadow(color: Color(0x553EE6B0), blurRadius: 26),
                         ],
                       ),
                     ),
@@ -1189,7 +1189,7 @@ Can you beat me? 🚀
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFD4FF50), Color(0xFF00E7A0)],
+                          colors: [Color(0xFF3EE6B0), Color(0xFF00E7A0)],
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),
@@ -1289,7 +1289,7 @@ Can you beat me? 🚀
                     _orbitSymbol(
                         '−', const Offset(-64, 0), const Color(0xFFFF5FA8)),
                     _orbitSymbol(
-                        '×', const Offset(0, 64), const Color(0xFFD4FF50)),
+                        '×', const Offset(0, 64), const Color(0xFF3EE6B0)),
                     _orbitSymbol(
                         '÷', const Offset(0, -64), const Color(0xFFA78BFA)),
                   ],
@@ -1451,7 +1451,7 @@ Can you beat me? 🚀
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFD4FF50), Color(0xFF00E7A0)],
+                        colors: [Color(0xFF3EE6B0), Color(0xFF00E7A0)],
                         begin: Alignment.centerLeft,
                         end: Alignment.centerRight,
                       ),

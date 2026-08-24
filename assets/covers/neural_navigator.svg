@@ -1,0 +1,38 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <linearGradient id="nnbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2A1D0E"/>
+      <stop offset="1" stop-color="#3E2A10"/>
+    </linearGradient>
+    <radialGradient id="nngA">
+      <stop offset="0" stop-color="#F5C86B" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#F5C86B" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nngB">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="nnchip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#nnbg)"/>
+  <circle cx="665" cy="85" r="245" fill="url(#nngA)"/>
+  <circle cx="105" cy="445" r="215" fill="url(#nngB)"/>
+  <circle cx="400" cy="250" r="168" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="2"/>
+  <g fill="#FFFFFF" fill-opacity="0.10"><circle cx="56" cy="64" r="3.5"/><circle cx="88" cy="64" r="3.5"/><circle cx="120" cy="64" r="3.5"/><circle cx="56" cy="96" r="3.5"/><circle cx="88" cy="96" r="3.5"/><circle cx="120" cy="96" r="3.5"/><circle cx="56" cy="128" r="3.5"/><circle cx="88" cy="128" r="3.5"/><circle cx="120" cy="128" r="3.5"/></g>
+  <circle cx="668" cy="382" r="30" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="3"/>
+  <path d="M112 344h30M127 329v30" stroke="#FFFFFF" stroke-opacity="0.16" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="212" cy="118" r="7" fill="#FBDFAC" fill-opacity="0.5"/>
+  <circle cx="594" cy="132" r="5" fill="#FFFFFF" fill-opacity="0.28"/>
+  <rect x="-140" y="112" width="1080" height="44" fill="#FFFFFF" fill-opacity="0.03" transform="rotate(-14 400 250)"/>
+  <rect x="298" y="148" width="204" height="204" rx="46" fill="url(#nnchip)" stroke="#FFFFFF" stroke-opacity="0.30" stroke-width="2.5"/>
+  <g transform="translate(400 250)">
+    <path d="M 0 -84 v 18 M 0 84 v -18 M -84 0 h 18 M 84 0 h -18" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="9" stroke-linecap="round"/>
+    <circle r="58" fill="none" stroke="#FFFFFF" stroke-width="11"/>
+    <path d="M 0 -38 L 26 26 L 0 12 Z" fill="#FFFFFF"/>
+    <path d="M 0 38 L -26 -26 L 0 -12 Z" fill="#FFFFFF" fill-opacity="0.40"/>
+    <circle r="8" fill="#FFFFFF"/>
+  </g>
+</svg>

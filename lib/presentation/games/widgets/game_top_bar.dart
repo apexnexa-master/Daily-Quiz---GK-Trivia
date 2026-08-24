@@ -46,7 +46,7 @@ class GameTopBar extends StatelessWidget {
                 ShaderMask(
                   shaderCallback: (bounds) => LinearGradient(
                     colors: isDark
-                        ? [AppColors.primary, const Color(0xFFECB2FF)]
+                        ? [AppColors.primary, const Color(0xFFB79CFF)]
                         : [AppColors.primaryDark, AppColors.secondaryDark],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,

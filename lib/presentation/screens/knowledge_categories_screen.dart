@@ -157,7 +157,7 @@ class _KnowledgeCategoriesScreenState extends ConsumerState<KnowledgeCategoriesS
                       child: GameCard(
                         compact: true,
                         fillHeight: true,
-                        coverAspectRatio: 1.9,
+                        coverAspectRatio: 1.2,
                         accent: categoryColor,
                         cover: _buildCategoryCover(categoryColor, icon),
                         title: localizedName,
@@ -185,10 +185,11 @@ class _KnowledgeCategoriesScreenState extends ConsumerState<KnowledgeCategoriesS
   double _gridAspectRatio(BuildContext context) {
     const hPadding = 20.0;
     const spacing = 12.0;
-    const coverRatio = 1.9;
-    const infoReserve = 60.0;
+    // Poster tiles: text overlays the artwork, so the cell is simply
+    // width / ratio with no extra reserve for an info section.
+    const posterRatio = 1.2;
     final cellWidth = (MediaQuery.sizeOf(context).width - hPadding * 2 - spacing) / 2;
-    return cellWidth / (cellWidth / coverRatio + infoReserve);
+    return cellWidth / (cellWidth / posterRatio);
   }
 
   Widget _buildCategoryCover(Color color, IconData icon) {
@@ -230,7 +231,8 @@ class _KnowledgeCategoriesScreenState extends ConsumerState<KnowledgeCategoriesS
               ),
             ),
           ),
-          Center(
+          Align(
+            alignment: const Alignment(0, -0.45),
             child: Container(
               width: 38,
               height: 38,
@@ -275,7 +277,7 @@ class _KnowledgeCategoriesScreenState extends ConsumerState<KnowledgeCategoriesS
             return Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF151D1E), // OLED container matching DESIGN2
+                color: const Color(0xFF131A30), // OLED container matching DESIGN2
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 border: Border.all(
                   color: AppColors.outlineVariant.withValues(alpha: 0.3),

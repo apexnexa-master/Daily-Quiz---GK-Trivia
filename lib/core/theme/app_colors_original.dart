@@ -5,14 +5,14 @@ class AppColors {
   AppColors._();
 
   // Core brand colors (Cognitive Clarity Theme)
-  static const Color primary = Color(0xFFD4FF50); // Cyber-Lime
+  static const Color primary = Color(0xFF3EE6B0); // Cyber-Lime
   static const Color primaryLight = Color(0xFFE5FF92); // Cyber-Lime light
   static const Color primaryDark = Color(0xFF556D00); // Cyber-Lime dark
   
   static const Color secondary = Color(0xFFD3BBFF); // Secondary Lavender
   static const Color secondaryLight = Color(0xFFEBDDFF);
   static const Color secondaryDark = Color(0xFF6D28D9); // Deep Violet
-  static const Color accent = Color(0xFFD4FF50); // Cyber-Lime Accent
+  static const Color accent = Color(0xFF3EE6B0); // Cyber-Lime Accent
 
   // Semantic feedback colors
   static const Color success = Color(0xFF10B981); // Emerald 500
@@ -59,13 +59,13 @@ class AppColors {
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFFD4FF50), Color(0xFF6D28D9)], // Cyber-Lime to Deep Violet
+    colors: [Color(0xFF3EE6B0), Color(0xFF6D28D9)], // Cyber-Lime to Deep Violet
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient primaryGradientDark = LinearGradient(
-    colors: [Color(0xFF161F00), Color(0xFFD4FF50)], // Cyber-Lime dark to Cyber-Lime
+    colors: [Color(0xFF06251D), Color(0xFF3EE6B0)], // Cyber-Lime dark to Cyber-Lime
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

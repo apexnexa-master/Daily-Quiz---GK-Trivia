@@ -1253,7 +1253,7 @@ class _WorkoutTransition extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isDark
-                    ? [const Color(0xFF1E292B), const Color(0xFF151D1E)]
+                    ? [const Color(0xFF1E292B), const Color(0xFF131A30)]
                     : [Colors.white, const Color(0xFFF1F5F9)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

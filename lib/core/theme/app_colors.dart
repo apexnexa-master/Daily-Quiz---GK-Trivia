@@ -4,37 +4,37 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Core brand colors (DESIGN2: Hyper-Glass Kinetic - Yellow edition)
-  static const Color primary = Color(0xFFD4FF50); // Cyber-Lime / Neon Yellow
-  static const Color primaryLight = Color(0xFFE5FF92);
-  static const Color primaryDark = Color(0xFF556D00);
+  // Core brand colors (DESIGN3: Aurora Glass — mint & iris over midnight indigo)
+  static const Color primary = Color(0xFF3EE6B0); // Aurora Mint
+  static const Color primaryLight = Color(0xFF93F4D6);
+  static const Color primaryDark = Color(0xFF0B9E71);
 
-  // BRAINX neon palette (Glassmorphism / Neon Dark Mode style tokens)
-  static const Color neonLime = Color(0xFF39FF14);
-  static const Color neonCyan = Color(0xFF00F2FE);
-  static const Color neonViolet = Color(0xFF7B2CBF);
-  static const Color slateDark = Color(0xFF0B0E14);
-  static const Color slateNavy = Color(0xFF0D1117);
+  // Neon atmosphere tokens (aurora accents)
+  static const Color neonLime = Color(0xFF00E5A0); // Aurora Mint (bright)
+  static const Color neonCyan = Color(0xFF22D3EE);
+  static const Color neonViolet = Color(0xFF8B5CF6);
+  static const Color slateDark = Color(0xFF070B16);
+  static const Color slateNavy = Color(0xFF0A0F1E);
 
-  /// Hero CTA gradient — neon lime to electric green (BRAINX workout banner).
+  /// Hero CTA gradient — aurora mint to sky blue.
   static const LinearGradient workoutGradient = LinearGradient(
-    colors: [Color(0xFF8AFF00), Color(0xFF00FF87)],
+    colors: [Color(0xFF00D9A6), Color(0xFF38BDF8)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
-  static const Color secondary = Color(0xFFECB2FF); // Neon Violet
-  static const Color secondaryLight = Color(0xFFF8D8FF);
-  static const Color secondaryDark = Color(0xFFCF5CFF);
-  static const Color accent = Color(0xFFD4FF50); // Accent Cyber-Lime
+  static const Color secondary = Color(0xFFB79CFF); // Soft Iris
+  static const Color secondaryLight = Color(0xFFDED2FF);
+  static const Color secondaryDark = Color(0xFF8B5CF6);
+  static const Color accent = Color(0xFF3EE6B0); // Accent Aurora Mint
 
   // Semantic feedback colors
   static const Color success = Color(0xFF10B981);
   static const Color successLight = Color(0xFF34D399);
   static const Color successDark = Color(0xFF047857);
 
-  static const Color error = Color(0xFFEF4444);
-  static const Color errorLight = Color(0xFFF87171);
-  static const Color errorDark = Color(0xFFB91C1C);
+  static const Color error = Color(0xFFF43F5E);
+  static const Color errorLight = Color(0xFFFB7185);
+  static const Color errorDark = Color(0xFFBE123C);
 
   static const Color warning = Color(0xFFF59E0B);
   static const Color warningLight = Color(0xFFFBBF24);
@@ -45,39 +45,39 @@ class AppColors {
 
   // Gamification theme colors
   static const Color xp = Color(0xFFEAB308);
-  static const Color streak = Color(0xFFF97316);
+  static const Color streak = Color(0xFFFB923C);
   static const Color coin = Color(0xFFFACC15);
   static const Color life = Color(0xFFEC4899);
-  static const Color level = Color(0xFFCF5CFF); // Neon Violet Level
+  static const Color level = Color(0xFFA78BFA); // Iris Level
 
-  // Light Mode Surfaces
-  static const Color bgLight = Color(0xFFF8FAFC);
+  // Light Mode Surfaces (ice lavender)
+  static const Color bgLight = Color(0xFFF4F6FD);
   static const Color cardLight = Color(0xFFFFFFFF);
-  static const Color surfaceElevatedLight = Color(0xFFF1F5F9);
-  static const Color textPrimaryLight = Color(0xFF0F172A);
-  static const Color textSecondaryLight = Color(0xFF475569);
-  static const Color textTertiaryLight = Color(0xFF94A3B8);
+  static const Color surfaceElevatedLight = Color(0xFFECF0FA);
+  static const Color textPrimaryLight = Color(0xFF141A2E);
+  static const Color textSecondaryLight = Color(0xFF4C5877);
+  static const Color textTertiaryLight = Color(0xFF909CBA);
 
-  // Dark Mode Surfaces (BRAINX Glassmorphism / Neon Dark specifications)
-  static const Color bgDark = Color(0xFF0D1117); // deep slate navy background
-  static const Color cardDark = Color(0xFF192122); // surface-container
-  static const Color surfaceElevatedDark = Color(0xFF232B2C); // surface-container-high
-  static const Color surfaceContainerHighest = Color(0xFF2E3637);
-  static const Color outlineVariant = Color(0xFF3A494B);
-  static const Color outline = Color(0xFF849495);
-  static const Color textPrimaryDark = Color(0xFFDCE4E4); // on-surface
-  static const Color textSecondaryDark = Color(0xFFB9CACB); // on-surface-variant
-  static const Color textTertiaryDark = Color(0xFF849495);
+  // Dark Mode Surfaces (midnight indigo)
+  static const Color bgDark = Color(0xFF090E1D); // midnight indigo background
+  static const Color cardDark = Color(0xFF131A30); // surface-container
+  static const Color surfaceElevatedDark = Color(0xFF1B2444); // container-high
+  static const Color surfaceContainerHighest = Color(0xFF263156);
+  static const Color outlineVariant = Color(0xFF333F63);
+  static const Color outline = Color(0xFF7E8BAD);
+  static const Color textPrimaryDark = Color(0xFFEBF0FF); // on-surface
+  static const Color textSecondaryDark = Color(0xFFB7C3E4); // on-surface-variant
+  static const Color textTertiaryDark = Color(0xFF7886AB);
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFFD4FF50), Color(0xFFCF5CFF)], // Cyber-Lime to Neon Violet
+    colors: [Color(0xFF3EE6B0), Color(0xFF7C6AF2)], // Aurora Mint to Iris
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient primaryGradientDark = LinearGradient(
-    colors: [Color(0xFF161F00), Color(0xFFD4FF50)], // Cyber-Lime dark to Cyber-Lime
+    colors: [Color(0xFF06251D), Color(0xFF3EE6B0)], // deep mint to Aurora Mint
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -95,7 +95,7 @@ class AppColors {
   );
 
   static const LinearGradient errorGradient = LinearGradient(
-    colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+    colors: [Color(0xFFF43F5E), Color(0xFFBE123C)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -113,7 +113,7 @@ class AppColors {
   );
 
   static const LinearGradient levelGradient = LinearGradient(
-    colors: [Color(0xFFCF5CFF), Color(0xFF8B5CF6)],
+    colors: [Color(0xFFA78BFA), Color(0xFF7C3AED)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -122,9 +122,9 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFFF8FAFC),
-      Color(0xFFF1F5F9),
-      Color(0xFFE2E8F0),
+      Color(0xFFFAFCFF),
+      Color(0xFFF2F5FE),
+      Color(0xFFEAEEFC),
     ],
     stops: [0.0, 0.5, 1.0],
   );
@@ -133,23 +133,30 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF0B0E14), // deep slate navy
-      Color(0xFF0D1117), // slate navy
-      Color(0xFF111923), // deep slate blue
+      Color(0xFF060A16), // deepest midnight
+      Color(0xFF0A0F1F), // midnight indigo
+      Color(0xFF111A36), // deep iris navy
     ],
     stops: [0.0, 0.5, 1.0],
   );
 
+  /// Ambient glow hues used by decorative backdrop blobs (dark mode).
+  static const List<Color> auroraGlowColors = [
+    Color(0xFF22D3EE), // cyan
+    Color(0xFF8B5CF6), // violet
+    Color(0xFF3EE6B0), // mint
+  ];
+
   // Category Color Map
   static const Map<String, Color> _categoryColors = {
-    'General Knowledge': Color(0xFFD4FF50), // Cyber-Lime / Neon Yellow
+    'General Knowledge': Color(0xFF3EE6B0), // Aurora Mint
     'Indian History': Color(0xFFFBBF24), // Amber
-    'Geography': Color(0xFF8B5CF6), // Violet
-    'Science': Color(0xFF10B981), // Emerald
-    'Polity': Color(0xFFECB2FF), // Neon Violet
-    'Economy': Color(0xFFEC4899), // Pink
-    'Current Affairs': Color(0xFF3B82F6), // Blue
-    'Art & Culture': Color(0xFFF43F5E), // Rose
+    'Geography': Color(0xFF38BDF8), // Sky
+    'Science': Color(0xFF34D399), // Emerald
+    'Polity': Color(0xFFA78BFA), // Iris
+    'Economy': Color(0xFFF472B6), // Pink
+    'Current Affairs': Color(0xFF60A5FA), // Blue
+    'Art & Culture': Color(0xFFFB7185), // Rose
   };
 
   static Color categoryColor(String category) {
@@ -169,7 +176,7 @@ class AppColors {
 
   // Exam Mode Colors
   static const Map<String, Color> _examModeColors = {
-    'GENERAL': Color(0xFFD4FF50),
+    'GENERAL': Color(0xFF3EE6B0),
     'WBPSC': Color(0xFF0F766E),
     'SSC': Color(0xFFD97706),
     'UPSC': Color(0xFFBE123C),
@@ -197,7 +204,7 @@ class AppColors {
       case 'GENERAL':
       default:
         return const LinearGradient(
-          colors: [Color(0xFF161F00), Color(0xFFD4FF50)],
+          colors: [Color(0xFF06251D), Color(0xFF3EE6B0)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         );

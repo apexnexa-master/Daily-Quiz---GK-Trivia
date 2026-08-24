@@ -95,7 +95,7 @@ class GameIntroData {
       taglineBn: 'রং কথা বলে। মনোযোগ দিন।',
       taglineHi: 'रंग बोलते हैं। ध्यान से सुनें।',
       icon: Icons.palette_rounded,
-      accentColor: Color(0xFFECB2FF),
+      accentColor: Color(0xFFB79CFF),
       secondaryColor: Color(0xFFCF5CFF),
       brainBenefit:
           'Trains selective attention and cognitive flexibility — the ability to inhibit automatic responses. This Stroop effect exercise strengthens your anterior cingulate cortex, improving focus and reducing mental interference.',
@@ -175,7 +175,7 @@ class GameIntroData {
       taglineBn: 'দ্রুত গণিত সমাধান করুন।',
       taglineHi: 'तेज़ गति से गणित हल करें।',
       icon: Icons.speed_rounded,
-      accentColor: Color(0xFFD4FF50),
+      accentColor: Color(0xFF3EE6B0),
       secondaryColor: Color(0xFF00E7A0),
       brainBenefit:
           'Boosts processing speed and mental arithmetic. Under time pressure, your brain rapidly switches between calculation strategies, strengthening neural pathways for quick numerical reasoning.',
@@ -216,7 +216,7 @@ class GameIntroData {
       taglineBn: 'আপনার জ্ঞান পরীক্ষা করুন।',
       taglineHi: 'अपने ज्ञान की परीक्षा लें।',
       icon: Icons.quiz_rounded,
-      accentColor: Color(0xFFD4FF50),
+      accentColor: Color(0xFF3EE6B0),
       secondaryColor: Color(0xFF8BC34A),
       brainBenefit:
           'Expands general knowledge and strengthens long-term memory retrieval. Answering diverse questions activates multiple brain regions simultaneously — temporal lobe for facts, frontal lobe for reasoning.',

@@ -1,0 +1,40 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <linearGradient id="synapse_recallbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EFEBFE"/>
+      <stop offset="1" stop-color="#E2DBFB"/>
+    </linearGradient>
+    <radialGradient id="synapse_recallgA">
+      <stop offset="0" stop-color="#9061F9" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#9061F9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="synapse_recallgB">
+      <stop offset="0" stop-color="#7C3AED" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#7C3AED" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="synapse_recallchipG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9061F9"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#synapse_recallbg)"/>
+  <circle cx="665" cy="85" r="245" fill="url(#synapse_recallgA)"/>
+  <circle cx="105" cy="445" r="215" fill="url(#synapse_recallgB)"/>
+  <circle cx="400" cy="250" r="168" fill="none" stroke="#7C3AED" stroke-opacity="0.13" stroke-width="2"/>
+  <g fill="#7C3AED" fill-opacity="0.22"><circle cx="56" cy="64" r="3.5"/><circle cx="88" cy="64" r="3.5"/><circle cx="120" cy="64" r="3.5"/><circle cx="56" cy="96" r="3.5"/><circle cx="88" cy="96" r="3.5"/><circle cx="120" cy="96" r="3.5"/><circle cx="56" cy="128" r="3.5"/><circle cx="88" cy="128" r="3.5"/><circle cx="120" cy="128" r="3.5"/></g>
+  <circle cx="668" cy="382" r="30" fill="none" stroke="#7C3AED" stroke-opacity="0.20" stroke-width="3"/>
+  <path d="M112 344h30M127 329v30" stroke="#7C3AED" stroke-opacity="0.30" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="212" cy="118" r="7" fill="#9061F9" fill-opacity="0.60"/>
+  <circle cx="594" cy="132" r="5" fill="#7C3AED" fill-opacity="0.35"/>
+  <rect x="298" y="148" width="204" height="204" rx="46" fill="#FFFFFF" fill-opacity="0.80" stroke="#7C3AED" stroke-opacity="0.45" stroke-width="2.5"/>
+  <g transform="translate(400 250)">
+    <path d="M -78 -60 L -22 -22 M 78 -68 L 24 -24 M 72 68 L 26 26 M -70 64 L -24 26" stroke="#9061F9" stroke-opacity="0.70" stroke-width="8" stroke-linecap="round"/>
+    <circle r="48" fill="none" stroke="#9061F9" stroke-opacity="0.60" stroke-width="3" stroke-dasharray="2 11" stroke-linecap="round"/>
+    <circle cx="-82" cy="-66" r="13" fill="#C4B5FD"/>
+    <circle cx="84" cy="-74" r="15" fill="#9061F9"/>
+    <circle cx="78" cy="74" r="12" fill="#A78BFA"/>
+    <circle cx="-76" cy="70" r="14" fill="#7C3AED" fill-opacity="0.85"/>
+    <circle r="27" fill="#7C3AED"/>
+    <circle r="10" fill="#FFFFFF"/>
+  </g>
+</svg>

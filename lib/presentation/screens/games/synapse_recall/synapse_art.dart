@@ -16,7 +16,7 @@ class SynapseNetworkPainter extends CustomPainter {
   SynapseNetworkPainter({this.progress = 1.0});
 
   static const List<Color> _accents = [
-    Color(0xFFD4FF50),
+    Color(0xFF3EE6B0),
     Color(0xFF00F1FE),
     Color(0xFFB388FF),
     Color(0xFFFF5FA2),

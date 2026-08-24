@@ -249,7 +249,7 @@ class _GameResultsPanelState extends State<GameResultsPanel>
           shaderCallback: (bounds) => const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFD4FF50), Color(0xFF00F1FE)],
+            colors: [Color(0xFF3EE6B0), Color(0xFF00F1FE)],
           ).createShader(bounds),
           child: Text(
             '$value',
@@ -386,7 +386,7 @@ class _GameResultsPanelState extends State<GameResultsPanel>
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFD4FF50), Color(0xFF00E7A0)],
+              colors: [Color(0xFF3EE6B0), Color(0xFF00E7A0)],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             ),
@@ -437,7 +437,7 @@ class _GameResultsPanelState extends State<GameResultsPanel>
           height: 56,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFD4FF50), Color(0xFF00E7A0)],
+              colors: [Color(0xFF3EE6B0), Color(0xFF00E7A0)],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             ),

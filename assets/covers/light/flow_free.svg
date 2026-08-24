@@ -1,0 +1,38 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <linearGradient id="flow_freebg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E4F5FD"/>
+      <stop offset="1" stop-color="#D2EDFA"/>
+    </linearGradient>
+    <radialGradient id="flow_freegA">
+      <stop offset="0" stop-color="#4CC4EE" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#4CC4EE" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="flow_freegB">
+      <stop offset="0" stop-color="#078FC8" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#078FC8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="flow_freechipG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4CC4EE"/>
+      <stop offset="1" stop-color="#078FC8"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#flow_freebg)"/>
+  <circle cx="665" cy="85" r="245" fill="url(#flow_freegA)"/>
+  <circle cx="105" cy="445" r="215" fill="url(#flow_freegB)"/>
+  <circle cx="400" cy="250" r="168" fill="none" stroke="#078FC8" stroke-opacity="0.13" stroke-width="2"/>
+  <g fill="#078FC8" fill-opacity="0.22"><circle cx="56" cy="64" r="3.5"/><circle cx="88" cy="64" r="3.5"/><circle cx="120" cy="64" r="3.5"/><circle cx="56" cy="96" r="3.5"/><circle cx="88" cy="96" r="3.5"/><circle cx="120" cy="96" r="3.5"/><circle cx="56" cy="128" r="3.5"/><circle cx="88" cy="128" r="3.5"/><circle cx="120" cy="128" r="3.5"/></g>
+  <circle cx="668" cy="382" r="30" fill="none" stroke="#078FC8" stroke-opacity="0.20" stroke-width="3"/>
+  <path d="M112 344h30M127 329v30" stroke="#078FC8" stroke-opacity="0.30" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="212" cy="118" r="7" fill="#4CC4EE" fill-opacity="0.60"/>
+  <circle cx="594" cy="132" r="5" fill="#078FC8" fill-opacity="0.35"/>
+  <rect x="298" y="148" width="204" height="204" rx="46" fill="#FFFFFF" fill-opacity="0.80" stroke="#078FC8" stroke-opacity="0.45" stroke-width="2.5"/>
+  <g transform="translate(400 250)">
+    <path d="M -52 46 L -52 4 Q -52 -16 -32 -16 L 32 -16 Q 52 -16 52 -36 L 52 -50" fill="none" stroke="#7DD7F5" stroke-opacity="0.85" stroke-width="26" stroke-linecap="round"/>
+    <path d="M -52 46 L -52 4 Q -52 -16 -32 -16 L 32 -16 Q 52 -16 52 -36 L 52 -50" fill="none" stroke="#078FC8" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="-52" cy="46" r="21" fill="#078FC8"/>
+    <circle cx="52" cy="-56" r="19" fill="none" stroke="#078FC8" stroke-width="10"/>
+    <circle cx="10" cy="44" r="7" fill="#4CC4EE" fill-opacity="0.85"/>
+    <circle cx="58" cy="18" r="5" fill="#078FC8" fill-opacity="0.35"/>
+  </g>
+</svg>

@@ -26,7 +26,7 @@ enum WorkoutSkill {
     labelBn: 'জ্ঞান',
     labelHi: 'ज्ञान',
     emoji: '🧠',
-    accent: Color(0xFFD4FF50),
+    accent: Color(0xFF3EE6B0),
   ),
   logic(
     pillar: BrainPillar.logic,
@@ -42,7 +42,7 @@ enum WorkoutSkill {
     labelBn: 'গতি',
     labelHi: 'गति',
     emoji: '⚡',
-    accent: Color(0xFFECB2FF),
+    accent: Color(0xFFB79CFF),
   ),
   memory(
     pillar: BrainPillar.memory,

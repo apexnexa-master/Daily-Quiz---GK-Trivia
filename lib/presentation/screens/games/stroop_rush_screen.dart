@@ -972,7 +972,7 @@ Can you beat me? 🚀
                 ShaderMask(
                   shaderCallback: (bounds) => LinearGradient(
                     colors: isDark
-                        ? [AppColors.primary, const Color(0xFFECB2FF)]
+                        ? [AppColors.primary, const Color(0xFFB79CFF)]
                         : [AppColors.primaryDark, AppColors.secondaryDark],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
@@ -1298,7 +1298,7 @@ Can you beat me? 🚀
   // ---------------------------------------------------------------------------
   Widget _buildQuestion(bool isDark) {
     final isInk = _rule == _StroopRule.tapInk;
-    final accent = isInk ? const Color(0xFF3EC8FF) : const Color(0xFFECB2FF);
+    final accent = isInk ? const Color(0xFF3EC8FF) : const Color(0xFFB79CFF);
     final highlight = isInk
         ? _t('INK COLOR', 'কালির রং', 'स्याही का रंग')
         : _t('WRITTEN WORD', 'লেখা শব্দ', 'लिखा शब्द');
@@ -1437,7 +1437,7 @@ Can you beat me? 🚀
               end: Alignment.bottomRight,
               colors: [
                 cardTint.withValues(alpha: isDark ? 0.45 : 0.40),
-                (isDark ? const Color(0xFF151D1E) : Colors.white)
+                (isDark ? const Color(0xFF131A30) : Colors.white)
                     .withValues(alpha: 0.97),
               ],
             ),
@@ -1607,7 +1607,7 @@ Can you beat me? 🚀
       text = _t('new rule — study it', 'নতুন নিয়ম — দেখে নিন',
           'नया नियम — ध्यान दें');
       icon = Icons.bolt_rounded;
-      color = const Color(0xFFECB2FF);
+      color = const Color(0xFFB79CFF);
     } else {
       text = '';
       icon = Icons.touch_app_rounded;
@@ -1863,7 +1863,7 @@ Can you beat me? 🚀
                         children: [
                           const Icon(
                             Icons.bolt_rounded,
-                            color: Color(0xFFECB2FF),
+                            color: Color(0xFFB79CFF),
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -1874,7 +1874,7 @@ Can you beat me? 🚀
                               fontSize: 14,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 1.2,
-                              color: const Color(0xFFECB2FF),
+                              color: const Color(0xFFB79CFF),
                             ),
                           ),
                         ],
@@ -2022,7 +2022,7 @@ Can you beat me? 🚀
           end: Alignment.bottomRight,
           colors: [
             inkColor.withValues(alpha: isDark ? 0.20 : 0.14),
-            (isDark ? const Color(0xFF151D1E) : Colors.white)
+            (isDark ? const Color(0xFF131A30) : Colors.white)
                 .withValues(alpha: 0.96),
           ],
         ),

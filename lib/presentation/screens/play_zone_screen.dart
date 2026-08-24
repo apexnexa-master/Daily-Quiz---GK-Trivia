@@ -7,7 +7,6 @@ import '../providers/app_providers.dart';
 import '../../core/services/quiz/practice_quiz_service.dart';
 import '../../routes/app_router.dart';
 import '../widgets/game_card.dart';
-import 'games/synapse_recall/synapse_art.dart';
 
 class PlayZoneScreen extends ConsumerStatefulWidget {
   const PlayZoneScreen({super.key});
@@ -71,6 +70,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         category: 'Knowledge',
         duration: 'Self',
         icon: Icons.history_edu_rounded,
+        imagePath: 'assets/covers/gk_quiz.svg',
         isLocked: false,
         isImplemented: true,
         onTap: () {
@@ -91,7 +91,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         category: 'Logic',
         duration: '2m',
         icon: Icons.extension_rounded,
-        imagePath: 'assets/icon/arrows3.PNG',
+        imagePath: 'assets/covers/arrow_maze.svg',
         isLocked: false,
         isImplemented: true,
         onTap: () {
@@ -112,6 +112,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         category: 'Memory',
         duration: '3m',
         icon: Icons.psychology_rounded,
+        imagePath: 'assets/covers/synapse_recall.svg',
         isLocked: false,
         isImplemented: true,
         onTap: () {
@@ -132,7 +133,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         category: 'Focus',
         duration: '2.5s',
         icon: Icons.palette_rounded,
-        imagePath: 'assets/icon/stroopRush2.PNG',
+        imagePath: 'assets/covers/stroop_rush.svg',
         accentColor: const Color(0xFFFF2D95),
         isLocked: false,
         isImplemented: true,
@@ -154,6 +155,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         category: 'Math',
         duration: '1m',
         icon: Icons.calculate_rounded,
+        imagePath: 'assets/covers/math_sprint.svg',
         isLocked: false,
         isImplemented: true,
         onTap: () {
@@ -174,6 +176,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         category: 'Focus',
         duration: '4m',
         icon: Icons.explore_rounded,
+        imagePath: 'assets/covers/neural_navigator.svg',
         isLocked: true,
         onTap: () {},
       ),
@@ -192,6 +195,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         duration: '3m',
         icon: Icons.water_drop_rounded,
         accentColor: const Color(0xFF00E5FF),
+        imagePath: 'assets/covers/flow_free.svg',
         isLocked: false,
         isImplemented: true,
         onTap: () {
@@ -213,6 +217,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         duration: '2m',
         icon: Icons.draw_rounded,
         accentColor: const Color(0xFFE040FB),
+        imagePath: 'assets/covers/one_line.svg',
         isLocked: false,
         isImplemented: true,
         onTap: () {
@@ -297,7 +302,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF151D1E).withValues(alpha: 0.65)
+                        ? const Color(0xFF131A30).withValues(alpha: 0.65)
                         : Colors.white.withValues(alpha: 0.75),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
@@ -449,6 +454,8 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                     : isHi
                                         ? 'ज्ञान और त्रिविया'
                                         : 'Knowledge & Trivia',
+                                icon: Icons.menu_book_rounded,
+                                accent: AppColors.primary,
                                 isDark: isDark,
                                 isBn: isBn,
                                 isHi: isHi,
@@ -472,7 +479,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                     data: game,
                                     isBn: isBn,
                                     isHi: isHi,
-                                    imagePath: 'assets/icon/quiz3.png',
                                   );
                                 }).toList(),
                               ),
@@ -487,6 +493,8 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                     : isHi
                                         ? 'तर्क और स्मृति'
                                         : 'Logic & Memory',
+                                icon: Icons.psychology_rounded,
+                                accent: const Color(0xFF5FD9F2),
                                 isDark: isDark,
                                 isBn: isBn,
                                 isHi: isHi,
@@ -510,12 +518,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                     data: game,
                                     isBn: isBn,
                                     isHi: isHi,
-                                    imagePath: isDark
-                                        ? 'assets/icon/logic_mascot_dark.jpg'
-                                        : 'assets/icon/logic_mascot_light.jpg',
-                                    cover: game.category == 'Memory'
-                                        ? const SynapseRecallCover()
-                                        : null,
                                   );
                                 }).toList(),
                               ),
@@ -530,6 +532,8 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                     : isHi
                                         ? 'ध्यान और फोकस'
                                         : 'Focus & Attention',
+                                icon: Icons.center_focus_strong_rounded,
+                                accent: const Color(0xFFD98BFF),
                                 isDark: isDark,
                                 isBn: isBn,
                                 isHi: isHi,
@@ -553,9 +557,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                     data: game,
                                     isBn: isBn,
                                     isHi: isHi,
-                                    imagePath: isDark
-                                        ? 'assets/icon/logic_mascot_dark.jpg'
-                                        : 'assets/icon/logic_mascot_light.jpg',
                                   );
                                 }).toList(),
                               ),
@@ -570,6 +571,8 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                     : isHi
                                         ? 'गणित और संख्याएँ'
                                         : 'Math & Numbers',
+                                icon: Icons.calculate_rounded,
+                                accent: const Color(0xFFFFB169),
                                 isDark: isDark,
                                 isBn: isBn,
                                 isHi: isHi,
@@ -593,7 +596,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                     data: game,
                                     isBn: isBn,
                                     isHi: isHi,
-                                    imagePath: 'assets/icon/mathSpeed2.PNG',
                                   );
                                 }).toList(),
                               ),
@@ -614,19 +616,41 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
     required bool isDark,
     required bool isBn,
     required bool isHi,
+    IconData icon = Icons.grid_view_rounded,
+    Color accent = AppColors.primary,
   }) {
+    final iconColor =
+        isDark ? accent : Color.lerp(accent, Colors.black, 0.30)!;
+    final lineColor = (isDark ? Colors.white : Colors.black)
+        .withValues(alpha: isDark ? 0.07 : 0.06);
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: accent.withValues(alpha: isDark ? 0.28 : 0.22),
+              width: 1,
+            ),
+          ),
+          child: Icon(icon, size: 14, color: iconColor),
+        ),
+        const SizedBox(width: 8),
         Text(
           title,
           style: GoogleFonts.montserrat(
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-            color: isDark ? Colors.white70 : Colors.grey.shade700,
-            letterSpacing: -0.2,
+            fontSize: 13.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+            color:
+                isDark ? Colors.white.withValues(alpha: 0.85) : Colors.grey.shade800,
           ),
         ),
+        const SizedBox(width: 12),
+        Expanded(child: Container(height: 1, color: lineColor)),
       ],
     );
   }
@@ -687,7 +711,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                         data.category.toLowerCase().contains('memory') ||
                         data.category.toLowerCase().contains('focus')
                     ? const Color(0xFF00F1FE)
-                    : const Color(0xFFECB2FF)))));
+                    : const Color(0xFFB79CFF)))));
 
     return GameCard(
       fillHeight: true,

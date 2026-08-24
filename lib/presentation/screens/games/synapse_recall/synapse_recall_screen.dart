@@ -1070,7 +1070,7 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
                       padding: const EdgeInsets.symmetric(vertical: 17),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFD4FF50), Color(0xFF9BFF3F)],
+                          colors: [Color(0xFF3EE6B0), Color(0xFF7CF7DC)],
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),
@@ -1156,7 +1156,7 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
                     end: Alignment.bottomRight,
                     colors: [
                       AppColors.success.withValues(alpha: isDark ? 0.22 : 0.14),
-                      (isDark ? const Color(0xFF151D1E) : Colors.white)
+                      (isDark ? const Color(0xFF131A30) : Colors.white)
                           .withValues(alpha: 0.98),
                     ],
                   ),
@@ -1369,7 +1369,7 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFFD4FF50), Color(0xFF9BFF3F)],
+                              colors: [Color(0xFF3EE6B0), Color(0xFF7CF7DC)],
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                             ),

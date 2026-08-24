@@ -41,7 +41,7 @@ class MemoryPalette {
   MemoryPalette._();
 
   static const List<Color> colors = [
-    Color(0xFFD4FF50), // lime
+    Color(0xFF3EE6B0), // lime
     Color(0xFF00F1FE), // cyan
     Color(0xFFB388FF), // purple
     Color(0xFFFF5FA2), // pink

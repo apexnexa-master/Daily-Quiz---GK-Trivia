@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -1413,7 +1414,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
                         },
                         isBn: isBn,
                         isHi: isHi,
-                        imagePath: 'assets/icon/quiz3.png',
+                        imagePath: 'assets/covers/gk_quiz.svg',
                       ),
                     ],
                   ),
@@ -1432,18 +1433,40 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
     required bool isBn,
     required bool isHi,
   }) {
+    const accent = AppColors.primary;
+    final iconColor =
+        isDark ? accent : Color.lerp(accent, Colors.black, 0.30)!;
+    final lineColor = (isDark ? Colors.white : Colors.black)
+        .withValues(alpha: isDark ? 0.07 : 0.06);
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: accent.withValues(alpha: isDark ? 0.28 : 0.22),
+              width: 1,
+            ),
+          ),
+          child:
+              Icon(Icons.sports_kabaddi_rounded, size: 14, color: iconColor),
+        ),
+        const SizedBox(width: 8),
         Text(
           title,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-            color: isDark ? Colors.white70 : Colors.grey.shade700,
-            letterSpacing: -0.2,
+          style: GoogleFonts.montserrat(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+            color:
+                isDark ? Colors.white.withValues(alpha: 0.85) : Colors.grey.shade800,
           ),
         ),
+        const SizedBox(width: 12),
+        Expanded(child: Container(height: 1, color: lineColor)),
       ],
     );
   }
@@ -1466,7 +1489,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
             ? AppColors.primary
             : (badgeText.contains('MAZE') || badgeText.contains('RECALL')
                 ? const Color(0xFF00F1FE)
-                : const Color(0xFFECB2FF)));
+                : const Color(0xFFB79CFF)));
 
     final meta = switch (badgeText) {
       'TRIVIA' => '~5 min',
@@ -1477,9 +1500,9 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
     };
 
     return GameCard(
-      width: 260,
+      width: 210,
       compact: true,
-      coverAspectRatio: 2.6,
+      coverAspectRatio: 1.45,
       imagePath: imagePath,
       accent: categoryColor,
       badge: badgeText,

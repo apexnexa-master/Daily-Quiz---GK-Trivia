@@ -164,7 +164,7 @@ class AppTheme {
     ),
     snackBarTheme: const SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: Color(0xFF1E293B),
+      backgroundColor: Color(0xFF1B2444),
       contentTextStyle: TextStyle(color: Colors.white, fontSize: 14),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
     ),
@@ -270,8 +270,7 @@ class AppTheme {
     ),
     scaffoldBackgroundColor: AppColors.bgDark,
     dividerTheme: DividerThemeData(
-        color: AppColors.outlineVariant, thickness: 1),
-    bottomSheetTheme: const BottomSheetThemeData(
+        color: AppColors.outlineVariant, thickness: 1),    bottomSheetTheme: const BottomSheetThemeData(
       backgroundColor: AppColors.cardDark,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
@@ -280,7 +279,7 @@ class AppTheme {
     ),
     snackBarTheme: const SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: Color(0xFF1E293B),
+      backgroundColor: Color(0xFF1B2444),
       contentTextStyle: TextStyle(color: Colors.white, fontSize: 14),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
     ),

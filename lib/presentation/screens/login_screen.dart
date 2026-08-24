@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_animations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/app_providers.dart';
 
@@ -13,13 +14,32 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with TickerProviderStateMixin {
   bool _googleLoading = false;
   bool _guestLoading = false;
   String? _error;
   bool _showAdminPassword = false;
   String _adminEmail = '';
   final _adminPasswordController = TextEditingController();
+
+  late final AnimationController _auroraController;
+
+  @override
+  void initState() {
+    super.initState();
+    _auroraController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 7000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _auroraController.dispose();
+    _adminPasswordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _signInGoogle() async {
     setState(() {
@@ -44,12 +64,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       } else {
         final prefs = await SharedPreferences.getInstance();
         final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
-        if (mounted) {
-          Navigator.pushReplacementNamed(
-            context,
-            onboardingComplete ? '/home' : '/onboarding',
-          );
-        }
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(
+          context,
+          onboardingComplete ? '/home' : '/onboarding',
+        );
       }
     } catch (e) {
       setState(() {
@@ -111,23 +130,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
     try {
       await ref.read(authServiceProvider).signInAnonymously();
-      if (mounted) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('onboarding_complete', true);
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_complete', true);
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       setState(() {
         _error = e.toString();
         _guestLoading = false;
       });
     }
-  }
-
-  @override
-  void dispose() {
-    _adminPasswordController.dispose();
-    super.dispose();
   }
 
   @override
@@ -144,92 +156,144 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Gradient
+          // Background gradient
           Container(
             decoration: BoxDecoration(
               gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
             ),
           ),
-          // Ambient glow
-          Positioned(
-            top: -100,
-            left: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: isDark ? 0.05 : 0.02),
-              ),
-            ),
+          // Drifting aurora glows
+          AnimatedBuilder(
+            animation: _auroraController,
+            builder: (context, _) {
+              final t = Curves.easeInOut.transform(_auroraController.value);
+              return Stack(
+                children: [
+                  Positioned(
+                    top: -120 + t * 36,
+                    left: -110 - t * 24,
+                    child: _glowBlob(300,
+                        AppColors.primary.withValues(alpha: isDark ? 0.12 : 0.10)),
+                  ),
+                  Positioned(
+                    bottom: -150 - t * 30,
+                    right: -120 + t * 26,
+                    child: _glowBlob(340,
+                        AppColors.secondary.withValues(alpha: isDark ? 0.14 : 0.10)),
+                  ),
+                  Positioned(
+                    top: 180 - t * 20,
+                    right: -80,
+                    child: _glowBlob(200,
+                        AppColors.neonCyan.withValues(alpha: isDark ? 0.08 : 0.06)),
+                  ),
+                ],
+              );
+            },
           ),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Glowing Hero Logo
+                    // Glowing glass logo tile
                     PulseWidget(
-                      child: SizedBox(
-                        width: 190,
-                        height: 190,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Container(
-                              width: 150,
-                              height: 150,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isDark ? AppColors.cardDark : Colors.white,
-                                border: Border.all(
-                                  color: isDark ? AppColors.outlineVariant : Colors.black12,
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: isDark ? 0.3 : 0.1),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Image.asset(
-                              'assets/icon/logo2.png',
-                              width: 150,
-                              height: 150,
-                              fit: BoxFit.contain,
+                      child: Container(
+                        width: 168,
+                        height: 168,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(48),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: isDark
+                                ? [
+                                    Colors.white.withValues(alpha: 0.10),
+                                    Colors.white.withValues(alpha: 0.03),
+                                  ]
+                                : [Colors.white, Colors.white.withValues(alpha: 0.75)],
+                          ),
+                          border: Border.all(
+                            color: (isDark ? Colors.white : AppColors.primary)
+                                .withValues(alpha: isDark ? 0.16 : 0.35),
+                            width: 1.4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary
+                                  .withValues(alpha: isDark ? 0.26 : 0.20),
+                              blurRadius: 46,
+                              offset: const Offset(0, 16),
                             ),
                           ],
                         ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(22),
+                          child: Image.asset(
+                            'assets/icon/logo2.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 32),
 
-                    // Typography Stack
+                    // Typography stack
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [AppColors.primaryLight, AppColors.secondary],
+                      ).createShader(bounds),
+                      blendMode: BlendMode.srcIn,
+                      child: Text(
+                        isBn
+                            ? 'মনকে প্রশিক্ষণ দিন'
+                            : isHi
+                                ? 'अपने दिमाग को ट्रेन करें'
+                                : 'Train Your Mind',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 31,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     Text(
-                      'Train Your Mind',
+                      isBn
+                          ? 'আপনার ব্রেইনের দৈনিক ফিটনেস অ্যাপ।'
+                          : isHi
+                              ? 'आपके दिमाग का डेली फिटनेस ऐप।'
+                              : 'The daily fitness app for your brain.',
                       style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                        letterSpacing: -0.8,
+                        fontSize: 15.5,
+                        height: 1.4,
+                        color: isDark
+                            ? AppColors.textSecondaryDark
+                            : AppColors.textSecondaryLight,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'The daily fitness app for your brain.',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
-                      ),
-                      textAlign: TextAlign.center,
+                    const SizedBox(height: 24),
+
+                    // Feature chips
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        _featureChip(Icons.psychology_alt_rounded,
+                            isBn ? 'কুইজ' : isHi ? 'क्विज़' : 'Daily Quiz', isDark),
+                        _featureChip(Icons.bolt_rounded,
+                            isBn ? 'ব্রেইন গেমস' : isHi ? 'ब्रेन गेम्स' : 'Brain Games', isDark),
+                        _featureChip(Icons.emoji_events_rounded,
+                            isBn ? 'র‍্যাঙ্ক' : isHi ? 'रैंक' : 'Leaderboards', isDark),
+                      ],
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 40),
 
                     if (_error != null) ...[
                       _buildErrorCard(),
@@ -239,33 +303,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // Action buttons
                     SizedBox(
                       width: double.infinity,
-                      height: 54,
+                      height: 56,
                       child: ElevatedButton(
                         onPressed: _googleLoading ? null : _signInGoogle,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.black,
+                          backgroundColor:
+                              isDark ? Colors.white : AppColors.textPrimaryLight,
+                          foregroundColor:
+                              isDark ? AppColors.bgDark : Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(18),
                           ),
                         ),
                         child: _googleLoading
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2.5,
-                                  color: Colors.black,
+                                  color:
+                                      isDark ? AppColors.bgDark : Colors.white,
                                 ),
                               )
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Image.asset(
-                                    'assets/icon/icons8-google-48.png',
-                                    width: 22,
-                                    height: 22,
+                                  Container(
+                                    padding: const EdgeInsets.all(5),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Image.asset(
+                                      'assets/icon/icons8-google-48.png',
+                                      width: 18,
+                                      height: 18,
+                                    ),
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
@@ -275,7 +349,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             ? 'Google से साइन इन करें'
                                             : 'Sign in with Google',
                                     style: const TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 14.5,
                                       fontWeight: FontWeight.w800,
                                     ),
                                   ),
@@ -283,21 +357,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    
+                    const SizedBox(height: 14),
+
                     SizedBox(
                       width: double.infinity,
-                      height: 54,
+                      height: 56,
                       child: OutlinedButton(
                         onPressed: _guestLoading ? null : _continueAsGuest,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
+                          foregroundColor: isDark
+                              ? AppColors.primaryLight
+                              : AppColors.primaryDark,
                           side: BorderSide(
-                            color: isDark ? AppColors.outlineVariant : Colors.black12,
-                            width: 1.5,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.16)
+                                : Colors.black.withValues(alpha: 0.10),
+                            width: 1.4,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(18),
                           ),
                         ),
                         child: _guestLoading
@@ -312,7 +390,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.person_outline_rounded, size: 20),
+                                  const Icon(Icons.person_outline_rounded,
+                                      size: 20),
                                   const SizedBox(width: 12),
                                   Text(
                                     isBn
@@ -321,20 +400,99 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                             ? 'अतिथि के रूप में जारी रखें'
                                             : 'Continue as Guest',
                                     style: TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 14.5,
                                       fontWeight: FontWeight.w800,
-                                      color: isDark ? Colors.white70 : AppColors.textSecondaryLight,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : AppColors.textSecondaryLight,
                                     ),
                                   ),
                                 ],
                               ),
                       ),
                     ),
-
-
+                    const SizedBox(height: 28),
+                    // Trust microcopy
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.verified_user_outlined,
+                          size: 13,
+                          color: isDark
+                              ? Colors.white38
+                              : AppColors.textTertiaryLight,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isBn
+                              ? 'আপনার তথ্য সুরক্ষিত'
+                              : isHi
+                                  ? 'आपकी जानकारी सुरक्षित है'
+                                  : 'Your data stays safe & secure',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                            color: isDark
+                                ? Colors.white38
+                                : AppColors.textTertiaryLight,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _glowBlob(double size, Color color) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+
+  Widget _featureChip(IconData icon, String label, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: (isDark ? Colors.white : Colors.white)
+            .withValues(alpha: isDark ? 0.07 : 0.85),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: (isDark ? Colors.white : AppColors.primary)
+              .withValues(alpha: isDark ? 0.12 : 0.5),
+          width: 1,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.primaryDark),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.3,
+              color: isDark ? Colors.white70 : AppColors.textPrimaryLight,
             ),
           ),
         ],
@@ -348,7 +506,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.error.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: AppColors.error.withValues(alpha: 0.25),
         ),
@@ -388,25 +546,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.cardDark : Colors.white,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(28),
                     border: Border.all(
                       color: isDark ? AppColors.outlineVariant : Colors.black12,
                       width: 1,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        blurRadius: 32,
+                        offset: const Offset(0, 14),
+                      ),
+                    ],
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.admin_panel_settings_rounded,
-                        size: 48,
-                        color: AppColors.primary,
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.admin_panel_settings_rounded,
+                          size: 30,
+                          color: Colors.black,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       Text(
                         'Admin Access',
-                        style: TextStyle(
-                          fontSize: 24,
+                        style: GoogleFonts.montserrat(
+                          fontSize: 23,
                           fontWeight: FontWeight.w900,
                           color: fgColor,
                         ),
@@ -421,7 +593,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
                           color: inputBg,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: isDark ? AppColors.outlineVariant : Colors.black12,
                           ),
@@ -456,6 +628,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         height: 52,
                         child: ElevatedButton(
                           onPressed: _googleLoading ? null : _verifyAdminPassword,
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
                           child: _googleLoading
                               ? const SizedBox(
                                   width: 22,

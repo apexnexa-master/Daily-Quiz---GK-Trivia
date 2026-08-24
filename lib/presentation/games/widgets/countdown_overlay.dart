@@ -120,7 +120,7 @@ class _CountdownOverlayState extends State<CountdownOverlay>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: isGo
-                        ? const [Color(0xFFD4FF50), Color(0xFF00F1FE)]
+                        ? const [Color(0xFF3EE6B0), Color(0xFF00F1FE)]
                         : const [Color(0xFF00F1FE), Color(0xFFA78BFA), Color(0xFFFF5FA8)],
                   ).createShader(bounds),
                   child: Text(

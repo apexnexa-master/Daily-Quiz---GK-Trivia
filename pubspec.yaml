@@ -1,7 +1,7 @@
 name: gk_quiz_app
 description: MindSprint - Brain Training & General Knowledge App
 publish_to: 'none'
-version: 1.6.1+12
+version: 1.7.0+13
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -52,6 +52,7 @@ dependencies:
   lottie: ^3.1.0
   audioplayers: ^6.1.0
   cached_network_image: ^3.3.1
+  flutter_svg: ^2.0.10+1
   uuid: ^4.4.0
   equatable: ^2.0.5
   dartz: ^0.10.1
@@ -80,5 +81,7 @@ flutter:
 
   assets:
     - assets/icon/
+    - assets/covers/
+    - assets/covers/light/
     - assets/questions/
     - assets/sfx/

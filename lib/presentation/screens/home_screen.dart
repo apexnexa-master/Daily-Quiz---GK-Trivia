@@ -1,9 +1,9 @@
 // lib/presentation/screens/home_screen.dart
 import 'dart:async';
-import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/app_providers.dart';
 import '../providers/scoring_providers.dart';
 import '../../core/theme/app_colors.dart';
@@ -383,7 +383,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF151D1E).withValues(alpha: 0.25)
+                ? const Color(0xFF131A30).withValues(alpha: 0.25)
                 : Colors.white.withValues(alpha: 0.45),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
@@ -1199,21 +1199,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              sectionTitle,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-                color: isDark ? Colors.white70 : Colors.grey.shade700,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ],
+        _buildSectionHeader(
+          icon: Icons.bolt_rounded,
+          accent: AppColors.primary,
+          title: sectionTitle,
+          isDark: isDark,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
@@ -1262,7 +1254,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/icon/quiz3.png',
+                imagePath: 'assets/covers/gk_quiz.svg',
               ),
               const SizedBox(width: 12),
               // Card 2: Arrow Path Maze (Unlocked Daily Challenge)
@@ -1298,7 +1290,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/icon/arrows3.PNG',
+                imagePath: 'assets/covers/arrow_maze.svg',
               ),
               const SizedBox(width: 12),
               // Card 3: Math Speed Sprint
@@ -1327,7 +1319,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/icon/mathSpeed2.PNG',
+                imagePath: 'assets/covers/math_sprint.svg',
               ),
             ],
           ),
@@ -1357,12 +1349,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 badgeText.contains('যুক্তি') ||
                 badgeText.contains('तर्क')
             ? const Color(0xFF00F1FE)
-            : const Color(0xFFECB2FF));
+            : const Color(0xFFB79CFF));
 
     return GameCard(
-      width: 260,
+      width: 210,
       compact: true,
-      coverAspectRatio: 2.6,
+      coverAspectRatio: 1.45,
       imagePath: imagePath,
       accent: categoryColor,
       badge: badgeText,
@@ -1383,39 +1375,73 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  // ── Section header (icon squircle + spaced title + hairline rule) ───────
+
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required Color accent,
+    required String title,
+    required bool isDark,
+  }) {
+    final iconColor = isDark
+        ? accent
+        : Color.lerp(accent, Colors.black, 0.30)!;
+    final lineColor = (isDark ? Colors.white : Colors.black)
+        .withValues(alpha: isDark ? 0.07 : 0.06);
+    return Row(
+      children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: accent.withValues(alpha: isDark ? 0.28 : 0.22),
+              width: 1,
+            ),
+          ),
+          child: Icon(icon, size: 14, color: iconColor),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: GoogleFonts.montserrat(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+            color: isDark ? Colors.white.withValues(alpha: 0.85) : Colors.grey.shade800,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Container(height: 1, color: lineColor)),
+      ],
+    );
+  }
+
   // ── Recommended Games (standalone quick-play tiles) ──────────────────────
 
   Widget _buildRecommendedGamesSection(
       BuildContext context, bool isBn, bool isHi, bool isDark) {
     const accentCyan = Color(0xFF00F1FE);
-    const accentPurple = Color(0xFFECB2FF);
+    const accentPurple = Color(0xFFB79CFF);
     const accentOrange = Color(0xFFF97316);
     const accentEmerald = Color(0xFF34D399);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.recommend_rounded,
-                color: accentEmerald, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              isBn
-                  ? 'রেকমেন্ডেড গেমস'
-                  : isHi
-                      ? 'सुझाए गए गेम्स'
-                      : 'RECOMMENDED',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-                color: isDark ? Colors.white70 : Colors.grey.shade700,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ],
+        _buildSectionHeader(
+          icon: Icons.recommend_rounded,
+          accent: accentEmerald,
+          title: isBn
+              ? 'রেকমেন্ডেড গেমস'
+              : isHi
+                  ? 'सुझाए गए गेम्स'
+                  : 'RECOMMENDED',
+          isDark: isDark,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         GridView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -1448,7 +1474,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'रंगीन जोड़े जोड़ें'
                       : 'Connect matching colors',
               accent: accentEmerald,
-              cover: const _FlowFreeCover(),
+              imagePath: 'assets/covers/flow_free.svg',
               footer: isBn
                   ? 'পাইপ পাজল'
                   : isHi
@@ -1477,7 +1503,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'एक लकीर में आकृति बनाएँ'
                       : 'Trace it in a single stroke',
               accent: const Color(0xFFE040FB),
-              cover: const _OneLineCover(),
+              imagePath: 'assets/covers/one_line.svg',
               footer: isBn
                   ? 'ইউলার ট্রেইল'
                   : isHi
@@ -1506,7 +1532,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'त्वरित गणना खेल'
                       : 'Mental arithmetic sprint',
               accent: accentPurple,
-              imagePath: 'assets/icon/mathSpeed2.PNG',
+              imagePath: 'assets/covers/math_sprint.svg',
               footer: isBn
                   ? 'মানসিক গণিত'
                   : isHi
@@ -1535,7 +1561,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'प्रतिक्रिया व फोकस गति'
                       : 'Reaction & focus speed',
               accent: accentOrange,
-              imagePath: 'assets/icon/stroopRush2.PNG',
+              imagePath: 'assets/covers/stroop_rush.svg',
               footer: isBn
                   ? 'ফোকাস ও প্রতিক্রিয়া'
                   : isHi
@@ -1564,7 +1590,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'तार्किक भूलभुलैया'
                       : 'Directional speed tracking',
               accent: accentCyan,
-              imagePath: 'assets/icon/arrows3.PNG',
+              imagePath: 'assets/covers/arrow_maze.svg',
               footer: isBn
                   ? 'যুক্তি ও দিকনির্দেশ'
                   : isHi
@@ -1608,74 +1634,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-}
-
-/// Miniature glowing single-stroke figure for the One Line tile cover.
-class _OneLineCover extends StatelessWidget {
-  const _OneLineCover();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _OneLineCoverPainter(),
-      child: const SizedBox.expand(),
-    );
-  }
-}
-
-class _OneLineCoverPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bg = Paint()..color = const Color(0xFF120B1E);
-    canvas.drawRect(Offset.zero & size, bg);
-
-    // Pentagram tips on an ellipse, connected skip-one.
-    const n = 5;
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final rx = size.width * 0.34;
-    final ry = size.height * 0.30;
-    Offset tip(int i) {
-      final a = -math.pi / 2 + i * 2 * math.pi / n;
-      return Offset(cx + rx * math.cos(a), cy + ry * math.sin(a));
-    }
-
-    final strokePath = Path()..moveTo(tip(0).dx, tip(0).dy);
-    for (int k = 1; k <= n; k++) {
-      final p = tip((k * 2) % n);
-      strokePath.lineTo(p.dx, p.dy);
-    }
-
-    canvas.drawPath(
-      strokePath,
-      Paint()
-        ..color = const Color(0xFFE040FB).withValues(alpha: 0.35)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 7
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
-    );
-    canvas.drawPath(
-      strokePath,
-      Paint()
-        ..shader = const LinearGradient(
-          colors: [Color(0xFFE040FB), Color(0xFFAA00FF)],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-
-    final dot = Paint()..color = Colors.white;
-    for (int i = 0; i < n; i++) {
-      canvas.drawCircle(tip(i), 3.4, dot);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_OneLineCoverPainter oldDelegate) => false;
 }
 
 /// Slowly counts up to [value] whenever it appears or changes.
@@ -1764,80 +1722,4 @@ class _GlowBlob extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Miniature Flow-Free board illustration for the recommended-tile cover.
-class _FlowFreeCover extends StatelessWidget {
-  const _FlowFreeCover();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _FlowFreeCoverPainter(),
-      child: const SizedBox.expand(),
-    );
-  }
-}
-
-class _FlowFreeCoverPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bg = Paint()..color = const Color(0xFF0A1322);
-    canvas.drawRect(Offset.zero & size, bg);
-
-    const cols = 5;
-    const rows = 3;
-    final cell = size.width / cols;
-    final gridH = cell * rows;
-    final top = (size.height - gridH) / 2;
-
-    final gridLine = Paint()
-      ..color = const Color(0xFF22334F)
-      ..strokeWidth = 1;
-    for (int r = 0; r <= rows; r++) {
-      canvas.drawLine(
-          Offset(0, top + r * cell), Offset(size.width, top + r * cell), gridLine);
-    }
-    for (int c = 0; c <= cols; c++) {
-      canvas.drawLine(
-          Offset(c * cell, top), Offset(c * cell, top + gridH), gridLine);
-    }
-
-    void pipe(List<Offset> cells, Color color) {
-      Offset centerOf(Offset c) =>
-          Offset(c.dx * cell + cell / 2, top + c.dy * cell + cell / 2);
-      final path = Path()
-        ..moveTo(centerOf(cells.first).dx, centerOf(cells.first).dy);
-      for (final c in cells.skip(1)) {
-        path.lineTo(centerOf(c).dx, centerOf(c).dy);
-      }
-      final stroke = Paint()
-        ..color = color.withValues(alpha: 0.85)
-        ..strokeWidth = cell * 0.42
-        ..strokeCap = StrokeCap.round
-        ..style = PaintingStyle.stroke;
-      canvas.drawPath(path, stroke);
-
-      final dot = Paint()..color = color;
-      for (final c in [cells.first, cells.last]) {
-        canvas.drawCircle(centerOf(c), cell * 0.17, dot);
-      }
-    }
-
-    pipe(const [
-      Offset(0, 1),
-      Offset(1, 1),
-      Offset(1, 0),
-      Offset(2, 0),
-    ], const Color(0xFF00E5FF));
-    pipe(const [
-      Offset(4, 2),
-      Offset(3, 2),
-      Offset(3, 1),
-      Offset(2, 1),
-    ], const Color(0xFFEC4899));
-  }
-
-  @override
-  bool shouldRepaint(_FlowFreeCoverPainter oldDelegate) => false;
 }
