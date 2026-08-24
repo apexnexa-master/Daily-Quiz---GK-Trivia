@@ -199,4 +199,28 @@ class CloudSyncService {
           .set({'flow_free_level': level}, SetOptions(merge: true));
     } catch (_) {}
   }
+
+  /// One Line: the 1-based level to start from next session.
+  Future<int?> fetchOneLineLevel() async {
+    if (_currentUser == null) return null;
+    try {
+      final doc = await _db.collection('users').doc(_currentUser!.uid).get();
+      final value = doc.data()?['one_line_level'];
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveOneLineLevel(int level) async {
+    if (_currentUser == null) return;
+    try {
+      await _db
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .set({'one_line_level': level}, SetOptions(merge: true));
+    } catch (_) {}
+  }
 }

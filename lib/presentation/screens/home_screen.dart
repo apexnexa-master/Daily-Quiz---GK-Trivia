@@ -1,5 +1,6 @@
 // lib/presentation/screens/home_screen.dart
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1461,6 +1462,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               isBn: isBn,
               isHi: isHi,
               badgeText: isBn
+                  ? 'স্ট্রোক'
+                  : isHi
+                      ? 'स्ट्रोक'
+                      : 'ONE STROKE',
+              title: isBn
+                  ? 'ওয়ান লাইন'
+                  : isHi
+                      ? 'वन लाइन'
+                      : 'One Line',
+              subtitle: isBn
+                  ? 'এক টানে পুরো ছবি আঁকুন'
+                  : isHi
+                      ? 'एक लकीर में आकृति बनाएँ'
+                      : 'Trace it in a single stroke',
+              accent: const Color(0xFFE040FB),
+              cover: const _OneLineCover(),
+              footer: isBn
+                  ? 'ইউলার ট্রেইল'
+                  : isHi
+                      ? 'यूलर पथ'
+                      : 'Euler trail',
+              onTap: () => Navigator.pushNamed(context, AppRouter.introOneLine),
+            ),
+            _buildRecommendedGameTile(
+              context: context,
+              isDark: isDark,
+              isBn: isBn,
+              isHi: isHi,
+              badgeText: isBn
                   ? 'গণিত'
                   : isHi
                       ? 'गणित'
@@ -1578,6 +1608,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+}
+
+/// Miniature glowing single-stroke figure for the One Line tile cover.
+class _OneLineCover extends StatelessWidget {
+  const _OneLineCover();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _OneLineCoverPainter(),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _OneLineCoverPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bg = Paint()..color = const Color(0xFF120B1E);
+    canvas.drawRect(Offset.zero & size, bg);
+
+    // Pentagram tips on an ellipse, connected skip-one.
+    const n = 5;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final rx = size.width * 0.34;
+    final ry = size.height * 0.30;
+    Offset tip(int i) {
+      final a = -math.pi / 2 + i * 2 * math.pi / n;
+      return Offset(cx + rx * math.cos(a), cy + ry * math.sin(a));
+    }
+
+    final strokePath = Path()..moveTo(tip(0).dx, tip(0).dy);
+    for (int k = 1; k <= n; k++) {
+      final p = tip((k * 2) % n);
+      strokePath.lineTo(p.dx, p.dy);
+    }
+
+    canvas.drawPath(
+      strokePath,
+      Paint()
+        ..color = const Color(0xFFE040FB).withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 7
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10),
+    );
+    canvas.drawPath(
+      strokePath,
+      Paint()
+        ..shader = const LinearGradient(
+          colors: [Color(0xFFE040FB), Color(0xFFAA00FF)],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    final dot = Paint()..color = Colors.white;
+    for (int i = 0; i < n; i++) {
+      canvas.drawCircle(tip(i), 3.4, dot);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_OneLineCoverPainter oldDelegate) => false;
 }
 
 /// Slowly counts up to [value] whenever it appears or changes.
