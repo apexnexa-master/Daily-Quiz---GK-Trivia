@@ -268,7 +268,7 @@ class WorkoutStep {
       case WorkoutGameId.gkQuiz:
         return AppRouter.quiz;
       case WorkoutGameId.arrowPuzzle:
-        return AppRouter.arrowPuzzle;
+        return AppRouter.arrowMaze;
       case WorkoutGameId.stroopRush:
         return AppRouter.stroopRush;
       case WorkoutGameId.mathSprint:

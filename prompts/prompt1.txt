@@ -1,1809 +1,2754 @@
-You are a senior mobile/backend architect and gamification systems designer.
+Absolutely. The prompt should be very explicit that this is **not a voxel game, not a grid of small arrow tiles, and not a 3D cube puzzle**. The **long arrows themselves form the recognizable silhouette**.
 
-I am building a brain-training and mini-game application.
+Here is a detailed master prompt you can give to a coding AI such as Cursor, Claude Code, Gemini, or another coding agent.
 
-The app currently contains these games:
+# Build a 2D Arrow Escape Silhouette Puzzle Game in Flutter
 
-1. GK Quiz
-2. Arrow Puzzle
-3. Stroop Rush
-4. Synapse Recall / Memory game
+## 1. PROJECT OVERVIEW
 
-More games will be added in the future.
+Build a polished mobile puzzle game in Flutter inspired by the "Arrow Escape" style of puzzle games where the player taps long directional arrows to make them escape from a puzzle.
 
-The application has three major gameplay modes:
+The most important visual and gameplay characteristic is:
 
-1. Practice
-2. Daily Challenge
-3. Quick Brain Workout
+> **The arrows themselves are arranged together to form recognizable silhouettes/pictures such as animals, birds, houses, vehicles, objects, symbols, etc.**
 
-I need you to redesign and implement the complete scoring, progression, Brain Score, XP, Daily Goal, Streak, and Leaderboard system.
+Do NOT interpret this as a grid of small square tiles containing arrows.
 
-The most important requirement is FAIRNESS.
+Do NOT create a voxel/3D block puzzle.
 
-Different games have completely different scoring systems and difficulty levels, so raw game scores MUST NOT be directly compared with each other.
+Do NOT create a collection of individual arrow icons placed inside square cells.
 
-For example:
-
-- GK Quiz may produce 9/10
-- Arrow Puzzle may produce a time such as 3.2 seconds
-- Stroop Rush may produce 740 points
-- Synapse Recall may produce a sequence length of 7
-
-These raw values cannot be used directly to calculate a global leaderboard.
-
-The architecture must therefore normalize game performance before using it for cross-game metrics.
-
-Do not create a system where users can easily exploit easy games by repeatedly playing them.
-
-The system should reward:
-
-- actual performance
-- consistency
-- improvement
-- meaningful daily participation
-- skill development
-
-It should NOT simply reward:
-
-- number of games played
-- number of clicks
-- repeatedly playing the easiest game
-- spending the most time in the app
-
-==================================================
-CORE DESIGN
-==================================================
-
-Create four separate concepts:
-
-A. GAME SCORE
-B. BRAIN SCORE
-C. XP
-D. COMPETITIVE / LEADERBOARD SCORE
-
-Also maintain:
-
-E. DAILY GOAL
-F. STREAK
-G. COGNITIVE SKILL RATINGS
-
-These concepts must remain logically separate.
-
-Do not mix them together.
-
-==================================================
-1. GAME SCORE
-==================================================
-
-Every individual game session has a game-specific raw score.
+Instead, each puzzle consists of multiple **long, thick, connected-looking arrow-shaped paths**. The complete arrangement of those arrows forms a recognizable 2D silhouette when viewed as a whole.
 
 Examples:
 
-GK Quiz:
-- correct answers
-- total questions
-- accuracy
-- response time
-- question difficulty
+* Bird
+* Cat
+* Dog
+* Fish
+* Rabbit
+* Elephant
+* Butterfly
+* House
+* Car
+* Ship
+* Rocket
+* Tree
+* Castle
+* Heart
+* Crown
+* Guitar
+* Camera
+* Airplane
 
-Arrow Puzzle:
-- puzzle difficulty
-- completion time
-- number of moves
-- mistakes
-- hints used
-- completion status
+The game should look like a modern premium mobile puzzle game rather than a developer prototype.
 
-Stroop Rush:
-- correct responses
-- incorrect responses
-- reaction time
-- difficulty
-- streak
+---
 
-Synapse Recall:
-- sequence length
-- accuracy
-- mistakes
-- difficulty
-- response time
+# 2. CORE VISUAL CONCEPT
 
-The raw score should be stored because it is useful for showing the result to the user.
+The game is completely 2D.
 
-However:
+The puzzle exists on a 2D coordinate plane:
 
-NEVER use raw game score directly for cross-game comparisons.
+```text
+X →
+──────────────────────────────
 
-==================================================
-2. NORMALIZED PERFORMANCE SCORE
-==================================================
+│
+│
+│
+↓
+Y
+```
 
-Every game must convert its raw result into:
+There is no true 3D depth.
 
-Performance Score = 0–100
+The silhouette is produced by arranging many elongated arrow paths within a target shape.
 
-This score represents how well the user performed in that specific session.
+For example, a bird could conceptually be composed of paths such as:
 
-Each game can have its own formula.
+```text
+       ───────────→
+     ↗
+    │
+←───┘
 
-The formula should consider the characteristics that actually matter for that game.
+          ───────→
+               │
+               ↓
 
-Do not force the same raw formula on every game.
+      ─────────────→
+      │
+      │
+      └──────→
+```
 
---------------------------------------------------
-GK QUIZ
---------------------------------------------------
+Each of those is an individual arrow.
 
-Possible inputs:
+When all arrows are positioned together, the overall arrangement resembles a bird.
 
-accuracy
-question difficulty
-response speed
+The player does not see a separate bird image behind the puzzle.
 
-Example conceptual formula:
+The arrows themselves create the bird.
 
-accuracyWeight = 0.60
-difficultyWeight = 0.25
-speedWeight = 0.15
+---
 
-Performance Score =
-accuracyComponent * 0.60
-+
-difficultyComponent * 0.25
-+
-speedComponent * 0.15
+# 3. DO NOT MAKE THIS MISTAKE
 
-The final value must be clamped between 0 and 100.
+Do NOT create this:
 
-Do not allow the score to exceed 100.
+```text
+[→][→][↓][←]
+[↑][→][→][↓]
+[←][↓][↑][→]
+```
 
---------------------------------------------------
-ARROW PUZZLE
---------------------------------------------------
+Do NOT make every arrow a small square tile.
 
-Arrow Puzzle MUST NOT be scored purely based on time.
+Do NOT make Minecraft-like blocks.
 
-This is extremely important.
+Do NOT use voxel cubes.
 
-An easy puzzle solved in 2 seconds should not automatically beat a hard puzzle solved in 8 seconds.
+Do NOT make a 3D isometric scene.
 
-Every Arrow Puzzle should have a difficulty rating.
+Do NOT put a bird image underneath a collection of unrelated arrows.
 
-Example:
+Instead create:
 
-difficulty = 1–10
+```text
+       ┌────────────→
+       │
+       │
+  ←────┘
 
-or
+             ┌──────────→
+             │
+             └────→
 
-difficultyScore = 0–100
+       ↓
+       │
+       └────────────→
+```
 
-The performance calculation should consider:
+The paths themselves should visually construct the animal/object.
 
-- puzzle difficulty
-- completion
-- completion time relative to expected time for that difficulty
-- mistakes
-- moves
-- hints
+---
 
-For example:
-
-Performance =
-difficulty-adjusted efficiency
-+
-completion quality
-+
-accuracy
--
-mistake penalties
--
-hint penalties
-
-Normalize the final result to 0–100.
-
-The expected completion time should depend on puzzle difficulty.
-
-For example:
-
-Easy puzzle:
-expected time = 3 seconds
-
-Hard puzzle:
-expected time = 10 seconds
-
-A user solving the hard puzzle in 8 seconds should be able to score higher than a user solving the easy puzzle in 2 seconds.
-
-Do not use a simple:
-
-100 - time
-
-formula.
-
---------------------------------------------------
-STROOP RUSH
---------------------------------------------------
+# 4. TECHNOLOGY
 
 Use:
 
-- accuracy
-- reaction time
-- difficulty
-- incorrect answers
-- streak/consistency
+* Flutter
+* Dart
+* CustomPainter
+* Canvas API
+* Gesture detection
+* AnimationController
+* Tween / CurvedAnimation
+* Custom hit testing
+* Local level data in JSON or Dart data structures
 
-Example conceptual weighting:
+Prefer native Flutter rendering rather than embedding a game engine unless there is a strong technical reason.
 
-accuracy = 50%
-reaction speed = 30%
-difficulty = 20%
+The game should work smoothly on Android and iOS.
 
-Normalize the result to 0–100.
+Target:
 
-Avoid making raw reaction time the only factor.
+* 60 FPS minimum
+* responsive touch
+* smooth animations
+* scalable to different screen sizes
+* portrait orientation
 
---------------------------------------------------
-SYNAPSE RECALL
---------------------------------------------------
+---
 
-Use:
+# 5. GAME ARCHITECTURE
 
-- maximum sequence length
-- accuracy
-- difficulty
-- mistakes
-- response time
+Use a clean architecture with separation between:
 
-Example:
+```text
+Presentation
+    ↓
+Game Controller
+    ↓
+Puzzle Engine
+    ↓
+Level Data
+```
 
-sequence performance = 50%
-accuracy = 30%
-difficulty = 20%
+Recommended structure:
 
-Normalize to 0–100.
+```text
+lib/
+│
+├── main.dart
+│
+├── models/
+│   ├── arrow_piece.dart
+│   ├── arrow_segment.dart
+│   ├── level.dart
+│   ├── silhouette.dart
+│   └── game_state.dart
+│
+├── engine/
+│   ├── puzzle_engine.dart
+│   ├── collision_engine.dart
+│   ├── escape_validator.dart
+│   ├── level_generator.dart
+│   ├── level_validator.dart
+│   └── puzzle_solver.dart
+│
+├── rendering/
+│   ├── puzzle_painter.dart
+│   ├── arrow_painter.dart
+│   ├── background_painter.dart
+│   └── effects_painter.dart
+│
+├── screens/
+│   ├── home_screen.dart
+│   ├── game_screen.dart
+│   ├── level_complete_screen.dart
+│   └── level_select_screen.dart
+│
+├── data/
+│   ├── levels.json
+│   └── silhouettes.json
+│
+└── widgets/
+    ├── level_header.dart
+    ├── hint_button.dart
+    └── game_controls.dart
+```
 
-The exact weights can be adjusted later.
+Keep rendering and puzzle logic separate.
 
-==================================================
-3. COGNITIVE SKILLS
-==================================================
+---
 
-Do not calculate the Brain Score directly from every individual game.
+# 6. ARROW PIECE DATA MODEL
 
-Instead, map games to cognitive skills.
+An arrow should NOT simply be represented by a rectangle.
 
-Initially use:
+Each arrow should be a geometric path.
 
-1. Knowledge
-2. Logic
-3. Memory
-4. Speed
-5. Focus
+Example model:
 
-Games can contribute to one or more skills.
+```dart
+class ArrowPiece {
+  final String id;
 
-Example mapping:
+  final List<Offset> points;
 
-GK Quiz:
-Knowledge = primary
-Focus = secondary
+  final ArrowDirection direction;
 
-Arrow Puzzle:
-Logic = primary
-Speed = secondary
+  final double thickness;
 
-Stroop Rush:
-Focus = primary
-Speed = primary
+  final double headLength;
 
-Synapse Recall:
-Memory = primary
-Focus = secondary
+  final double headWidth;
 
-The system must support multiple skills per game.
+  bool removed;
 
-Do not hard-code the architecture so that only four games are possible.
+  ArrowPiece({
+    required this.id,
+    required this.points,
+    required this.direction,
+    required this.thickness,
+    required this.headLength,
+    required this.headWidth,
+    this.removed = false,
+  });
+}
+```
 
-New games should be able to define which skills they affect.
-
-==================================================
-4. SKILL RATING
-==================================================
-
-Each user should have a rating for each cognitive skill.
-
-Example:
-
-Knowledge = 75
-Logic = 82
-Memory = 67
-Speed = 71
-Focus = 78
-
-Each skill rating must be between 0 and 100.
-
-Do NOT simply replace the skill rating with the latest game performance.
-
-Instead use a gradual update.
-
-Recommended concept:
-
-New Skill Rating =
-Old Skill Rating * 0.85
-+
-New Performance * 0.15
-
-Example:
-
-Old Logic = 70
-New Arrow Puzzle Performance = 90
-
-New Logic =
-70 * 0.85
-+
-90 * 0.15
-
-= 73
-
-This prevents huge jumps.
-
-However, for a brand-new user with very little data, allow faster adjustment.
+The `points` represent the centerline of the arrow.
 
 For example:
 
-First few sessions can use a higher learning rate.
-
-As the number of sessions increases, gradually reduce the learning rate.
-
-==================================================
-5. MULTI-SKILL GAME CONTRIBUTION
-==================================================
-
-If a game affects multiple skills, divide its contribution using weights.
-
-Example:
-
-Arrow Puzzle:
-
-Logic = 70%
-Speed = 30%
-
-If Performance Score = 90:
-
-Logic contribution =
-90 * 0.70
-
-Speed contribution =
-90 * 0.30
-
-Then update each skill rating separately.
-
-The system must ensure that the sum of game skill weights equals 1.0.
-
-Reject or correct invalid configurations.
-
-==================================================
-6. BRAIN SCORE
-==================================================
-
-Brain Score is the user's overall cognitive performance indicator.
-
-It is NOT:
-
-- IQ
-- total XP
-- total games played
-- leaderboard score
-
-It represents the user's current demonstrated performance across cognitive skills.
-
-Initially:
-
-Knowledge = 20%
-Logic = 20%
-Memory = 20%
-Speed = 20%
-Focus = 20%
-
-Brain Score =
-weighted average of skill ratings.
-
-Example:
-
-Knowledge = 74
-Logic = 82
-Memory = 67
-Speed = 71
-Focus = 78
-
-Brain Score =
-(74 + 82 + 67 + 71 + 78) / 5
-
-= 74.4
-
-Display:
-
-Brain Score: 74
-
-Round appropriately.
-
-==================================================
-7. BRAIN SCORE MUST BE SLOW MOVING
-==================================================
-
-Do not allow one game to drastically change Brain Score.
-
-Example:
-
-Brain Score = 74
-
-One bad game should NOT cause:
-
-74 → 50
-
-One excellent game should NOT cause:
-
-74 → 95
-
-Skill ratings should change gradually.
-
-The overall Brain Score should therefore also change gradually.
-
-Show trends such as:
-
-+4 this week
-
-rather than dramatic changes after every game.
-
-==================================================
-8. INITIAL BRAIN SCORE
-==================================================
-
-A new user should not immediately receive a highly authoritative Brain Score after one game.
-
-Use one of the following states:
-
-BUILDING PROFILE
-
-or
-
-PROVISIONAL SCORE
-
-Example:
-
-Brain Score
-52
-Building your profile...
-
-After enough sessions:
-
-Brain Score
-68
-Based on 18 sessions
-
-The system should track:
-
-total sessions
-unique games played
-skill coverage
-
-A Brain Score becomes "established" only after enough data exists across multiple skills.
-
-Do not require an excessive number of sessions.
-
-The threshold should be configurable.
-
-Example:
-
-minimumSessions = 5
-
-minimumSkillsRepresented = 3
-
-These values should be configurable from one place.
-
-==================================================
-9. BRAIN SCORE TREND
-==================================================
-
-Track:
-
-- current Brain Score
-- previous Brain Score
-- weekly starting score
-- weekly change
-- historical snapshots
-
-Example:
-
-Brain Score:
-72
-
-This week:
-+4
-
-Previous week:
-68
-
-Store historical data so the app can display a graph later.
-
-Do not recalculate historical scores incorrectly whenever formulas change.
-
-If scoring formulas change in the future, consider storing a scoring version.
-
-Example:
-
-scoringVersion = 1
-
-==================================================
-10. XP
-==================================================
-
-XP is completely separate from Brain Score.
-
-XP measures engagement/progression.
-
-XP NEVER decreases.
-
-Examples:
-
-Complete Practice Game:
-+20 XP
-
-Complete Daily Challenge:
-+50 XP
-
-Complete Quick Workout:
-+60 XP
-
-Complete Daily Goal:
-+30 XP
-
-Perfect Performance:
-+10 XP
-
-Streak milestone:
-bonus XP
-
-The exact values must be configurable.
-
-Do not hard-code XP values throughout the application.
-
-Create a central configuration.
-
-Example:
-
-XP_CONFIG
-
-practiceCompletion = 20
-dailyChallengeCompletion = 50
-workoutCompletion = 60
-dailyGoalCompletion = 30
-perfectPerformanceBonus = 10
-
-==================================================
-11. XP ANTI-FARMING
-==================================================
-
-Do not allow unlimited XP farming by repeatedly playing the easiest game.
-
-Introduce a daily XP cap or diminishing rewards.
-
-Example:
-
-First 5 meaningful practice sessions:
-100% XP
-
-Next sessions:
-reduced XP
-
-Or:
-
-dailyGameplayXpCap = 300
-
-Daily Challenge and Workout should have their own meaningful rewards.
-
-Do not punish legitimate users unnecessarily.
-
-The goal is to prevent abuse, not prevent playing.
-
-==================================================
-12. PRACTICE MODE
-==================================================
-
-Practice exists for:
-
-- learning
-- improving skills
-- experimenting
-- replaying games
-
-Practice should produce:
-
-YES:
-- Game Score
-- Performance Score
-- Brain Score contribution
-- XP
-
-NO:
-- direct leaderboard points
-
-This distinction is extremely important.
-
-A user must not be able to play an easy puzzle 100 times and dominate the leaderboard.
-
-==================================================
-13. DAILY CHALLENGE
-==================================================
-
-Daily Challenge is the competitive mode.
-
-Every user must receive the same challenge for the same date.
-
-Example:
-
-2026-08-16
-
-Daily Challenge ID:
-DC-20260816-01
-
-All users receive the same:
-
-- game
-- challenge configuration
-- difficulty
-- question set/puzzle
-- scoring rules
-
-Do not allow users to receive different random challenges and then compare them on the same leaderboard.
-
-If the backend content is temporarily unavailable, use a deterministic fallback mechanism so every user still gets the same challenge for the same date.
-
-==================================================
-14. DAILY CHALLENGE SCORE
-==================================================
-
-Daily Challenge must produce:
-
-Normalized Challenge Score = 0–1000
-
-This is separate from the game's raw score.
-
-Example:
-
-GK Quiz:
-Raw = 9/10
-Performance = 88/100
-Challenge Score = 880/1000
-
-Arrow Puzzle:
-Raw time = 8.4 sec
-Performance = 92/100
-Challenge Score = 920/1000
-
-Synapse Recall:
-Performance = 89/100
-Challenge Score = 890/1000
-
-This allows different games to be compared.
-
-Do NOT compare raw scores across games.
-
-==================================================
-15. DAILY CHALLENGE AND BRAIN SCORE
-==================================================
-
-Daily Challenge contributes to Brain Score.
-
-The normalized performance also updates the relevant cognitive skills.
-
-Example:
-
-Daily Arrow Puzzle:
-
-Performance = 92
-
-Logic contribution:
-primary
-
-Speed contribution:
-secondary
-
-Update the corresponding skill ratings.
-
-==================================================
-16. DAILY CHALLENGE AND LEADERBOARD
-==================================================
-
-Daily Challenge DOES contribute to leaderboard ranking.
-
-Practice does not.
-
-Workout does not directly contribute to leaderboard ranking.
-
-The Daily Challenge is the controlled competitive environment.
-
-==================================================
-17. LEADERBOARD SYSTEM
-==================================================
-
-Do NOT use Brain Score as the leaderboard score.
-
-Create a separate competitive metric.
-
-For the initial version, call it:
-
-BRAIN Rating
-
-or
-
-Challenge Score
-
-I recommend:
-
-BRAIN Rating
-
-However, do not implement a complex ELO system yet because there is no direct player-vs-player competition.
-
-Initially use normalized Daily Challenge scores.
-
-==================================================
-18. DAILY LEADERBOARD
-==================================================
-
-Daily leaderboard:
-
-Sort users by today's Daily Challenge Score descending.
-
-Example:
-
-#1 Player A — 982
-#2 Player B — 971
-#3 Player C — 965
-...
-#384 You — 742
-
-Only one valid submission per user should count.
-
-If multiple submissions are technically allowed, use the best valid score OR explicitly define a limited number of attempts.
-
-Do not allow unlimited attempts to determine the leaderboard.
-
-For fairness, I recommend:
-
-One official Daily Challenge attempt.
-
-Optional practice/retry should not affect the official leaderboard.
-
-==================================================
-19. WEEKLY LEADERBOARD
-==================================================
-
-Do not simply accumulate unlimited game scores.
-
-Instead use a limited number of Daily Challenges.
-
-Recommended:
-
-Weekly Score =
-best 5 Daily Challenge scores during the week.
-
-Example:
-
-Monday = 850
-Tuesday = 920
-Wednesday = 780
-Thursday = 900
-Friday = 870
-
-Weekly Score =
-4320
-
-Only the best 5 count.
-
-This prevents users from winning merely because they played every hour.
-
-It rewards performance.
-
-==================================================
-20. WEEKLY LEADERBOARD RESET
-==================================================
-
-Create a weekly leaderboard.
-
-Example:
-
-weekId = 2026-W34
-
-At the end of the week:
-
-- finalize rankings
-- store the user's best rank
-- award weekly rewards if desired
-- create the next week's leaderboard
-
-Do not delete historical data.
-
-Store finalized results separately.
-
-==================================================
-21. ALL-TIME LEADERBOARD
-==================================================
-
-Do NOT simply create:
-
-total points since account creation
-
-because older accounts will have an unfair advantage.
-
-Instead consider:
-
-Highest Weekly Rank
-Best Weekly Score
-Best Daily Challenge Score
-
-These are better long-term achievement metrics.
-
-An all-time cumulative leaderboard can be added later if needed.
-
-==================================================
-22. WORKOUT MODE
-==================================================
-
-Quick Brain Workout is for engagement and balanced training.
-
-Example:
-
-3 games:
-
-GK Quiz
-Synapse Recall
-Stroop Rush
-
-The workout should intentionally cover multiple cognitive skills.
-
-Example:
-
-Knowledge
-Memory
-Speed
-
-At completion show:
-
-WORKOUT COMPLETE
-
-Knowledge: 82
-Memory: 74
-Speed: 88
-
-Workout Score: 81
-
-Rewards:
-
-+60 XP
-+1 Daily Goal
-Brain Score updated
-Skill ratings updated
-Streak progress updated
-
-Workout should NOT directly add leaderboard points.
-
-==================================================
-23. WORKOUT SCORE
-==================================================
-
-Workout Score is a normalized 0–100 score.
-
-It can be calculated from the component game Performance Scores.
-
-Example:
-
-Game 1 = 82
-Game 2 = 74
-Game 3 = 88
-
-Workout Score =
-weighted average
-
-Do not let one game dominate unless intentionally configured.
-
-If the workout is designed to cover different skills, each game can have equal weight.
-
-Example:
-
-82 + 74 + 88
-= 244 / 3
-= 81.3
-
-Display:
-
-Workout Score: 81
-
-==================================================
-24. DAILY GOAL
-==================================================
-
-Daily Goal should represent meaningful activities, not raw points.
-
-Example:
-
-Goal:
-
-Complete 3 activities today
-
-Progress:
-
-1/3
-2/3
-3/3
-
-Possible activities:
-
-- Daily Challenge
-- Practice
-- Quick Workout
-
-Avoid:
-
-"Earn 700 points"
-
-because users don't understand what they should actually do.
-
-The goal should guide behavior.
-
-Example:
-
-TODAY'S GOAL
-
-2/3 complete
-
-✓ Daily Challenge
-✓ Practice Game
-○ Quick Workout
-
-==================================================
-25. STREAK
-==================================================
-
-Streak measures consistency.
-
-A user should maintain a streak by completing at least one meaningful activity per day.
-
-Do NOT require a high score.
-
-Example:
-
-User plays one game and completes it:
-
-Streak continues.
-
-User performs badly:
-
-Streak still continues.
-
-The purpose is habit formation, not performance punishment.
-
-Store:
-
-currentStreak
-longestStreak
-lastActivityDate
-
-Use date-based logic.
-
-Ensure timezone handling is correct.
-
-Use the user's configured/local timezone where appropriate.
-
-Do not calculate streak based on UTC alone if that creates incorrect day boundaries for users.
-
-==================================================
-26. USER-FACING PROFILE / STATS
-==================================================
-
-Create a detailed statistics page.
-
-Top section:
-
-BRAIN SCORE
-72
-
-+4 this week
-
-Then:
-
-COGNITIVE SKILLS
-
-Knowledge       75
-Logic           84
-Memory          78
-Speed           63
-Focus           69
-
-Use progress bars or radial visualization.
-
-Then:
-
-ACTIVITY
-
-Games Played
-32
-
-Workout Sessions
-8
-
-Daily Challenges
-6
-
-Training Time
-74 min
-
-Then:
-
-CONSISTENCY
-
-Current Streak
-4 days
-
-Longest Streak
-12 days
-
-Then:
-
-COMPETITION
-
-Weekly Rank
-#384
-
-Best Rank
-#217
-
-Best Daily Score
-943
-
-This creates meaningful long-term progression.
-
-==================================================
-27. HOME SCREEN METRICS
-==================================================
-
-Keep the Home screen simple.
-
-Top metrics:
-
-🔥 Streak
-🎯 Daily Goal
-🧠 Brain Score
-
-Do NOT put XP and leaderboard rating in the main top metric row.
-
-They belong in profile/progression/leaderboard areas.
-
-Home should answer:
-
-"What should I do now?"
-
-Not overwhelm the user with statistics.
-
-==================================================
-28. LEADERBOARD UX
-==================================================
-
-Do not show a huge list.
-
-Show:
-
-TOP PLAYERS
-
-#1
-#2
-#3
-
-Then:
-
-...
-
-USER'S POSITION
-
-#384
-You
-
-Show a few users above and below the current user.
-
-Example:
-
-#381 User
-#382 User
-#383 User
-#384 YOU
-#385 User
-#386 User
-#387 User
-
-Also show:
-
-"12 points to #350"
-
-This creates motivation.
-
-==================================================
-29. ANTI-CHEAT / VALIDATION
-==================================================
-
-Leaderboard data must never be blindly trusted from the client.
-
-Do not allow Flutter/mobile client to simply write:
-
-score = 999999
-
-to Firestore.
-
-Validate competitive submissions.
-
-Validate:
-
-- userId
-- challengeId
-- date
-- challenge configuration
-- maximum possible score
-- number of attempts
-- completion status
-- suspicious completion time
-- invalid negative values
-- impossible performance
-- duplicate submissions
-
-For competitive scores, prefer trusted backend/server-side validation.
-
-If Firebase is used, use secure Firestore rules and/or Cloud Functions/backend services.
-
-The client should not be able to directly overwrite:
-
-leaderboardRank
-weeklyScore
-brainRating
-officialChallengeScore
-
-These should be calculated or updated by trusted server-side logic.
-
-==================================================
-30. DATA MODEL
-==================================================
-
-Design the data model so that more games can be added without rewriting the scoring architecture.
-
-Suggested structures:
-
-USERS
-
-userId
-brainScore
-xp
-currentStreak
-longestStreak
-lastActivityDate
-brainScoreStatus
-
-SKILL_RATINGS
-
-userId
-knowledge
-logic
-memory
-speed
-focus
-updatedAt
-
-GAME_SESSIONS
-
-sessionId
-userId
-gameId
-mode
-difficulty
-rawScore
-performanceScore
-accuracy
-duration
-mistakes
-hintsUsed
-xpEarned
-brainScoreContribution
-scoringVersion
-createdAt
-
-DAILY_CHALLENGES
-
-challengeId
-date
-gameId
-difficulty
-configuration
-scoringVersion
-createdAt
-
-CHALLENGE_RESULTS
-
-resultId
-userId
-challengeId
-rawScore
-performanceScore
-normalizedChallengeScore
-submittedAt
-validated
-
-WEEKLY_LEADERBOARDS
-
-weekId
-userId
-weeklyScore
-rank
-bestDailyScore
-dailyChallengesCount
-
-WORKOUT_SESSIONS
-
-workoutId
-userId
-gameResults
-workoutScore
-skillsAffected
-xpEarned
-createdAt
-
-BRAIN_SCORE_HISTORY
-
-userId
-date
-brainScore
-knowledge
-logic
-memory
-speed
-focus
-scoringVersion
-
-==================================================
-31. SCORING CONFIGURATION
-==================================================
-
-Do not scatter scoring constants throughout the code.
-
-Create a centralized configuration.
-
-Example:
-
-SCORING_CONFIG
-
-Practice:
-xp = 20
-
-Daily Challenge:
-xp = 50
-
-Workout:
-xp = 60
-
-Daily Goal:
-xp = 30
-
-Skill weights:
-
-knowledge = 0.20
-logic = 0.20
-memory = 0.20
-speed = 0.20
-focus = 0.20
-
-Skill update:
-
-normalLearningRate = 0.15
-newUserLearningRate = 0.30
-
-Leaderboard:
-
-dailyScoreMax = 1000
-weeklyBestChallenges = 5
-
-XP:
-
-dailyXpCap = 300
-
-All values must be easy to modify later.
-
-==================================================
-32. SCORING VERSIONING
-==================================================
-
-Every score calculation must have a scoringVersion.
-
-Example:
-
-scoringVersion = 1
-
-If formulas are changed later:
-
-scoringVersion = 2
-
-Old scores must remain historically consistent.
-
-Do not silently recalculate old leaderboard scores using a new formula.
-
-==================================================
-33. IDEMPOTENCY
-==================================================
-
-Critical backend requirement:
-
-The same Daily Challenge result must not be processed twice.
-
-If a request is accidentally sent twice:
-
-DO NOT:
-
-double award XP
-double update Brain Score
-double update leaderboard
-double update streak
-
-Use a unique result/session ID or idempotency key.
-
-The processing should be idempotent.
-
-==================================================
-34. TRANSACTIONAL UPDATES
-==================================================
-
-When completing a Daily Challenge, the system may need to update:
-
-- challenge result
-- Brain Score
-- skill ratings
-- XP
-- daily goal
-- streak
-- weekly leaderboard
-
-These updates should be handled safely.
-
-Avoid partial updates where:
-
-XP is awarded but leaderboard isn't updated.
-
-Use transactions/batched writes/server-side processing where appropriate for the chosen backend.
-
-==================================================
-35. GAME CONFIGURATION
-==================================================
-
-Every game should have metadata.
-
-Example:
-
-GAME_CONFIG:
-
-GK_QUIZ
-
-primarySkill = KNOWLEDGE
-secondarySkill = FOCUS
-modeSupport = PRACTICE, DAILY, WORKOUT
-
-ARROW_PUZZLE
-
-primarySkill = LOGIC
-secondarySkill = SPEED
-modeSupport = PRACTICE, DAILY, WORKOUT
-
-STROOP_RUSH
-
-primarySkill = FOCUS
-secondarySkill = SPEED
-modeSupport = PRACTICE, DAILY, WORKOUT
-
-SYNAPSE_RECALL
-
-primarySkill = MEMORY
-secondarySkill = FOCUS
-modeSupport = PRACTICE, DAILY, WORKOUT
-
-This architecture must allow:
-
-NEW_GAME
-
-without changing the Brain Score engine.
-
-==================================================
-36. FUTURE GAME SUPPORT
-==================================================
-
-Design the system so I can later add:
-
-Math games
-Reaction games
-Pattern recognition
-Word games
-Spatial reasoning
-Memory games
-Attention games
-
-Each game only needs to provide:
-
-raw result
-performance calculation
-skill mapping
-
-The central progression engine should handle:
-
-Brain Score
-XP
-skill updates
-history
-analytics
-
-==================================================
-37. IMPORTANT FAIRNESS RULES
-==================================================
-
-NEVER:
-
-- compare raw scores between different games
-- allow practice scores directly onto leaderboard
-- allow unlimited leaderboard attempts
-- allow easy puzzles to dominate harder puzzles
-- make Brain Score jump drastically
-- make XP equal Brain Score
-- make streak depend on performance
-- make leaderboard depend purely on number of games played
-- trust client-submitted competitive scores
-- let users directly modify leaderboard values
-
-ALWAYS:
-
-- normalize game performance
-- use difficulty
-- separate performance from engagement
-- separate personal score from competition
-- validate competitive scores
-- use deterministic Daily Challenges
-- use server-side/trusted leaderboard updates
-- version scoring algorithms
-- maintain historical records
-
-==================================================
-38. FINAL USER EXPERIENCE
-==================================================
-
-The user should understand the system intuitively.
-
-Home:
-
-🔥 3 DAY STREAK
-🎯 DAILY GOAL 2/3
-🧠 BRAIN SCORE 72
-
-Daily Challenge:
-
-"Compete today"
-
-Quick Workout:
-
-"Train 3 skills"
-
-Practice:
-
-"Improve your skills"
-
-Profile:
-
-"See your Brain Score and progress"
-
-Leaderboard:
-
-"See how you rank"
-
-The user should NOT need to understand the technical formulas.
-
-The formulas are for the backend.
-
-==================================================
-39. RESULT SCREEN
-==================================================
-
-After every game show:
-
-GAME COMPLETE
-
-Your Score
-87
-
-Performance
-Excellent
-
-Then:
-
-Skill Impact
-
-Logic +2
-Speed +1
-
-Rewards
-
-+20 XP
-
-If Daily Challenge:
-
-Challenge Score
-870 / 1000
-
-Leaderboard
-#384
-
-If Practice:
-
-"Practice complete"
-
-+20 XP
-
-Brain Score updated
-
-If Workout:
-
-Workout Score
-81
-
-Skills trained:
-Memory
-Focus
-Speed
-
-+60 XP
-
-Daily Goal:
-3/3
-
-==================================================
-40. ANALYTICS
-==================================================
-
-Track enough information to understand whether the scoring system is healthy.
-
-Track:
-
-game completion rate
-average performance score
-average difficulty
-average session duration
-daily challenge participation
-daily challenge completion rate
-average leaderboard score
-XP earned
-Brain Score distribution
-skill rating distribution
-streak retention
-daily goal completion
-workout completion
-practice-to-challenge conversion
-
-Also monitor:
-
-- users repeatedly playing one easy game
-- abnormal scores
-- abnormal completion times
-- suspicious leaderboard submissions
-- users gaining XP unusually quickly
-
-Use analytics to tune the system.
-
-==================================================
-41. TEST CASES
-==================================================
-
-Create unit tests for:
-
-1. GK normalization
-2. Arrow Puzzle difficulty normalization
-3. Stroop normalization
-4. Synapse normalization
-5. Skill rating update
-6. Brain Score calculation
-7. XP calculation
-8. XP cap
-9. Daily Goal
-10. Streak
-11. Daily Challenge score
-12. Weekly leaderboard calculation
-13. duplicate challenge submission
-14. invalid score
-15. impossible score
-16. new user Brain Score
-17. scoring version
-18. multi-skill game contribution
-
-Test edge cases.
-
-Examples:
-
-score = 0
-score = maximum
-negative score
-extremely high score
-missing duration
-missing difficulty
-duplicate request
-same challenge submitted twice
-user crosses midnight
-user changes timezone
-new user
-user with only one game
-user with no skill data
-
-==================================================
-42. IMPLEMENTATION APPROACH
-==================================================
-
-Before writing code:
-
-1. Inspect the existing project.
-2. Identify:
-   - current game models
-   - existing score calculation
-   - Firebase/Firestore structure
-   - existing user profile
-   - existing daily challenge
-   - existing workout
-   - existing leaderboard if any
-   - existing streak
-   - existing daily goal
-3. Do not unnecessarily rewrite working game logic.
-4. Reuse existing models where reasonable.
-5. Introduce a centralized scoring/progression layer.
-
-First create:
-
-GamePerformanceService
-
-SkillRatingService
-
-BrainScoreService
-
-XPService
-
-DailyChallengeService
-
-LeaderboardService
-
-StreakService
-
-DailyGoalService
-
-WorkoutService
-
-Do not duplicate scoring logic across UI screens.
-
-==================================================
-43. IMPORTANT ARCHITECTURAL PRINCIPLE
-==================================================
-
-The game should produce a raw result.
-
-The scoring engine should transform it.
+```text
+P1
+│
+P2
+│
+P3 ───────── P4
+```
+
+The arrow is rendered around that centerline.
+
+---
+
+# 7. ARROW GEOMETRY
+
+Each arrow should consist of:
+
+1. Thick shaft
+2. Rounded corners
+3. Large triangular/chevron arrowhead
+4. Optional subtle highlight
+5. Optional shadow
+6. Optional glow
 
 Conceptually:
 
-GAME
-↓
-RAW RESULT
-↓
-GAME-SPECIFIC PERFORMANCE CALCULATOR
-↓
-PERFORMANCE SCORE 0–100
-↓
-SKILL RATING UPDATE
-↓
-BRAIN SCORE UPDATE
-↓
-XP / GOAL / STREAK
-↓
-IF DAILY CHALLENGE:
-NORMALIZED CHALLENGE SCORE 0–1000
-↓
-LEADERBOARD
+```text
+             arrowhead
+                ↓
+════════════════▶
+```
 
-Keep these responsibilities separate.
+For a turning arrow:
 
-==================================================
-44. DO NOT OVERENGINEER
-==================================================
+```text
+        ┌──────────▶
+        │
+        │
+        │
+```
 
-For the first production version:
+The corner should be rounded rather than sharp.
 
-DO NOT implement:
+Use:
 
-- ELO
-- complex AI scoring
-- machine learning
-- player matchmaking
-- complicated rating systems
-- unnecessary microservices
+```dart
+Path()
+```
 
-Start with:
+and curved joins.
 
-- normalized performance
-- skill ratings
-- Brain Score
-- XP
-- Daily Goal
-- Streak
-- Daily Challenge
-- weekly leaderboard
-- anti-cheat validation
-- scoring versioning
+The arrow should visually feel like a single continuous piece.
 
-This is enough.
+---
 
-==================================================
-45. DELIVERABLES
-==================================================
+# 8. ARROW THICKNESS
 
-After analyzing the existing codebase, provide:
+Arrow thickness should be proportional to the puzzle size.
 
-1. Current scoring architecture
-2. Problems found
-3. Proposed architecture
-4. Data model changes
-5. Scoring formulas
-6. API/service changes
-7. Firebase/Firestore changes if applicable
-8. Security rule changes
-9. Migration strategy for existing users
-10. Unit tests
-11. Integration tests
-12. UI changes
-13. Example user flows
-14. Example calculations
-15. Edge cases
-16. Performance considerations
+Do NOT hardcode one pixel size.
 
-Do NOT blindly start rewriting the entire project.
+For example:
 
-First explain what needs to change and why.
+```text
+arrowThickness =
+    min(screenWidth, screenHeight) * 0.045
+```
 
-Then implement incrementally.
+or calculate it based on the puzzle's bounding box.
 
-==================================================
-46. MOST IMPORTANT FINAL REQUIREMENT
-==================================================
+Typical ratio:
 
-The final system must create a clear separation:
+```text
+Arrow shaft thickness:
+approximately 3.5%–5% of puzzle width
 
-BRAIN SCORE
+Arrowhead length:
+approximately 1.5–2.2 × shaft thickness
+
+Arrowhead width:
+approximately 1.8–2.4 × shaft thickness
+```
+
+The arrows must be thick enough to be easily tapped.
+
+---
+
+# 9. ARROWHEAD DESIGN
+
+The arrowhead is extremely important.
+
+Do not use a tiny icon.
+
+The arrowhead should clearly indicate:
+
+> "This entire piece wants to escape in this direction."
+
+Example:
+
+```text
+══════════════════▶
+```
+
+The head should occupy approximately 10–20% of the total visual length of a typical arrow.
+
+Use a strong geometric shape.
+
+Possible design:
+
+```text
+             /\
+════════════/  \
+           /    \
+```
+
+But visually it should read as a clean modern mobile-game arrow.
+
+---
+
+# 10. ARROW COLORS
+
+Use a limited premium palette.
+
+Example:
+
+```text
+Cyan
+#22D3EE
+
+Blue
+#3B82F6
+
+Purple
+#8B5CF6
+
+Pink
+#EC4899
+
+Green
+#22C55E
+
+Yellow
+#FACC15
+
+Orange
+#F97316
+```
+
+Do not randomly assign colors just for decoration.
+
+Color can represent different groups or simply create visual variety.
+
+Prefer approximately 4–6 colors per level.
+
+Avoid rainbow chaos.
+
+The silhouette must remain visually readable.
+
+---
+
+# 11. ARROW VISUAL STYLE
+
+The arrow should have:
+
+* slightly rounded edges
+* subtle gradient
+* subtle shadow
+* clean arrowhead
+* slight inner highlight
+* optional soft glow
+
+Example:
+
+```text
+        ┌───────────────▶
+        │
+        │
+```
+
+should feel like a polished physical game piece.
+
+It should NOT look like:
+
+* plain SVG icons
+* thin lines
+* emoji
+* generic Material icons
+* tiny arrows in boxes
+
+---
+
+# 12. SILHOUETTE SYSTEM
+
+This is one of the most important parts.
+
+The game should have a `Silhouette` model.
+
+Example:
+
+```dart
+class Silhouette {
+  final String id;
+  final String name;
+  final List<Offset> boundary;
+}
+```
+
+The silhouette represents the target area that the arrow arrangement should occupy.
+
+Examples:
+
+```text
+bird
+cat
+dog
+house
+car
+rocket
+tree
+fish
+butterfly
+elephant
+```
+
+The silhouette should primarily be used during level generation.
+
+The final player should see the arrows themselves, not a permanent filled silhouette underneath.
+
+---
+
+# 13. HOW TO CREATE A SILHOUETTE
+
+There are several possible sources.
+
+### Option A — Hand-authored vector silhouettes
+
+Create simple vector outlines.
+
+Example:
+
+```text
+Bird:
+
+          ______
+       __/      \__
+     _/            \_
+    /                >
+    \__            __/
+       \__________/
+            \
+             \
+```
+
+Convert the boundary into normalized coordinates:
+
+```text
+0.0 → 1.0
+```
+
+This makes it scalable.
+
+---
+
+### Option B — SVG silhouettes
+
+Allow silhouettes to be represented as SVG/vector paths.
+
+Example:
+
+```text
+bird.svg
+cat.svg
+house.svg
+```
+
+Parse their outlines and convert them into polygons.
+
+This is preferred for a large content library.
+
+---
+
+### Option C — raster image preprocessing
+
+For development tools only, allow a black/white image to be converted into a binary silhouette.
+
+Example:
+
+```text
+image
+ ↓
+threshold
+ ↓
+binary mask
+ ↓
+contour
+ ↓
+polygon
+```
+
+This allows artists to quickly create new silhouettes.
+
+---
+
+# 14. SILHOUETTE NORMALIZATION
+
+Every silhouette should be normalized into:
+
+```text
+0.0 <= x <= 1.0
+0.0 <= y <= 1.0
+```
+
+For example:
+
+```text
+Bird:
+
+(0.10, 0.40)
+(0.20, 0.30)
+(0.40, 0.20)
+...
+```
+
+Then scale it to fit the game screen.
+
+The puzzle should occupy approximately:
+
+```text
+70–85%
+```
+
+of the available central game area.
+
+Leave enough space around it for:
+
+* level number
+* hint
+* pause
+* controls
+* escape animations
+
+---
+
+# 15. HOW ARROWS FORM THE SILHOUETTE
+
+This is the core algorithm.
+
+Do NOT simply randomly place arrows.
+
+Instead:
+
+```text
+Target silhouette
+        ↓
+Create usable interior area
+        ↓
+Generate long paths inside it
+        ↓
+Ensure paths collectively cover the recognizable form
+        ↓
+Create blocking relationships
+        ↓
+Validate puzzle
+        ↓
+Store level
+```
+
+The arrows should collectively approximate the silhouette.
+
+Think of them as **ribbons/paths filling the shape**.
+
+---
+
+# 16. ARROW PATH GENERATION
+
+Generate paths using mostly horizontal and vertical segments.
+
+For example:
+
+```text
+┌───────────→
+│
+│
+└──────→
+```
+
+or:
+
+```text
+←───────────┐
+            │
+            ↓
+```
+
+Use 90-degree turns.
+
+Avoid excessive diagonal movement.
+
+The game should have a recognizable "Arrow Escape" visual language.
+
+---
+
+# 17. PATH GENERATION RULES
+
+Each arrow should:
+
+* remain inside the silhouette
+* not cross another arrow illegally
+* maintain minimum spacing
+* have a clear arrowhead
+* have enough length to be visually meaningful
+* have 0–4 bends
+* preferably use long straight runs
+* avoid extremely tiny segments
+* avoid awkward dead ends
+* avoid excessive fragmentation
+
+Typical arrow:
+
+```text
+Length:
+2–6 × shaft thickness
+
+Hard levels:
+up to 10–15 × shaft thickness
+```
+
+But do not make every arrow the same length.
+
+Variation is important.
+
+---
+
+# 18. MINIMUM SPACING
+
+Maintain a small gap between unrelated arrows.
+
+For example:
+
+```text
+arrow thickness = T
+
+minimum visual gap:
+0.15T – 0.35T
+```
+
+However, when arrows are intentionally adjacent/overlapping for puzzle interaction, allow closer proximity.
+
+The player must be able to visually distinguish the arrows.
+
+---
+
+# 19. ARROWS MUST LOOK LIKE ONE PICTURE
+
+This is critical.
+
+Suppose the target is a bird.
+
+Do not just fill a rectangular area with arrows.
+
+The arrow placement must emphasize:
+
+```text
+head
+beak
+body
+wing
+tail
+legs
+```
+
+For example:
+
+```text
+              →→→
+          ┌─────────
+       ┌──┘
+      /
+ ←───┘
+ │
+ │       →─────────
+ │      /
+ └─────┘
+```
+
+The arrangement should make the silhouette recognizable even without a background outline.
+
+---
+
+# 20. SHAPE RECOGNITION
+
+Every silhouette should have a few strong visual landmarks.
+
+For example:
+
+### Bird
+
+* head
+* beak
+* wing
+* body
+* tail
+* feet
+
+### Cat
+
+* ears
+* head
+* back
+* tail
+* legs
+
+### House
+
+* roof
+* chimney
+* walls
+* door
+* windows
+
+### Car
+
+* roof
+* hood
+* wheels
+* rear
+
+These landmarks should influence arrow placement.
+
+---
+
+# 21. DON'T OVER-SIMPLIFY THE SILHOUETTE
+
+A house should not just be:
+
+```text
+   /\
+  /  \
+ /____\
+ |    |
+ |____|
+```
+
+Instead, use arrows to actually construct the recognizable outline.
+
+Likewise a bird should have a recognizable wing and tail.
+
+The player should be able to identify the object before solving it.
+
+---
+
+# 22. ARROW OVERLAP AND BLOCKING
+
+The puzzle's main mechanic is:
+
+> An arrow can escape only if its entire movement direction is clear.
+
+Suppose:
+
+```text
+Arrow A:
+
+════════════════════▶
+```
+
+If another arrow occupies its path:
+
+```text
+══════════════▶
+       █
+       █
+       █
+```
+
+A is blocked.
+
+If the path is clear:
+
+```text
+══════════════════════▶
+```
+
+A is available.
+
+---
+
+# 23. ESCAPE DIRECTION
+
+The arrowhead determines the escape direction.
+
+If arrowhead points right:
+
+```text
+──────────────▶
+```
+
+the arrow attempts to move right.
+
+If arrowhead points left:
+
+```text
+◀──────────────
+```
+
+it attempts to move left.
+
+If up:
+
+```text
+    ↑
+    │
+    │
+    │
+```
+
+If down:
+
+```text
+    │
+    │
+    ↓
+```
+
+---
+
+# 24. COLLISION MODEL
+
+Do NOT perform collision using only the arrowhead point.
+
+The entire arrow path needs to be considered.
+
+When an arrow is tapped:
+
+1. Determine its direction.
+2. Create an escape ray/path starting from the arrow's front.
+3. Check whether another active arrow intersects the escape path.
+4. If another arrow blocks it → cannot move.
+5. If the path reaches the puzzle boundary without collision → arrow can escape.
+
+Pseudo logic:
+
+```text
+canEscape(arrow):
+
+    escapeDirection = arrow.direction
+
+    escapePath =
+        extend from arrow's arrowhead
+        in escapeDirection
+        until outside puzzle bounds
+
+    for each other active arrow:
+
+        if escapePath intersects other arrow:
+            return false
+
+    return true
+```
+
+---
+
+# 25. IMPORTANT COLLISION DETAIL
+
+Because arrows have thickness, use a collision shape rather than an infinitely thin line.
+
+Represent each arrow as a stroked path or polygon.
+
+For collision purposes:
+
+```text
+Arrow centerline
++
+stroke radius
 =
-How well the user is performing cognitively.
+collision geometry
+```
 
-XP
+This prevents visually overlapping arrows from being considered separate.
+
+---
+
+# 26. TAP DETECTION
+
+The player should be able to tap anywhere reasonably close to the arrow.
+
+Do NOT require pixel-perfect tapping.
+
+For each arrow:
+
+```text
+visual path
++
+tap tolerance
 =
-How much the user has engaged with the app.
+hit region
+```
 
-DAILY GOAL
-=
-Whether the user completed today's intended activities.
+Use approximately:
 
-STREAK
-=
-Whether the user is consistently returning.
+```text
+tapTolerance = 8–16 logical pixels
+```
 
-LEADERBOARD
-=
-How well the user performed in controlled competitive Daily Challenges.
+depending on screen size.
 
-GAME SCORE
-=
-How well the user performed in one particular game.
+If arrows overlap visually, prioritize the top/frontmost or most recently rendered arrow.
 
-These must never be treated as the same thing.
+---
 
-The system should be fair, scalable, resistant to farming, easy to explain to users, and easy to extend when new brain games are added.
+# 27. ESCAPE ANIMATION
 
-Implement the architecture cleanly and production-ready.
+When the player taps an available arrow:
+
+```text
+tap
+ ↓
+small scale/bounce
+ ↓
+move in arrow direction
+ ↓
+accelerate
+ ↓
+leave puzzle
+ ↓
+fade
+ ↓
+remove from active arrows
+```
+
+Duration:
+
+```text
+250–450 ms
+```
+
+depending on arrow length.
+
+The movement should feel satisfying.
+
+Use:
+
+```dart
+Curves.easeIn
+```
+
+or a custom curve.
+
+---
+
+# 28. BLOCKED ARROW ANIMATION
+
+If the player taps a blocked arrow:
+
+Do not simply do nothing.
+
+Give feedback.
+
+Possible animation:
+
+```text
+slight shake
++
+small bounce
++
+subtle glow
+```
+
+Duration:
+
+```text
+150–250 ms
+```
+
+Optional:
+
+```text
+tiny "blocked" vibration
+```
+
+Do not make the failure animation annoying.
+
+---
+
+# 29. CASCADE EFFECT
+
+When an arrow leaves:
+
+```text
+Arrow A removed
+       ↓
+new arrow becomes available
+       ↓
+player taps it
+       ↓
+another arrow becomes available
+```
+
+The player should feel like they are gradually "unlocking" the picture.
+
+This is one of the main satisfying aspects of the game.
+
+---
+
+# 30. LEVEL COMPLETION
+
+When:
+
+```text
+activeArrowCount == 0
+```
+
+trigger:
+
+```text
+LEVEL COMPLETE
+```
+
+Do not instantly switch screens.
+
+First show:
+
+```text
+final arrow
+      ↓
+escape
+      ↓
+silhouette disappears
+      ↓
+small celebration
+      ↓
+completion UI
+```
+
+Use:
+
+* particles
+* subtle confetti
+* glow
+* sound
+* score animation
+
+Keep it polished and short.
+
+---
+
+# 31. LEVEL DESIGN SYSTEM
+
+Levels should not just be random.
+
+Create a progression.
+
+### Levels 1–10
+
+Very simple objects:
+
+* house
+* heart
+* star
+* fish
+
+Approximately:
+
+```text
+10–20 arrows
+0–2 bends per arrow
+few blocking relationships
+many immediately available arrows
+```
+
+### Levels 11–30
+
+Objects:
+
+* bird
+* cat
+* car
+* tree
+* rocket
+
+Approximately:
+
+```text
+20–35 arrows
+more bends
+more blocking
+fewer initially available arrows
+```
+
+### Levels 31–60
+
+More detailed shapes:
+
+* dog
+* elephant
+* ship
+* castle
+* airplane
+* butterfly
+
+Approximately:
+
+```text
+35–60 arrows
+multiple dependency chains
+more intersections
+more misleading moves
+```
+
+### Levels 60+
+
+Complex silhouettes:
+
+```text
+50–100+ arrows
+long dependency chains
+multiple independent sections
+few initially free arrows
+```
+
+---
+
+# 32. LEVEL DIFFICULTY
+
+Difficulty should NOT simply be based on arrow count.
+
+Consider:
+
+```text
+arrowCount
++
+averageArrowLength
++
+numberOfBends
++
+blockingDensity
++
+dependencyDepth
++
+numberOfChoices
++
+solutionLength
+```
+
+For example:
+
+```text
+Difficulty Score =
+    0.20 * arrowCount
+  + 0.15 * averageLength
+  + 0.15 * bends
+  + 0.25 * dependencyDepth
+  + 0.25 * blockingComplexity
+```
+
+Tune this after testing.
+
+---
+
+# 33. PUZZLE GENERATION
+
+Build a procedural generator.
+
+Pipeline:
+
+```text
+Choose silhouette
+       ↓
+Scale silhouette
+       ↓
+Create usable interior mask
+       ↓
+Generate arrow paths
+       ↓
+Assign directions
+       ↓
+Create blocking relationships
+       ↓
+Validate geometry
+       ↓
+Run solver
+       ↓
+Calculate difficulty
+       ↓
+Accept/reject level
+```
+
+If invalid:
+
+```text
+discard
+generate again
+```
+
+---
+
+# 34. GUARANTEE SOLVABILITY
+
+This is mandatory.
+
+Never ship a randomly generated level without checking that it can be solved.
+
+Create a puzzle solver.
+
+For example:
+
+```text
+State:
+remaining arrows
+
+Find all arrows that can currently escape
+
+For every available arrow:
+    remove it
+    create new state
+    recursively solve
+
+If all arrows removed:
+    level is solvable
+```
+
+Use DFS/BFS with memoization.
+
+Represent a state efficiently using a bitmask if the number of arrows allows it.
+
+---
+
+# 35. SOLUTION GENERATION
+
+The solver should also be able to produce:
+
+```text
+solution:
+[Arrow 12,
+ Arrow 4,
+ Arrow 17,
+ Arrow 3,
+ ...]
+```
+
+This enables the hint system.
+
+If the player requests a hint:
+
+```text
+solver
+ ↓
+next valid arrow
+ ↓
+highlight arrow
+```
+
+---
+
+# 36. HINT SYSTEM
+
+Three hint levels:
+
+### Hint 1
+
+Highlight the next correct arrow.
+
+### Hint 2
+
+Animate a small directional pulse around it.
+
+### Hint 3
+
+Automatically remove the selected arrow.
+
+Limit hints per level.
+
+Example:
+
+```text
+💡 3
+```
+
+---
+
+# 37. LEVEL DATA FORMAT
+
+Store levels in JSON.
+
+Example:
+
+```json
+{
+  "id": 42,
+  "silhouette": "bird",
+  "difficulty": 3,
+  "arrows": [
+    {
+      "id": "a1",
+      "points": [
+        [120, 200],
+        [120, 280],
+        [220, 280]
+      ],
+      "direction": "right",
+      "thickness": 24
+    }
+  ]
+}
+```
+
+Prefer normalized coordinates where possible:
+
+```text
+0.0 → 1.0
+```
+
+so the level scales to different devices.
+
+---
+
+# 38. BACKGROUND DESIGN
+
+The background should be visually attractive but must never compete with the arrows.
+
+Use a dark premium puzzle-game background.
+
+Base:
+
+```text
+#0B1020
+```
+
+or:
+
+```text
+#0F172A
+```
+
+Use a subtle gradient:
+
+```text
+top:
+slightly lighter
+
+bottom:
+slightly darker
+```
+
+Add a very subtle vignette.
+
+---
+
+# 39. BACKGROUND GRID
+
+Optionally use an extremely subtle grid.
+
+Example:
+
+```text
+┼───┼───┼───┼───┼
+│   │   │   │   │
+┼───┼───┼───┼───┼
+│   │   │   │   │
+┼───┼───┼───┼───┼
+```
+
+But it should be almost invisible.
+
+Opacity:
+
+```text
+5–10%
+```
+
+The grid exists only to give the game space/depth.
+
+It must not visually interfere with the silhouette.
+
+---
+
+# 40. BACKGROUND GLOW
+
+Add subtle radial glow behind the puzzle.
+
+For example:
+
+```text
+center:
+very subtle cyan/purple glow
+
+edges:
+dark
+```
+
+Use gradients rather than large decorative graphics.
+
+Do NOT put distracting particles everywhere.
+
+---
+
+# 41. GAME SCREEN LAYOUT
+
+Use portrait orientation.
+
+Conceptually:
+
+```text
+┌────────────────────────────┐
+│  ←     LEVEL 42       💡 3 │
+│                            │
+│                            │
+│                            │
+│          PUZZLE            │
+│                            │
+│       🐦 made from         │
+│       arrow paths          │
+│                            │
+│                            │
+│                            │
+│                            │
+│    ↶ Undo     ⟳ Reset      │
+└────────────────────────────┘
+```
+
+The puzzle should dominate the screen.
+
+---
+
+# 42. HEADER
+
+Keep it minimal.
+
+Left:
+
+```text
+←
+```
+
+Center:
+
+```text
+LEVEL 42
+```
+
+Right:
+
+```text
+💡 3
+```
+
+Optional:
+
+```text
+⚙
+```
+
+Avoid excessive HUD elements.
+
+---
+
+# 43. CONTROLS
+
+Bottom:
+
+```text
+Undo
+Hint
+Reset
+```
+
+Use compact rounded buttons.
+
+Do not let controls occupy too much space.
+
+---
+
+# 44. CAMERA / PAN / ZOOM
+
+For normal levels:
+
+* center the silhouette automatically
+* scale it to fit
+* no unnecessary zoom
+
+For very large levels:
+
+* allow pinch zoom
+* allow drag/pan
+* provide a reset view
+
+Use Flutter's:
+
+```dart
+InteractiveViewer
+```
+
+only if it does not interfere with custom gesture handling.
+
+If custom gesture handling is required, implement the transformation manually.
+
+---
+
+# 45. VISUAL SILHOUETTE QUALITY
+
+Before accepting a level, calculate whether the silhouette is visually recognizable.
+
+A simple approach:
+
+```text
+generated arrow coverage
+        ↓
+binary mask
+        ↓
+compare against target silhouette
+        ↓
+calculate IoU
+```
+
+Intersection-over-Union:
+
+```text
+IoU =
+intersection area /
+union area
+```
+
+Require something like:
+
+```text
+IoU > 0.75
+```
+
+for a good match.
+
+Tune this according to visual testing.
+
+---
+
+# 46. IMPORTANT: PRESERVE NEGATIVE SPACE
+
+Silhouettes should contain recognizable empty spaces.
+
+For example, a house:
+
+```text
+      /\ 
+     /  \
+    /    \
+   ┌──────┐
+   │  []  │
+   │  🚪  │
+   └──────┘
+```
+
+The doorway and windows should not disappear into a solid blob.
+
+Likewise:
+
+* bird wings should have separation
+* cat legs should have gaps
+* butterfly wings should have a central gap
+* car wheels should be visually separated
+
+Negative space is essential for recognition.
+
+---
+
+# 47. SHAPE CATEGORIES
+
+Create level categories:
+
+```text
+Animals
+Nature
+Buildings
+Vehicles
+Objects
+Food
+Space
+Symbols
+Fantasy
+Seasonal
+```
+
+Example Animals:
+
+```text
+bird
+cat
+dog
+rabbit
+fish
+elephant
+lion
+horse
+butterfly
+owl
+```
+
+Nature:
+
+```text
+tree
+flower
+mountain
+cloud
+sun
+moon
+```
+
+Vehicles:
+
+```text
+car
+truck
+airplane
+rocket
+ship
+bicycle
+```
+
+---
+
+# 48. LEVEL PACK STRUCTURE
+
+Instead of simply:
+
+```text
+Level 1
+Level 2
+Level 3
+```
+
+group levels into packs.
+
+Example:
+
+```text
+PACK 1
+Simple Shapes
+
+PACK 2
+Animals
+
+PACK 3
+Nature
+
+PACK 4
+Vehicles
+
+PACK 5
+Buildings
+
+PACK 6
+Animals 2
+
+PACK 7
+Fantasy
+```
+
+Each pack should introduce slightly more complexity.
+
+---
+
+# 49. VISUAL DIFFICULTY
+
+Do not make hard levels visually ugly.
+
+A hard level should still have a clean silhouette.
+
+Difficulty should come from:
+
+* blocking
+* arrow direction
+* dependencies
+* limited choices
+* misleading available arrows
+
+not from:
+
+* microscopic arrows
+* random clutter
+* overlapping unreadable paths
+* excessively thin strokes
+
+---
+
+# 50. GAME FEEL
+
+Add polished feedback.
+
+When tapping a valid arrow:
+
+```text
+tap
+ ↓
+small scale pulse
+ ↓
+arrow glows
+ ↓
+arrow accelerates outward
+ ↓
+soft particle trail
+ ↓
+sound
+```
+
+When blocked:
+
+```text
+tap
+ ↓
+small shake
+ ↓
+subtle red/orange flash
+```
+
+When an important dependency opens:
+
+```text
+new arrow becomes available
+ ↓
+subtle glow pulse
+```
+
+---
+
+# 51. SOUND EFFECTS
+
+Create lightweight SFX:
+
+```text
+arrow_escape.wav
+arrow_blocked.wav
+arrow_select.wav
+level_complete.wav
+hint.wav
+button.wav
+```
+
+The escape sound should have a satisfying "whoosh."
+
+Do not make every interaction loud.
+
+---
+
+# 52. PARTICLES
+
+Use particles sparingly.
+
+When an arrow escapes:
+
+```text
+small particles
++
+short trail
+```
+
+When level completes:
+
+```text
+small celebration
+```
+
+Do NOT cover the entire screen with particles.
+
+The arrow movement should remain the primary visual event.
+
+---
+
+# 53. ANIMATION PERFORMANCE
+
+Avoid creating hundreds of Flutter widgets for every arrow.
+
+Prefer:
+
+```text
+CustomPainter
+```
+
+and draw the arrows directly onto a Canvas.
+
+Maintain a single game canvas where possible.
+
+This will make it easier to support levels containing many arrows.
+
+---
+
+# 54. RESPONSIVE RENDERING
+
+All coordinates should be normalized.
+
+Example:
+
+```text
+normalizedX = 0.0 → 1.0
+normalizedY = 0.0 → 1.0
+```
+
+Convert to screen coordinates:
+
+```dart
+screenX = puzzleLeft + normalizedX * puzzleWidth;
+screenY = puzzleTop + normalizedY * puzzleHeight;
+```
+
+Never design levels exclusively for:
+
+```text
+1080 × 1920
+```
+
+---
+
+# 55. TOUCH HANDLING
+
+The player should be able to tap an arrow without precision.
+
+Algorithm:
+
+```text
+onTap(position):
+
+    candidates = findArrowsNear(position)
+
+    sort candidates by render order
+
+    for arrow in candidates:
+
+        if hitTest(arrow, position):
+
+            if canEscape(arrow):
+                removeArrow(arrow)
+            else:
+                playBlockedAnimation(arrow)
+
+            return
+```
+
+---
+
+# 56. UNDO
+
+Maintain move history.
+
+Example:
+
+```text
+Move 1 → Arrow 5
+Move 2 → Arrow 12
+Move 3 → Arrow 7
+```
+
+Undo should restore the exact previous state.
+
+Do not regenerate the level.
+
+Store:
+
+```text
+removedArrowIds
+```
+
+and animation state as necessary.
+
+---
+
+# 57. RESET
+
+Reset should restore:
+
+```text
+all arrows
+original positions
+original colors
+original state
+```
+
+with a short confirmation if appropriate.
+
+---
+
+# 58. LEVEL COMPLETION STATS
+
+After completing a level show:
+
+```text
+LEVEL COMPLETE
+
+🐦 BIRD
+
+Moves:
+27
+
+Best:
+24
+
+Hints:
+1
+
+⭐ ⭐ ⭐
+```
+
+Use a three-star system.
+
+Possible scoring:
+
+```text
+3 stars:
+optimal or near-optimal
+
+2 stars:
+reasonable number of moves
+
+1 star:
+completed with many unnecessary moves
+```
+
+Do not make the game impossible for casual users.
+
+---
+
+# 59. DAILY CHALLENGE
+
+Optionally add:
+
+```text
+Daily Puzzle
+```
+
+Each day has one silhouette and one puzzle.
+
+Use deterministic generation from:
+
+```text
+date + seed
+```
+
+so every player receives the same puzzle.
+
+---
+
+# 60. PROCEDURAL LEVEL GENERATION
+
+Build a development-only level generator tool.
+
+It should allow:
+
+```text
+Choose silhouette
+Choose arrow count
+Choose difficulty
+Choose minimum arrow length
+Choose maximum arrow length
+Choose blocking density
+Choose bend count
+Generate
+Validate
+Preview
+Save
+```
+
+This is extremely important for scaling the game.
+
+---
+
+# 61. LEVEL EDITOR
+
+Ideally create a simple internal level editor.
+
+Editor features:
+
+```text
+Load silhouette
+Draw/edit boundary
+Generate arrows
+Move arrow
+Rotate/reverse arrow
+Change length
+Change thickness
+Delete arrow
+Add arrow
+Change color
+Test level
+Run solver
+Show blocked arrows
+Show solution
+Save JSON
+```
+
+This editor does not necessarily need to ship with the app.
+
+It can be a developer tool.
+
+---
+
+# 62. DEBUG MODE
+
+Add a debug mode that can display:
+
+```text
+arrow IDs
+arrow collision boundaries
+escape rays
+blocking relationships
+silhouette boundary
+target mask
+generated mask
+solver solution
+```
+
+For example:
+
+```text
+Arrow 17
+↓
+Blocked by Arrow 8
+```
+
+This will be extremely useful when developing the generator.
+
+---
+
+# 63. LEVEL VALIDATION
+
+Every level should pass:
+
+```text
+✓ silhouette recognizable
+✓ arrows inside bounds
+✓ no illegal overlap
+✓ all arrows tappable
+✓ level solvable
+✓ no deadlock
+✓ difficulty within target range
+✓ reasonable number of starting moves
+✓ reasonable arrow lengths
+✓ good visual spacing
+```
+
+Only then should it be accepted.
+
+---
+
+# 64. DEADLOCK DETECTION
+
+The game should distinguish:
+
+### Solvable state
+
+At least one arrow can escape.
+
+### Deadlocked state
+
+There are active arrows but none can escape.
+
+If the level generator produces:
+
+```text
+active arrows > 0
+AND
+available arrows = 0
+```
+
+reject the level.
+
+During normal gameplay this should never happen if the puzzle was correctly generated.
+
+---
+
+# 65. GENERATING SOLVABLE LEVELS BACKWARDS
+
+A strong level-generation technique is:
+
+```text
+Start with empty puzzle
+
+        ↓
+
+Add arrows in reverse solution order
+
+        ↓
+
+Create dependencies
+
+        ↓
+
+Reverse the solution
+
+        ↓
+
+Present puzzle to player
+```
+
+Example:
+
+```text
+Generation order:
+
+A
+B
+C
+D
+E
+```
+
+Player's solution:
+
+```text
+E
+D
+C
+B
+A
+```
+
+This guarantees a known solution path.
+
+Then add alternative branches to make the puzzle less predictable.
+
+---
+
+# 66. BRANCHING
+
+Do not make every level:
+
+```text
+A → B → C → D → E
+```
+
+because that becomes boring.
+
+Create branching:
+
+```text
+        B
+       ↗
+A ────
+       ↘
+        C
+
+B → D
+C → E
+```
+
+The player should sometimes have 2–4 valid choices.
+
+The wrong choice should not necessarily make the level impossible.
+
+This creates strategic decision-making.
+
+---
+
+# 67. AVOID FORCED SOLUTIONS EVERY TIME
+
+Some levels can be:
+
+```text
+Only 1 valid move
+```
+
+for tutorial levels.
+
+But later:
+
+```text
+3 possible moves
+```
+
+and the player needs to identify the best sequence.
+
+This creates much better gameplay.
+
+---
+
+# 68. LEVEL DESIGN PRINCIPLE
+
+The puzzle should answer:
+
+> "Which arrow should I remove first?"
+
+not:
+
+> "Can I physically find the tiny arrow?"
+
+Therefore:
+
+* arrows must be clearly visible
+* silhouette must be readable
+* blocking must be understandable
+* difficulty comes from reasoning
+
+---
+
+# 69. UI STYLE
+
+Use a modern premium casual-game aesthetic.
+
+Recommended:
+
+```text
+Dark navy background
+Soft gradients
+Bright colored arrows
+Rounded UI
+Subtle shadows
+Subtle glow
+Clean typography
+Minimal HUD
+```
+
+Avoid:
+
+* excessive glassmorphism
+* excessive neon
+* too many buttons
+* giant text
+* cluttered backgrounds
+* generic AI-generated UI
+
+The game should feel like a professionally designed mobile puzzle game.
+
+---
+
+# 70. MAIN MENU
+
+Home screen:
+
+```text
+          ARROW
+          ESCAPE
+
+       [ PLAY ]
+
+       Daily Puzzle
+
+       Levels
+
+       Settings
+```
+
+Show a small animated preview of arrows forming a silhouette.
+
+Do not overcrowd the home screen.
+
+---
+
+# 71. LEVEL SELECT
+
+Show:
+
+```text
+1   ✓
+2   ✓
+3   ✓
+4   ★
+5   🔒
+6   🔒
+```
+
+Prefer visual level cards.
+
+Each completed level can show:
+
+```text
+1 ⭐⭐⭐
+2 ⭐⭐
+3 ⭐⭐⭐
+```
+
+---
+
+# 72. SAVE SYSTEM
+
+Persist:
+
+```text
+currentLevel
+completedLevels
+stars
+bestMoves
+hintsUsed
+settings
+soundEnabled
+musicEnabled
+```
+
+Use Hive or SharedPreferences for local progression.
+
+Do not require a backend for the basic game.
+
+---
+
+# 73. PERFORMANCE REQUIREMENTS
+
+The game should remain smooth with:
+
+```text
+50 arrows
+100 arrows
+150 arrows
+```
+
+Use:
+
+* CustomPainter
+* efficient path generation
+* cached paths
+* minimal widget rebuilds
+* efficient collision calculations
+* spatial partitioning if necessary
+
+For large levels, consider a spatial index/grid to quickly identify nearby arrows.
+
+Do not check every arrow against every other arrow if it becomes expensive.
+
+---
+
+# 74. COLLISION OPTIMIZATION
+
+For small levels:
+
+```text
+O(n²)
+```
+
+may be acceptable.
+
+For large levels:
+
+Create spatial buckets:
+
+```text
+Screen
+ ├── cell 1
+ ├── cell 2
+ ├── cell 3
+ └── ...
+```
+
+Each arrow is registered in the cells it occupies.
+
+When checking an escape path:
+
+```text
+query only nearby cells
+```
+
+instead of every arrow.
+
+---
+
+# 75. CODE QUALITY
+
+Use clear, maintainable Dart.
+
+Prefer simple readable code over clever abstractions.
+
+Do not over-engineer.
+
+Keep:
+
+```text
+Rendering
+Game logic
+Level generation
+Persistence
+UI
+```
+
+separate.
+
+Use comments for the difficult algorithms.
+
+---
+
+# 76. DEVELOPMENT PHASES
+
+Implement in this exact order.
+
+## Phase 1
+
+Create one manually designed level with approximately 10 arrows.
+
+Use a simple bird silhouette.
+
+Get:
+
+* rendering
+* arrows
+* tap
+* escape
+* collision
+* win condition
+
+working.
+
+## Phase 2
+
+Add:
+
+* smooth animation
+* colors
+* background
+* sound
+* blocked feedback
+
+## Phase 3
+
+Create 10 hand-authored silhouettes.
+
+## Phase 4
+
+Create the level editor.
+
+## Phase 5
+
+Build procedural arrow generation.
+
+## Phase 6
+
+Build solver.
+
+## Phase 7
+
+Add automatic difficulty scoring.
+
+## Phase 8
+
+Generate hundreds of levels.
+
+## Phase 9
+
+Polish UI/UX.
+
+## Phase 10
+
+Performance optimization and release preparation.
+
+---
+
+# 77. FIRST PROTOTYPE REQUIREMENT
+
+Before implementing hundreds of levels, create ONE excellent level.
+
+Use a bird silhouette.
+
+It should look approximately like:
+
+```text
+             ───────→
+          ┌──────────
+      ┌───┘
+     /
+ ←──┘          ───────→
+               │
+               │
+               └────→
+       ┌─────────────→
+       │
+       └─────→
+```
+
+The exact shape should be much more sophisticated than this ASCII representation.
+
+The finished visual should clearly resemble a bird.
+
+The arrows should be long, thick and continuous.
+
+They should have rounded turns and obvious arrowheads.
+
+---
+
+# 78. MOST IMPORTANT REQUIREMENT
+
+At every stage, remember this visual rule:
+
+## THE ARROWS ARE THE PICTURE.
+
+There should NOT be:
+
+```text
+🐦 background image
++
+random arrows
+```
+
+There should be:
+
+```text
+ARROW
+ARROW
+ARROW
+ARROW
+ARROW
+ARROW
+ARROW
+
+       ↓
+
+THE ARROWS THEMSELVES
+FORM THE BIRD
+```
+
+When the player looks at the unsolved puzzle, they should immediately think:
+
+> "That's a bird made out of arrows."
+
+Not:
+
+> "That's a bunch of arrows arranged randomly."
+
+---
+
+# 79. SECOND MOST IMPORTANT REQUIREMENT
+
+The game is **2D**.
+
+Do NOT implement:
+
+* 3D cubes
+* voxel blocks
+* isometric blocks
+* perspective camera
+* 3D models
+* Minecraft-style geometry
+
+The visual complexity should come from:
+
+```text
+2D paths
++
+long arrows
++
+turns
++
+blocking
++
+silhouette composition
+```
+
+---
+
+# 80. THIRD MOST IMPORTANT REQUIREMENT
+
+The silhouette and puzzle logic must be connected.
+
+Do not simply draw a bird-shaped decoration and put a puzzle on top.
+
+The exact arrow paths that the player interacts with must be the elements that construct the bird.
+
+Therefore:
+
+```text
+Arrow geometry
+      ↓
+forms silhouette
+      ↓
+also determines collision
+      ↓
+also determines escape
+      ↓
+also determines gameplay
+```
+
+There should be one source of truth.
+
+---
+
+# 81. FINAL ACCEPTANCE CRITERIA
+
+The implementation is successful only if all of the following are true:
+
+### Visual
+
+* [ ] Looks like a polished 2D mobile puzzle game.
+* [ ] Long arrow pieces form recognizable silhouettes.
+* [ ] Arrows are not tiny square tiles.
+* [ ] Arrows are not 3D cubes.
+* [ ] Arrows have consistent thickness.
+* [ ] Arrowheads are clearly visible.
+* [ ] Turns are smooth and rounded.
+* [ ] Background is subtle and premium.
+* [ ] Silhouettes remain recognizable.
+
+### Gameplay
+
+* [ ] Player can tap arrows.
+* [ ] Free arrows escape.
+* [ ] Blocked arrows cannot escape.
+* [ ] Escaping arrows animate outward.
+* [ ] Removing arrows changes the puzzle.
+* [ ] New arrows become available.
+* [ ] Level completes when all arrows escape.
+* [ ] Undo works.
+* [ ] Reset works.
+* [ ] Hint works.
+
+### Level generation
+
+* [ ] Silhouettes can be converted into puzzle layouts.
+* [ ] Arrows stay inside the target silhouette.
+* [ ] Arrows do not produce accidental ugly overlaps.
+* [ ] Generated levels are solvable.
+* [ ] Solver can find a solution.
+* [ ] Difficulty can be calculated.
+* [ ] Different silhouettes can be used.
+* [ ] Hundreds of levels can eventually be generated.
+
+### Technical
+
+* [ ] Flutter/Dart implementation.
+* [ ] CustomPainter-based rendering.
+* [ ] Responsive to different screen sizes.
+* [ ] Smooth animations.
+* [ ] Efficient collision detection.
+* [ ] Clean separation between game logic and rendering.
+* [ ] Level data is externalized.
+* [ ] Debug visualization exists for development.
+
+---
+
+# 82. IMPORTANT IMPLEMENTATION APPROACH
+
+Do not attempt to solve the entire procedural-generation problem immediately.
+
+Build this incrementally:
+
+```text
+STEP 1
+One manually created arrow
+
+        ↓
+
+STEP 2
+Multiple manually created arrows
+
+        ↓
+
+STEP 3
+Arrow collision
+
+        ↓
+
+STEP 4
+Arrow escape animation
+
+        ↓
+
+STEP 5
+10-arrow bird level
+
+        ↓
+
+STEP 6
+Multiple hand-authored silhouettes
+
+        ↓
+
+STEP 7
+Silhouette → arrow-path generator
+
+        ↓
+
+STEP 8
+Puzzle solver
+
+        ↓
+
+STEP 9
+Automatic level generation
+
+        ↓
+
+STEP 10
+Difficulty balancing
+
+        ↓
+
+STEP 11
+Hundreds of levels
+
+        ↓
+
+STEP 12
+Production polish
+```
+
+Do not sacrifice the visual quality of the arrows and silhouettes just to get procedural generation working quickly.
+
+The **first goal is a beautiful manually-authored bird puzzle** that demonstrates the exact gameplay loop.
+
+Once that looks correct, generalize the system into an automatic generator.

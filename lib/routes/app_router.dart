@@ -21,11 +21,13 @@ import '../presentation/screens/admin_screen.dart';
 import '../presentation/screens/games/game_placeholder_screen.dart';
 import '../presentation/screens/knowledge_categories_screen.dart';
 import '../presentation/screens/games/arrow_escape_game_screen.dart';
+import '../presentation/screens/games/arrow_maze/arrow_maze_game_screen.dart';
 import '../presentation/screens/games/stroop_rush_screen.dart';
 import '../presentation/screens/games/synapse_recall/synapse_recall_screen.dart';
 import '../presentation/screens/games/math_sprint/math_sprint_screen.dart';
 import '../presentation/screens/games/flow_free/flow_free_screen.dart';
 import '../presentation/screens/games/one_line/one_line_screen.dart';
+import '../presentation/screens/games/arrow_silhouette/arrow_silhouette_screen.dart';
 import '../presentation/workout/workout_screen.dart';
 
 class AppRouter {
@@ -48,6 +50,7 @@ class AppRouter {
   // static const String premium = '/premium';
   static const String admin = '/admin';
   static const String arrowPuzzle = '/arrow-puzzle';
+  static const String arrowMaze = '/arrow-maze';
   static const String stroopRush = '/stroop-rush';
   static const String synapseRecall = '/synapse-recall';
   static const String mathSprint = '/math-sprint';
@@ -60,8 +63,10 @@ class AppRouter {
   static const String introGkQuiz = '/intro/gk-quiz';
   static const String flowFree = '/flow-free';
   static const String oneLine = '/one-line';
+  static const String arrowSilhouette = '/arrow-silhouette';
   static const String introFlowFree = '/intro/flow-free';
   static const String introOneLine = '/intro/one-line';
+  static const String introArrowSilhouette = '/intro/arrow-silhouette';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     // Intercept deep links of format: /challenge/{roomId}
@@ -114,6 +119,8 @@ class AppRouter {
         return _build(const AdminScreen(), settings);
       case arrowPuzzle:
         return _buildFade(const ArrowEscapeGameScreen(), settings);
+      case arrowMaze:
+        return _buildFade(const ArrowMazeGameScreen(), settings);
       case stroopRush:
         return _buildFade(const StroopRushScreen(), settings);
       case synapseRecall:
@@ -124,6 +131,8 @@ class AppRouter {
         return _buildFade(const FlowFreeScreen(), settings);
       case oneLine:
         return _buildFade(const OneLineScreen(), settings);
+      case arrowSilhouette:
+        return _buildFade(const ArrowSilhouetteScreen(), settings);
       case workout:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return _buildFade(
@@ -170,6 +179,14 @@ class AppRouter {
         return _buildFade(
           GameIntroScreen(
             gameData: GameIntroData.games['one-line']!,
+            routeArgs: settings.arguments as Map<String, dynamic>?,
+          ),
+          settings,
+        );
+      case introArrowSilhouette:
+        return _buildFade(
+          GameIntroScreen(
+            gameData: GameIntroData.games['arrow-silhouette']!,
             routeArgs: settings.arguments as Map<String, dynamic>?,
           ),
           settings,

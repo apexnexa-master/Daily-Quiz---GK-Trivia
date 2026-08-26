@@ -142,6 +142,8 @@ class ScoringConfig {
     'flowFree': {skillLogic: 0.70, skillMemory: 0.30},
     // One-Line Drawing: Logic primary, Speed secondary.
     'oneLine': {skillLogic: 0.70, skillSpeed: 0.30},
+    // Arrow Silhouette: Logic primary, Focus secondary.
+    'arrowSilhouette': {skillLogic: 0.60, skillFocus: 0.40},
   };
 
   /// Validates that every game's skill weights sum to 1.0 within a small

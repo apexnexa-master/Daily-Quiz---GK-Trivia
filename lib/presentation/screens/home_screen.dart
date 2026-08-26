@@ -1598,6 +1598,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       : 'Logic & orientation',
               onTap: () => Navigator.pushNamed(context, AppRouter.introArrowPuzzle),
             ),
+            _buildRecommendedGameTile(
+              context: context,
+              isDark: isDark,
+              isBn: isBn,
+              isHi: isHi,
+              badgeText: isBn
+                  ? 'তীর'
+                  : isHi
+                      ? 'तीर'
+                      : 'ARROWS',
+              title: isBn
+                  ? 'এরো সিলুয়েট'
+                  : isHi
+                      ? 'एरो सिल्हूट'
+                      : 'Arrow Silhouette',
+              subtitle: isBn
+                  ? 'তীর দিয়ে আকৃতি ভেঙে পালান'
+                  : isHi
+                      ? 'तीरों की आकृति तोड़कर बचें'
+                      : 'Escape arrows from silhouettes',
+              accent: accentCyan,
+              imagePath: null,
+              footer: isBn
+                  ? 'সিলুয়েট পাজল'
+                  : isHi
+                      ? 'सिल्हूट पहेली'
+                      : 'Silhouette puzzle',
+              onTap: () => Navigator.pushNamed(context, AppRouter.introArrowSilhouette),
+            ),
           ],
         ),
       ],

@@ -468,7 +468,7 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
               _isBattleOver)) {
         final roomGameType = data['gameType'] ?? 'TRIVIA';
         if (roomGameType == 'ARROW_MAZE') {
-          Navigator.pushNamed(context, '/arrow-puzzle');
+          Navigator.pushNamed(context, '/arrow-maze');
           setState(() {
             _arenaState = BattleArenaState.selectMode;
           });

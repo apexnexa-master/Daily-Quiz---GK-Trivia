@@ -206,7 +206,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         title: isBn
             ? 'ওয়ান লাইন'
             : isHi
-                ? 'वन लाइন'
+                ? 'वन लाइन'
                 : 'One Line',
         description: isBn
             ? 'একটি ধারাবাহিক স্ট্রোকে আকৃতি আঁকুন।'
@@ -222,6 +222,28 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         isImplemented: true,
         onTap: () {
           Navigator.pushNamed(context, AppRouter.introOneLine);
+        },
+      ),
+      ChallengeData(
+        title: isBn
+            ? 'এরো সিলুয়েট'
+            : isHi
+                ? 'एरो सिल्हूट'
+                : 'Arrow Silhouette',
+        description: isBn
+            ? 'তীর দিয়ে গঠিত চিহ্নিত আকৃতি থেকে তীর সরিয়ে পালান।'
+            : isHi
+                ? 'तीरों से बनी पहचानने योग्य आकृतियों में से तीर हटाकर बचें।'
+                : 'Escape arrows from recognizable silhouettes formed by long crossing arrows.',
+        category: 'Logic',
+        duration: '3m',
+        icon: Icons.alt_route_rounded,
+        accentColor: const Color(0xFF00F1FE),
+        imagePath: null,
+        isLocked: false,
+        isImplemented: true,
+        onTap: () {
+          Navigator.pushNamed(context, AppRouter.introArrowSilhouette);
         },
       ),
     ];

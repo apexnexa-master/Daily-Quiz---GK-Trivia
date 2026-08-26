@@ -1,0 +1,981 @@
+IMPORTANT CORRECTION — THE CURRENT IMPLEMENTATION IS WRONG.
+
+The current implementation looks like a heart outline made from thick curved tubes with a few arrows placed inside it.
+
+THIS IS NOT THE INTENDED GAME.
+
+Completely redesign the puzzle-generation and arrow-rendering system.
+
+The game must NOT create the silhouette by tracing its outer boundary with arrows.
+
+The silhouette must be created by DENSELY ARRANGING MANY INDIVIDUAL ARROW PUZZLE PIECES INSIDE THE SHAPE, so that the arrows themselves collectively create the recognizable picture.
+
+==================================================
+1. THE MOST IMPORTANT VISUAL RULE
+==================================================
+
+THE ARROWS THEMSELVES ARE THE IMAGE.
+
+Do NOT draw an outline of a heart, bird, cat, house, etc. and then put arrows inside it.
+
+Do NOT create one large curved arrow around the perimeter.
+
+Do NOT create smooth tubes following the silhouette boundary.
+
+Do NOT make the arrows look like pipes.
+
+Do NOT use curved arrows simply because the target silhouette is curved.
+
+Instead, take the target silhouette and fill its interior with many individual arrow pieces.
+
+Each individual arrow is an independent puzzle object.
+
+When viewed together, those independent arrows should form the recognizable silhouette.
+
+For example, for a heart:
+
+WRONG:
+
+        ╭────────╮
+      ╱            ╲
+     │   → → → →    │
+     │   ← ← ← ←    │
+      ╲            ╱
+        ╲        ╱
+          ╲    ╱
+            ▼
+
+This is just a heart outline with arrows inside.
+
+CORRECT:
+
+          ↑   →   ↑
+       →  →  ↓  ←  ←
+     ↓  →  →  ←  ←  ↓
+     →  ↓  ↑  →  ↓  →
+      ←  →  ↓  ←  →
+        ↓  →  ←  ↓
+          →  ↓  ←
+             ↓
+
+The actual arrows occupy the area of the heart.
+
+The collection of arrow pieces creates the heart silhouette.
+
+==================================================
+2. DO NOT USE LONG CURVED BORDER ARROWS
+==================================================
+
+The current implementation contains arrows that follow paths such as:
+
+    ╭─────────╮
+   ╱           ╲
+  │             │
+  │             │
+   ╲           ╱
+    ╰─────────╯
+
+REMOVE THIS DESIGN.
+
+Arrows should generally consist of straight horizontal and vertical sections.
+
+The arrows can turn 90 degrees where appropriate, but they should NOT be giant smooth curves tracing the silhouette.
+
+Use:
+
+    ┌──────────→
+    │
+    │
+    ↓
+
+or:
+
+    ←────────┐
+             │
+             ↓
+
+or:
+
+    ↑
+    │
+    └──────→
+
+rather than:
+
+    ╭──────────────╮
+   ╱                ╲
+  ╱                  ╲
+
+The arrows should look like puzzle pieces, not tubes.
+
+==================================================
+3. ARROW PIECE STRUCTURE
+==================================================
+
+Every arrow is an individual piece.
+
+An arrow consists of:
+
+- rectangular/rounded shaft
+- one arrowhead
+- optionally one or more 90-degree turns
+- consistent thickness
+- clearly defined beginning and end
+
+Example:
+
+    ───────────────────▶
+
+Another:
+
+    ┌──────────────▶
+    │
+    │
+    ↓
+
+Another:
+
+    ↑
+    │
+    │
+    └──────────▶
+
+Each one is a separate selectable object.
+
+==================================================
+4. ARROW SHAPE
+==================================================
+
+The shaft should be substantially straighter and more geometric than the current implementation.
+
+Use a rounded rectangular stroke or polygon.
+
+The shaft should have:
+
+- rounded outer corners
+- consistent thickness
+- subtle highlight
+- subtle shadow
+- clear arrowhead
+
+DO NOT make the entire arrow a smooth thick Bézier curve.
+
+DO NOT make the arrow resemble a neon cable.
+
+DO NOT make the arrow look like a rope.
+
+It should look like a solid puzzle piece.
+
+Think:
+
+    ━━━━━━━━━━━━━━━▶
+
+rather than:
+
+    ╰~~~~~~~~~~~~~~~~▶
+
+==================================================
+5. ARROW LENGTH
+==================================================
+
+The puzzle must contain arrows of different lengths.
+
+Do not make every arrow approximately the same length.
+
+Use a mixture such as:
+
+SHORT:
+
+    ─────▶
+
+MEDIUM:
+
+    ────────────▶
+
+LONG:
+
+    ─────────────────────▶
+
+And turning pieces:
+
+    ┌──────────▶
+    │
+    ↓
+
+    ↑
+    │
+    └────────────▶
+
+The different lengths create the blocking relationships.
+
+==================================================
+6. DENSE SILHOUETTE FILL
+==================================================
+
+This is the biggest correction.
+
+Take a target silhouette mask.
+
+For example:
+
+          ████
+       ██████████
+      ████████████
+      ████████████
+       ██████████
+        ████████
+          ████
+           ██
+
+Do NOT place arrows only around its perimeter.
+
+Instead, fill the silhouette with arrow pieces:
+
+          → → ↑
+       ↓ → → ← ←
+      → → ↓ ↑ ← →
+      ← ↑ → → ↓ ←
+       → → ↓ ←
+        ↑ → ←
+          ↓
+
+The occupied area of the arrows should approximate the silhouette.
+
+The empty area outside the arrows should preserve the shape.
+
+==================================================
+7. SILHOUETTE = OCCUPANCY MASK
+==================================================
+
+Internally represent every target picture as a binary mask:
+
+WHITE = area where arrow pieces may exist
+
+BLACK = outside the silhouette
+
+For example:
+
+HEART MASK:
+
+      00111100
+    01111111110
+   111111111111
+   111111111111
+    1111111111
+     11111111
+       1111
+        11
+
+The level generator must place arrow pieces inside this mask.
+
+The final union of all arrow pieces should approximate this mask.
+
+The arrows themselves become the visible silhouette.
+
+==================================================
+8. USE A GRID ONLY FOR GENERATION
+==================================================
+
+A logical grid may be used internally to generate the puzzle.
+
+For example:
+
+    16 × 20
+    20 × 24
+    24 × 30
+
+BUT:
+
+THE FINAL VISUAL MUST NOT LOOK LIKE A GRID GAME.
+
+Do NOT draw grid squares.
+
+Do NOT show cell borders.
+
+Do NOT render one arrow per square.
+
+The grid is only an invisible construction system.
+
+==================================================
+9. GENERATE ARROWS AS TETROMINO-LIKE PATH PIECES
+==================================================
+
+Use a path-piece approach.
+
+An arrow can occupy multiple logical cells.
+
+Example:
+
+Piece A:
+
+    ┌───────▶
+    │
+    │
+
+Piece B:
+
+    ────────▶
+
+Piece C:
+
+       ┌────▶
+       │
+       ↓
+
+Piece D:
+
+    ↑
+    │
+    └──────▶
+
+Each piece should cover multiple cells.
+
+Generate enough pieces to cover the silhouette.
+
+==================================================
+10. ARROW DIRECTIONS
+==================================================
+
+Arrows may point:
+
+UP
+DOWN
+LEFT
+RIGHT
+
+The direction is determined by the arrowhead.
+
+The direction determines its escape direction.
+
+Example:
+
+    ─────────▶
+
+escapes RIGHT.
+
+    ◀─────────
+
+escapes LEFT.
+
+    ↑
+    │
+    │
+
+escapes UP.
+
+    │
+    │
+    ↓
+
+escapes DOWN.
+
+==================================================
+11. BLOCKING MECHANIC
+==================================================
+
+The core puzzle mechanic must be based on the arrow's entire escape path.
+
+If an arrow points RIGHT:
+
+    ───────────────▶
+
+extend its movement direction beyond its arrowhead.
+
+If another active arrow is in that direction:
+
+    ───────────────▶
+             █████████
+
+the arrow is BLOCKED.
+
+If nothing is in its way:
+
+    ───────────────▶          OUT
+
+it can escape.
+
+When tapped:
+
+    ───────────────▶  →  →  →
+
+the entire arrow piece moves out of the puzzle.
+
+==================================================
+12. IMPORTANT: ARROWS CAN TOUCH/INTERLOCK
+==================================================
+
+The arrows should be densely packed.
+
+Some arrows should be close to one another.
+
+The visual relationship should resemble a collection of interlocking puzzle pieces.
+
+For example:
+
+    ─────────▶
+          ┌──────▶
+          │
+    ◀─────┘
+
+    ↑
+    │    ──────────▶
+    └───────▶
+
+This creates the puzzle complexity.
+
+But do not allow random visual intersections that make it impossible to understand which arrow is which.
+
+==================================================
+13. SILHOUETTE RECOGNITION
+==================================================
+
+The silhouette must remain recognizable BEFORE the puzzle is solved.
+
+For a HEART:
+
+The player should immediately recognize:
+
+    ❤️ HEART
+
+from the arrangement of arrows.
+
+For a BIRD:
+
+    🐦 BIRD
+
+For a CAT:
+
+    🐈 CAT
+
+For a HOUSE:
+
+    🏠 HOUSE
+
+The arrows should fill the important mass of the object.
+
+==================================================
+14. USE RECOGNIZABLE INTERNAL FEATURES
+==================================================
+
+Do not make every shape a generic blob.
+
+Each silhouette should have landmarks.
+
+HEART:
+
+- two upper lobes
+- central notch
+- wide upper body
+- narrowing lower body
+- pointed bottom
+
+BIRD:
+
+- head
+- beak
+- body
+- wing
+- tail
+
+CAT:
+
+- ears
+- head
+- body
+- legs
+- tail
+
+HOUSE:
+
+- roof
+- walls
+- door
+- windows
+- chimney
+
+CAR:
+
+- roof
+- hood
+- body
+- wheels
+
+The arrow arrangement should preserve these landmarks.
+
+==================================================
+15. NEGATIVE SPACE IS IMPORTANT
+==================================================
+
+The silhouette should not become a solid blob.
+
+Preserve important empty spaces.
+
+For example, a bird wing should have enough separation from the body to make it recognizable.
+
+A butterfly should have:
+
+    wing   |   wing
+
+A cat should have separated legs.
+
+A house should have visible door/window regions.
+
+The negative space should help identify the object.
+
+==================================================
+16. ARROW THICKNESS
+==================================================
+
+Use a consistent shaft thickness within a level.
+
+Recommended starting point:
+
+shaft thickness:
+
+approximately 3%–5% of puzzle width.
+
+Arrowhead:
+
+width ≈ 1.7–2.2 × shaft thickness
+
+Arrowhead length:
+
+≈ 1.5–2.0 × shaft thickness
+
+The arrow should be large enough to tap comfortably.
+
+DO NOT use thin lines.
+
+DO NOT use giant tubes.
+
+==================================================
+17. ARROWHEAD
+==================================================
+
+The arrowhead should be clearly attached to the shaft.
+
+Example:
+
+    ━━━━━━━━━━━━━━━▶
+
+The arrowhead should be a solid triangular/chevron-like shape.
+
+It must visually communicate the escape direction immediately.
+
+The arrowhead should not look like a separate floating triangle.
+
+==================================================
+18. COLOR
+==================================================
+
+Use multiple colors, but keep the palette controlled.
+
+Possible colors:
+
+cyan
+blue
+purple
+pink
+green
+yellow
+orange
+
+However, color should distinguish individual arrows without destroying the silhouette.
+
+Use approximately 4–7 colors per puzzle.
+
+The silhouette should still be recognizable even if all arrows were converted to grayscale.
+
+==================================================
+19. DO NOT MAKE THE CURRENT DESIGN
+==================================================
+
+ABSOLUTELY AVOID:
+
+❌ giant curved heart outline
+❌ giant curved bird outline
+❌ arrows following the outer boundary
+❌ pipe-like geometry
+❌ random arrows floating inside an outline
+❌ 3D cubes
+❌ voxel blocks
+❌ square arrow tiles
+❌ decorative silhouette behind arrows
+❌ arrows that look like cables
+❌ mostly empty interior
+❌ huge gaps between arrows
+
+==================================================
+20. THE CORRECT VISUAL DENSITY
+==================================================
+
+The puzzle should look much more like:
+
+    MANY ARROWS
+    packed together
+    forming ONE IMAGE
+
+rather than:
+
+    ONE OUTLINE
+    + a few arrows
+
+For an early level, use approximately:
+
+15–30 arrows.
+
+For medium levels:
+
+30–60 arrows.
+
+For advanced levels:
+
+50–100+ arrows.
+
+Do not blindly increase arrow count.
+
+The silhouette quality is more important.
+
+==================================================
+21. FIRST LEVEL
+==================================================
+
+Create a HEART LEVEL 1.
+
+Use approximately 20–25 individual arrows.
+
+The arrows should fill the heart shape.
+
+Do not trace the perimeter.
+
+The player should see a heart made entirely from arrows.
+
+The heart should have:
+
+- two lobes
+- central notch
+- broad shoulders
+- narrowing lower section
+- pointed bottom
+
+Use short and medium arrow pieces.
+
+Make approximately 5–8 arrows initially free.
+
+Make the remaining arrows blocked.
+
+The player should learn the mechanic naturally.
+
+==================================================
+22. FIRST LEVEL SHOULD NOT LOOK LIKE THIS
+==================================================
+
+WRONG:
+
+       ╭────────────╮
+     ╱                ╲
+    │    →──────→      │
+    │    ←──────←      │
+    │      ↓           │
+     ╲                ╱
+       ╲            ╱
+          ╲      ╱
+             ▼
+
+This is just an outline.
+
+==================================================
+23. IT SHOULD LOOK LIKE THIS CONCEPTUALLY
+==================================================
+
+CORRECT:
+
+          ↑  →  ↑
+       →  →  ↓  ←
+     ↓  →  →  ←  ←  ↓
+    →  ↓  ↑  →  ↓  ←  →
+    ←  →  ↓  ←  →  ↓  ←
+      →  ↑  →  ←  ↓
+        ←  →  ↓  ←
+           →  ↓
+             ↓
+
+The exact geometry must be much cleaner than this ASCII example.
+
+But the important concept is:
+
+EVERY VISIBLE PART OF THE HEART IS MADE FROM ARROW PIECES.
+
+==================================================
+24. PROCEDURAL GENERATION
+==================================================
+
+Implement the generator in these stages:
+
+1. Load target silhouette.
+2. Convert silhouette to binary mask.
+3. Erode the mask slightly to account for arrow thickness.
+4. Divide usable area into an invisible logical grid.
+5. Select starting locations.
+6. Generate horizontal/vertical arrow paths.
+7. Allow 90-degree turns.
+8. Keep each path inside the mask.
+9. Ensure minimum spacing.
+10. Continue until sufficient silhouette coverage exists.
+11. Calculate coverage.
+12. Compare generated coverage to target mask.
+13. Reject poor silhouettes.
+14. Build blocking relationships.
+15. Assign arrow directions.
+16. Run puzzle solver.
+17. Reject unsolvable levels.
+18. Calculate difficulty.
+19. Save valid level.
+
+==================================================
+25. COVERAGE
+==================================================
+
+The generated arrows should cover a large percentage of the target silhouette.
+
+Target:
+
+70–90% visual coverage.
+
+But do not simply maximize coverage.
+
+Recognition is more important.
+
+The algorithm should preserve:
+
+- shape boundary
+- important features
+- negative spaces
+
+==================================================
+26. REVERSE LEVEL GENERATION
+==================================================
+
+Prefer generating levels backward from a known solution.
+
+Start with an empty silhouette.
+
+Add arrows in reverse order of the intended solution.
+
+Example:
+
+Generation:
+
+A
+B
+C
+D
+E
+
+Initial playable state should require:
+
+E
+D
+C
+B
+A
+
+Then introduce alternative choices.
+
+This guarantees a valid solution.
+
+==================================================
+27. SOLVER
+==================================================
+
+Implement a solver that understands the exact same collision rules as gameplay.
+
+For every state:
+
+1. Find all currently unblocked arrows.
+2. Try removing each.
+3. Generate the resulting state.
+4. Search recursively.
+5. Continue until all arrows are removed.
+
+The generator must reject any level where:
+
+active arrows > 0
+
+AND
+
+available arrows == 0.
+
+==================================================
+28. LEVEL DIFFICULTY
+==================================================
+
+Difficulty should be based on:
+
+- number of arrows
+- average arrow length
+- number of turns
+- blocking density
+- dependency depth
+- number of choices
+- number of misleading choices
+- minimum solution length
+
+Do not make difficulty by making arrows tiny.
+
+==================================================
+29. RENDERING
+==================================================
+
+Use Flutter CustomPainter.
+
+Each ArrowPiece should render its actual geometry.
+
+Do not create hundreds of individual Flutter widgets.
+
+Render the puzzle efficiently on Canvas.
+
+Each arrow should have:
+
+- fill
+- subtle shadow
+- optional highlight
+- arrowhead
+- rounded joins
+
+==================================================
+30. BACKGROUND
+==================================================
+
+The background should remain secondary.
+
+Use a dark navy/blue-black background.
+
+Example:
+
+#0B1020
+
+Add:
+
+- subtle gradient
+- subtle vignette
+- very faint texture/grid
+
+Do not put decorative shapes behind the puzzle.
+
+The silhouette must be created exclusively by the arrows.
+
+==================================================
+31. PUZZLE CONTAINER
+==================================================
+
+Use a simple rounded rectangular puzzle area.
+
+Do not make it look like a giant card containing another card.
+
+The puzzle should receive most of the screen.
+
+The container should have:
+
+- subtle border
+- subtle dark fill
+- large corner radius
+
+The arrows should visually dominate the container.
+
+==================================================
+32. ANIMATION
+==================================================
+
+When an arrow is available and tapped:
+
+1. highlight it
+2. move it along its escape direction
+3. accelerate slightly
+4. leave the puzzle boundary
+5. fade slightly
+6. remove it
+
+Duration:
+
+250–450ms.
+
+When blocked:
+
+- tiny shake
+- subtle bounce
+- no major screen effect.
+
+==================================================
+33. MOST IMPORTANT TEST
+
+Before considering the implementation complete:
+
+Hide the arrowheads temporarily.
+
+Look only at the remaining arrow bodies.
+
+Ask:
+
+"Can I still recognize the silhouette?"
+
+If the answer is NO, the generator is wrong.
+
+The arrows must collectively create the image.
+
+==================================================
+34. SECOND TEST
+
+Temporarily color every arrow the same color.
+
+If the resulting arrangement still clearly resembles:
+
+HEART
+
+BIRD
+
+CAT
+
+HOUSE
+
+etc.,
+
+then the silhouette generation is working.
+
+If it only looks like random pipes, redesign the level.
+
+==================================================
+35. THIRD TEST
+
+Remove the target silhouette mask from rendering.
+
+The player must NEVER need a hidden silhouette outline to understand the picture.
+
+The visible arrows themselves must form the picture.
+
+==================================================
+36. FINAL REQUIREMENT
+
+Completely replace the current heart implementation.
+
+Do not modify the current curved-heart design incrementally.
+
+Delete the concept of:
+
+"heart boundary + arrows inside."
+
+Replace it with:
+
+"heart-shaped occupied region composed entirely of many individual arrow puzzle pieces."
+
+The resulting game should visually communicate:
+
+ARROW PUZZLE + SILHOUETTE
+
+not:
+
+HEART DRAWING + ARROWS.
+
+Build one excellent HEART LEVEL 1 first.
+
+Do not proceed to procedural generation until the manually authored heart visually matches this concept.
