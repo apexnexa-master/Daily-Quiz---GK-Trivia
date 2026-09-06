@@ -24,6 +24,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
   late SilhouetteLevel _level;
   int _currentLevelId = 1;
   bool _loaded = false;
+  bool _isLoading = false;
 
   int _elapsedSeconds = 0;
   Timer? _timer;
@@ -57,12 +58,11 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     super.dispose();
   }
 
-  void _loadLevel(int levelId) {
+  void _loadLevel(int levelId) async {
     final idx = levelId - 1;
     if (idx < 0 || idx >= silhouetteLevels.length) return;
 
     _level = silhouetteLevels[idx];
-    _engine = SilhouetteEngine(_level);
     _currentLevelId = levelId;
 
     _timer?.cancel();
@@ -73,8 +73,21 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     _flyOffs.clear();
     _flyProgress.clear();
 
-    _loaded = true;
-    setState(() {});
+    setState(() {
+      _isLoading = true;
+      _loaded = false;
+    });
+
+    // Yield to the event loop so the loading indicator can render,
+    // then generate the puzzle off the main frame.
+    await Future.delayed(Duration.zero);
+
+    _engine = SilhouetteEngine(_level);
+
+    setState(() {
+      _isLoading = false;
+      _loaded = true;
+    });
   }
 
   void _startTimer() {
@@ -206,14 +219,44 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (!_loaded) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (!_loaded && !_isLoading) {
       return const Scaffold(
         backgroundColor: Color(0xFF0A0E1A),
         body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
+          ),
+          child: SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(color: AppColors.primary),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Generating puzzle...',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white70 : Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
