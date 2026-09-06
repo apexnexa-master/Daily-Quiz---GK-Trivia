@@ -100,8 +100,17 @@ class SilhouettePainter extends CustomPainter {
             .toList();
         final color = _arrowColors[arrow.colorIndex % _arrowColors.length];
         final darkColor = _arrowColorsDark[arrow.colorIndex % _arrowColorsDark.length];
-        _drawSmoothArrow(canvas, points, arrow.direction, color, darkColor,
-            cellSize, arrow.highlighted, arrow.showHint);
+        _drawSmoothArrow(
+          canvas,
+          points,
+          arrow.direction,
+          color,
+          darkColor,
+          cellSize,
+          arrow.highlighted,
+          arrow.showHint,
+          isBlocked: arrow.id == engine.blockedFlashId,
+        );
       }
     }
   }
@@ -116,15 +125,20 @@ class SilhouettePainter extends CustomPainter {
     Color darkColor,
     double cellSize,
     bool highlighted,
-    bool showHint,
-  ) {
+    bool showHint, {
+    bool isBlocked = false,
+  }) {
     if (points.isEmpty) return;
 
     final shaftWidth = cellSize * 0.22;
     final headLength = cellSize * 1.0;
     final headWidth = shaftWidth * 2.2;
 
-    final fillColor = highlighted || showHint ? Colors.amber.shade400 : color;
+    final fillColor =
+        isBlocked ? const Color(0xFFFF1A3C) : (highlighted || showHint ? Colors.amber.shade400 : color);
+    final pulse = isBlocked
+        ? (sin(animationValue * pi * 6) + 1) / 2
+        : (showHint ? (sin(animationValue * pi * 4) + 1) / 2 : 1.0);
 
     // --- Shadow ---
     if (points.length >= 2) {
@@ -218,9 +232,8 @@ class SilhouettePainter extends CustomPainter {
         ..strokeWidth = 1.0,
     );
 
-    // --- Highlight / hint glow ---
+    // --- Highlight / hint / blocked glow ---
     if (highlighted || showHint) {
-      final pulse = showHint ? (sin(animationValue * pi * 4) + 1) / 2 : 1.0;
       final glowAlpha = showHint ? 0.15 + 0.15 * pulse : 0.25;
       final glowPaint = Paint()
         ..color = Colors.amber.withValues(alpha: glowAlpha)
@@ -228,6 +241,14 @@ class SilhouettePainter extends CustomPainter {
       for (final p in points) {
         final radius = showHint ? cellSize * 0.55 + 4 * pulse : cellSize * 0.55;
         canvas.drawCircle(p, radius, glowPaint);
+      }
+    }
+    if (isBlocked) {
+      final glowPaint = Paint()
+        ..color = const Color(0xFFFF1A3C).withValues(alpha: 0.25 + 0.25 * pulse)
+        ..style = PaintingStyle.fill;
+      for (final p in points) {
+        canvas.drawCircle(p, cellSize * 0.55 + 5 * pulse, glowPaint);
       }
     }
   }
@@ -242,10 +263,13 @@ class SilhouettePainter extends CustomPainter {
       final points = flyOff.shaftPoints(advance);
       if (points.isEmpty) continue;
 
-      // Fade as it exits
-      final fadeStart = flyOff.total * 0.5;
+      // Stay fully visible while riding the arrow's own rails across the board;
+      // only fade in the final stretch once the tail has cleared the grid, so
+      // the arrow never shrinks or vanishes mid-travel.
+      final fadeEnd = flyOff.total;
+      final fadeStart = max(0.0, flyOff.total - cellSize * 2);
       final alpha = advance > fadeStart
-          ? (1.0 - (advance - fadeStart) / (flyOff.total - fadeStart)).clamp(0.0, 1.0)
+          ? (1.0 - (advance - fadeStart) / (fadeEnd - fadeStart)).clamp(0.0, 1.0)
           : 1.0;
 
       final fadedColor = color.withValues(alpha: alpha);
@@ -261,8 +285,16 @@ class SilhouettePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant SilhouettePainter oldDelegate) {
     if (flyOffs.isNotEmpty) return true;
-    return oldDelegate.animationValue != animationValue ||
-        oldDelegate.flyOffs.length != flyOffs.length ||
-        !identical(oldDelegate.engine, engine);
+    if (!identical(oldDelegate.engine, engine)) return true;
+    if (engine.blockedFlashId != oldDelegate.engine.blockedFlashId) return true;
+    final hintsHere = engine.arrows.any((a) => a.showHint);
+    final hintsThere = oldDelegate.engine.arrows.any((a) => a.showHint);
+    if (hintsHere != hintsThere) return true;
+    // Only the hint/blocked pulses animate; when idle the ticker is stopped,
+    // so ignore animationValue to skip redundant repaints.
+    if (hintsHere || engine.blockedFlashId != null) {
+      if (oldDelegate.animationValue != animationValue) return true;
+    }
+    return false;
   }
 }

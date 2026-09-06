@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -34,6 +35,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
   int _hintsRemaining = 3;
   int _highestUnlocked = 1;
   final Map<int, int> _starsMap = {};
+  Timer? _blockedFlashTimer;
+  bool _argsRead = false;
 
   late AnimationController _tickerController;
   final List<FlyOff> _flyOffs = [];
@@ -43,14 +46,30 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
   @override
   void initState() {
     super.initState();
-    _tickerController = AnimationController(vsync: this, duration: const Duration(seconds: 1))
-      ..repeat();
+    _tickerController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_argsRead) return;
+    _argsRead = true;
+    // Optionally start on a specific level, e.g. deep links or the debug
+    // level picker can pass arguments: {'level': 12}.
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final startLevel = args?['level'];
+    if (startLevel is int &&
+        startLevel >= 1 &&
+        startLevel <= silhouetteLevels.length) {
+      _currentLevelId = startLevel;
+    }
     _loadLevel(_currentLevelId);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _blockedFlashTimer?.cancel();
     _tickerController.dispose();
     for (final c in _escapeControllers) {
       c.dispose();
@@ -70,6 +89,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     _timerStarted = false;
     _showWinOverlay = false;
     _hintsRemaining = 3;
+    _blockedFlashTimer?.cancel();
+    _tickerController.stop();
     _flyOffs.clear();
     _flyProgress.clear();
 
@@ -142,15 +163,20 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     _engine.escapeArrow(arrow);
     _engine.highlightArrow(null);
 
-    final flyOff = FlyOff.forArrow(arrow, origin, cellSize);
+    final flyOff = FlyOff.forArrow(arrow, origin, cellSize,
+        gridRows: _engine.level.gridRows, gridCols: _engine.level.gridCols);
     _flyOffs.add(flyOff);
     _flyProgress[arrow.id] = 0.0;
 
     setState(() {});
 
+    // Keep the train at a steady speed: longer arrows ride further, so their
+    // animation is allowed proportionally more time.
+    final rideCells = flyOff.total / cellSize;
+    final rideMs = (rideCells * 80).clamp(600.0, 3200.0).round();
     final controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: Duration(milliseconds: rideMs),
     );
 
     _escapeControllers.add(controller);
@@ -174,10 +200,21 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     });
   }
 
-  Size get canvasSize => const Size(400, 600);
-
   void _showBlocked(String arrowId) {
     HapticFeedback.mediumImpact();
+    final arrow = _engine.arrows.firstWhere((a) => a.id == arrowId);
+    _blockedFlashTimer?.cancel();
+    _tickerController.repeat();
+    setState(() {
+      _engine.flashBlocked(arrow); // charges a wasted move, retractable via undo
+    });
+    _blockedFlashTimer = Timer(const Duration(milliseconds: 420), () {
+      if (!mounted) return;
+      setState(_engine.clearBlockedFlash);
+      if (!_engine.arrows.any((a) => a.showHint)) {
+        _tickerController.stop();
+      }
+    });
   }
 
   void _onLevelComplete() {
@@ -194,6 +231,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
   }
 
   void _undo() {
+    _engine.clearBlockedFlash();
     if (_engine.undo()) setState(() {});
   }
 
@@ -203,9 +241,14 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     if (_hintsRemaining <= 0) return;
     final hint = _engine.showHint();
     if (hint == null) return;
+    _tickerController.repeat();
     setState(() => _hintsRemaining--);
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => hint.showHint = false);
+      if (!mounted) return;
+      setState(() => hint.showHint = false);
+      if (_engine.blockedFlashId == null) {
+        _tickerController.stop();
+      }
     });
   }
 
@@ -320,8 +363,110 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
           _buildStatChip(_formatTime(_elapsedSeconds), isDark),
           const SizedBox(width: 8),
           _buildStatChip('${_engine.moveCount}', isDark, highlight: true),
+          if (kDebugMode) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              tooltip: 'Debug: pick level',
+              icon: Icon(Icons.grid_view_rounded,
+                  color: isDark ? Colors.white70 : Colors.black54, size: 20),
+              onPressed: _showLevelPicker,
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  void _showLevelPicker() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0F172A),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'DEBUG — SELECT LEVEL',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Test any puzzle',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    itemCount: silhouetteLevels.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 6,
+                      childAspectRatio: 1,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                    ),
+                    itemBuilder: (_, index) {
+                      final level = silhouetteLevels[index];
+                      final selected = level.id == _currentLevelId;
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          _loadLevel(level.id);
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? AppColors.primary.withValues(alpha: 0.35)
+                                : Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: selected
+                                  ? AppColors.primary
+                                  : Colors.white.withValues(alpha: 0.1),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(level.themeEmoji, style: const TextStyle(fontSize: 20)),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${level.id}',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -582,7 +727,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Moves: ${_engine.moveCount} / ${_level.maxMoves}',
+                  'Moves: ${result.moves} / ${result.maxMoves}  (ideal ${result.idealMoves})',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     color: isDark

@@ -3,14 +3,20 @@ import 'package:gk_quiz_app/presentation/screens/games/arrow_silhouette/puzzle_g
 import 'package:gk_quiz_app/presentation/screens/games/arrow_silhouette/silhouette_levels.dart';
 import 'package:gk_quiz_app/presentation/screens/games/arrow_silhouette/silhouette_models.dart';
 
+const bool _printBoards = true;
+
 void main() {
   group('Silhouette puzzle generator', () {
     for (final level in silhouetteLevels) {
-      test('${level.name} puzzle is solvable and has curved arrows', () {
+      test('${level.name} puzzle is solvable and fills densely', () {
         final arrows = level.arrowFactory();
         final stats = _Stats.forLevel(arrows, level);
         // ignore: avoid_print
         print('${level.name}: ${stats.summary}');
+        if (_printBoards) {
+          // ignore: avoid_print
+          print(_renderBoard(level, arrows));
+        }
 
         expect(stats.solvable, isTrue,
             reason: '${level.name} must be solvable by construction');
@@ -23,12 +29,60 @@ void main() {
         expect(stats.headsClearOfOwnBody(), isTrue,
             reason: '${level.name}: arrow heads touch their own body');
 
+        // Density: the ring/contour strategy should cover most of the shape.
+        expect(stats.fillPercent, greaterThanOrEqualTo(72),
+            reason: '${level.name} should fill almost the whole silhouette');
+
         // At least some arrows are curved (2+ bends) so boards look nicer.
         expect(stats.curvedCount, greaterThanOrEqualTo(2),
             reason: '${level.name} should include multi-bend arrows');
       });
     }
   });
+}
+
+/// Renders the board as ASCII: each arrow gets a letter at its body cells and
+/// the head is marked with its direction (<, >, ^, v).
+String _renderBoard(SilhouetteLevel level, List<ArrowPiece> arrows) {
+  final glyph = List.generate(
+      level.gridRows,
+      (r) => List.generate(level.gridCols,
+          (c) => r < level.mask.length &&
+                  c < level.mask[r].length &&
+                  level.mask[r][c]
+              ? '.'
+              : ' '));
+
+  for (var i = 0; i < arrows.length; i++) {
+    final arrow = arrows[i];
+    final label = i < 26
+        ? String.fromCharCode(97 + i)
+        : String.fromCharCode(65 + (i - 26));
+    for (var j = 0; j < arrow.cells.length; j++) {
+      final cell = arrow.cells[j];
+      if (j == arrow.cells.length - 1) {
+        glyph[cell.row][cell.col] = switch (arrow.direction) {
+          ArrowDirection.up => '^',
+          ArrowDirection.down => 'v',
+          ArrowDirection.left => '<',
+          ArrowDirection.right => '>',
+        };
+      } else {
+        glyph[cell.row][cell.col] = label;
+      }
+    }
+  }
+
+  final buffer = StringBuffer();
+  var rowNum = 0;
+  for (final row in glyph) {
+    buffer
+      ..write('  ${rowNum.toString().padLeft(2)} ')
+      ..writeAll(row)
+      ..writeln();
+    rowNum++;
+  }
+  return buffer.toString();
 }
 
 class _Stats {

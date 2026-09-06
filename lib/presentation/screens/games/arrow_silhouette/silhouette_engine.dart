@@ -1,6 +1,3 @@
-import 'dart:math';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import 'silhouette_models.dart';
@@ -12,12 +9,19 @@ class SilhouetteEngine {
   late List<List<bool>> _occupied;
   int moveCount = 0;
   int hintCount = 0;
+  String? blockedFlashId;
   final List<_UndoState> _undoStack = [];
 
   SilhouetteEngine(this.level) {
     arrows = level.generateArrows();
     _initOccupied();
   }
+
+  /// Smallest possible number of escapes (one per arrow).
+  int get idealMoves => arrows.length;
+
+  /// Upper bound of escapes/mistakes that still counts as a "perfect" run.
+  int get moveLimit => arrows.length + level.config.moveSlack;
 
   void _initOccupied() {
     _occupied = List.generate(
@@ -102,6 +106,23 @@ class SilhouetteEngine {
     }
     return true;
   }
+
+  /// A blocked tap: flash the arrow red and charge a wasted move so the star
+  /// rating rewards careful play. The move is retrievable via [undo].
+  void flashBlocked(ArrowPiece arrow) {
+    if (arrow.status != ArrowStatus.active) return;
+    _undoStack.add(_UndoState(
+      arrowId: arrow.id,
+      previousStatus: arrow.status,
+      moveCount: moveCount,
+    ));
+    moveCount++;
+    blockedFlashId = arrow.id;
+  }
+
+  void clearBlockedFlash() => blockedFlashId = null;
+
+  bool get isBlockedFlashing => blockedFlashId != null;
 
   /// Called when escape animation finishes.
   void completeEscape(ArrowPiece arrow) {
@@ -188,27 +209,67 @@ class SilhouetteEngine {
     if (arrow != null) arrow.highlighted = true;
   }
 
-  /// Show hint on a random escapeable arrow.
+  /// Show a hint on the escapeable arrow that unlocks the most other arrows.
+  /// This guides the player toward cascade moves instead of a random pick.
   ArrowPiece? showHint() {
     final escapeable = arrows
         .where((a) => a.isEscapeable && canEscape(a) && !a.showHint)
         .toList();
     if (escapeable.isEmpty) return null;
-    final rng = Random();
-    final hint = escapeable[rng.nextInt(escapeable.length)];
-    hint.showHint = true;
+
+    final alreadyEscapeable = escapeable.map((a) => a.id).toSet();
+    ArrowPiece? best;
+    var bestUnlocks = -1;
+    for (final cand in escapeable) {
+      var unlocks = 0;
+      for (final a in arrows) {
+        if (a == cand ||
+            a.status != ArrowStatus.active ||
+            alreadyEscapeable.contains(a.id)) {
+          continue;
+        }
+        if (_couldEscapeWithout(a, cand)) unlocks++;
+      }
+      if (unlocks > bestUnlocks) {
+        bestUnlocks = unlocks;
+        best = cand;
+      }
+    }
+
+    best!.showHint = true;
     hintCount++;
-    return hint;
+    return best;
+  }
+
+  /// Would [arrow] become escapeable when [removed] is taken off the board?
+  bool _couldEscapeWithout(ArrowPiece arrow, ArrowPiece removed) {
+    final head = arrow.headCell;
+    final dir = arrow.direction;
+    var r = head.row + dir.dy;
+    var c = head.col + dir.dx;
+    final removedCells = removed.cells;
+    while (inBounds(r, c)) {
+      if (_occupied[r][c] &&
+          !removedCells.any((cell) => cell.row == r && cell.col == c)) {
+        return false;
+      }
+      r += dir.dy;
+      c += dir.dx;
+    }
+    return true;
   }
 
   LevelResult result(Duration elapsed) {
     final success = allEscaped;
     int stars = 0;
     if (success) {
-      final ratio = moveCount / level.maxMoves;
-      if (ratio <= 1.0) {
+      // Generous par: ~3 s per arrow plus setup, so faster players are
+      // rewarded without making casual completions feel like failures.
+      final parSeconds = idealMoves * 3 + 15;
+      final timeRatio = elapsed.inSeconds / parSeconds;
+      if (moveCount <= moveLimit && timeRatio <= 1.0) {
         stars = 3;
-      } else if (ratio <= 1.3) {
+      } else if (moveCount <= moveLimit + 6 && timeRatio <= 1.75) {
         stars = 2;
       } else {
         stars = 1;
@@ -216,7 +277,8 @@ class SilhouetteEngine {
     }
     return LevelResult(
       moves: moveCount,
-      maxMoves: level.maxMoves,
+      maxMoves: moveLimit,
+      idealMoves: idealMoves,
       stars: stars,
       elapsed: elapsed,
       success: success,

@@ -1,8 +1,12 @@
-import 'dart:collection';
 import 'dart:math';
 
 import 'silhouette_models.dart';
 
+/// Difficulty profile for a silhouette level.
+///
+/// Controls how the generator builds arrows and how generous the star rating
+/// is. `moveSlack` is the number of wasted taps a player is allowed while still
+/// earning 3 stars.
 class LevelConfig {
   final int minArrows;
   final int maxArrows;
@@ -11,55 +15,61 @@ class LevelConfig {
   final int maxBends;
   final double largeArrowChance;
   final int maxAttempts;
+  final int moveSlack;
 
   const LevelConfig({
     this.minArrows = 4,
     this.maxArrows = 20,
-    this.minCells = 2,
-    this.maxCells = 8,
-    this.maxBends = 2,
-    this.largeArrowChance = 0.3,
+    this.minCells = 3,
+    this.maxCells = 11,
+    this.maxBends = 4,
+    this.largeArrowChance = 0.45,
     this.maxAttempts = 30,
+    this.moveSlack = 8,
   });
 
   static const easy = LevelConfig(
-    minArrows: 6,
-    maxArrows: 14,
-    minCells: 2,
-    maxCells: 9,
+    minArrows: 5,
+    maxArrows: 18,
+    minCells: 3,
+    maxCells: 11,
     maxBends: 4,
-    largeArrowChance: 0.4,
-    maxAttempts: 48,
+    largeArrowChance: 0.45,
+    maxAttempts: 56,
+    moveSlack: 10,
   );
 
   static const medium = LevelConfig(
-    minArrows: 10,
-    maxArrows: 22,
-    minCells: 2,
-    maxCells: 12,
-    maxBends: 4,
-    largeArrowChance: 0.5,
-    maxAttempts: 44,
+    minArrows: 8,
+    maxArrows: 26,
+    minCells: 3,
+    maxCells: 13,
+    maxBends: 5,
+    largeArrowChance: 0.55,
+    maxAttempts: 48,
+    moveSlack: 8,
   );
 
   static const hard = LevelConfig(
-    minArrows: 14,
-    maxArrows: 32,
-    minCells: 2,
-    maxCells: 14,
-    maxBends: 5,
-    largeArrowChance: 0.6,
-    maxAttempts: 36,
+    minArrows: 10,
+    maxArrows: 36,
+    minCells: 4,
+    maxCells: 15,
+    maxBends: 6,
+    largeArrowChance: 0.65,
+    maxAttempts: 40,
+    moveSlack: 7,
   );
 
   static const extreme = LevelConfig(
-    minArrows: 18,
-    maxArrows: 40,
-    minCells: 2,
-    maxCells: 16,
-    maxBends: 6,
+    minArrows: 12,
+    maxArrows: 46,
+    minCells: 4,
+    maxCells: 18,
+    maxBends: 7,
     largeArrowChance: 0.7,
-    maxAttempts: 64,
+    maxAttempts: 56,
+    moveSlack: 6,
   );
 }
 
@@ -153,6 +163,17 @@ class PuzzleGenerator {
     return count;
   }
 
+  /// Soft piece budget. Dense contour boards average roughly 6 cells per arrow,
+  /// so this is derived from the mask size rather than the difficulty cap
+  /// alone. It throttles the tiny-filler passes (so boards don't fragment) but
+  /// never stops the ring pass itself.
+  int get _maxPieces {
+    final bySize = (_maskCellCount / 4).ceil();
+    final cap = config.maxArrows * 2;
+    if (bySize < config.minArrows) return config.minArrows;
+    return bySize > cap ? cap : bySize;
+  }
+
   List<GridCell> _getUnoccupiedMaskCells() {
     final cells = <GridCell>[];
     for (var r = 0; r < rows; r++) {
@@ -166,49 +187,42 @@ class PuzzleGenerator {
     return cells;
   }
 
-  /// Distance from each mask cell to the nearest mask edge (multi-source BFS
-  /// seeded at cells touching the shape's outside).
+  /// Erosion-layer depth of every mask cell: repeatedly peel the 1-cell-thick
+  /// outer ring of the remaining shape (like onion layers / picture-maze
+  /// contour lines). Cells of a peel share a depth and trace the silhouette's
+  /// outline, so arrows that follow them read clearly as the image.
   late final Map<GridCell, int> _depths = _computeDepths();
 
   Map<GridCell, int> _computeDepths() {
-    final dist = <GridCell, int>{};
-    final queue = Queue<GridCell>();
-    bool inMask(int r, int c) =>
-        _inBounds(r, c) &&
-        r < mask.length &&
-        c < mask[r].length &&
-        mask[r][c];
+    final remaining = <GridCell>{};
     for (var r = 0; r < rows; r++) {
       if (r >= mask.length) break;
       for (var c = 0; c < cols; c++) {
-        if (c >= mask[r].length || !mask[r][c]) continue;
-        if (!inMask(r + 1, c) ||
-            !inMask(r - 1, c) ||
-            !inMask(r, c + 1) ||
-            !inMask(r, c - 1)) {
-          dist[GridCell(r, c)] = 0;
-          queue.add(GridCell(r, c));
+        if (c < mask[r].length && mask[r][c]) {
+          remaining.add(GridCell(r, c));
         }
       }
     }
-    while (queue.isNotEmpty) {
-      final cur = queue.removeFirst();
-      final d = dist[cur]! + 1;
-      final options = [
-        (cur.row - 1, cur.col),
-        (cur.row + 1, cur.col),
-        (cur.row, cur.col - 1),
-        (cur.row, cur.col + 1),
-      ];
-      for (final (nr, nc) in options) {
-        final n = GridCell(nr, nc);
-        if (inMask(nr, nc) && !dist.containsKey(n)) {
-          dist[n] = d;
-          queue.add(n);
+    final depth = <GridCell, int>{};
+    var d = 0;
+    while (remaining.isNotEmpty) {
+      final layer = <GridCell>{};
+      for (final cell in remaining) {
+        // Peel any cell that touches cells already peeled or the outside.
+        if (!remaining.contains(GridCell(cell.row - 1, cell.col)) ||
+            !remaining.contains(GridCell(cell.row + 1, cell.col)) ||
+            !remaining.contains(GridCell(cell.row, cell.col - 1)) ||
+            !remaining.contains(GridCell(cell.row, cell.col + 1))) {
+          layer.add(cell);
         }
       }
+      for (final cell in layer) {
+        depth[cell] = d;
+        remaining.remove(cell);
+      }
+      d++;
     }
-    return dist;
+    return depth;
   }
 
   int _depthOf(GridCell c) {
@@ -219,24 +233,280 @@ class PuzzleGenerator {
     return _depths[c] ?? 0;
   }
 
-  /// Unoccupied mask cells ordered deep-first. Placing deeper (interior) cells
-  /// before shallower (edge) ones means pockets never get walled off by arrows
-  /// that come later, so the silhouette fills far more densely.
+  int _crossSense(ArrowDirection a, ArrowDirection b) {
+    final cross = a.dy * b.dx - a.dx * b.dy;
+    if (cross > 0) return 1;
+    if (cross < 0) return -1;
+    return 0;
+  }
+
+  /// Build a solvable board by placing arrows that follow the silhouette's
+  /// depth contours, innermost ring first.
+  ///
+  /// Each new arrow's head is checked to have a clear outward run w.r.t. every
+  /// arrow already placed. When arrows are then removed in the reverse order -
+  /// peel order [k, k-1, ..., 1] - arrow *i* only needs to clear the arrows
+  /// still on the board ([1..i]), exactly the arrows that were on the board
+  /// when it was placed. So the board is solvable by construction even though a
+  /// contour arrow's head ray may cross cells that later arrows fill.
+  List<ArrowPiece> _generateSolvableBoard() {
+    _occupied = List.generate(rows, (_) => List.filled(cols, false));
+    final pieces = <ArrowPiece>[];
+    _nextId = 0;
+
+    _placeSpiral(pieces);
+
+    _topUpLeftovers(pieces);
+    _microFill(pieces);
+    _pocketFill(pieces);
+
+    return pieces;
+  }
+
+  /// Fill the silhouette with long wall-following "snake" strokes, one arrow
+  /// after another along a single spiral-like path. Starting from the deepest
+  /// remaining cell, the snake carries straight on, then turns in one
+  /// consistent sense when it is blocked, so it hugs the shape's contours the
+  /// way a picture-maze path does. Repeated from the next-deepest free cell
+  /// until the silhouette is covered.
+  void _placeSpiral(List<ArrowPiece> pieces) {
+    final maxDepth = _depths.values.reduce(max);
+    var remaining = _getUnoccupiedMaskCells().toSet();
+    var safety = 0;
+    while (remaining.isNotEmpty && safety < 5000) {
+      safety++;
+      GridCell? start;
+      var bestDepth = -1;
+      for (final cell in remaining) {
+        final d = _depthOf(cell);
+        if (d > bestDepth) {
+          bestDepth = d;
+          start = cell;
+        }
+      }
+      if (start == null) break;
+      final trail = _walkSpiral(start, remaining);
+      _chopAndPlaceTrails(pieces, [trail], maxDepth);
+      remaining.removeAll(trail.toSet());
+      remaining.removeWhere((c) => _occupied[c.row][c.col]);
+      if (trail.length < 2) remaining.remove(start);
+    }
+  }
+
+  /// Walk a wall-following snake from [start] through free cells, carrying
+  /// straight on and turning in one consistent sense at walls, so the trail
+  /// reads as a single flowing stroke that curves around the silhouette.
+  List<GridCell> _walkSpiral(GridCell start, Set<GridCell> free) {
+    final trail = <GridCell>[start];
+    final inTrail = <GridCell>{start};
+    var cur = start;
+    final turnSense = _rng.nextBool() ? 1 : -1;
+    var moveDir = _bestContourMove(start, inTrail, free,
+        prevDir: null, turnSense: turnSense);
+    var safety = 0;
+    while (moveDir != null && safety < 1500) {
+      safety++;
+      final next = GridCell(cur.row + moveDir.dy, cur.col + moveDir.dx);
+      trail.add(next);
+      inTrail.add(next);
+      cur = next;
+      final chosen = _bestContourMove(cur, inTrail, free,
+          prevDir: moveDir, turnSense: turnSense);
+      if (chosen != null) {
+        moveDir = chosen;
+      } else {
+        moveDir = null;
+      }
+    }
+    return trail;
+  }
+
+  /// Pick the continuation direction for [at]: among free same-depth neighbours
+  /// not already on the trail, prefer carrying straight on, then turning in the
+  /// consistent [turnSense] direction. With no previous direction (first step)
+  /// a random free neighbour is chosen.
+  ArrowDirection? _bestContourMove(
+    GridCell at,
+    Set<GridCell> inTrail,
+    Set<GridCell> free, {
+    ArrowDirection? prevDir,
+    int? turnSense,
+  }) {
+    ArrowDirection? best;
+    var bestScore = 100;
+    for (final d in ArrowDirection.values) {
+      if (prevDir != null && d == prevDir.opposite) continue;
+      final n = GridCell(at.row + d.dy, at.col + d.dx);
+      if (inTrail.contains(n) || !free.contains(n)) continue;
+      int score;
+      if (prevDir == null) {
+        score = _rng.nextInt(10); // arbitrary first move
+      } else {
+        if (d == prevDir) {
+          score = 0;
+        } else {
+          final cross = _crossSense(prevDir, d);
+          score = cross != 0 && turnSense != null && cross == turnSense ? 1 : 3;
+        }
+      }
+      if (score < bestScore) {
+        bestScore = score;
+        best = d;
+      }
+    }
+    return best;
+  }
+
+  /// Chop each trail in [trails] into arrows of ~6-8 cells (longer on harder
+  /// levels), preferring split points with a straight tail so heads are clean.
+  /// Returns true when at least one arrow was placed.
+  bool _chopAndPlaceTrails(List<ArrowPiece> pieces,
+      List<List<GridCell>> trails, int maxDepth) {
+    var placedAny = false;
+    for (final trail in trails) {
+      final trailSet = trail.toSet();
+      var start = 0;
+      while (start < trail.length) {
+        if (_occupied[trail[start].row][trail[start].col]) {
+          start++;
+          continue;
+        }
+        final target = _ringTargetLen(_depthOf(trail[start]), maxDepth);
+        final chop = _pickChop(trail, start, target);
+        if (chop == null) break;
+        var end = chop;
+        var placed = false;
+        while (end >= start + _minSegLen) {
+          if (_tryPlaceRingSegment(
+              pieces, trail.sublist(start, end), trailSet)) {
+            placed = true;
+            break;
+          }
+          end--;
+        }
+        if (placed) {
+          placedAny = true;
+          start = end;
+        } else {
+          // Nothing worked from this head; its cells stay free for the gap
+          // fillers.
+          start++;
+        }
+      }
+    }
+    return placedAny;
+  }
+
+  int get _minSegLen => max(3, config.minCells);
+
+  int _ringTargetLen(int depth, int maxDepth) {
+    var len = 6 + _rng.nextInt(3); // 6..8
+    if (config.maxCells > 12) len += _rng.nextInt(3); // up to 10 on hard+
+    if (depth * 3 >= maxDepth * 2) len += 3; // inner rings: long flowing strokes
+    return len.clamp(_minSegLen, config.maxCells).toInt();
+  }
+
+  /// Choose the end index for the next ring segment near [target] cells long.
+  /// Prefers an end where the segment finishes with a straight tail, stays
+  /// within the per-arrow bend budget, and is a clean flowing curve (few
+  /// direction reversals). Early-cut candidates that leave a hairpin or S-wiggle
+  /// in the next segment are avoided by length-budgeting each chop.
+  int? _pickChop(List<GridCell> trail, int start, int target) {
+    final maxEnd = min(start + target + 2, trail.length);
+    int? fallback;
+    int? smoothCut;
+    for (var end = maxEnd; end >= start + _minSegLen; end--) {
+      if (end - start > config.maxCells) continue;
+      if (end - start > trail.length - start) continue;
+      final seg = trail.sublist(start, end);
+      if (_countBends(seg) > config.maxBends) continue;
+      if (_lastSegmentLength(seg) >= 2) {
+        if (_signFlips(seg) <= 1) return end;
+        smoothCut ??= end;
+      }
+      fallback ??= end;
+    }
+    return smoothCut ?? fallback;
+  }
+
+  /// Place one contour segment as an arrow. Tries the natural orientation, the
+  /// reversed one, then grows a short outward "escape tail" from either end so
+  /// the head reaches clear air. Every accepted arrow is validated against the
+  /// arrows already on the board, preserving the reverse-peel guarantee.
+  bool _tryPlaceRingSegment(
+      List<ArrowPiece> pieces, List<GridCell> seg, Set<GridCell> trailSet) {
+    if (seg.length < max(4, config.minCells)) return false;
+
+    for (final cell in seg) {
+      if (_occupied[cell.row][cell.col]) return false;
+    }
+
+    final own = seg.toSet();
+    final avoid = {...own, ...trailSet};
+    final reversed = seg.reversed.toList();
+    final revOwn = reversed.toSet();
+    final dir = _escapeDirection(seg, own);
+    final revDir = _escapeDirection(reversed, revOwn);
+    if (dir != null || revDir != null) {
+      // Prefer the orientation whose head sits on the shallower (outer) end, so
+      // finished arrows point toward the silhouette's rim - the classic
+      // picture-maze flow - instead of stray heads aimed into the middle.
+      if (dir != null && revDir == null) {
+        _addPiece(pieces, seg, dir);
+      } else if (revDir != null && dir == null) {
+        _addPiece(pieces, reversed, revDir);
+      } else if (_depthOf(seg.last) <= _depthOf(seg.first)) {
+        _addPiece(pieces, seg, dir!);
+      } else {
+        _addPiece(pieces, reversed, revDir!);
+      }
+      return true;
+    }
+
+    for (var side = 0; side < 2; side++) {
+      final path = List<GridCell>.of(side == 0 ? seg : reversed);
+      var cur = path.last;
+      for (var i = 0; i < 3; i++) {
+        final next = _pickEscapeStep(cur, avoid);
+        if (next == null) break;
+        path.add(next);
+        cur = next;
+        final pOwn = path.toSet();
+        final pDir = _escapeDirection(path, pOwn);
+        if (pDir != null) {
+          _addPiece(pieces, path, pDir);
+          return true;
+        }
+        if (path.length >= config.maxCells) break;
+      }
+    }
+    return false;
+  }
+
+  /// Next cell for an escape tail: the free in-mask neighbour closest to the
+  /// silhouette edge (smallest depth), so the tail heads toward open air.
+  GridCell? _pickEscapeStep(GridCell at, Set<GridCell> own) {
+    GridCell? best;
+    for (final d in ArrowDirection.values) {
+      final n = GridCell(at.row + d.dy, at.col + d.dx);
+      if (own.contains(n)) continue;
+      if (!_isFree(n.row, n.col)) continue;
+      if (best == null || _depthOf(n) < _depthOf(best)) best = n;
+    }
+    return best;
+  }
+
+  /// Unoccupied mask cells ordered deep-first.
   List<GridCell> _orderedUnoccupied() {
     final cells = _getUnoccupiedMaskCells();
     cells.sort((a, b) => _depthOf(b).compareTo(_depthOf(a)));
     return cells;
   }
 
-  GridCell? _pickStartExcluding(Set<GridCell> failed) {
-    final cells = _getUnoccupiedMaskCells();
-    if (cells.isEmpty) return null;
-    final fresh = <GridCell>[];
-    for (final cell in cells) {
-      if (!failed.contains(cell)) fresh.add(cell);
-    }
-    if (fresh.isEmpty) return null;
-    return fresh[_rng.nextInt(fresh.length)];
+  bool _isFree(int r, int c) {
+    if (!_inBounds(r, c)) return false;
+    if (r >= mask.length || c >= mask[r].length || !mask[r][c]) return false;
+    return !_occupied[r][c];
   }
 
   /// Curved growth: walks from [start] toward [targetLen], turning 90 degrees
@@ -360,12 +630,6 @@ class PuzzleGenerator {
     return len;
   }
 
-  bool _isFree(int r, int c) {
-    if (!_inBounds(r, c)) return false;
-    if (r >= mask.length || c >= mask[r].length || !mask[r][c]) return false;
-    return !_occupied[r][c];
-  }
-
   ArrowDirection _randomTurnBetween(ArrowDirection dir) {
     switch (dir) {
       case ArrowDirection.up:
@@ -432,105 +696,30 @@ class PuzzleGenerator {
     return bends;
   }
 
-  /// Build a solvable board by placing arrows in peel order.
-  ///
-  /// Placements happen so that each new arrow's head has a clear outward run
-  /// w.r.t. every earlier arrow. When arrows are then removed in the reverse
-  /// game - peel order [k, k-1, ..., 1] - arrow *i* only needs to clear the
-  /// arrows still on the board ([1..i]), which is guaranteed by construction.
-  List<ArrowPiece> _generateSolvableBoard() {
-    _occupied = List.generate(rows, (_) => List.filled(cols, false));
-    final pieces = <ArrowPiece>[];
-    final failed = <GridCell>{};
-    _nextId = 0;
-
-    // Big curved anchors first: they are removed last, so their escape lines
-    // may freely cross every region that later arrows will fill.
-    _placeCurvyAnchors(pieces);
-
-    // Interleave main arrows with pocket-filling sweeps, in small depth-ordered
-    // batches. Filling each band of pockets right after the arrows around it
-    // are placed keeps the silhouette dense instead of leaving hollow spots.
-    for (var round = 0; round < 8; round++) {
-      _placeMainArrows(pieces, failed, config.maxArrows ~/ 8 + 1);
-      _microFill(pieces);
-      if (round.isEven) _topUpLeftovers(pieces);
-    }
-
-    _topUpLeftovers(pieces);
-    _microFill(pieces);
-    _microFill(pieces);
-
-    return pieces;
-  }
-
-  void _placeMainArrows(
-      List<ArrowPiece> pieces, Set<GridCell> failed, int budget) {
-    final candidates = _orderedUnoccupied();
-    var idx = 0;
-    var placedThisRound = 0;
-    var safety = 0;
-    final maxSafety = 400 + budget * 60;
-    while (safety < maxSafety &&
-        placedThisRound < budget &&
-        idx < candidates.length) {
-      safety++;
-      if (pieces.length >= config.maxArrows * 2) break;
-      final start = candidates[idx++];
-      if (failed.contains(start)) continue;
-      if (_occupied[start.row][start.col]) continue;
-
-      final isLarge = _rng.nextDouble() < config.largeArrowChance;
-      final targetLen = isLarge
-          ? max(config.maxCells - 1, config.minCells) + _rng.nextInt(2)
-          : config.minCells +
-              _rng.nextInt(max(1, config.maxCells - config.minCells));
-      final capped = targetLen.clamp(config.minCells, config.maxCells).toInt();
-      final bends = isLarge ? config.maxBends : max(1, config.maxBends - 1);
-
-      if (_tryPlaceAt(pieces, start, capped, bends)) {
-        placedThisRound++;
-      } else {
-        failed.add(start);
+  /// Number of times the turn direction changes sign along [path]. Zero means
+  /// the curve always turns the same way (a clean C-shaped arc); one means a
+  /// single S; more means the path zig-zags, which reads as tangled on the
+  /// board and animates badly when the arrow straightens and slides off.
+  int _signFlips(List<GridCell> path) {
+    var flips = 0;
+    int? sense;
+    for (var i = 2; i < path.length; i++) {
+      final a = path[i - 2];
+      final b = path[i - 1];
+      final c = path[i];
+      final d1 = (b.row - a.row, b.col - a.col);
+      final d2 = (c.row - b.row, c.col - b.col);
+      if (d1 == d2) continue;
+      final cross = d1.$1 * d2.$2 - d1.$2 * d2.$1;
+      final s = cross > 0 ? 1 : -1;
+      if (sense == null) {
+        sense = s;
+      } else if (s != sense) {
+        flips++;
+        sense = s;
       }
     }
-  }
-
-  bool _tryPlaceAt(
-      List<ArrowPiece> pieces, GridCell start, int targetLen, int bends) {
-    for (var attempt = 0; attempt < 8; attempt++) {
-      final path = _growPath(start, targetLen, bends);
-      if (path == null) continue;
-      final own = path.toSet();
-      final dir = _escapeDirection(path, own);
-      if (dir == null) continue;
-      _addPiece(pieces, path, dir);
-      return true;
-    }
-    return false;
-  }
-
-  /// Place several large curved arrows up front so every board has big
-  /// multi-bend arrows (organic, realistic look). More anchors for bigger
-  /// shapes.
-  void _placeCurvyAnchors(List<ArrowPiece> pieces) {
-    final totalCells = _maskCellCount;
-    final budget = (totalCells ~/ 20).clamp(4, 9);
-    var placed = 0;
-    var safety = 0;
-    while (placed < budget && safety < budget * 60) {
-      safety++;
-      final start = _pickStartExcluding(const {});
-      if (start == null) break;
-      final targetLen = max(config.maxCells, config.minCells + 1);
-      final path = _growPath(start, targetLen, config.maxBends);
-      if (path == null || _countBends(path) < 2) continue;
-      final own = path.toSet();
-      final dir = _escapeDirection(path, own);
-      if (dir == null) continue;
-      _addPiece(pieces, path, dir);
-      placed++;
-    }
+    return flips;
   }
 
   void _addPiece(
@@ -546,17 +735,20 @@ class PuzzleGenerator {
     ));
   }
 
-  /// Second pass: fill remaining holes with small arrows (2-6 cells), including
-  /// straight 2-cell fillers. Short paths have short escape runs, so they
-  /// succeed on awkward leftovers and make the silhouette denser.
+  /// Second pass: fill remaining holes with small arrows (3-8 cells), including
+  /// short fillers. Short paths have short escape runs, so they succeed on
+  /// awkward leftovers and make the silhouette denser.
   void _topUpLeftovers(List<ArrowPiece> pieces) {
     final leftover = _orderedUnoccupied();
     for (final start in leftover) {
       if (_occupied[start.row][start.col]) continue;
+      if (pieces.length >= _maxPieces) break;
       var placed = false;
       for (var attempt = 0; attempt < 8 && !placed; attempt++) {
-        final len = attempt == 0 ? 2 : _rng.nextInt(5) + 2;
-        final bends = len == 2 ? 0 : (_rng.nextDouble() < 0.4 ? 2 : 1);
+        final len = attempt == 0 ? 4 : _rng.nextInt(6) + 3;
+        final bends = len <= 4
+            ? (_rng.nextDouble() < 0.5 ? 1 : 0)
+            : (_rng.nextDouble() < 0.45 ? 3 : 1);
         final path = _growPath(start, len, bends);
         if (path == null) continue;
         final own = path.toSet();
@@ -569,16 +761,17 @@ class PuzzleGenerator {
   }
 
   /// Exhaustive gap filler: repeatedly sweeps every empty cell trying a
-  /// straight 2-cell arrow first, then small bent arrows (which sit snugly in
+  /// straight short arrow first, then small bent arrows (which sit snugly in
   /// corner/bend-shaped leftover spaces), until a full sweep places nothing.
   void _microFill(List<ArrowPiece> pieces) {
-    const lens = [2, 3, 3, 4, 3, 4, 5];
-    const bends = [0, 1, 2, 1, 1, 2, 2];
+    const lens = [3, 4, 5, 6, 5, 6, 7, 8];
+    const bends = [1, 1, 1, 2, 2, 2, 3, 3];
     for (var sweep = 0; sweep < 12; sweep++) {
       var progress = false;
       final empty = _orderedUnoccupied();
       for (final start in empty) {
         if (_occupied[start.row][start.col]) continue;
+        if (pieces.length >= _maxPieces) break;
         for (var i = 0; i < lens.length; i++) {
           final path = _growPath(start, lens[i], bends[i]);
           if (path == null) continue;
@@ -594,6 +787,77 @@ class PuzzleGenerator {
     }
   }
 
+  /// Final density pass: squeezes the last few empty cells between strokes
+  /// into tiny straight or L-shaped arrows so the silhouette fills almost
+  /// completely. Each arrow still goes through the same solvability
+  /// validation as every other arrow.
+  void _pocketFill(List<ArrowPiece> pieces) {
+    for (var sweep = 0; sweep < 12; sweep++) {
+      var progress = false;
+      final empty = _getUnoccupiedMaskCells();
+      for (final start in empty) {
+        if (_occupied[start.row][start.col]) continue;
+        if (pieces.length >= _maxPieces) break;
+        if (_tryStraightPocket(pieces, start)) {
+          progress = true;
+        } else if (_tryLPocket(pieces, start)) {
+          progress = true;
+        }
+      }
+      if (!progress) break;
+    }
+  }
+
+  bool _tryStraightPocket(
+      List<ArrowPiece> pieces, GridCell start) {
+    for (final dir in ArrowDirection.values) {
+      final v = GridCell(start.row + dir.dy, start.col + dir.dx);
+      if (!_isFree(v.row, v.col)) continue;
+      for (final len in [3, 2]) {
+        final path = <GridCell>[];
+        var cur = start;
+        var ok = true;
+        for (var i = 0; i < len; i++) {
+          path.add(cur);
+          final n = GridCell(cur.row + dir.dy, cur.col + dir.dx);
+          if (!_isFree(n.row, n.col)) {
+            ok = false;
+            break;
+          }
+          cur = n;
+        }
+        if (!ok || path.length < len) continue;
+        final own = path.toSet();
+        final d = _escapeDirection(path, own);
+        if (d != null) {
+          _addPiece(pieces, path, d);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool _tryLPocket(List<ArrowPiece> pieces, GridCell start) {
+    for (final dir in ArrowDirection.values) {
+      final a = GridCell(start.row + dir.dy, start.col + dir.dx);
+      if (!_isFree(a.row, a.col)) continue;
+      for (final turn in ArrowDirection.values) {
+        if (turn == dir || turn == dir.opposite) continue;
+        final b = GridCell(a.row + turn.dy, a.col + turn.dx);
+        if (!_isFree(b.row, b.col)) continue;
+        final path = <GridCell>[start, a, b];
+        final own = path.toSet();
+        final d = _escapeDirection(path, own);
+        if (d != null) {
+          _addPiece(pieces, path, d);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /// Generate a solvable puzzle. Every board built here is solvable by
   /// construction; several random ones are produced and the best-looking
   /// (highest fill, more curved arrows) is returned.
@@ -605,9 +869,13 @@ class PuzzleGenerator {
 
     List<ArrowPiece>? best;
     var bestScore = -1;
+    final idealPieces = max(1, (totalCells / 7).ceil());
     for (var attempt = 0; attempt < config.maxAttempts; attempt++) {
       final arrows = _generateSolvableBoard();
       if (arrows.isEmpty) continue;
+      // Belt and braces: the construction guarantees solvability, but a quick
+      // greedy check lets us discard anything that slipped through.
+      if (!arrowsAreSolvable(arrows, rows, cols)) continue;
 
       var filled = 0;
       var curved = 0;
@@ -617,12 +885,17 @@ class PuzzleGenerator {
       }
 
       final fillPct = filled * 1000 ~/ totalCells;
-      final score = fillPct + min(curved, 6) * 5;
+      // Reward fill and curved arrows, but penalize fragmentation (too many
+      // tiny fillers) so the best-looking board wins.
+      final overage = max(0, arrows.length - idealPieces);
+      final score = fillPct + min(curved, 6) * 5 - overage;
       if (score > bestScore) {
         bestScore = score;
         best = arrows;
       }
-      if (fillPct >= 920 && curved >= 3) break;
+      if (fillPct >= 940 && curved >= 2 && arrows.length <= idealPieces + 6) {
+        break;
+      }
     }
 
     return PuzzleResult(
