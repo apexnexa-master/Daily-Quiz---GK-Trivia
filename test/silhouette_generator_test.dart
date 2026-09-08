@@ -21,7 +21,7 @@ void main() {
         expect(stats.solvable, isTrue,
             reason: '${level.name} must be solvable by construction');
         expect(arrows, isNotEmpty);
-        expect(arrows.length, lessThan(60));
+        expect(arrows.length, lessThan(150));
         expect(stats.cellsUnique(),
             isTrue, reason: '${level.name}: arrows must not overlap');
 

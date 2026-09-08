@@ -71,6 +71,33 @@ class LevelConfig {
     maxAttempts: 56,
     moveSlack: 6,
   );
+
+  /// Large boards (20+ columns): long flowing strokes that read as clean
+  /// picture-maze contours, with enough attempted layouts to reach high fill.
+  static const large = LevelConfig(
+    minArrows: 16,
+    maxArrows: 60,
+    minCells: 4,
+    maxCells: 18,
+    maxBends: 7,
+    largeArrowChance: 0.65,
+    maxAttempts: 48,
+    moveSlack: 6,
+  );
+
+  /// Jumbo boards (22+ columns, 400+ cells): the flagship silhouette puzzles.
+  /// Arrows may grow extra long and twist through several bends while the
+  /// stroke budget still keeps the board from fragmenting into tiny picks.
+  static const mega = LevelConfig(
+    minArrows: 20,
+    maxArrows: 90,
+    minCells: 4,
+    maxCells: 22,
+    maxBends: 8,
+    largeArrowChance: 0.7,
+    maxAttempts: 40,
+    moveSlack: 5,
+  );
 }
 
 class PuzzleResult {
@@ -403,6 +430,7 @@ class PuzzleGenerator {
     var len = 6 + _rng.nextInt(3); // 6..8
     if (config.maxCells > 12) len += _rng.nextInt(3); // up to 10 on hard+
     if (depth * 3 >= maxDepth * 2) len += 3; // inner rings: long flowing strokes
+    if (cols >= 20) len += 2 + _rng.nextInt(3); // wide boards: longer flowing arms
     return len.clamp(_minSegLen, config.maxCells).toInt();
   }
 
@@ -683,6 +711,19 @@ class PuzzleGenerator {
     return true;
   }
 
+  /// True when no cell of the board is covered by more than one arrow. The
+  /// contour walker can revisit a cell in thin (1-cell wide) corridors, and
+  /// such an attempt would double-cover the silhouette.
+  bool _cellsUnique(List<ArrowPiece> arrows) {
+    final seen = <int>{};
+    for (final arrow in arrows) {
+      for (final cell in arrow.cells) {
+        if (!seen.add(cell.row * cols + cell.col)) return false;
+      }
+    }
+    return true;
+  }
+
   int _countBends(List<GridCell> path) {
     var bends = 0;
     for (var i = 2; i < path.length; i++) {
@@ -876,6 +917,9 @@ class PuzzleGenerator {
       // Belt and braces: the construction guarantees solvability, but a quick
       // greedy check lets us discard anything that slipped through.
       if (!arrowsAreSolvable(arrows, rows, cols)) continue;
+      // Thin corridors can make a contour walk revisit a cell, which would
+      // double-cover part of the silhouette; skip such attempts entirely.
+      if (!_cellsUnique(arrows)) continue;
 
       var filled = 0;
       var curved = 0;

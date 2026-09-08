@@ -259,9 +259,9 @@ class FlyOff {
 
   /// Cell [i] rides [adv] further along the rail than its resting position, so
   /// the whole arrow advances along its own curved track without straightening.
-  /// Each cell is placed at a constant straight-line distance from the cell in
-  /// front of it (its resting chord), so the arrow keeps its exact resting size
-  /// even while its bends travel over the corners of the smoothed track.
+  /// Cells are placed by walking along the rail polyline itself, keeping every
+  /// cell at exactly its resting straight-line distance from the one in front,
+  /// so the arrow neither shrinks nor wiggles as its bends pass the corners.
   List<Offset> shaftPoints(double adv) {
     if (adv <= 0) return _base;
     final n = arrow.cells.length;
@@ -276,21 +276,24 @@ class FlyOff {
       var j = _arcIndex(tPrev);
       var p = out[i + 1];
       while (true) {
-        if (j <= 0) {
-          out[i] = p;
-          tPrev = _arc[0];
-          break;
-        }
-        final q = _rail[j - 1];
-        final step = (p - q).distance;
+        // The next point farther back along the polyline. p itself can sit in
+        // the middle of the segment ahead of vertex j, so the first step back
+        // is a partial one (to _rail[j]), then full segments vertex by vertex.
+        final arrive = _rail[j];
+        final step = (p - arrive).distance;
         if (trav + step >= target) {
           final f = step > 0 ? (target - trav) / step : 0.0;
-          out[i] = q + (p - q) * f;
-          tPrev = _arc[j - 1] + f * (_arc[j] - _arc[j - 1]);
+          out[i] = p + (arrive - p) * f;
+          tPrev -= target;
+          break;
+        }
+        if (j <= 0) {
+          out[i] = arrive;
+          tPrev = 0.0;
           break;
         }
         trav += step;
-        p = q;
+        p = arrive;
         j -= 1;
       }
     }
