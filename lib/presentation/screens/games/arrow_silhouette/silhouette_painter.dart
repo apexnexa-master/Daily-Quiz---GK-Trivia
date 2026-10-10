@@ -23,17 +23,93 @@ const List<Color> _arrowColorsDark = [
   Color(0xFF00C1CC),
 ];
 
+/// Erosion (onion-peel) depth of every mask cell, keyed `row * cols + col`.
+/// The outermost ring has depth 0 and the value grows towards the centre. Used
+/// to stagger the intro reveal so the design grows from the middle outwards.
+Map<int, int> computeMaskDepths(List<List<bool>> mask, int cols) {
+  final rows = mask.length;
+  final remaining = <int>{};
+  for (var r = 0; r < rows; r++) {
+    final row = mask[r];
+    for (var c = 0; c < row.length && c < cols; c++) {
+      if (row[c]) remaining.add(r * cols + c);
+    }
+  }
+  final depth = <int, int>{};
+  bool stillRemaining(int r, int c) =>
+      r >= 0 &&
+      r < rows &&
+      c >= 0 &&
+      c < cols &&
+      remaining.contains(r * cols + c);
+  var d = 0;
+  while (remaining.isNotEmpty) {
+    final layer = <int>{};
+    for (final idx in remaining) {
+      final r = idx ~/ cols;
+      final c = idx % cols;
+      if (!stillRemaining(r - 1, c) ||
+          !stillRemaining(r + 1, c) ||
+          !stillRemaining(r, c - 1) ||
+          !stillRemaining(r, c + 1)) {
+        layer.add(idx);
+      }
+    }
+    for (final idx in layer) {
+      depth[idx] = d;
+      remaining.remove(idx);
+    }
+    d++;
+  }
+  return depth;
+}
+
+/// Per-arrow intro reveal order (aligned with [arrows]): 0 = draw first, 1 =
+/// draw last. Deepest arrows (towards the centre) reveal first.
+List<double> computeArrowBuildOrder(
+    List<ArrowPiece> arrows, Map<int, int> depths, int cols) {
+  if (arrows.isEmpty) return const [];
+  var maxDepth = 0;
+  for (final d in depths.values) {
+    if (d > maxDepth) maxDepth = d;
+  }
+  if (maxDepth == 0) return List<double>.filled(arrows.length, 0);
+  return [
+    for (final a in arrows)
+      1 - ((depths[a.headCell.row * cols + a.headCell.col] ?? 0) / maxDepth),
+  ];
+}
+
 class SilhouettePainter extends CustomPainter {
   final SilhouetteEngine engine;
   final double animationValue;
   final List<FlyOff> flyOffs;
   final Map<String, double> flyProgress;
 
+  /// 0..1 intro "build the design" animation. When < 1 the faint dot
+  /// silhouette grows from the middle outwards and the arrows draw themselves
+  /// in (deepest first). At 1 the board is shown normally.
+  final double introductionValue;
+
+  /// Per-cell erosion depth (keyed `row * cols + col`) used to stagger the
+  /// intro reveal. Null disables the staggered build.
+  final Map<int, int>? maskDepths;
+
+  /// Per-arrow (aligned with `engine.arrows`) reveal order, 0 = first to draw.
+  final List<double>? arrowBuildOrder;
+
+  /// Whether the surface is dark, so the faint background dots stay visible.
+  final bool isDark;
+
   SilhouettePainter({
     required this.engine,
     this.animationValue = 1.0,
     this.flyOffs = const [],
     this.flyProgress = const {},
+    this.introductionValue = 1.0,
+    this.maskDepths,
+    this.arrowBuildOrder,
+    this.isDark = true,
   });
 
   static Offset computeOrigin(Size canvasSize, int cols, int rows) {
@@ -53,45 +129,76 @@ class SilhouettePainter extends CustomPainter {
     final cols = engine.level.gridCols;
     final cellSize = computeCellSize(size, cols, rows);
     final origin = computeOrigin(size, cols, rows);
+    final intro = introductionValue.clamp(0.0, 1.0);
 
-    _drawGridMask(canvas, origin, cellSize, rows, cols, engine.level.mask);
-    _drawActiveArrows(canvas, origin, cellSize);
+    _drawDotBackdrop(canvas, origin, cellSize, intro);
+    _drawActiveArrows(canvas, origin, cellSize, intro);
     _drawFlyOffs(canvas, cellSize);
   }
 
-  void _drawGridMask(Canvas canvas, Offset origin, double cellSize, int rows,
-      int cols, List<List<bool>> mask) {
-    final maskPaint = Paint()
-      ..color = const Color(0xFF1E293B).withValues(alpha: 0.3);
-    final borderPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
+  /// Reveal fraction for one element given its [stagger] (0 = first).
+  static double _reveal(double intro, double stagger) =>
+      ((intro - stagger * 0.65) / 0.35).clamp(0.0, 1.0);
 
-    for (int r = 0; r < rows; r++) {
-      for (int c = 0; c < cols; c++) {
-        if (mask[r][c]) {
-          final rect = RRect.fromRectAndRadius(
-            Rect.fromLTWH(
-              origin.dx + c * cellSize,
-              origin.dy + r * cellSize,
-              cellSize,
-              cellSize,
-            ),
-            const Radius.circular(2),
-          );
-          canvas.drawRRect(rect, maskPaint);
-          canvas.drawRRect(rect, borderPaint);
+  /// Faint dots marking the silhouette, so the design is legible without the
+  /// blocky cell squares. During the intro they grow from the middle outwards.
+  void _drawDotBackdrop(
+      Canvas canvas, Offset origin, double cellSize, double intro) {
+    final mask = engine.level.mask;
+    final rows = engine.level.gridRows;
+    final cols = engine.level.gridCols;
+    if (mask.isEmpty) return;
+
+    final dotColor = isDark ? Colors.white : const Color(0xFF334155);
+    final baseAlpha = isDark ? 0.16 : 0.22;
+    final radius = max(0.6, cellSize * 0.11);
+    final paint = Paint();
+    final depths = maskDepths;
+
+    var maxDepth = 0;
+    if (depths != null) {
+      for (final d in depths.values) {
+        if (d > maxDepth) maxDepth = d;
+      }
+    }
+
+    for (var row = 0; row < rows && row < mask.length; row++) {
+      final maskRow = mask[row];
+      for (var col = 0; col < cols && col < maskRow.length; col++) {
+        if (!maskRow[col]) continue;
+        double alpha;
+        if (depths == null || maxDepth == 0 || intro >= 1) {
+          alpha = baseAlpha;
+        } else {
+          final depth = depths[row * cols + col] ?? 0;
+          final stagger = 1 - depth / maxDepth; // inner cells appear first
+          alpha = baseAlpha * _reveal(intro, stagger);
         }
+        if (alpha <= 0.003) continue;
+        paint.color = dotColor.withValues(alpha: alpha);
+        canvas.drawCircle(
+          Offset(
+            origin.dx + (col + 0.5) * cellSize,
+            origin.dy + (row + 0.5) * cellSize,
+          ),
+          radius,
+          paint,
+        );
       }
     }
   }
 
-  void _drawActiveArrows(Canvas canvas, Offset origin, double cellSize) {
+  void _drawActiveArrows(
+      Canvas canvas, Offset origin, double cellSize, double intro) {
     // Build set of arrows currently being animated off
     final animatingIds = flyOffs.map((f) => f.arrow.id).toSet();
-    for (final arrow in engine.arrows) {
+    for (var index = 0; index < engine.arrows.length; index++) {
+      final arrow = engine.arrows[index];
       if (arrow.status == ArrowStatus.active && !animatingIds.contains(arrow.id)) {
+        final build = (intro >= 1 || arrowBuildOrder == null)
+            ? 1.0
+            : _reveal(intro, arrowBuildOrder![index]);
+        if (build <= 0.003) continue;
         final points = arrow.cells
             .map((cell) => Offset(
                   origin.dx + (cell.col + 0.5) * cellSize,
@@ -110,6 +217,7 @@ class SilhouettePainter extends CustomPainter {
           arrow.highlighted,
           arrow.showHint,
           isBlocked: arrow.id == engine.blockedFlashId,
+          build: build,
         );
       }
     }
@@ -127,8 +235,14 @@ class SilhouettePainter extends CustomPainter {
     bool highlighted,
     bool showHint, {
     bool isBlocked = false,
+    double build = 1.0,
   }) {
     if (points.isEmpty) return;
+
+    final fullyBuilt = build >= 0.999;
+    final visible = fullyBuilt
+        ? points
+        : points.sublist(0, max(1, (points.length * build).ceil()));
 
     final shaftWidth = cellSize * 0.22;
     final headLength = cellSize * 1.0;
@@ -141,11 +255,11 @@ class SilhouettePainter extends CustomPainter {
         : (showHint ? (sin(animationValue * pi * 4) + 1) / 2 : 1.0);
 
     // --- Shadow ---
-    if (points.length >= 2) {
+    if (visible.length >= 2) {
       final shadowPath = Path();
-      shadowPath.moveTo(points.first.dx, points.first.dy);
-      for (int i = 1; i < points.length; i++) {
-        shadowPath.lineTo(points[i].dx, points[i].dy);
+      shadowPath.moveTo(visible.first.dx, visible.first.dy);
+      for (int i = 1; i < visible.length; i++) {
+        shadowPath.lineTo(visible[i].dx, visible[i].dy);
       }
       canvas.drawPath(
         shadowPath.shift(const Offset(1.5, 2.0)),
@@ -159,11 +273,11 @@ class SilhouettePainter extends CustomPainter {
     }
 
     // --- Shaft: single continuous stroked path ---
-    if (points.length >= 2) {
+    if (visible.length >= 2) {
       final shaftPath = Path();
-      shaftPath.moveTo(points.first.dx, points.first.dy);
-      for (int i = 1; i < points.length; i++) {
-        shaftPath.lineTo(points[i].dx, points[i].dy);
+      shaftPath.moveTo(visible.first.dx, visible.first.dy);
+      for (int i = 1; i < visible.length; i++) {
+        shaftPath.lineTo(visible[i].dx, visible[i].dy);
       }
 
       // Fill
@@ -200,7 +314,23 @@ class SilhouettePainter extends CustomPainter {
       );
     } else {
       // Single dot
-      canvas.drawCircle(points.first, shaftWidth / 2, Paint()..color = fillColor);
+      canvas.drawCircle(visible.first, shaftWidth / 2, Paint()..color = fillColor);
+    }
+
+    // While the design is still being drawn in, cap the growing stroke with a
+    // soft rounded tip instead of the arrowhead.
+    if (!fullyBuilt) {
+      canvas.drawCircle(
+        visible.last,
+        shaftWidth / 2,
+        Paint()..color = darkColor,
+      );
+      canvas.drawCircle(
+        visible.last,
+        shaftWidth / 2 - 0.4,
+        Paint()..color = fillColor,
+      );
+      return;
     }
 
     // --- Arrowhead ---
@@ -286,6 +416,9 @@ class SilhouettePainter extends CustomPainter {
   bool shouldRepaint(covariant SilhouettePainter oldDelegate) {
     if (flyOffs.isNotEmpty) return true;
     if (!identical(oldDelegate.engine, engine)) return true;
+    // The intro "build the design" animation must repaint every frame.
+    if (oldDelegate.introductionValue != introductionValue) return true;
+    if (oldDelegate.isDark != isDark) return true;
     if (engine.blockedFlashId != oldDelegate.engine.blockedFlashId) return true;
     final hintsHere = engine.arrows.any((a) => a.showHint);
     final hintsThere = oldDelegate.engine.arrows.any((a) => a.showHint);

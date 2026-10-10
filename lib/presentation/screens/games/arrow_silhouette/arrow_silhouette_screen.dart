@@ -1,16 +1,27 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import 'silhouette_models.dart';
 import 'silhouette_engine.dart';
 import 'silhouette_levels.dart';
 import 'silhouette_painter.dart';
+
+/// Testing helper: when true every level is playable regardless of progress.
+/// Flip back to `false` to restore the normal lock/unlock progression.
+const bool kUnlockAllLevels = true;
+
+/// Minimum arrow cell size, in logical pixels. Boards that would have to shrink
+/// below this to fit the screen instead render larger and overflow the
+/// viewport, where the player pans / zooms (InteractiveViewer) to reach the
+/// whole picture. Small boards (which fit comfortably) keep their fit size.
+const double _minCellSize = 20.0;
 
 class ArrowSilhouetteScreen extends StatefulWidget {
   const ArrowSilhouetteScreen({super.key});
@@ -33,20 +44,31 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
 
   bool _showWinOverlay = false;
   int _hintsRemaining = 3;
-  int _highestUnlocked = 1;
+  int _highestUnlocked = kUnlockAllLevels ? silhouetteLevels.length : 1;
   final Map<int, int> _starsMap = {};
   Timer? _blockedFlashTimer;
   bool _argsRead = false;
 
   late AnimationController _tickerController;
+  late AnimationController _introController;
   final List<FlyOff> _flyOffs = [];
   final Map<String, double> _flyProgress = {};
   final List<AnimationController> _escapeControllers = [];
+
+  final TransformationController _transformController = TransformationController();
+  int? _centeredForLevel;
+
+  Map<int, int>? _maskDepths;
+  List<double>? _arrowBuildOrder;
 
   @override
   void initState() {
     super.initState();
     _tickerController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
+    _introController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1900),
+    );
   }
 
   @override
@@ -63,6 +85,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
         startLevel <= silhouetteLevels.length) {
       _currentLevelId = startLevel;
     }
+    _loadProgress();
     _loadLevel(_currentLevelId);
   }
 
@@ -71,13 +94,15 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     _timer?.cancel();
     _blockedFlashTimer?.cancel();
     _tickerController.dispose();
+    _introController.dispose();
+    _transformController.dispose();
     for (final c in _escapeControllers) {
       c.dispose();
     }
     super.dispose();
   }
 
-  void _loadLevel(int levelId) async {
+  void _loadLevel(int levelId, {bool animate = true}) async {
     final idx = levelId - 1;
     if (idx < 0 || idx >= silhouetteLevels.length) return;
 
@@ -91,6 +116,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     _hintsRemaining = 3;
     _blockedFlashTimer?.cancel();
     _tickerController.stop();
+    _introController.stop();
     _flyOffs.clear();
     _flyProgress.clear();
 
@@ -105,10 +131,22 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
 
     _engine = SilhouetteEngine(_level);
 
+    // Precompute the intro reveal: a per-cell depth map and a per-arrow draw
+    // order so the design "builds itself" from the middle outwards.
+    _maskDepths = computeMaskDepths(_level.mask, _level.gridCols);
+    _arrowBuildOrder =
+        computeArrowBuildOrder(_engine.arrows, _maskDepths!, _level.gridCols);
+
     setState(() {
       _isLoading = false;
       _loaded = true;
     });
+
+    if (animate) {
+      _introController.forward(from: 0);
+    } else {
+      _introController.value = 1;
+    }
   }
 
   void _startTimer() {
@@ -119,26 +157,60 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     });
   }
 
+  static const _saveKey = 'arrow_silhouette_progress';
+
+  Future<void> _loadProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_saveKey);
+      if (jsonStr == null || jsonStr.isEmpty) return;
+      final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+      final highest = (data['highest'] as num?)?.toInt() ?? 1;
+      if (highest >= 1) _highestUnlocked = highest;
+      final stars = (data['stars'] as Map<String, dynamic>?) ?? {};
+      stars.forEach((key, value) {
+        final id = int.tryParse(key);
+        final count = (value as num).toInt();
+        if (id != null && count >= 1 && count <= 3) {
+          _starsMap[id] = max(_starsMap[id] ?? 0, count);
+        }
+      });
+    } catch (_) {}
+    if (kUnlockAllLevels) _highestUnlocked = silhouetteLevels.length;
+  }
+
+  Future<void> _saveProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _saveKey,
+        jsonEncode({
+          'highest': _highestUnlocked,
+          'stars': _starsMap.map((k, v) => MapEntry('$k', v)),
+        }),
+      );
+    } catch (_) {}
+  }
+
   String _formatTime(int totalSeconds) {
     final m = totalSeconds ~/ 60;
     final s = totalSeconds % 60;
     return '$m:${s.toString().padLeft(2, '0')}';
   }
 
-  void _onTapDown(TapDownDetails details, Size canvasSize) {
+  void _onTapDown(TapDownDetails details, Size viewport) {
     if (_showWinOverlay) return;
+    // Ignore taps until the design has finished drawing itself in.
+    if (_introController.value < 1) return;
 
-    final rows = _level.gridRows;
-    final cols = _level.gridCols;
-    final cellSize = min(canvasSize.width / cols, canvasSize.height / rows);
-    final gridW = cols * cellSize;
-    final gridH = rows * cellSize;
-    final origin = Offset(
-      (canvasSize.width - gridW) / 2,
-      (canvasSize.height - gridH) / 2,
+    final layout = _boardLayout(viewport);
+    // The tap arrives in the board's own coordinate space (the CustomPaint is
+    // the GestureDetector's child), so the origin is the board's top-left.
+    final arrow = _engine.hitTest(
+      details.localPosition,
+      Offset.zero,
+      layout.cell,
     );
-
-    final arrow = _engine.hitTest(details.localPosition, origin, cellSize);
     if (arrow == null) {
       setState(() {
         _engine.highlightArrow(null);
@@ -152,7 +224,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     }
 
     if (_engine.canEscape(arrow)) {
-      _performEscape(arrow, origin, cellSize);
+      _performEscape(arrow, Offset.zero, layout.cell);
     } else {
       _showBlocked(arrow.id);
     }
@@ -227,6 +299,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     if (_currentLevelId >= _highestUnlocked) {
       _highestUnlocked = _currentLevelId + 1;
     }
+    _saveProgress();
     setState(() => _showWinOverlay = true);
   }
 
@@ -235,7 +308,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     if (_engine.undo()) setState(() {});
   }
 
-  void _reset() => _loadLevel(_currentLevelId);
+  void _reset() => _loadLevel(_currentLevelId, animate: false);
 
   void _useHint() {
     if (_hintsRemaining <= 0) return;
@@ -327,7 +400,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
 
   Widget _buildHeader(bool isDark) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
         children: [
           IconButton(
@@ -337,52 +410,55 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ARROW SILHOUETTE',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    color: AppColors.primary,
-                  ),
-                ),
-                Text(
-                  '${_level.themeEmoji} ${_level.name} — Level $_currentLevelId',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.white : Colors.black87,
-                  ),
-                ),
-              ],
+            child: Text(
+              'LEVEL $_currentLevelId',
+              style: GoogleFonts.montserrat(
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
             ),
           ),
           _buildStatChip(_formatTime(_elapsedSeconds), isDark),
           const SizedBox(width: 8),
           _buildStatChip('${_engine.moveCount}', isDark, highlight: true),
-          if (kDebugMode) ...[
-            const SizedBox(width: 4),
-            IconButton(
-              tooltip: 'Debug: pick level',
-              icon: Icon(Icons.grid_view_rounded,
-                  color: isDark ? Colors.white70 : Colors.black54, size: 20),
-              onPressed: _showLevelPicker,
-            ),
-          ],
+          const SizedBox(width: 4),
+          IconButton(
+            tooltip: 'Levels',
+            icon: Icon(Icons.grid_view_rounded,
+                color: isDark ? Colors.white70 : Colors.black54, size: 22),
+            onPressed: _showLevelPicker,
+          ),
         ],
       ),
     );
   }
 
+  Widget _starDots(int count) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (i) {
+        final on = i < count;
+        return Icon(
+          on ? Icons.star_rounded : Icons.star_outline_rounded,
+          size: 10,
+          color: on ? Colors.amber : Colors.white30,
+        );
+      }),
+    );
+  }
+
   void _showLevelPicker() {
+    final current = _currentLevelId;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (sheetContext) {
+        final screenH = MediaQuery.of(sheetContext).size.height;
         return Container(
+          height: screenH * 0.72,
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           decoration: const BoxDecoration(
             color: Color(0xFF0F172A),
@@ -394,7 +470,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'DEBUG — SELECT LEVEL',
+                  'LEVELS',
                   style: GoogleFonts.montserrat(
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
@@ -404,32 +480,53 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Test any puzzle',
+                  'Pick a puzzle to play',
                   style: GoogleFonts.montserrat(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  'Complete a level to unlock the next one.',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white54,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Flexible(
                   child: GridView.builder(
-                    shrinkWrap: true,
                     itemCount: silhouetteLevels.length,
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 6,
-                      childAspectRatio: 1,
+                      childAspectRatio: 0.82,
                       mainAxisSpacing: 8,
                       crossAxisSpacing: 8,
                     ),
                     itemBuilder: (_, index) {
                       final level = silhouetteLevels[index];
-                      final selected = level.id == _currentLevelId;
+                      final locked = level.id > _highestUnlocked;
+                      final selected = level.id == current;
+                      final stars = _starsMap[level.id] ?? 0;
                       return GestureDetector(
-                        onTap: () {
-                          Navigator.pop(sheetContext);
-                          _loadLevel(level.id);
-                        },
+                        onTap: locked
+                            ? () {
+                                ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Finish level ${level.id - 1} to unlock ${level.themeEmoji} ${level.name}.',
+                                    ),
+                                    duration: const Duration(milliseconds: 1600),
+                                  ),
+                                );
+                              }
+                            : () {
+                                Navigator.pop(sheetContext);
+                                _loadLevel(level.id);
+                              },
                         child: Container(
                           decoration: BoxDecoration(
                             color: selected
@@ -442,20 +539,53 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                                   : Colors.white.withValues(alpha: 0.1),
                             ),
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(level.themeEmoji, style: const TextStyle(fontSize: 20)),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${level.id}',
-                                style: GoogleFonts.inter(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white70,
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: locked
+                                      ? Stack(
+                                          alignment: Alignment.center,
+                                          children: [
+                                            Opacity(
+                                              opacity: 0.22,
+                                              child: _MaskThumb(
+                                                level: level,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const Icon(
+                                              Icons.lock_rounded,
+                                              color: Colors.white60,
+                                              size: 18,
+                                            ),
+                                          ],
+                                        )
+                                      : _MaskThumb(
+                                          level: level,
+                                          color: selected
+                                              ? AppColors.primary
+                                              : Colors.white,
+                                          opacity: selected ? 1.0 : 0.8,
+                                        ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${level.id}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: locked
+                                        ? Colors.white38
+                                        : Colors.white70,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                _starDots(stars),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -488,14 +618,46 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     );
   }
 
+  /// The board's layout for the current level: a cell size (never smaller than
+  /// [_minCellSize]) and the resulting pixel size of the whole silhouette.
+  ({Size size, double cell}) _boardLayout(Size viewport) {
+    final cols = _level.gridCols;
+    final rows = _level.gridRows;
+    if (cols <= 0 || rows <= 0) {
+      return (size: viewport, cell: _minCellSize);
+    }
+    final fit = min(viewport.width / cols, viewport.height / rows);
+    final cell = max(fit, _minCellSize);
+    return (size: Size(cols * cell, rows * cell), cell: cell);
+  }
+
   Widget _buildGameCanvas(bool isDark) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const margin = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
-        final canvasSize = Size(
+        const margin = EdgeInsets.symmetric(horizontal: 4, vertical: 4);
+        final viewport = Size(
           constraints.maxWidth - margin.horizontal,
           constraints.maxHeight - margin.vertical,
         );
+        final layout = _boardLayout(viewport);
+
+        // Centre the freshly-loaded picture on first layout: small boards are
+        // placed by Align, oversized ones get a translation so the middle of
+        // the design shows instead of its top-left corner.
+        if (_centeredForLevel != _currentLevelId) {
+          _centeredForLevel = _currentLevelId;
+          final tx = layout.size.width > viewport.width
+              ? (viewport.width - layout.size.width) / 2
+              : 0.0;
+          final ty = layout.size.height > viewport.height
+              ? (viewport.height - layout.size.height) / 2
+              : 0.0;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _transformController.value = Matrix4.identity()
+              ..setTranslationRaw(tx, ty, 0);
+          });
+        }
+
         return Container(
           margin: margin,
           decoration: BoxDecoration(
@@ -509,21 +671,39 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
-            child: GestureDetector(
-              onTapDown: (d) => _onTapDown(d, canvasSize),
-              child: AnimatedBuilder(
-                animation: _tickerController,
-                builder: (context, child) {
-                  return CustomPaint(
-                    painter: SilhouettePainter(
-                      engine: _engine,
-                      animationValue: _tickerController.value,
-                      flyOffs: _flyOffs,
-                      flyProgress: _flyProgress,
-                    ),
-                    size: canvasSize,
-                  );
-                },
+            child: InteractiveViewer(
+              transformationController: _transformController,
+              constrained: false,
+              minScale: 0.3,
+              maxScale: 4.0,
+              boundaryMargin: const EdgeInsets.all(32),
+              child: SizedBox(
+                width: max(viewport.width, layout.size.width),
+                height: max(viewport.height, layout.size.height),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTapDown: (d) => _onTapDown(d, viewport),
+                  child: AnimatedBuilder(
+                    animation: Listenable.merge([_tickerController, _introController]),
+                    builder: (context, child) {
+                      return CustomPaint(
+                        painter: SilhouettePainter(
+                          engine: _engine,
+                          animationValue: _tickerController.value,
+                          flyOffs: _flyOffs,
+                          flyProgress: _flyProgress,
+                          introductionValue: _introController.value,
+                          maskDepths: _maskDepths,
+                          arrowBuildOrder: _arrowBuildOrder,
+                          isDark: isDark,
+                        ),
+                        size: layout.size,
+                      );
+                    },
+                  ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -534,13 +714,13 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
 
   Widget _buildControls(bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF1E293B).withValues(alpha: 0.8)
             : Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.05)
@@ -556,7 +736,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
             isDark: isDark,
             onTap: _undo,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 6),
           _buildControlButton(
             icon: Icons.lightbulb_outline_rounded,
             label: 'Hint ($_hintsRemaining)',
@@ -564,7 +744,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
             isDark: isDark,
             onTap: _useHint,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 6),
           _buildControlButton(
             icon: Icons.refresh_rounded,
             label: 'Reset',
@@ -573,27 +753,44 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
             onTap: _reset,
           ),
           const Spacer(),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'REMAINING',
-                style: GoogleFonts.inter(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  color: isDark ? Colors.white38 : Colors.black38,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Text(
-                '${_engine.activeCount}',
-                style: GoogleFonts.montserrat(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
+          _buildRemainingChip(isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRemainingChip(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black12,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${_engine.activeCount}',
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'LEFT',
+            style: GoogleFonts.inter(
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+              color: isDark ? Colors.white54 : Colors.black38,
+            ),
           ),
         ],
       ),
@@ -610,14 +807,14 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: enabled
               ? (isDark
                   ? Colors.white.withValues(alpha: 0.05)
                   : Colors.black.withValues(alpha: 0.05))
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: enabled
                 ? (isDark
@@ -626,11 +823,12 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                 : Colors.transparent,
           ),
         ),
-        child: Column(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 20,
+              size: 17,
               color: enabled
                   ? (isDark
                       ? Colors.white.withValues(alpha: 0.87)
@@ -639,7 +837,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                       ? Colors.white.withValues(alpha: 0.24)
                       : Colors.black.withValues(alpha: 0.24)),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(width: 4),
             Text(
               label,
               style: GoogleFonts.inter(
@@ -831,4 +1029,68 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
       ),
     );
   }
+}
+
+/// Paints a small preview of a level's silhouette mask so the level picker
+/// shows the real shape instead of an emoji.
+class _MaskThumb extends StatelessWidget {
+  const _MaskThumb({
+    required this.level,
+    required this.color,
+    this.opacity = 1.0,
+  });
+
+  final SilhouetteLevel level;
+  final Color color;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _MaskThumbPainter(
+        mask: level.mask,
+        color: color.withValues(alpha: opacity),
+      ),
+      size: Size.infinite,
+    );
+  }
+}
+
+class _MaskThumbPainter extends CustomPainter {
+  _MaskThumbPainter({required this.mask, required this.color});
+
+  final List<List<bool>> mask;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (mask.isEmpty || size.isEmpty) return;
+    final rows = mask.length;
+    var cols = 0;
+    for (final row in mask) {
+      if (row.length > cols) cols = row.length;
+    }
+    if (cols == 0) return;
+    final cell = min(size.width / cols, size.height / rows);
+    final ox = (size.width - cell * cols) / 2;
+    final oy = (size.height - cell * rows) / 2;
+    final paint = Paint()..color = color;
+    final radius = Radius.circular(cell * 0.24);
+    for (var row = 0; row < rows; row++) {
+      for (var col = 0; col < mask[row].length; col++) {
+        if (!mask[row][col]) continue;
+        final rect = Rect.fromLTWH(
+          ox + col * cell,
+          oy + row * cell,
+          cell + 0.5,
+          cell + 0.5,
+        );
+        canvas.drawRRect(RRect.fromRectAndRadius(rect, radius), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MaskThumbPainter old) =>
+      old.mask != mask || old.color != color;
 }

@@ -17,6 +17,12 @@ class LevelConfig {
   final int maxAttempts;
   final int moveSlack;
 
+  /// Preferred number of arrows for this level. When positive the generator
+  /// aims for this count (heavily penalising boards that fall short), which is
+  /// how the campaign guarantees the arrow count climbs level over level. Zero
+  /// falls back to the size-derived default.
+  final int targetArrows;
+
   const LevelConfig({
     this.minArrows = 4,
     this.maxArrows = 20,
@@ -26,6 +32,7 @@ class LevelConfig {
     this.largeArrowChance = 0.45,
     this.maxAttempts = 30,
     this.moveSlack = 8,
+    this.targetArrows = 0,
   });
 
   static const easy = LevelConfig(
@@ -95,7 +102,7 @@ class LevelConfig {
     maxCells: 22,
     maxBends: 8,
     largeArrowChance: 0.7,
-    maxAttempts: 40,
+    maxAttempts: 52,
     moveSlack: 5,
   );
 }
@@ -426,35 +433,51 @@ class PuzzleGenerator {
 
   int get _minSegLen => max(3, config.minCells);
 
+  /// Target length for the next arrow. Produces a deliberate short/medium/long
+  /// mix: a base short-to-medium block, then `largeArrowChance` decides whether
+  /// this particular arrow grows into a long flowing stroke. Inner rings get a
+  /// small extra nudge so the middle of the picture reads as continuous flow.
   int _ringTargetLen(int depth, int maxDepth) {
-    var len = 6 + _rng.nextInt(3); // 6..8
-    if (config.maxCells > 12) len += _rng.nextInt(3); // up to 10 on hard+
-    if (depth * 3 >= maxDepth * 2) len += 3; // inner rings: long flowing strokes
-    if (cols >= 20) len += 2 + _rng.nextInt(3); // wide boards: longer flowing arms
+    final span = (config.maxCells - _minSegLen).clamp(1, 1 << 20);
+    var len = _minSegLen + _rng.nextInt(max(1, (span * 0.5).round()));
+    if (_rng.nextDouble() < config.largeArrowChance) {
+      len += 1 + _rng.nextInt(max(1, (span * 0.5).round()));
+    }
+    if (maxDepth > 0 && depth * 3 >= maxDepth * 2) len += 1;
     return len.clamp(_minSegLen, config.maxCells).toInt();
   }
 
-  /// Choose the end index for the next ring segment near [target] cells long.
-  /// Prefers an end where the segment finishes with a straight tail, stays
-  /// within the per-arrow bend budget, and is a clean flowing curve (few
-  /// direction reversals). Early-cut candidates that leave a hairpin or S-wiggle
-  /// in the next segment are avoided by length-budgeting each chop.
+  /// Choose where to cut the trail into the next arrow. Instead of taking the
+  /// first workable end, every candidate within the length window is scored so
+  /// the split favours: a clean straight tail (so the arrowhead reads clearly),
+  /// smooth single-sense curves (few sign flips), a natural length near the
+  /// target, no tiny unusable remainder left behind, and fewer bends overall.
   int? _pickChop(List<GridCell> trail, int start, int target) {
-    final maxEnd = min(start + target + 2, trail.length);
-    int? fallback;
-    int? smoothCut;
-    for (var end = maxEnd; end >= start + _minSegLen; end--) {
-      if (end - start > config.maxCells) continue;
-      if (end - start > trail.length - start) continue;
+    final maxEnd = min(start + target + 3, trail.length);
+    int? best;
+    var bestScore = -(1 << 30);
+    for (var end = start + _minSegLen; end <= maxEnd; end++) {
+      final segLen = end - start;
+      if (segLen > config.maxCells) continue;
       final seg = trail.sublist(start, end);
-      if (_countBends(seg) > config.maxBends) continue;
-      if (_lastSegmentLength(seg) >= 2) {
-        if (_signFlips(seg) <= 1) return end;
-        smoothCut ??= end;
+      final bends = _countBends(seg);
+      if (bends > config.maxBends) continue;
+      final tail = _lastSegmentLength(seg);
+      final flips = _signFlips(seg);
+      final remainder = trail.length - end;
+      var score = 0;
+      score += min(tail, 3) * 6; // straight, readable head
+      score -= flips * 6; // clean C-shape over zig-zag
+      score -= (segLen - target).abs() * 3; // natural length
+      score -= bends; // don't over-twist, but keep curves alive
+      score += segLen; // mild bias to longer, less fragmented pieces
+      if (remainder > 0 && remainder < _minSegLen) score -= 6; // no orphan stub
+      if (score > bestScore) {
+        bestScore = score;
+        best = end;
       }
-      fallback ??= end;
     }
-    return smoothCut ?? fallback;
+    return best;
   }
 
   /// Place one contour segment as an arrow. Tries the natural orientation, the
@@ -711,19 +734,6 @@ class PuzzleGenerator {
     return true;
   }
 
-  /// True when no cell of the board is covered by more than one arrow. The
-  /// contour walker can revisit a cell in thin (1-cell wide) corridors, and
-  /// such an attempt would double-cover the silhouette.
-  bool _cellsUnique(List<ArrowPiece> arrows) {
-    final seen = <int>{};
-    for (final arrow in arrows) {
-      for (final cell in arrow.cells) {
-        if (!seen.add(cell.row * cols + cell.col)) return false;
-      }
-    }
-    return true;
-  }
-
   int _countBends(List<GridCell> path) {
     var bends = 0;
     for (var i = 2; i < path.length; i++) {
@@ -899,53 +909,417 @@ class PuzzleGenerator {
     return false;
   }
 
-  /// Generate a solvable puzzle. Every board built here is solvable by
-  /// construction; several random ones are produced and the best-looking
-  /// (highest fill, more curved arrows) is returned.
-  PuzzleResult generate() {
+  /// Generate a puzzle.
+  ///
+  /// Every candidate board is solvable by construction. Several are produced
+  /// and the one with the best *combined* score wins, where visual composition
+  /// and gameplay quality are scored separately and blended (see
+  /// [_ScoreWeights]). Fill is only one visual factor, not the whole score, so
+  /// a slightly less-covered but prettier, better-flowing board can win.
+  ///
+  /// When [floorArrows] is positive the best board that reaches that many
+  /// arrows is preferred (falling back to the usual qualified/best board when
+  /// the floor is unreachable). The campaign passes the previous level's count
+  /// so the arrow count never drops as levels advance.
+  PuzzleResult generate({int floorArrows = 0}) {
     final totalCells = _maskCellCount;
     if (totalCells == 0) {
       return const PuzzleResult(arrows: [], solvable: true, totalCells: 0);
     }
 
+    // Target piece count: the level's explicit goal when set (so counts climb
+    // with the level), otherwise roughly 5 cells per arrow. The monotonic floor
+    // from the previous level raises the target when it is higher, so the
+    // generator actively works toward the floor instead of settling below it.
+    final baseTarget = config.targetArrows > 0
+        ? config.targetArrows
+        : max(1, (totalCells + 4) ~/ 5).toInt();
+    final idealPieces = max(baseTarget, floorArrows);
+
     List<ArrowPiece>? best;
-    var bestScore = -1;
-    final idealPieces = max(1, (totalCells / 7).ceil());
+    _BoardMetrics? bestMetrics;
+    // Boards that clear the "dense enough & has curves" bar are strongly
+    // preferred, but they are *not* required: if none qualify we still return
+    // the best-composed board rather than nothing (see prompt: do not reject a
+    // good composition merely for missing a fixed coverage threshold).
+    List<ArrowPiece>? bestQualified;
+    _BoardMetrics? bestQualifiedMetrics;
+    // Best board meeting the monotonic arrow floor, if one is found.
+    List<ArrowPiece>? bestFloor;
+    _BoardMetrics? bestFloorMetrics;
+
     for (var attempt = 0; attempt < config.maxAttempts; attempt++) {
       final arrows = _generateSolvableBoard();
       if (arrows.isEmpty) continue;
-      // Belt and braces: the construction guarantees solvability, but a quick
-      // greedy check lets us discard anything that slipped through.
+      // Full geometry audit: reject anything malformed before wasting a score.
+      if (_validateBoard(arrows) != null) continue;
+      // Independent solvability check (belt and braces).
       if (!arrowsAreSolvable(arrows, rows, cols)) continue;
-      // Thin corridors can make a contour walk revisit a cell, which would
-      // double-cover part of the silhouette; skip such attempts entirely.
-      if (!_cellsUnique(arrows)) continue;
 
-      var filled = 0;
-      var curved = 0;
-      for (final arrow in arrows) {
-        filled += arrow.cells.length;
-        if (_countBends(arrow.cells) >= 2) curved++;
+      final metrics = _measure(arrows, totalCells, idealPieces);
+      if (floorArrows > 0 &&
+          arrows.length >= floorArrows &&
+          (bestFloorMetrics == null || metrics.beats(bestFloorMetrics))) {
+        bestFloorMetrics = metrics;
+        bestFloor = arrows;
       }
-
-      final fillPct = filled * 1000 ~/ totalCells;
-      // Reward fill and curved arrows, but penalize fragmentation (too many
-      // tiny fillers) so the best-looking board wins.
-      final overage = max(0, arrows.length - idealPieces);
-      final score = fillPct + min(curved, 6) * 5 - overage;
-      if (score > bestScore) {
-        bestScore = score;
+      if (metrics.qualified &&
+          (bestQualifiedMetrics == null || metrics.beats(bestQualifiedMetrics))) {
+        bestQualifiedMetrics = metrics;
+        bestQualified = arrows;
+      }
+      if (bestMetrics == null || metrics.beats(bestMetrics)) {
+        bestMetrics = metrics;
         best = arrows;
       }
-      if (fillPct >= 940 && curved >= 2 && arrows.length <= idealPieces + 6) {
+
+      // Only stop early on a board that is genuinely good-looking *and*
+      // interesting to play, not merely well filled. A floor target also has to
+      // be satisfied before we can stop.
+      if (metrics.visual >= 0.80 &&
+          metrics.gameplay >= 0.50 &&
+          metrics.fill >= 0.90 &&
+          metrics.curved >= 2 &&
+          metrics.fragments <= max(2, arrows.length ~/ 6) &&
+          (floorArrows == 0 || arrows.length >= floorArrows)) {
         break;
       }
     }
 
+    final chosen = bestFloor ?? bestQualified ?? best;
+    if (chosen != null) {
+      _assignColors(chosen, 6);
+    }
+
     return PuzzleResult(
-      arrows: best ?? const [],
+      arrows: chosen ?? const [],
       solvable: true,
       totalCells: totalCells,
     );
+  }
+
+  /// Reject malformed boards before they are scored.
+  String? _validateBoard(List<ArrowPiece> arrows) {
+    final seen = <int>{};
+    final ids = <String>{};
+    for (final a in arrows) {
+      if (!ids.add(a.id)) return 'duplicate id ${a.id}';
+      if (a.cells.isEmpty) return 'empty arrow ${a.id}';
+      if (a.cells.length > config.maxCells) return 'arrow too long ${a.id}';
+      final lastDir = _lastSegmentDirection(a.cells);
+      if (lastDir == null || lastDir != a.direction) {
+        return 'direction mismatch ${a.id}';
+      }
+      for (var i = 0; i < a.cells.length; i++) {
+        final cell = a.cells[i];
+        if (!_inBounds(cell.row, cell.col)) return 'out of bounds ${a.id}';
+        if (cell.row >= mask.length ||
+            cell.col >= mask[cell.row].length ||
+            !mask[cell.row][cell.col]) {
+          return 'off-mask ${a.id}';
+        }
+        if (i > 0) {
+          final p = a.cells[i - 1];
+          if ((cell.row - p.row).abs() + (cell.col - p.col).abs() != 1) {
+            return 'disconnected ${a.id}';
+          }
+        }
+        if (!seen.add(cell.row * cols + cell.col)) {
+          return 'overlap @${cell.row},${cell.col}';
+        }
+      }
+    }
+    return null;
+  }
+
+  /// True when [arrow]'s head ray leaves the board without hitting [occ].
+  /// Mirrors the engine's [SilhouetteEngine.canEscape] tap rule exactly.
+  bool _clearAgainst(ArrowPiece a, Set<int> occ) {
+    var r = a.headCell.row + a.direction.dy;
+    var c = a.headCell.col + a.direction.dx;
+    while (_inBounds(r, c)) {
+      if (occ.contains(r * cols + c)) return false;
+      r += a.direction.dy;
+      c += a.direction.dx;
+    }
+    return true;
+  }
+
+  /// Greedy peel profile: initial free choices, average choices per step, and
+  /// how many steps were forced (only one legal move). Drives gameplay scoring.
+  ({int initial, double avg, int forced}) _solveProfile(
+      List<ArrowPiece> arrows) {
+    final occ = <int>{};
+    for (final a in arrows) {
+      for (final c in a.cells) {
+        occ.add(c.row * cols + c.col);
+      }
+    }
+    final remaining = arrows.toList();
+    var initial = 0;
+    var sum = 0;
+    var steps = 0;
+    var forced = 0;
+    while (remaining.isNotEmpty) {
+      final avail = <ArrowPiece>[];
+      for (final a in remaining) {
+        if (_clearAgainst(a, occ)) avail.add(a);
+      }
+      if (avail.isEmpty) break;
+      if (steps == 0) initial = avail.length;
+      if (avail.length == 1) forced++;
+      sum += avail.length;
+      steps++;
+      final pick = avail.first;
+      for (final c in pick.cells) {
+        occ.remove(c.row * cols + c.col);
+      }
+      remaining.remove(pick);
+    }
+    return (initial: initial, avg: steps == 0 ? 0.0 : sum / steps, forced: forced);
+  }
+
+  /// Fraction of uncovered cells that are *consolidated* (touching another
+  /// uncovered cell) rather than isolated single-cell holes. 1.0 = either fully
+  /// covered or all gaps are clustered; low = confetti gaps.
+  double _gapQuality(List<ArrowPiece> arrows, int totalCells) {
+    final covered = <int>{};
+    for (final a in arrows) {
+      for (final c in a.cells) {
+        covered.add(c.row * cols + c.col);
+      }
+    }
+    final uncovered = <int>[];
+    for (var r = 0; r < rows; r++) {
+      if (r >= mask.length) break;
+      for (var c = 0; c < cols; c++) {
+        if (c < mask[r].length &&
+            mask[r][c] &&
+            !covered.contains(r * cols + c)) {
+          uncovered.add(r * cols + c);
+        }
+      }
+    }
+    if (uncovered.isEmpty) return 1.0;
+    final un = uncovered.toSet();
+    var isolated = 0;
+    for (final k in uncovered) {
+      final r = k ~/ cols;
+      final c = k % cols;
+      final hasNeighbour = un.contains((r - 1) * cols + c) ||
+          un.contains((r + 1) * cols + c) ||
+          un.contains(r * cols + (c - 1)) ||
+          un.contains(r * cols + (c + 1));
+      if (!hasNeighbour) isolated++;
+    }
+    return 1 - isolated / uncovered.length;
+  }
+
+  /// Measure both visual composition and gameplay quality for one board.
+  _BoardMetrics _measure(
+      List<ArrowPiece> arrows, int totalCells, int idealPieces) {
+    var filled = 0;
+    var curved = 0;
+    var fragments = 0;
+    var totalBends = 0;
+    var totalFlips = 0;
+    var outward = 0;
+    for (final a in arrows) {
+      final len = a.cells.length;
+      filled += len;
+      final bends = _countBends(a.cells);
+      totalBends += bends;
+      if (bends >= 2) curved++;
+      if (len <= 3) fragments++;
+      totalFlips += _signFlips(a.cells);
+      if (_depthOf(a.headCell) <= _depthOf(a.tailCell)) outward++;
+    }
+    final n = arrows.length;
+    final fill = filled / totalCells;
+
+    // ---- Visual composition (each factor normalised to 0..1) ----
+    final fillC = fill.clamp(0.0, 1.0);
+    final smoothC = 1 - min(1.0, totalFlips / max(1.0, n * 1.4));
+    final outwardC = outward / n;
+
+    final shortFrac = arrows.where((a) => a.cells.length <= 4).length / n;
+    final longFrac = arrows.where((a) => a.cells.length >= 7).length / n;
+    final medFrac = (1 - shortFrac - longFrac).clamp(0.0, 1.0);
+    final lengthC = 1 -
+        0.5 *
+            ((shortFrac - 0.30).abs() +
+                (medFrac - 0.50).abs() +
+                (longFrac - 0.20).abs());
+
+    final straightFrac = arrows.where((a) => _countBends(a.cells) == 0).length / n;
+    final twoFrac = curved / n;
+    final oneFrac = (1 - straightFrac - twoFrac).clamp(0.0, 1.0);
+    final bendC = 1 -
+        0.5 *
+            ((straightFrac - 0.35).abs() +
+                (oneFrac - 0.40).abs() +
+                (twoFrac - 0.25).abs());
+
+    final gapC = _gapQuality(arrows, totalCells);
+
+    final visual = (_ScoreWeights.fill * fillC +
+            _ScoreWeights.smooth * smoothC +
+            _ScoreWeights.outward * outwardC +
+            _ScoreWeights.lengthMix * lengthC.clamp(0.0, 1.0) +
+            _ScoreWeights.bendMix * bendC.clamp(0.0, 1.0) +
+            _ScoreWeights.gaps * gapC)
+        .toDouble();
+
+    // ---- Gameplay quality ----
+    final prof = _solveProfile(arrows);
+    final arityC = _arityScore(n, idealPieces);
+    final choicesC = min(1.0, prof.initial / 6.0);
+    final forcedC = 1 - prof.forced / n;
+    final avgBend = totalBends / n;
+    final bendPlayC = 1 - min(1.0, (avgBend - 1).abs() / 2.0);
+    final gameplay = (_ScoreWeights.arity * arityC +
+            _ScoreWeights.choices * choicesC +
+            _ScoreWeights.forced * forcedC +
+            _ScoreWeights.bends * bendPlayC)
+        .toDouble();
+
+    return _BoardMetrics(
+      visual: visual,
+      gameplay: gameplay,
+      fill: fill,
+      fragments: fragments,
+      count: n,
+      flips: totalFlips,
+      curved: curved,
+    );
+  }
+
+  /// How close the board's arrow count is to the level's target. Distance is
+  /// penalised in both directions so counts track the smoothly-rising per-level
+  /// target (mildly biased against falling short), which keeps the campaign's
+  /// arrow count climbing instead of spiking and dipping with each silhouette.
+  double _arityScore(int count, int ideal) {
+    if (ideal <= 0) return 1;
+    final signed = count < ideal ? (ideal - count).toDouble() : (count - ideal) * 0.75;
+    return (1 - min(1.0, signed / ideal)).clamp(0.0, 1.0).toDouble();
+  }
+
+  /// Deterministically recolour a finished board so orthogonally-adjacent
+  /// arrows rarely share a colour, using a stable top-left-first sweep. Never
+  /// touches geometry, so solvability is unaffected.
+  void _assignColors(List<ArrowPiece> arrows, int palette) {
+    final cellToArrow = <int, int>{};
+    for (var i = 0; i < arrows.length; i++) {
+      for (final cell in arrows[i].cells) {
+        cellToArrow[cell.row * cols + cell.col] = i;
+      }
+    }
+    final neighbours = List.generate(arrows.length, (_) => <int>{});
+    for (var i = 0; i < arrows.length; i++) {
+      for (final cell in arrows[i].cells) {
+        for (final d in const [(1, 0), (-1, 0), (0, 1), (0, -1)]) {
+          final nr = cell.row + d.$1;
+          final nc = cell.col + d.$2;
+          if (!_inBounds(nr, nc)) continue;
+          final j = cellToArrow[nr * cols + nc];
+          if (j != null && j != i) {
+            neighbours[i].add(j);
+            neighbours[j].add(i);
+          }
+        }
+      }
+    }
+    final order = List.generate(arrows.length, (i) => i)
+      ..sort((a, b) {
+        final ca = arrows[a].cells.first;
+        final cb = arrows[b].cells.first;
+        if (ca.row != cb.row) return ca.row - cb.row;
+        if (ca.col != cb.col) return ca.col - cb.col;
+        return a - b;
+      });
+    final assigned = List.filled(arrows.length, false);
+    for (final i in order) {
+      final used = <int, int>{};
+      for (final j in neighbours[i]) {
+        if (!assigned[j]) continue;
+        used[arrows[j].colorIndex] = (used[arrows[j].colorIndex] ?? 0) + 1;
+      }
+      var bestColor = 0;
+      var bestUse = 1 << 20;
+      for (var c = 0; c < palette; c++) {
+        final use = used[c] ?? 0;
+        if (use < bestUse) {
+          bestUse = use;
+          bestColor = c;
+        }
+      }
+      arrows[i].colorIndex = bestColor;
+      assigned[i] = true;
+    }
+  }
+}
+
+/// Configurable, documented weights for the two-part score. Adjust these to
+/// bias generation toward prettier boards (visual*) or more interesting
+/// puzzles (gameplay*). Each group is normalised internally to roughly 0..1.
+class _ScoreWeights {
+  const _ScoreWeights._();
+
+  // Visual composition (sums to 1.0).
+  static const double fill = 0.44; // coverage of the silhouette
+  static const double smooth = 0.12; // few wiggles/sign-flips
+  static const double outward = 0.12; // heads point toward open space
+  static const double lengthMix = 0.14; // varied short/medium/long mix
+  static const double bendMix = 0.10; // varied straight/one/two-bend mix
+  static const double gaps = 0.08; // consolidated, not scattered, gaps
+
+  // Gameplay quality (sums to 1.0).
+  static const double arity = 0.45; // arrow count close to the level target
+  static const double choices = 0.20; // meaningful opening choices
+  static const double forced = 0.18; // few forced single-move steps
+  static const double bends = 0.17; // interesting (moderate) bend average
+
+  // Blend of the two groups.
+  static const double visualWeight = 0.60;
+  static const double gameplayWeight = 0.40;
+}
+
+/// Immutable per-candidate measurements plus a deterministic ordering
+/// (higher combined score, then visual, then fill, then fewer fragments, then
+/// more arrows, then fewer wiggles) so generation is reproducible.
+class _BoardMetrics {
+  final double visual;
+  final double gameplay;
+  final double fill;
+  final int fragments;
+  final int count;
+  final int flips;
+  final int curved;
+
+  const _BoardMetrics({
+    required this.visual,
+    required this.gameplay,
+    required this.fill,
+    required this.fragments,
+    required this.count,
+    required this.flips,
+    required this.curved,
+  });
+
+  double get combined =>
+      _ScoreWeights.visualWeight * visual +
+      _ScoreWeights.gameplayWeight * gameplay;
+
+  /// Dense enough and contains multi-bend arrows: the bar the project's
+  /// acceptance tests expect. Preferred, not mandatory.
+  bool get qualified => fill >= 0.72 && curved >= 2;
+
+  bool beats(_BoardMetrics o) {
+    if ((combined - o.combined).abs() > 1e-9) return combined > o.combined;
+    if ((visual - o.visual).abs() > 1e-9) return visual > o.visual;
+    if ((fill - o.fill).abs() > 1e-9) return fill > o.fill;
+    if (fragments != o.fragments) return fragments < o.fragments;
+    if (count != o.count) return count > o.count;
+    return flips < o.flips;
   }
 }

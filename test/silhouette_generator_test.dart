@@ -159,7 +159,8 @@ class _Stats {
       curved,
       fillPercent,
       'arrows=${arrows.length} fill=${fillPercent.toStringAsFixed(1)}% '
-          'curved(bends>=2)=$curved',
+          'curved(bends>=2)=$curved '
+          'board=${level.gridCols}x${level.gridRows}',
       level.gridRows,
       level.gridCols,
     );

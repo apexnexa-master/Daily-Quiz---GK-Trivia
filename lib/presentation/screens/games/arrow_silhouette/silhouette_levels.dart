@@ -1,3 +1,6 @@
+import 'dart:collection';
+import 'dart:math' as math;
+
 import 'silhouette_models.dart';
 import 'puzzle_generator.dart';
 
@@ -27,15 +30,6 @@ class SilhouetteLevel {
   List<ArrowPiece> generateArrows() => arrowFactory();
 }
 
-List<List<bool>> _parseMask(String compact) {
-  final lines = compact.split('\n').where((l) => l.trim().isNotEmpty);
-  final rows = <List<bool>>[];
-  for (final line in lines) {
-    rows.add(line.trim().split('').map((c) => c == '1').toList());
-  }
-  return rows;
-}
-
 List<ArrowPiece> _generateLevelArrows(SilhouetteLevel level) {
   final generator = PuzzleGenerator(
     rows: level.gridRows,
@@ -47,771 +41,1449 @@ List<ArrowPiece> _generateLevelArrows(SilhouetteLevel level) {
   return generator.generate().arrows;
 }
 
-const heartMaskCompact = '''
-0000111111110000
-0001111111111000
-0011111111111100
-0111111111111110
-0111111111111110
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-0111111111111110
-0111111111111110
-0011111111111100
-0001111111111000
-0000111111110000
-0000011111100000
-0000001111000000
-0000000110000000
-''';
+/// Cache of generated boards, filled in strict level order so each level can
+/// require at least as many arrows as the one before it. Generation is
+/// deterministic and prefix-ordered, so the result is stable no matter which
+/// level is opened first; once a level is generated its arrows are reused.
+final List<PuzzleResult> _progressiveResults = <PuzzleResult>[];
 
-const starMaskCompact = '''
-0000001100000000
-0000011110000000
-0000111111000000
-0001111111100000
-1111111111111110
-0111111111111100
-0011111111111000
-0001111111110000
-0011110001111000
-0111100000111100
-1111000000011110
-1110000000001110
-1000000000000010
-''';
+List<ArrowPiece> _generateProgressiveArrows(int index) {
+  while (_progressiveResults.length <= index) {
+    final i = _progressiveResults.length;
+    final level = silhouetteLevels[i];
+    final floor = i == 0 ? 0 : _progressiveResults[i - 1].arrows.length;
+    final generator = PuzzleGenerator(
+      rows: level.gridRows,
+      cols: level.gridCols,
+      mask: level.mask,
+      config: level.config,
+      seed: level.id,
+    );
+    _progressiveResults.add(generator.generate(floorArrows: floor));
+  }
+  return _progressiveResults[index].arrows;
+}
 
-const birdMaskCompact = '''
-0000000111000000
-0000001111100000
-0000011111110000
-0000111111111000
-0001111111111100
-0011111111111110
-0111111111111100
-1111111111111000
-0111111111110000
-0011111111100000
-0001111111000000
-0000111110000000
-0000011100000000
-''';
+/// Tiny drawing language for building tall, detailed silhouettes with lots of
+/// interior features. Every level below is drawn as a big picture that fills
+/// most of a portrait board (24+ rows) so the arrows read clearly and the
+/// board uses the whole screen instead of floating as a small island.
+class _MaskBuilder {
+  final int rows;
+  final int cols;
+  final List<List<bool>> g;
 
-const diamondMaskCompact = '''
-0000000110000000
-0000001111000000
-0000011111100000
-0000111111110000
-0001111111111000
-0011111111111100
-0111111111111110
-1111111111111111
-0111111111111110
-0011111111111100
-0001111111111000
-0000111111110000
-0000011111100000
-0000001111000000
-0000000110000000
-''';
+  _MaskBuilder(this.rows, this.cols)
+      : g = List.generate(rows, (_) => List.filled(cols, false));
 
-const treeMaskCompact = '''
-0000000110000000
-0000001111000000
-0000011111100000
-0000111111110000
-0001111111111000
-0011111111111100
-0111111111111110
-1111111111111111
-0000001111000000
-0000001111000000
-0000001111000000
-0000001111000000
-0000001111000000
-0000001111000000
-''';
+  bool _inside(int r, int c) => r >= 0 && r < rows && c >= 0 && c < cols;
 
-const moonMaskCompact = '''
-0000001111000000
-0000111111110000
-0001111111111000
-0011111101111100
-0111111000111110
-0111110000011110
-1111100000001111
-1111100000001111
-0111110000011110
-0111111000111110
-0011111101111100
-0001111111111000
-0000111111110000
-0000001111000000
-''';
+  _MaskBuilder set_(int r, int c) {
+    if (_inside(r, c)) g[r][c] = true;
+    return this;
+  }
 
-const flowerMaskCompact = '''
-0000001111000000
-0000111111110000
-0001111001111000
-0111100000011110
-0111000000001110
-1110000000000111
-1110000000000111
-0111000000001110
-0111100000011110
-0001111001111000
-0000111111110000
-0000001111000000
-0000001111000000
-0000001111000000
-0000001111000000
-''';
+  _MaskBuilder clear(int r, int c) {
+    if (_inside(r, c)) g[r][c] = false;
+    return this;
+  }
 
-const shieldMaskCompact = '''
-0000111111110000
-0001111111111000
-0011111111111100
-0111111111111110
-0111111111111110
-1111111111111111
-1111111111111111
-0111111111111110
-0011111111111100
-0001111111111000
-0000111111110000
-0000011111100000
-0000001111000000
-''';
+  _MaskBuilder rect(int r0, int c0, int r1, int c1) {
+    for (var r = r0; r <= r1; r++) {
+      for (var c = c0; c <= c1; c++) {
+        set_(r, c);
+      }
+    }
+    return this;
+  }
 
-const fishMaskCompact = '''
-0000000011000000
-0000001111110000
-0000011111111000
-0000111111111100
-0011111111111110
-0011111111111111
-0111111111111111
-0011111111111111
-0011111111111110
-0001111111111100
-0000111111111000
-0000011111110000
-0000001111100000
-0000111111000000
-0001111110000000
-''';
+  _MaskBuilder clearRect(int r0, int c0, int r1, int c1) {
+    for (var r = r0; r <= r1; r++) {
+      for (var c = c0; c <= c1; c++) {
+        clear(r, c);
+      }
+    }
+    return this;
+  }
 
-const butterflyMaskCompact = '''
-0000000110000000
-0011110110111100
-0111111111111110
-1111111111111111
-0111111111111110
-0001110110111000
-0000001111000000
-0000001111000000
-0111111111111110
-0111111111111110
-0011111111111100
-0001111111111000
-0000111111110000
-0000011111100000
-0000001111000000
-''';
+  _MaskBuilder line(int r0, int c0, int r1, int c1) {
+    var x = c0;
+    var y = r0;
+    final dx = (c1 - c0).abs();
+    final sx = c0 < c1 ? 1 : -1;
+    final dy = -(r1 - r0).abs();
+    final sy = r0 < r1 ? 1 : -1;
+    var err = dx + dy;
+    while (true) {
+      set_(y, x);
+      if (x == c1 && y == r1) break;
+      final e2 = 2 * err;
+      if (e2 >= dy) {
+        err += dy;
+        x += sx;
+      }
+      if (e2 <= dx) {
+        err += dx;
+        y += sy;
+      }
+    }
+    return this;
+  }
 
-const sunMaskCompact = '''
-0000001110000000
-0000001110000000
-0000001110000000
-0001111111110000
-0001111111110000
-0111111111111110
-0111111111111110
-1111111111111111
-1111111111111111
-0111111111111110
-0111111111111110
-0001111111110000
-0001111111110000
-0000001110000000
-0000001110000000
-0000001110000000
-''';
+  _MaskBuilder clearLine(int r0, int c0, int r1, int c1) {
+    var x = c0;
+    var y = r0;
+    final dx = (c1 - c0).abs();
+    final sx = c0 < c1 ? 1 : -1;
+    final dy = -(r1 - r0).abs();
+    final sy = r0 < r1 ? 1 : -1;
+    var err = dx + dy;
+    while (true) {
+      clear(y, x);
+      if (x == c1 && y == r1) break;
+      final e2 = 2 * err;
+      if (e2 >= dy) {
+        err += dy;
+        x += sx;
+      }
+      if (e2 <= dx) {
+        err += dx;
+        y += sy;
+      }
+    }
+    return this;
+  }
 
-const lightningMaskCompact = '''
-0000000010000000
-0000001110000000
-0000111110000000
-0011111100000000
-0111110000000000
-1111000000000000
-1110000000000000
-0111111000000000
-0001111111100000
-0000111111111100
-0000011111111000
-0000001111100000
-0000000111000000
-0000000011000000
-0000000110000000
-''';
+  /// A bent stroke of [width] parallel tracks; used for thick arms, trunks,
+  /// handles and tails.
+  _MaskBuilder stroke(int r0, int c0, int r1, int c1, {int width = 2}) {
+    final pdx = c1 - c0;
+    final pdy = r1 - r0;
+    final len = math.sqrt(pdx * pdx + pdy * pdy);
+    var nx = 0.0;
+    var ny = 0.0;
+    if (len > 0) {
+      nx = pdx / len;
+      ny = pdy / len;
+    }
+    for (var k = 0; k < width; k++) {
+      final off = k - (width - 1) / 2;
+      _lineI((r0 + ny * off).round(), (c0 + nx * off).round(),
+          (r1 + ny * off).round(), (c1 + nx * off).round());
+    }
+    return this;
+  }
 
-const mushroomMaskCompact = '''
-0000111111110000
-0011111111111100
-0111111111111110
-1111111111111111
-1111111111111111
-0111111111111110
-0011111111111100
-0001111111111000
-0000001111000000
-0000001111000000
-0000001111000000
-0000011111100000
-0000011111100000
-0000111111110000
-0000111111110000
-''';
+  void _lineI(int r0, int c0, int r1, int c1) => line(r0, c0, r1, c1);
 
-const cloudMaskCompact = '''
-0000000111110000
-0000001111111000
-0000011111111100
-0011111111111110
-0111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-0111111111111110
-0001111111111000
-''';
+  _MaskBuilder ellipse(double cr, double cc, double rx, double ry) {
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final dx = (c - cc) / rx;
+        final dy = (r - cr) / ry;
+        if (dx * dx + dy * dy <= 1.0) set_(r, c);
+      }
+    }
+    return this;
+  }
 
-const crownMaskCompact = '''
-0001000100010000
-0001000100010000
-0001110111011100
-0001110111011100
-0001111111111100
-0011111111111110
-0111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-0011111111111100
-''';
+  _MaskBuilder carveEllipse(double cr, double cc, double rx, double ry) {
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final dx = (c - cc) / rx;
+        final dy = (r - cr) / ry;
+        if (dx * dx + dy * dy <= 1.0) clear(r, c);
+      }
+    }
+    return this;
+  }
 
-const rocketMaskCompact = '''
-0000000110000000
-0000011111000000
-0000111111110000
-0001111111111000
-0011111111111100
-0111111111111110
-1111111111111111
-0111111111111110
-0001111111111000
-0000111111110000
-0000111111110000
-0000111111110000
-0110111111110110
-1111111111111111
-0001111111111000
-0000111000111000
-0000011000011000
-''';
+  _MaskBuilder disc(double cr, double cc, double radius) {
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final d = math.sqrt((c - cc) * (c - cc) + (r - cr) * (r - cr));
+        if (d <= radius) set_(r, c);
+      }
+    }
+    return this;
+  }
 
-const ghostMaskCompact = '''
-0000001111000000
-0000111111110000
-0011111111111100
-0111111111111110
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-1101101101101100
-1011011011011010
-1101101101101100
-0011111111111100
-''';
+  _MaskBuilder carve(double cr, double cc, double radius) {
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final d = math.sqrt((c - cc) * (c - cc) + (r - cr) * (r - cr));
+        if (d <= radius) clear(r, c);
+      }
+    }
+    return this;
+  }
 
-const snowmanMaskCompact = '''
-0000001111000000
-0000111111110000
-0001111111111000
-0011111111111100
-0011111111111100
-0001111111111000
-0001111111111000
-0001111111111000
-0000111111110000
-0000001111000000
-0011111111111100
-0111111111111110
-0111111111111110
-0111111111111110
-0111111111111110
-0011111111111100
-0001111111111000
-''';
+  _MaskBuilder circleRing(double cr, double cc, double radius,
+      {double thickness = 1.6}) {
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final d = math.sqrt((c - cc) * (c - cc) + (r - cr) * (r - cr));
+        if ((d - radius).abs() <= thickness) set_(r, c);
+      }
+    }
+    return this;
+  }
 
-const batteryMaskCompact = '''
-0000000011000000
-0000000011000000
-0000001111110000
-0000111111110000
-0111111111111110
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-0111111111111110
-0011111111111100
-0001111111111000
-''';
+  /// 5-point star; [innerFactor] sets notch depth, [ringMin] carves the hub.
+  _MaskBuilder star(double cr, double cc, double outer,
+      {double innerFactor = 0.48, double? ringMin}) {
+    final inner = outer * innerFactor;
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final dx = c - cc;
+        final dy = r - cr;
+        final d = math.sqrt(dx * dx + dy * dy);
+        final a = math.atan2(dy, dx);
+        final sa = _starRadius(a, outer, inner);
+        if (d <= sa && (ringMin == null || d >= sa * ringMin)) set_(r, c);
+      }
+    }
+    return this;
+  }
 
-const keyMaskCompact = '''
-0000001111110000
-0000111111111000
-0001111111111100
-0011111000111110
-0111110000011110
-0111100000001110
-0111100000001110
-0111100000001110
-0111110000011110
-0011111000111110
-0001111111111100
-0000111111111000
-0000001111110000
-0000000111110000
-0000000111110000
-0000000111110000
-0000000111000000
-0000000111000000
-''';
+  static double _starRadius(double a, double outer, double inner) {
+    const T = 2 * math.pi / 5;
+    final x = a % T;
+    final core = math.cos(2 * math.pi * x / T);
+    return (outer + inner) / 2 + (outer - inner) / 2 * core;
+  }
 
-const catMaskCompact = '''
-0000011000110000
-0000111101111000
-0001111111111100
-0001111111111100
-0111111111111110
-0111111111111110
-0001111111111000
-0000011111100000
-0001111111111000
-0111111111111110
-0111111111111110
-0111111111111110
-0111111111111110
-0011111111111100
-0001111111111000
-''';
+  /// Diamond (rotated square) via the L1 "taxicab" norm.
+  _MaskBuilder diamond(double cr, double cc, double radius,
+      {double? ringMin}) {
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        final d = (r - cr).abs() + (c - cc).abs();
+        if (d <= radius && (ringMin == null || d >= radius * ringMin)) {
+          set_(r, c);
+        }
+      }
+    }
+    return this;
+  }
 
-const pawMaskCompact = '''
-0011011011011000
-0011011011011000
-0001101101100000
-0000000000000000
-0000001111000000
-0000111111110000
-0011111111111100
-0111111111111110
-1111111111111111
-1111111111111111
-0111111111111110
-0001111111111000
-''';
+  /// Isoceles triangle. [rt] is the top (apex) row, [ct] the apex column;
+  /// [rb] the bottom row and [halfW] the half-width of the base at [rb].
+  _MaskBuilder triangle(int rt, double ct, int rb, double halfW) {
+    for (var r = rt; r <= rb; r++) {
+      final t = rb == rt ? 0.0 : (r - rt) / (rb - rt);
+      final hw = halfW * (1 - t) + 0.4;
+      for (var c = (ct - hw).ceil(); c <= (ct + hw).floor(); c++) {
+        set_(r, c);
+      }
+    }
+    return this;
+  }
 
-const bellMaskCompact = '''
-0000000110000000
-0000001111000000
-0000011111100000
-0001111111111000
-0011111111111100
-0111111111111110
-1111111111111111
-0111111111111110
-0011111111111100
-0001111111111000
-0000011111100000
-0000001111000000
-0000000000000000
-0000001001000000
-0000011000110000
-''';
+  /// Evenly spaced spokes radiating from a hub, from radius [r0] to [r1].
+  _MaskBuilder rays(double cr, double cc, double r0, double r1, int count,
+      {int width = 2}) {
+    for (var k = 0; k < count; k++) {
+      final a = k * 2 * math.pi / count;
+      final s = math.sin(a);
+      final c = math.cos(a);
+      stroke(
+        (cr + r0 * s).round(),
+        (cc + r0 * c).round(),
+        (cr + r1 * s).round(),
+        (cc + r1 * c).round(),
+        width: width,
+      );
+    }
+    return this;
+  }
 
-const carMaskCompact = '''
-0000001111110000
-0000011111111000
-0000111111111100
-0001111111111110
-0111111111111110
-1111111111111111
-1111111111111111
-1111111111111111
-1111111111111111
-0111111111111110
-0011111111111100
-0000011111110000
-0000111001110000
-0001110000111000
-0001100000001100
-0001100000001100
-''';
+  /// A ring of petal discs at radius [r] around a hub (flowers, suns, mandalas).
+  _MaskBuilder petalRing(double cr, double cc, double r, double pr, int count) {
+    for (var k = 0; k < count; k++) {
+      final a = k * 2 * math.pi / count;
+      disc(cr + r * math.sin(a), cc + r * math.cos(a), pr);
+    }
+    return this;
+  }
 
-const rangoliMaskCompact = '''
-1111111111111111111111
-1111111111111111111111
-1111000000000000001111
-1111111111111111111111
-1101111111111111111011
-1101111000000001111011
-1101111111111111111011
-1101101111111111011011
-1101101111001111011011
-1101101111111111011011
-1101101101111011011011
-1101101101111011011011
-1101101111111111011011
-1101101111001111011011
-1101101111111111011011
-1101111111111111111011
-1101111000000001111011
-1101111111111111111011
-1111111111111111111111
-1111000000000000001111
-1111111111111111111111
-1111111111111111111111
-''';
+  List<List<bool>> build() {
+    weldMask(g);
+    return g;
+  }
+}
 
-const chakraMaskCompact = '''
-000000000000000000000
-000000011111110000000
-000001111111111100000
-000011111010111110000
-000111101010101111000
-001111010111010111100
-001100110111011011100
-011111011111111101110
-011110111111110011110
-011001111111111100110
-011111111111111111110
-011001111111111100110
-011110011111110011110
-011101111111111101110
-001110101111011011100
-001111010111010111100
-000111011010101111000
-000011111010111110000
-000001111111111100000
-000000011111110000000
-000000000000000000000
-''';
+/// Welds every separated island in [grid] back onto the main body along the
+/// shortest possible bridge of empty cells, so a silhouette always reads as one
+/// connected object. Decorative carve/clear operations (facet lines, ray gaps,
+/// wing separations) frequently cut a shape into pieces; this undoes that.
+/// [grid] is mutated in place.
+void weldMask(List<List<bool>> grid) {
+  final rows = grid.length;
+  if (rows == 0) return;
+  var cols = 0;
+  for (final row in grid) {
+    if (row.length > cols) cols = row.length;
+  }
+  if (cols == 0) return;
 
-const tajMahalMaskCompact = '''
-11000000000011000000000011
-11000000000111100000000011
-11000000000111100000000011
-11000000001111110000000011
-11000000001111110000000011
-11000000011111111000000011
-11000000011111111000000011
-11000000011111111000000011
-11111000001111110000011111
-11111011111111111111011111
-11111011111111111111011111
-00000011111111111111000000
-00000011111111111111000000
-00000011111111111111000000
-00000011111111111111000000
-00111111111111111111111100
-11111111111111111111111111
-11111111111111111111111111
-''';
+  bool inside(int r, int c) => r >= 0 && r < rows && c >= 0 && c < cols;
+  bool filled(int r, int c) => inside(r, c) && c < grid[r].length && grid[r][c];
+  int key(int r, int c) => r * cols + c;
 
-const lotusMaskCompact = '''
-000000000010000000000
-000000000111000000000
-000000000111000000000
-000000101110100000000
-000001101111011000000
-000111111111111100000
-001111111111111110000
-011111111111111111000
-011111111111111111000
-111111111111111111100
-011111110001111111000
-001111100001111110000
-111111111111111111111
-''';
+  List<List<int>> components() {
+    final label = List.generate(rows, (_) => List.filled(cols, -1));
+    final comps = <List<int>>[];
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        if (!filled(r, c) || label[r][c] != -1) continue;
+        final id = comps.length;
+        final cells = <int>[];
+        final q = Queue<int>()..add(key(r, c));
+        label[r][c] = id;
+        while (q.isNotEmpty) {
+          final k = q.removeFirst();
+          cells.add(k);
+          final cr = k ~/ cols;
+          final cc = k % cols;
+          for (final d in const [(1, 0), (-1, 0), (0, 1), (0, -1)]) {
+            final nr = cr + d.$1;
+            final nc = cc + d.$2;
+            if (!filled(nr, nc) || label[nr][nc] != -1) continue;
+            label[nr][nc] = id;
+            q.add(key(nr, nc));
+          }
+        }
+        comps.add(cells);
+      }
+    }
+    return comps;
+  }
 
-const diyaMaskCompact = '''
-0000000000000000000
-0000000001000000000
-0000000010100000000
-0000000110110000000
-0000000110110000000
-0000000110110000000
-0000000011100000000
-0000000001000000000
-0000000000000000000
-0000011111111100000
-0000111111111110000
-0001111111111111000
-0011111111111111100
-0001111111111111000
-0000001111111000000
-0000000111110000000
-''';
+  void bridge(Set<int> main, Set<int> target) {
+    final size = rows * cols;
+    final dist = List<int>.filled(size, 1 << 30);
+    final prev = List<int>.filled(size, -1);
+    final deque = Queue<int>();
+    for (final k in main) {
+      dist[k] = 0;
+      deque.addFirst(k);
+    }
+    var found = -1;
+    while (deque.isNotEmpty) {
+      final k = deque.removeFirst();
+      if (target.contains(k)) {
+        found = k;
+        break;
+      }
+      final cr = k ~/ cols;
+      final cc = k % cols;
+      for (final d in const [(1, 0), (-1, 0), (0, 1), (0, -1)]) {
+        final nr = cr + d.$1;
+        final nc = cc + d.$2;
+        if (!inside(nr, nc)) continue;
+        final nk = key(nr, nc);
+        final w = filled(nr, nc) ? 0 : 1; // filling an empty cell costs one
+        final nd = dist[k] + w;
+        if (nd < dist[nk]) {
+          dist[nk] = nd;
+          prev[nk] = k;
+          if (w == 0) {
+            deque.addFirst(nk);
+          } else {
+            deque.addLast(nk);
+          }
+        }
+      }
+    }
+    if (found < 0) return;
+    var cur = found;
+    while (cur != -1) {
+      final r = cur ~/ cols;
+      final c = cur % cols;
+      grid[r][c] = true;
+      cur = prev[cur];
+    }
+  }
 
-const lionMaskCompact = '''
-0000000011111110000000
-0000011111111111110000
-0001111100000001111100
-0011100011111110001110
-0111001111111111100111
-1100111100000001111001
-1001110011111110011100
-1011101111111111101110
-0111011110000011110111
-0110111001111100111011
-1101110111111111011101
-1101101111111111101101
-1011101111111111101110
-1011011110111011110110
-1011011111111111110110
-1011011111111111110110
-1011011011111110110110
-1011011111111111110110
-1011101111000111101110
-1101101111000111101101
-''';
+  for (var guard = 0; guard < rows * cols; guard++) {
+    final comps = components();
+    if (comps.length <= 1) return;
+    comps.sort((a, b) => b.length.compareTo(a.length));
+    bridge(comps.first.toSet(), comps[1].toSet());
+  }
+}
 
-const trishulMaskCompact = '''
-000000000001100000000000
-000000000001100000000000
-000000000001100000000000
-000000000001100000000000
-000000000001100000000000
-011000000001100000000000
-110100000001100000000010
-011111111111111111111110
-000001000001100000000000
-000001000001100000000000
-000001000001100000000000
-000000000001100000000000
-000000000001100000000000
-000001000001100000000000
-000001000001100000000000
-000001000001100000000000
-000010000001100000000000
-100100000001100000000000
-011000000001100000000000
-000000000011110000000000
-''';
+/// Fills one-cell-wide interior gaps/channels (a gutter that is only a single
+/// cell wide, with solid cells on both sides). Silhouettes are meant to read as
+/// solid pictures, and thin channels are also the cells the generator finds
+/// hardest to cover, so closing them raises fill and legibility together.
+void closeMask(List<List<bool>> grid) {
+  final rows = grid.length;
+  if (rows == 0) return;
+  var cols = 0;
+  for (final row in grid) {
+    if (row.length > cols) cols = row.length;
+  }
+  if (cols == 0) return;
+  bool filled(int r, int c) =>
+      r >= 0 && r < rows && c >= 0 && c < cols && grid[r][c];
 
-const balloonMaskCompact = '''
-00000000000000000000
-00000000000000000000
-00000001111110000000
-00000011000011000000
-00000110011001100000
-00000110111101100000
-00000110111101100000
-00000110111101100000
-00000110011001100000
-00000011000011000000
-00000001111110000000
-00000000100100000000
-00000000100100000000
-00000000100100000000
-00000000100100000000
-00000000100100000000
-00000011111111000000
-00000011111111000000
-''';
+  for (var guard = 0; guard < rows * cols; guard++) {
+    final toFill = <(int, int)>[];
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < grid[r].length; c++) {
+        if (grid[r][c]) continue;
+        final vertical = filled(r - 1, c) && filled(r + 1, c);
+        final horizontal = filled(r, c - 1) && filled(r, c + 1);
+        if (vertical || horizontal) toFill.add((r, c));
+      }
+    }
+    if (toFill.isEmpty) return;
+    for (final (r, c) in toFill) {
+      grid[r][c] = true;
+    }
+  }
+}
 
-const snailMaskCompact = '''
-000011001111000001111001
-000110011100111110011100
-001110110011111111100110
-001101110111000001110111
-001101101110111110111011
-011111101101111111011011
-011111111011100011101101
-011111111011000001101101
-011011111011000001101101
-011011111111000001101101
-011011111111100011101101
-011011111111111111011011
-001101111110111110111011
-001101110111000001110111
-001110110011111111100110
-000110011100111110011100
-000011111111111111111111
-001111111111111111111111
-''';
+/// Nearest-neighbour resample of [src] onto an [outRows] x [outCols] grid,
+/// then thin gaps are closed and the shape welded so scaling never leaves a
+/// broken or holey silhouette. Used to grow the base silhouettes to a
+/// level-appropriate size without redrawing them by hand.
+List<List<bool>> resampleMask(List<List<bool>> src, int outRows, int outCols) {
+  final srcRows = src.length;
+  final srcCols = srcRows == 0 ? 0 : src[0].length;
+  final out = List.generate(outRows, (_) => List.filled(outCols, false));
+  if (srcRows == 0 || srcCols == 0) return out;
+  for (var r = 0; r < outRows; r++) {
+    final sr = ((r + 0.5) * srcRows / outRows).floor().clamp(0, srcRows - 1);
+    for (var c = 0; c < outCols; c++) {
+      final sc = ((c + 0.5) * srcCols / outCols).floor().clamp(0, srcCols - 1);
+      final row = src[sr];
+      out[r][c] = sc < row.length && row[sc];
+    }
+  }
+  closeMask(out);
+  weldMask(out);
+  return out;
+}
 
-const omMaskCompact = '''
-000000000000110000
-000000000011111100
-000000000111111100
-000000001111111000
-000000001111110000
-000000001111100000
-000000000111100000
-000000000111100000
-001111111111000000
-011111111100000000
-011111111000000000
-011111111000000000
-111111111100000000
-111111111110000000
-011111111110000000
-001111111100000000
-000111111000000000
-000011110000000000
-000001100000000000
-000000111000000000
-000001100000000000
-000011100000000000
-''';
 
-final List<SilhouetteLevel> silhouetteLevels = [
+// ---------------------------------------------------------------------------
+// Tall, detailed silhouettes. All boards are ~24 rows so the picture fills the
+// screen and the generator can pack in plenty of arrows.
+// ---------------------------------------------------------------------------
+
+List<List<bool>> _heartMask() {
+  final b = _MaskBuilder(24, 17);
+  b.disc(6.5, 5.2, 4.7);
+  b.disc(6.5, 9.8, 4.7);
+  b.triangle(6, 7.5, 21, 6.2);
+  b.carve(4.2, 6.4, 1.0);
+  b.carve(4.6, 8.6, 0.8);
+  b.carve(12.2, 6.2, 0.8);
+  b.carve(12.2, 8.8, 0.8);
+  b.carve(16.0, 7.5, 0.8);
+  return b.build();
+}
+
+List<List<bool>> _starMask() {
+  final b = _MaskBuilder(24, 17);
+  b.star(12.0, 8.0, 8.4, innerFactor: 0.45);
+  b.carve(12.0, 8.0, 1.3);
+  for (var k = 0; k < 5; k++) {
+    final a = math.pi / 2 + k * 2 * math.pi / 5;
+    b.carve(12.0 + 6.2 * math.sin(a), 8.0 + 6.2 * math.cos(a), 0.6);
+  }
+  b.diamond(1.5, 3.5, 1.2);
+  b.disc(22.5, 13.0, 1.0);
+  return b.build();
+}
+
+List<List<bool>> _pineappleMask() {
+  final b = _MaskBuilder(24, 17);
+  // Spiky crown of leaves.
+  b.stroke(6, 8, 0, 8, width: 2);
+  b.stroke(6, 8, 1, 5, width: 2);
+  b.stroke(6, 8, 1, 11, width: 2);
+  b.stroke(6, 8, 2, 2, width: 2);
+  b.stroke(6, 8, 2, 14, width: 2);
+  b.stroke(6, 8, 3, 0, width: 2);
+  b.stroke(6, 8, 3, 16, width: 2);
+  // Solid, plump body.
+  b.ellipse(15.0, 8.0, 6.2, 9.0);
+  // Diamond texture across the skin.
+  for (var r = 7; r <= 22; r += 3) {
+    for (var c = 3; c <= 13; c += 3) {
+      b.carve(r.toDouble(), c.toDouble(), 0.45);
+    }
+  }
+  return b.build();
+}
+
+List<List<bool>> _diamondMask() {
+  final b = _MaskBuilder(24, 17);
+  b.diamond(11.5, 8.0, 9.6);
+  b.clearLine(10, 8, 18, 8);
+  b.clearLine(10, 8, 16, 3);
+  b.clearLine(10, 8, 16, 13);
+  b.clearLine(10, 8, 5, 3);
+  b.clearLine(10, 8, 5, 13);
+  b.carve(3, 8, 0.7);
+  b.carve(7, 2.6, 0.7);
+  b.carve(7, 13.4, 0.7);
+  b.carve(20, 8, 0.7);
+  b.disc(23, 14, 0.8);
+  return b.build();
+}
+
+List<List<bool>> _treeMask() {
+  final b = _MaskBuilder(24, 17);
+  b.triangle(1, 8.0, 11, 6.8);
+  b.triangle(9, 8.0, 17, 6.4);
+  b.triangle(15, 8.0, 21, 5.6);
+  b.rect(21, 6, 23, 9);
+  b.rect(23, 2, 23, 13);
+  b.diamond(1.6, 8.0, 1.6);
+  b.clearLine(3, 9, 8, 5);
+  b.clearLine(10, 10, 15, 5);
+  b.carve(4, 6.5, 0.6);
+  b.carve(6, 9.5, 0.6);
+  b.carve(8, 5.5, 0.6);
+  b.carve(11, 10.5, 0.6);
+  b.carve(13, 6, 0.6);
+  b.carve(16, 10, 0.6);
+  b.carve(18, 7, 0.6);
+  return b.build();
+}
+
+List<List<bool>> _moonMask() {
+  final b = _MaskBuilder(24, 17);
+  b.disc(12.0, 8.0, 8.2);
+  b.carve(10.6, 10.2, 7.0);
+  b.carve(8.0, 6.6, 0.8);
+  b.carve(11.0, 9.4, 0.8);
+  b.carve(14.5, 11.6, 0.7);
+  b.carve(6.0, 9.0, 0.7);
+  b.disc(3.0, 4.0, 0.7);
+  b.disc(5.0, 12.5, 0.6);
+  b.disc(20.0, 3.0, 0.7);
+  b.disc(19.5, 13.0, 0.6);
+  b.disc(22.0, 7.0, 0.6);
+  return b.build();
+}
+
+List<List<bool>> _flowerMask() {
+  final b = _MaskBuilder(24, 17);
+  b.petalRing(4.0, 8.0, 5.0, 1.9, 8);
+  b.disc(4.0, 8.0, 2.6);
+  b.rect(9, 7, 15, 8);
+  b.stroke(9, 8, 15, 3, width: 3);
+  b.stroke(9, 7, 15, 12, width: 3);
+  b.rect(16, 4, 22, 11);
+  b.rect(16, 3, 16, 12);
+  b.rect(22, 5, 23, 10);
+  b.carve(4.0, 8.0, 0.9);
+  return b.build();
+}
+
+List<List<bool>> _foxMask() {
+  final b = _MaskBuilder(24, 17);
+  // Pointy ears.
+  b.diamond(2.5, 4.6, 2.6);
+  b.diamond(2.5, 11.4, 2.6);
+  // Broad head.
+  b.disc(12.5, 8.0, 7.3);
+  // Tapering snout.
+  b.triangle(12, 8.0, 21, 3.9);
+  // Eyes, nose and ear hollows.
+  b.carve(10.5, 5.6, 1.1);
+  b.carve(10.5, 10.4, 1.1);
+  b.carve(18.0, 8.0, 0.9);
+  b.carve(3.5, 4.6, 0.7);
+  b.carve(3.5, 11.4, 0.7);
+  return b.build();
+}
+
+List<List<bool>> _fishMask() {
+  final b = _MaskBuilder(24, 19);
+  b.ellipse(11.0, 8.5, 3.4, 7.1);
+  b.disc(5.5, 9.8, 2.4);
+  b.carve(4.8, 10.4, 0.6);
+  b.stroke(15, 6, 20, 2, width: 3);
+  b.stroke(15, 7, 20, 6, width: 3);
+  b.stroke(15, 7, 20, 10, width: 3);
+  b.stroke(9, 6, 12, 12, width: 2);
+  b.clearLine(9, 7, 9, 10);
+  b.clearLine(11, 6, 11, 11);
+  b.clearLine(14, 6, 14, 11);
+  b.clearLine(4, 7, 6, 6);
+  b.disc(2.0, 12.5, 0.7);
+  b.disc(1.0, 14.0, 0.6);
+  b.disc(3.0, 15.0, 0.6);
+  return b.build();
+}
+
+List<List<bool>> _butterflyMask() {
+  final b = _MaskBuilder(24, 18);
+  b.rect(5, 8, 18, 9);
+  b.disc(4, 8.5, 1.4);
+  b.stroke(4, 8, 1, 4, width: 2);
+  b.stroke(4, 8, 1, 12, width: 2);
+  b.ellipse(7, 4.2, 3.2, 5.0);
+  b.ellipse(7, 12.8, 3.2, 5.0);
+  b.ellipse(11, 3.2, 3.2, 5.4);
+  b.ellipse(11, 13.8, 3.2, 5.4);
+  b.carve(7, 4.4, 1.8);
+  b.carve(7, 12.6, 1.8);
+  b.carve(11.4, 3.4, 1.8);
+  b.carve(11.4, 13.6, 1.8);
+  for (var k = 0; k < 6; k++) {
+    final a = 2 * math.pi * k / 6;
+    b.carve(4.6 + 3.4 * math.sin(a), 4.6 + 3.4 * math.cos(a), 0.5);
+    b.carve(4.6 + 3.4 * math.sin(a), 12.4 + 3.4 * math.cos(a), 0.5);
+  }
+  return b.build();
+}
+
+List<List<bool>> _sunMask() {
+  final b = _MaskBuilder(24, 17);
+  b.disc(12.0, 8.0, 5.2);
+  b.rays(12.0, 8.0, 6.4, 10.6, 14, width: 3);
+  b.circleRing(12.0, 8.0, 3.6, thickness: 1.0);
+  for (var k = 0; k < 8; k++) {
+    final a = k * 2 * math.pi / 8;
+    b.carve(12.0 + 6.4 * math.sin(a), 8.0 + 6.4 * math.cos(a), 0.55);
+  }
+  return b.build();
+}
+
+List<List<bool>> _lightningMask() {
+  final b = _MaskBuilder(24, 16);
+  final segs = [
+    (2, 11),
+    (7, 5),
+    (10, 12),
+    (14, 6),
+    (17, 11),
+    (20, 3),
+    (22, 6),
+  ];
+  for (var i = 1; i < segs.length; i++) {
+    b.stroke(segs[i - 1].$1, segs[i - 1].$2, segs[i].$1, segs[i].$2,
+        width: 5);
+  }
+  b.diamond(1, 3.0, 1.6);
+  b.diamond(23, 13.5, 1.6);
+  b.disc(5, 14.5, 1.0);
+  b.disc(11, 12, 1.1);
+  b.disc(16, 6.5, 1.1);
+  return b.build();
+}
+
+List<List<bool>> _mushroomMask() {
+  final b = _MaskBuilder(24, 17);
+  b.ellipse(6.5, 8.0, 7.0, 5.0);
+  b.carve(2.5, 6.5, 1.4);
+  b.carve(3.0, 11.5, 1.0);
+  b.carve(5.0, 3.5, 1.0);
+  b.carve(8.0, 5.0, 0.7);
+  b.carve(6.5, 13.0, 0.7);
+  b.rect(12, 7, 19, 9);
+  b.rect(18, 6, 19, 10);
+  b.rect(12, 5, 13, 11);
+  b.rect(21, 3, 22, 12);
+  b.triangle(20, 1.5, 22, 0.8);
+  b.triangle(20, 5.5, 22, 0.8);
+  b.triangle(20, 10.5, 22, 0.8);
+  b.triangle(20, 13.5, 22, 0.8);
+  return b.build();
+}
+
+List<List<bool>> _cloudMask() {
+  final b = _MaskBuilder(24, 17);
+  b.disc(6.5, 4.0, 4.2);
+  b.disc(6.0, 10.5, 4.6);
+  b.disc(9.0, 13.5, 3.0);
+  b.rect(9, 1, 12, 15);
+  b.line(16, 3, 21, 3);
+  b.line(16, 6, 21, 6);
+  b.line(16, 10, 21, 10);
+  b.line(16, 13, 21, 13);
+  b.disc(20, 7, 1.0);
+  b.disc(21, 10, 1.2);
+  b.disc(20, 3, 0.9);
+  return b.build();
+}
+
+List<List<bool>> _crownMask() {
+  final b = _MaskBuilder(24, 17);
+  b.triangle(1, 2, 14, 1.3);
+  b.triangle(0, 5, 13, 1.3);
+  b.triangle(0, 8, 12, 1.3);
+  b.triangle(0, 11, 13, 1.3);
+  b.triangle(1, 14, 14, 1.3);
+  b.rect(13, 1, 15, 15);
+  b.rect(16, 3, 16, 12);
+  b.clearRect(8, 0, 9, 16);
+  b.diamond(14, 3, 1.0);
+  b.diamond(14, 8, 1.2);
+  b.diamond(14, 13, 1.0);
+  b.stroke(16, 8, 17, 8, width: 2);
+  b.diamond(19, 8, 4.0);
+  b.carve(19, 8, 1.8);
+  return b.build();
+}
+
+List<List<bool>> _rocketMask() {
+  final b = _MaskBuilder(24, 16);
+  b.triangle(0, 7.5, 4, 1.8);
+  b.rect(3, 5, 13, 9);
+  b.stroke(10, 5, 15, 2, width: 3);
+  b.stroke(10, 9, 15, 12, width: 3);
+  b.carve(6.5, 7.5, 1.2);
+  b.carve(10.5, 7.5, 0.7);
+  b.clearRect(5, 5, 5, 9);
+  b.clearLine(12, 5, 12, 9);
+  b.stroke(14, 5, 16, 4, width: 2);
+  b.stroke(14, 9, 16, 10, width: 2);
+  b.triangle(16, 7.5, 21, 2.2);
+  b.disc(4, 2, 0.6);
+  b.disc(9, 13, 0.7);
+  b.disc(14, 2.5, 0.6);
+  b.diamond(19, 4, 1.0);
+  return b.build();
+}
+
+List<List<bool>> _ghostMask() {
+  final b = _MaskBuilder(24, 16);
+  b.disc(6.5, 7.5, 4.4);
+  b.rect(11, 3, 16, 11);
+  b.rect(16, 3, 16, 11);
+  b.rect(17, 3, 18, 5);
+  b.rect(17, 6, 18, 8);
+  b.rect(17, 9, 18, 11);
+  b.rect(18, 2, 19, 3);
+  b.rect(18, 5, 19, 6);
+  b.rect(18, 8, 19, 9);
+  b.rect(18, 11, 19, 12);
+  b.rect(19, 3, 19, 11);
+  b.carve(5.2, 5.6, 0.9);
+  b.carve(5.2, 9.4, 0.9);
+  b.carve(8, 7.5, 0.8);
+  b.carve(7.5, 4.0, 0.6);
+  b.carve(7.5, 11.0, 0.6);
+  b.disc(10, 1.5, 0.5);
+  b.diamond(21, 13.5, 1.1);
+  return b.build();
+}
+
+List<List<bool>> _snowmanMask() {
+  final b = _MaskBuilder(24, 16);
+  b.disc(17, 7.5, 4.6);
+  b.disc(12.5, 7.5, 3.6);
+  b.disc(8.5, 7.5, 2.7);
+  b.rect(5, 4, 6, 10);
+  b.rect(3, 6, 4, 8);
+  b.carve(7, 6, 0.55);
+  b.carve(7, 9, 0.55);
+  b.triangle(7, 7.5, 9, 0.8);
+  b.carve(9, 6, 0.4);
+  b.carve(9, 7.5, 0.4);
+  b.carve(9, 9, 0.4);
+  b.clearRect(9, 4, 10, 10);
+  b.stroke(10, 10, 12, 12, width: 2);
+  b.stroke(10, 4, 13, 3, width: 2);
+  b.stroke(10, 11, 13, 12, width: 2);
+  b.carve(12, 7.5, 0.55);
+  b.carve(14, 7.5, 0.55);
+  b.carve(16, 7.5, 0.55);
+  b.rect(22, 4, 22, 11);
+  b.disc(2.5, 2, 1.0);
+  b.disc(3, 13.5, 0.9);
+  return b.build();
+}
+
+List<List<bool>> _batteryMask() {
+  final b = _MaskBuilder(24, 15);
+  b.rect(0, 5, 1, 8);
+  b.rect(1, 3, 21, 10);
+  b.clearRect(3, 6, 4, 8);
+  b.clearRect(6, 5, 6, 8);
+  b.clearRect(9, 5, 9, 8);
+  b.clearRect(12, 5, 12, 8);
+  b.clearRect(15, 5, 15, 8);
+  b.clearRect(18, 5, 18, 8);
+  b.clearRect(21, 5, 22, 8);
+  b.disc(5, 2, 0.7);
+  b.disc(5, 12, 0.7);
+  b.disc(14, 13, 0.8);
+  return b.build();
+}
+
+List<List<bool>> _keyMask() {
+  final b = _MaskBuilder(24, 15);
+  b.circleRing(5.0, 6.5, 3.6, thickness: 1.4);
+  b.circleRing(5.0, 6.5, 1.4, thickness: 0.8);
+  b.rect(8, 6, 21, 7);
+  b.rect(8, 5, 10, 8);
+  b.rect(13, 7, 14, 10);
+  b.rect(16, 7, 17, 12);
+  b.rect(19, 7, 20, 10);
+  b.carve(10.5, 6.5, 0.6);
+  b.carve(14, 6.5, 0.6);
+  b.carve(18, 6.5, 0.6);
+  return b.build();
+}
+
+List<List<bool>> _catMask() {
+  final b = _MaskBuilder(24, 18);
+  b.disc(5.5, 8.5, 3.4);
+  b.triangle(1, 5, 5, 1.6);
+  b.triangle(1, 12, 5, 1.6);
+  b.carve(4.2, 7, 0.8);
+  b.carve(4.2, 10, 0.8);
+  b.triangle(6, 8.5, 8, 0.7);
+  b.ellipse(14, 8.5, 5.2, 6.0);
+  b.carveEllipse(14, 8.5, 3.0, 3.4);
+  b.stroke(16, 2, 21, 5, width: 3);
+  b.carve(19, 4, 0.6);
+  b.disc(20, 6.5, 1.3);
+  b.disc(20, 10.5, 1.3);
+  b.carve(20, 6.5, 0.4);
+  b.carve(20, 10.5, 0.4);
+  return b.build();
+}
+
+List<List<bool>> _pawMask() {
+  final b = _MaskBuilder(24, 15);
+  b.ellipse(5, 7.0, 3.2, 2.4);
+  b.disc(1.3, 4.2, 1.1);
+  b.disc(1.3, 7.0, 1.15);
+  b.disc(1.3, 9.8, 1.1);
+  b.disc(3.6, 11.2, 0.8);
+  b.disc(9, 7.0, 0.9);
+  b.disc(12.5, 7.0, 0.9);
+  b.ellipse(16.5, 7.0, 2.4, 1.8);
+  b.disc(13.6, 5.2, 0.8);
+  b.disc(13.6, 7.0, 0.85);
+  b.disc(13.6, 8.8, 0.8);
+  b.rect(22, 4, 22, 10);
+  b.carve(5, 6.4, 0.5);
+  b.carve(5, 7.6, 0.5);
+  b.carve(5, 9.0, 0.5);
+  b.carve(5, 5.2, 0.5);
+  return b.build();
+}
+
+List<List<bool>> _bellMask() {
+  final b = _MaskBuilder(24, 16);
+  b.rect(0, 6, 1, 9);
+  b.rect(1, 6, 1, 8);
+  b.ellipse(7.5, 7.5, 4.4, 5.2);
+  b.triangle(9, 7.5, 15, 5.0);
+  b.rect(16, 7, 17, 7);
+  b.disc(18.5, 7.5, 1.6);
+  b.clearLine(3, 6, 3, 9);
+  b.clearLine(6, 3, 10, 3);
+  b.clearRect(10, 4, 14, 4);
+  b.clearRect(10, 6, 14, 6);
+  b.clearRect(10, 9, 14, 9);
+  b.rect(21, 12, 22, 14);
+  b.disc(22, 10.5, 0.9);
+  b.disc(2, 13, 0.9);
+  return b.build();
+}
+
+List<List<bool>> _carMask() {
+  final b = _MaskBuilder(24, 19);
+  b.rect(11, 2, 15, 16);
+  b.rect(6, 5, 11, 13);
+  b.rect(3, 2, 5, 16);
+  b.clearRect(7, 6, 9, 8);
+  b.clearRect(7, 10, 9, 12);
+  b.carve(14, 4.5, 2.1);
+  b.carve(14, 12.5, 2.1);
+  b.clearRect(12, 2, 12, 8);
+  b.clearRect(12, 10, 12, 16);
+  b.rect(20, 0, 21, 18);
+  b.clearRect(20, 2, 20, 5);
+  b.clearRect(20, 8, 20, 11);
+  b.clearRect(20, 15, 20, 17);
+  b.disc(3.5, 12, 1.7);
+  b.disc(1.5, 15, 1.3);
+  b.disc(0.5, 17, 0.8);
+  b.disc(2, 1.5, 1.5);
+  return b.build();
+}
+
+List<List<bool>> _rangoliMask() {
+  final b = _MaskBuilder(26, 26);
+  const cr = 12.5;
+  const cc = 12.5;
+  b.disc(cr, cc, 2.2);
+  b.diamond(cr, cc, 3.4, ringMin: 0.55);
+  b.circleRing(cr, cc, 5.0, thickness: 1.0);
+  b.rays(cr, cc, 1.5, 10.5, 16, width: 2);
+  b.petalRing(cr, cc, 8.0, 2.0, 8);
+  b.circleRing(cr, cc, 11.0, thickness: 1.0);
+  b.petalRing(cr, cc, 11.0, 1.4, 16);
+  b.disc(1.5, 1.5, 1.6);
+  b.disc(1.5, 24.5, 1.6);
+  b.disc(24.5, 1.5, 1.6);
+  b.disc(24.5, 24.5, 1.6);
+  b.disc(1.5, 12.5, 2.0);
+  b.disc(12.5, 1.5, 2.0);
+  b.disc(24.5, 12.5, 2.0);
+  b.disc(12.5, 24.5, 2.0);
+  return b.build();
+}
+
+List<List<bool>> _chakraMask() {
+  final b = _MaskBuilder(26, 26);
+  const cr = 12.5;
+  const cc = 12.5;
+  b.circleRing(cr, cc, 8.8, thickness: 2.2);
+  b.circleRing(cr, cc, 5.4, thickness: 1.6);
+  b.circleRing(cr, cc, 11.8, thickness: 1.2);
+  b.rays(cr, cc, 1.2, 8.4, 8, width: 2);
+  b.rays(cr, cc, 9.2, 11.9, 24, width: 1);
+  b.disc(cr, cc, 4.7);
+  b.disc(2, 12.5, 1.0);
+  b.disc(24.5, 12.5, 1.0);
+  return b.build();
+}
+
+List<List<bool>> _tajMahalMask() {
+  final b = _MaskBuilder(24, 23);
+  b.disc(9, 10.5, 4.8);
+  b.triangle(2, 10.5, 7, 1.3);
+  b.stroke(2, 10, 0, 10, width: 2);
+  b.disc(0, 10.5, 0.7);
+  b.rect(9, 5, 16, 16);
+  b.rect(12, 2, 16, 4);
+  b.rect(12, 18, 16, 20);
+  b.rect(0, 1, 16, 2);
+  b.rect(0, 20, 16, 21);
+  b.disc(0, 1.5, 0.9);
+  b.disc(0, 20.5, 0.9);
+  b.clearRect(9, 6, 15, 6);
+  b.clearRect(9, 10, 15, 10);
+  b.clearRect(9, 16, 15, 16);
+  b.clearRect(4, 2, 10, 2);
+  b.clearRect(4, 20, 10, 20);
+  b.rect(17, 2, 18, 20);
+  b.rect(19, 0, 19, 22);
+  b.clearLine(11, 8, 14, 8);
+  return b.build();
+}
+
+List<List<bool>> _lotusMask() {
+  final b = _MaskBuilder(24, 19);
+  b.petalRing(8.0, 9.0, 3.0, 2.6, 6);
+  b.petalRing(8.0, 9.0, 5.0, 4.2, 8);
+  b.disc(8.0, 9.0, 2.6);
+  b.rect(17, 8, 20, 9);
+  b.circleRing(20, 9.0, 4.5, thickness: 0.9);
+  b.circleRing(22, 9.0, 6.0, thickness: 0.8);
+  b.ellipse(20, 15.5, 3.0, 1.2);
+  b.clearRect(20, 15, 20, 16);
+  b.carve(8.0, 9.0, 1.0);
+  for (var k = 0; k < 6; k++) {
+    final a = k * 2 * math.pi / 6;
+    b.carve(8.0 + 3.4 * math.sin(a), 9.0 + 3.4 * math.cos(a), 0.7);
+  }
+  return b.build();
+}
+
+List<List<bool>> _diyaMask() {
+  final b = _MaskBuilder(24, 19);
+  b.ellipse(6.5, 9.0, 1.6, 3.6);
+  b.triangle(1, 9.0, 5, 1.0);
+  b.circleRing(6.5, 9.0, 2.3, thickness: 0.7);
+  b.disc(12, 9.0, 4.6);
+  b.circleRing(12, 9.0, 3.5, thickness: 0.9);
+  b.triangle(12, 13.5, 14, 1.2);
+  b.stroke(12, 14, 13, 15, width: 2);
+  b.carve(4.0, 9.0, 0.8);
+  b.rect(16, 6, 20, 11);
+  b.rect(20, 4, 21, 13);
+  b.rect(22, 5, 23, 12);
+  for (var k = 0; k < 5; k++) {
+    final a = k * 2 * math.pi / 5;
+    b.carve(12 + 3.5 * math.sin(a), 9 + 3.5 * math.cos(a), 0.45);
+  }
+  return b.build();
+}
+
+List<List<bool>> _lionMask() {
+  final b = _MaskBuilder(24, 19);
+  b.disc(11, 9.0, 6.9);
+  b.petalRing(11, 9.0, 7.1, 1.9, 14);
+  b.disc(5.5, 5.2, 1.5);
+  b.disc(5.5, 12.8, 1.5);
+  b.carve(9.6, 7.4, 0.7);
+  b.carve(9.6, 10.6, 0.7);
+  b.diamond(11.4, 9.0, 0.9);
+  b.disc(12.5, 9.0, 1.4);
+  b.clearLine(14, 8, 15, 9);
+  b.clearLine(14, 10, 15, 9);
+  b.carve(12.3, 5.8, 0.4);
+  b.carve(12.6, 6.4, 0.4);
+  b.carve(12.2, 9.0, 0.4);
+  b.carve(12.6, 11.6, 0.4);
+  b.carve(12.3, 12.2, 0.4);
+  b.rect(22, 6, 23, 12);
+  return b.build();
+}
+
+List<List<bool>> _trishulMask() {
+  final b = _MaskBuilder(24, 13);
+  b.rect(1, 5, 23, 7);
+  b.stroke(0, 1, 8, 5, width: 3);
+  b.stroke(0, 11, 8, 7, width: 3);
+  b.triangle(0, 6, 9, 2.6);
+  b.rect(4, 0, 6, 12);
+  b.circleRing(16, 6, 2.3, thickness: 1.0);
+  b.disc(16, 6, 0.8);
+  b.disc(20, 11.5, 0.9);
+  b.disc(20, 0.5, 0.9);
+  b.rect(20, 3, 21, 9);
+  b.rect(22, 2, 23, 10);
+  return b.build();
+}
+
+List<List<bool>> _balloonMask() {
+  final b = _MaskBuilder(24, 19);
+  b.ellipse(9, 9.0, 5.8, 6.6);
+  b.triangle(2, 9.0, 8, 1.6);
+  b.clearRect(4, 5, 14, 5);
+  b.clearRect(4, 13, 14, 13);
+  b.circleRing(9, 9.0, 2.8, thickness: 0.9);
+  b.stroke(11, 6, 17, 6, width: 1);
+  b.stroke(11, 12, 17, 12, width: 1);
+  b.rect(17, 6, 19, 12);
+  b.carve(18, 9, 0.5);
+  b.disc(21, 14, 1.2);
+  b.disc(6, 1.6, 1.5);
+  b.disc(3, 17, 1.6);
+  b.disc(2, 12, 1.2);
+  return b.build();
+}
+
+List<List<bool>> _snailMask() {
+  final b = _MaskBuilder(24, 18);
+  // Solid spiral shell (a filled disc with a carved two-cell spiral groove) so
+  // it stays dense and fills completely even when scaled up for later levels.
+  const cr = 11.5;
+  const cc = 9.5;
+  b.disc(cr, cc, 7.4);
+  for (var k = 0; k < 120; k++) {
+    final a = 0.35 * k;
+    final rr = 0.8 + 0.11 * k;
+    if (rr > 7.0) break;
+    b.carve(cr + rr * math.sin(a), cc + rr * math.cos(a), 0.9);
+  }
+  b.carve(cr, cc, 0.8);
+  // Foot / body and head.
+  b.rect(16, 2, 18, 15);
+  b.disc(15.5, 4.0, 1.9);
+  b.stroke(14, 3, 11, 0, width: 2);
+  b.stroke(14, 5, 12, 2, width: 2);
+  return b.build();
+}
+
+List<List<bool>> _omMask() {
+  final b = _MaskBuilder(24, 17);
+  b.circleRing(5, 4.6, 2.0, thickness: 1.2);
+  b.circleRing(5, 11.4, 2.0, thickness: 1.2);
+  b.circleRing(5, 8.0, 5.2, thickness: 1.0);
+  b.stroke(8, 8, 15, 8, width: 2);
+  b.disc(12, 8.0, 1.1);
+  b.circleRing(17.5, 8.0, 2.4, thickness: 1.1);
+  b.circleRing(20.5, 8.0, 3.0, thickness: 1.0);
+  b.disc(21, 2.5, 0.7);
+  b.disc(3, 14.5, 0.7);
+  return b.build();
+}
+
+List<List<bool>> _castleMask() {
+  final b = _MaskBuilder(24, 23);
+  b.rect(0, 1, 19, 4);
+  b.rect(0, 18, 19, 21);
+  b.rect(0, 1, 0, 4);
+  b.rect(0, 18, 0, 21);
+  b.rect(3, 6, 20, 13);
+  b.triangle(0, 9.5, 5, 3.4);
+  b.stroke(0, 9, 0, 9, width: 2);
+  b.clearRect(15, 10, 19, 11);
+  b.clearRect(5, 6, 11, 6);
+  b.clearRect(5, 13, 11, 13);
+  b.clearRect(4, 9, 10, 9);
+  b.clearRect(4, 2, 9, 2);
+  b.clearRect(4, 12, 9, 12);
+  b.clearRect(4, 19, 9, 19);
+  b.clearRect(4, 20, 9, 20);
+  b.clearRect(6, 1, 12, 1);
+  b.rect(20, 3, 21, 19);
+  b.rect(22, 0, 22, 22);
+  b.clearLine(11, 5, 14, 5);
+  return b.build();
+}
+
+List<List<bool>> _penguinMask() {
+  final b = _MaskBuilder(24, 17);
+  b.ellipse(12, 8.0, 5.6, 7.2);
+  b.disc(5, 8.0, 3.0);
+  b.carveEllipse(12.5, 8.0, 3.0, 4.4);
+  b.carve(3.8, 6.4, 0.55);
+  b.carve(3.8, 9.6, 0.55);
+  b.triangle(5, 8.0, 7, 1.1);
+  b.stroke(9, 3, 14, 1, width: 3);
+  b.stroke(9, 13, 14, 15, width: 3);
+  b.disc(20, 5.5, 1.2);
+  b.disc(20, 10.5, 1.2);
+  b.rect(22, 2, 22, 13);
+  b.carve(8.5, 5.0, 0.5);
+  b.carve(8.5, 11.0, 0.5);
+  return b.build();
+}
+
+List<List<bool>> _owlMask() {
+  final b = _MaskBuilder(24, 17);
+  b.ellipse(13, 8.0, 5.2, 6.2);
+  b.disc(6.5, 8.0, 3.8);
+  b.triangle(0, 4, 4, 1.1);
+  b.triangle(0, 12, 4, 1.1);
+  b.carve(5.2, 6.0, 1.3);
+  b.carve(5.2, 10.0, 1.3);
+  b.disc(5.2, 6.0, 0.65);
+  b.disc(5.2, 10.0, 0.65);
+  b.triangle(7, 8.0, 9, 0.9);
+  b.carveEllipse(9, 3.4, 1.4, 2.8);
+  b.carveEllipse(9, 12.6, 1.4, 2.8);
+  b.clearLine(11, 4, 11, 12);
+  b.clearLine(14, 4, 14, 12);
+  b.rect(20, 2, 21, 13);
+  b.triangle(19, 13, 21, 1.4);
+  b.carve(6.8, 7.2, 0.4);
+  b.carve(6.8, 8.8, 0.4);
+  return b.build();
+}
+
+List<List<bool>> _elephantMask() {
+  final b = _MaskBuilder(24, 21);
+  b.ellipse(12, 9.5, 6.4, 6.8);
+  b.disc(6.5, 6.5, 3.4);
+  b.stroke(7, 6, 14, 3, width: 3);
+  b.circleRing(15, 2.6, 1.1, thickness: 0.9);
+  b.ellipse(9, 14, 1.9, 3.4);
+  b.carve(9, 14, 0.9);
+  b.carve(4.8, 7.6, 0.5);
+  b.triangle(8, 5.8, 12, 1.1);
+  b.carve(8.2, 5.8, 0.5);
+  b.rect(18, 3, 21, 6);
+  b.rect(18, 7, 21, 10);
+  b.rect(18, 12, 21, 14);
+  b.rect(18, 16, 21, 17);
+  b.disc(21.5, 5, 1.2);
+  b.disc(21.5, 12.5, 1.2);
+  b.rect(23, 3, 23, 17);
+  b.carve(8.5, 8.2, 0.6);
+  b.carve(10.5, 8.2, 0.6);
+  b.carve(12.5, 8.2, 0.6);
+  return b.build();
+}
+
+List<List<bool>> _cactusMask() {
+  final b = _MaskBuilder(24, 15);
+  b.rect(0, 6, 16, 9);
+  b.clearRect(2, 7, 14, 7);
+  b.rect(2, 2, 6, 4);
+  b.rect(5, 4, 6, 6);
+  b.rect(7, 2, 13, 4);
+  b.rect(2, 10, 6, 12);
+  b.rect(5, 8, 6, 10);
+  b.rect(7, 12, 13, 14);
+  b.disc(0, 3, 1.1);
+  b.disc(0, 11, 1.1);
+  b.disc(0, 7.5, 1.2);
+  b.rect(17, 3, 21, 10);
+  b.rect(17, 2, 17, 11);
+  b.rect(21, 4, 22, 9);
+  b.rect(23, 5, 23, 8);
+  b.clearLine(11, 6, 13, 6);
+  return b.build();
+}
+
+List<List<bool>> _umbrellaMask() {
+  final b = _MaskBuilder(24, 19);
+  b.ellipse(8, 9.0, 8.4, 5.8);
+  b.rect(8, 0, 9, 18);
+  b.clearRect(3, 4, 8, 4);
+  b.clearRect(3, 8, 8, 8);
+  b.clearRect(3, 12, 8, 12);
+  b.clearRect(3, 16, 8, 16);
+  b.clearRect(8, 2, 8, 16);
+  b.stroke(11, 9, 19, 9, width: 2);
+  b.circleRing(21, 10.5, 1.2, thickness: 0.9);
+  b.stroke(13, 15, 17, 16, width: 1);
+  b.stroke(14, 2, 18, 3, width: 1);
+  b.disc(19, 5, 0.8);
+  b.disc(20, 7, 0.8);
+  b.disc(20, 12, 0.8);
+  b.disc(19, 14, 0.8);
+  return b.build();
+}
+
+List<List<bool>> _iceCreamMask() {
+  final b = _MaskBuilder(24, 17);
+  b.disc(1.8, 8.0, 1.0);
+  b.line(0, 8, 2, 8);
+  b.disc(5, 6.5, 3.0);
+  b.disc(7.5, 8.5, 3.0);
+  b.disc(10, 7.0, 2.5);
+  b.stroke(9, 5, 11, 4, width: 2);
+  b.stroke(8, 10, 10, 11, width: 2);
+  b.triangle(12, 8.0, 20, 3.6);
+  b.clearLine(13, 10, 19, 6);
+  b.clearLine(13, 6, 19, 10);
+  b.clearLine(14, 5, 15, 11);
+  b.carve(3.5, 7, 0.4);
+  b.carve(3, 6, 0.35);
+  b.carve(9, 11, 0.4);
+  b.carve(5.5, 9, 0.35);
+  b.carve(10.5, 12.5, 0.4);
+  return b.build();
+}
+
+List<List<bool>> _anchorMask() {
+  final b = _MaskBuilder(24, 17);
+  b.circleRing(2.5, 8.0, 1.9, thickness: 1.1);
+  b.rect(4, 7, 19, 8);
+  b.rect(5, 3, 8, 12);
+  b.stroke(11, 8, 16, 4, width: 3);
+  b.stroke(11, 8, 16, 12, width: 3);
+  b.triangle(17, 6, 20, 1.0);
+  b.triangle(17, 9.5, 20, 1.0);
+  b.triangle(19, 7.5, 23, 1.9);
+  b.triangle(19, 7.5, 23, 1.9);
+  b.clearRect(10, 5, 11, 9);
+  b.carve(8, 7.5, 0.6);
+  b.disc(22, 2, 0.8);
+  b.disc(23, 14, 0.8);
+  b.disc(3, 14, 0.7);
+  return b.build();
+}
+
+List<List<bool>> _hourglassMask() {
+  final b = _MaskBuilder(24, 13);
+  b.rect(0, 3, 1, 9);
+  b.rect(1, 3, 1, 9);
+  b.rect(22, 3, 23, 9);
+  b.triangle(2, 6.0, 11, 3.6);
+  b.triangle(13, 6.0, 21, 3.6);
+  b.rect(11, 5, 13, 6);
+  b.carve(7, 6.0, 2.6);
+  b.disc(17.5, 6.0, 1.9);
+  b.disc(16.5, 4.4, 1.1);
+  b.disc(16.5, 7.6, 1.1);
+  b.rect(22, 4, 23, 8);
+  b.disc(3, 12.5, 0.7);
+  b.disc(3, 0.5, 0.7);
+  return b.build();
+}
+
+List<List<bool>> _guitarMask() {
+  final b = _MaskBuilder(24, 17);
+  b.rect(1, 6, 2, 10);
+  b.rect(3, 7, 9, 8);
+  b.clearRect(5, 7, 5, 8);
+  b.clearRect(7, 7, 7, 8);
+  b.ellipse(12, 8.0, 3.4, 2.8);
+  b.ellipse(16.5, 8.0, 4.0, 5.4);
+  b.rect(13, 5, 14, 11);
+  b.carve(16.5, 8.0, 1.5);
+  b.clearLine(11, 7, 20, 7);
+  b.clearLine(11, 8, 20, 8);
+  b.clearRect(20, 6, 21, 10);
+  b.disc(1, 3.5, 0.6);
+  b.disc(1, 12.5, 0.6);
+  b.disc(3.5, 2.8, 0.6);
+  b.disc(3.5, 13.2, 0.6);
+  b.carve(18, 11, 0.5);
+  b.disc(23, 4, 0.8);
+  b.disc(23, 12, 0.8);
+  return b.build();
+}
+
+List<List<bool>> _sailboatMask() {
+  final b = _MaskBuilder(24, 19);
+  b.rect(1, 8, 16, 9);
+  b.triangle(2, 8.5, 14, 5.4);
+  b.triangle(2, 8.5, 12, 2.6);
+  b.triangle(0, 8.5, 2, 1.6);
+  b.ellipse(20, 8.5, 4.6, 1.7);
+  b.clearRect(20, 6, 21, 11);
+  b.circleRing(22, 8.5, 3.2, thickness: 0.8);
+  b.circleRing(23.5, 8.5, 4.6, thickness: 0.7);
+  b.disc(3, 16, 1.3);
+  b.disc(18, 3, 1.4);
+  b.clearLine(4, 5, 7, 6);
+  return b.build();
+}
+
+List<List<bool>> _ladybugMask() {
+  final b = _MaskBuilder(24, 17);
+  b.disc(8, 8.0, 4.6);
+  b.disc(6, 4.8, 1.6);
+  b.stroke(5, 4, 3, 2, width: 2);
+  b.stroke(5, 6, 4, 3, width: 2);
+  b.clearLine(5, 10, 12, 10);
+  b.carve(7, 6.4, 0.7);
+  b.carve(10, 7.2, 0.8);
+  b.carve(6.6, 10, 0.8);
+  b.carve(9.8, 10.6, 0.78);
+  b.carve(6.8, 8.2, 0.6);
+  b.carve(10.2, 8.6, 0.6);
+  b.stroke(10, 4, 11, 2, width: 2);
+  b.stroke(10, 6, 12, 5, width: 2);
+  b.stroke(10, 11, 12, 10, width: 2);
+  b.stroke(10, 13, 11, 15, width: 2);
+  b.ellipse(18, 8.0, 7.0, 2.0);
+  b.stroke(19, 1, 21, 0, width: 2);
+  b.clearLine(18, 4, 18, 12);
+  b.clearLine(18, 6, 18, 6);
+  b.disc(7, 3, 0.5);
+  b.disc(15, 15, 0.7);
+  return b.build();
+}
+
+// ---------------------------------------------------------------------------
+// Level catalogue.
+// ---------------------------------------------------------------------------
+
+final List<SilhouetteLevel> _baseLevels = [
   SilhouetteLevel(
     id: 1,
     name: 'Heart',
     themeEmoji: '\u2764\uFE0F',
-    description: 'Fill the heart with arrows',
-    gridCols: 16,
-    gridRows: 17,
-    mask: _parseMask(heartMaskCompact),
-    config: LevelConfig.easy,
+    description: 'Fill the big heart with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _heartMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[0]),
+    config: LevelConfig.easy,
   ),
   SilhouetteLevel(
     id: 2,
     name: 'Star',
     themeEmoji: '\u2B50',
-    description: 'Fill the star with arrows',
-    gridCols: 16,
-    gridRows: 13,
-    mask: _parseMask(starMaskCompact),
-    config: LevelConfig.easy,
+    description: 'Fill the shining star with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _starMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[1]),
+    config: LevelConfig.easy,
   ),
   SilhouetteLevel(
     id: 3,
-    name: 'Bird',
-    themeEmoji: '\uD83D\uDC26',
-    description: 'Fill the bird with arrows',
-    gridCols: 16,
-    gridRows: 13,
-    mask: _parseMask(birdMaskCompact),
-    config: LevelConfig.medium,
+    name: 'Pineapple',
+    themeEmoji: '\uD83C\uDF4D',
+    description: 'Fill the juicy pineapple with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _pineappleMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[2]),
+    config: LevelConfig.medium,
   ),
   SilhouetteLevel(
     id: 4,
     name: 'Diamond',
     themeEmoji: '\uD83D\uDC8E',
-    description: 'Fill the diamond with arrows',
-    gridCols: 16,
-    gridRows: 15,
-    mask: _parseMask(diamondMaskCompact),
-    config: LevelConfig.medium,
+    description: 'Fill the faceted diamond with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _diamondMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[3]),
+    config: LevelConfig.medium,
   ),
   SilhouetteLevel(
     id: 5,
     name: 'Tree',
-    themeEmoji: '\uD83C\uDF33',
-    description: 'Fill the tree with arrows',
-    gridCols: 16,
-    gridRows: 14,
-    mask: _parseMask(treeMaskCompact),
-    config: LevelConfig.medium,
+    themeEmoji: '\uD83C\uDF32',
+    description: 'Fill the tall Christmas tree with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _treeMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[4]),
+    config: LevelConfig.medium,
   ),
   SilhouetteLevel(
     id: 6,
     name: 'Moon',
     themeEmoji: '\uD83C\uDF19',
     description: 'Fill the crescent moon with arrows',
-    gridCols: 16,
-    gridRows: 14,
-    mask: _parseMask(moonMaskCompact),
-    config: LevelConfig.hard,
+    gridCols: 17,
+    gridRows: 24,
+    mask: _moonMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[5]),
+    config: LevelConfig.hard,
   ),
   SilhouetteLevel(
     id: 7,
     name: 'Flower',
     themeEmoji: '\uD83C\uDF3C',
-    description: 'Fill the flower with arrows',
-    gridCols: 16,
-    gridRows: 15,
-    mask: _parseMask(flowerMaskCompact),
-    config: LevelConfig.hard,
+    description: 'Fill the blooming flower with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _flowerMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[6]),
+    config: LevelConfig.hard,
   ),
   SilhouetteLevel(
     id: 8,
-    name: 'Shield',
-    themeEmoji: '\uD83D\uDEE1\uFE0F',
-    description: 'Fill the shield with arrows',
-    gridCols: 16,
-    gridRows: 13,
-    mask: _parseMask(shieldMaskCompact),
-    config: LevelConfig.extreme,
+    name: 'Fox',
+    themeEmoji: '\uD83E\uDD8A',
+    description: 'Fill the sly fox with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _foxMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[7]),
+    config: LevelConfig.extreme,
   ),
   SilhouetteLevel(
     id: 9,
     name: 'Fish',
     themeEmoji: '\uD83D\uDC1F',
-    description: 'Fill the fish with arrows',
-    gridCols: 16,
-    gridRows: 15,
-    mask: _parseMask(fishMaskCompact),
-    config: LevelConfig.easy,
+    description: 'Fill the swimming fish with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _fishMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[8]),
+    config: LevelConfig.easy,
   ),
   SilhouetteLevel(
     id: 10,
     name: 'Butterfly',
     themeEmoji: '\uD83E\uDD8B',
-    description: 'Fill the butterfly with arrows',
-    gridCols: 16,
-    gridRows: 15,
-    mask: _parseMask(butterflyMaskCompact),
-    config: LevelConfig.easy,
+    description: 'Fill the butterfly\u2019s wings with arrows',
+    gridCols: 18,
+    gridRows: 24,
+    mask: _butterflyMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[9]),
+    config: LevelConfig.easy,
   ),
   SilhouetteLevel(
     id: 11,
     name: 'Sun',
     themeEmoji: '\u2600\uFE0F',
-    description: 'Fill the sun with arrows',
-    gridCols: 16,
-    gridRows: 16,
-    mask: _parseMask(sunMaskCompact),
-    config: LevelConfig.easy,
+    description: 'Fill the blazing sun with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _sunMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[10]),
+    config: LevelConfig.easy,
   ),
   SilhouetteLevel(
     id: 12,
@@ -819,65 +1491,65 @@ final List<SilhouetteLevel> silhouetteLevels = [
     themeEmoji: '\u26A1',
     description: 'Fill the lightning bolt with arrows',
     gridCols: 16,
-    gridRows: 15,
-    mask: _parseMask(lightningMaskCompact),
-    config: LevelConfig.medium,
+    gridRows: 24,
+    mask: _lightningMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[11]),
+    config: LevelConfig.medium,
   ),
   SilhouetteLevel(
     id: 13,
     name: 'Mushroom',
     themeEmoji: '\uD83C\uDF44',
-    description: 'Fill the mushroom with arrows',
-    gridCols: 16,
-    gridRows: 15,
-    mask: _parseMask(mushroomMaskCompact),
-    config: LevelConfig.medium,
+    description: 'Fill the toadstool with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _mushroomMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[12]),
+    config: LevelConfig.medium,
   ),
   SilhouetteLevel(
     id: 14,
     name: 'Cloud',
     themeEmoji: '\u2601\uFE0F',
-    description: 'Fill the cloud with arrows',
-    gridCols: 16,
-    gridRows: 11,
-    mask: _parseMask(cloudMaskCompact),
-    config: LevelConfig.medium,
+    description: 'Fill the rainy cloud with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _cloudMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[13]),
+    config: LevelConfig.medium,
   ),
   SilhouetteLevel(
     id: 15,
     name: 'Crown',
     themeEmoji: '\uD83D\uDC51',
-    description: 'Fill the crown with arrows',
-    gridCols: 16,
-    gridRows: 11,
-    mask: _parseMask(crownMaskCompact),
-    config: LevelConfig.medium,
+    description: 'Fill the royal crown with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _crownMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[14]),
+    config: LevelConfig.medium,
   ),
   SilhouetteLevel(
     id: 16,
     name: 'Rocket',
     themeEmoji: '\uD83D\uDE80',
-    description: 'Fill the rocket with arrows',
+    description: 'Fill the rocket to the stars with arrows',
     gridCols: 16,
-    gridRows: 17,
-    mask: _parseMask(rocketMaskCompact),
-    config: LevelConfig.hard,
+    gridRows: 24,
+    mask: _rocketMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[15]),
+    config: LevelConfig.hard,
   ),
   SilhouetteLevel(
     id: 17,
     name: 'Ghost',
     themeEmoji: '\uD83D\uDC7B',
-    description: 'Fill the ghost with arrows',
+    description: 'Fill the friendly ghost with arrows',
     gridCols: 16,
-    gridRows: 17,
-    mask: _parseMask(ghostMaskCompact),
-    config: LevelConfig.hard,
+    gridRows: 24,
+    mask: _ghostMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[16]),
+    config: LevelConfig.hard,
   ),
   SilhouetteLevel(
     id: 18,
@@ -885,186 +1557,393 @@ final List<SilhouetteLevel> silhouetteLevels = [
     themeEmoji: '\u26C4',
     description: 'Fill the snowman with arrows',
     gridCols: 16,
-    gridRows: 17,
-    mask: _parseMask(snowmanMaskCompact),
-    config: LevelConfig.hard,
+    gridRows: 24,
+    mask: _snowmanMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[17]),
+    config: LevelConfig.hard,
   ),
   SilhouetteLevel(
     id: 19,
     name: 'Battery',
     themeEmoji: '\uD83D\uDD0B',
-    description: 'Fill the battery with arrows',
-    gridCols: 16,
-    gridRows: 15,
-    mask: _parseMask(batteryMaskCompact),
-    config: LevelConfig.medium,
+    description: 'Fill the charged battery with arrows',
+    gridCols: 15,
+    gridRows: 24,
+    mask: _batteryMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[18]),
+    config: LevelConfig.medium,
   ),
   SilhouetteLevel(
     id: 20,
     name: 'Key',
-    themeEmoji: '\uD83D\uDDDD\uFE0F',
-    description: 'Fill the key with arrows',
-    gridCols: 16,
-    gridRows: 18,
-    mask: _parseMask(keyMaskCompact),
-    config: LevelConfig.hard,
+    themeEmoji: '\uD83D\uDD11',
+    description: 'Fill the ornate key with arrows',
+    gridCols: 15,
+    gridRows: 24,
+    mask: _keyMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[19]),
+    config: LevelConfig.hard,
   ),
   SilhouetteLevel(
     id: 21,
     name: 'Cat',
-    themeEmoji: '\uD83D\uDC08',
-    description: 'Fill the cat with arrows',
-    gridCols: 16,
-    gridRows: 15,
-    mask: _parseMask(catMaskCompact),
-    config: LevelConfig.hard,
+    themeEmoji: '\uD83D\uDC31',
+    description: 'Fill the sitting cat with arrows',
+    gridCols: 18,
+    gridRows: 24,
+    mask: _catMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[20]),
+    config: LevelConfig.hard,
   ),
   SilhouetteLevel(
     id: 22,
     name: 'Paw',
     themeEmoji: '\uD83D\uDC3E',
-    description: 'Fill the paw with arrows',
-    gridCols: 16,
-    gridRows: 12,
-    mask: _parseMask(pawMaskCompact),
-    config: LevelConfig.hard,
+    description: 'Fill the paw prints with arrows',
+    gridCols: 15,
+    gridRows: 24,
+    mask: _pawMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[21]),
+    config: LevelConfig.hard,
   ),
   SilhouetteLevel(
     id: 23,
     name: 'Bell',
     themeEmoji: '\uD83D\uDD14',
-    description: 'Fill the bell with arrows',
+    description: 'Fill the ringing bell with arrows',
     gridCols: 16,
-    gridRows: 15,
-    mask: _parseMask(bellMaskCompact),
-    config: LevelConfig.hard,
+    gridRows: 24,
+    mask: _bellMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[22]),
+    config: LevelConfig.hard,
   ),
   SilhouetteLevel(
     id: 24,
     name: 'Car',
     themeEmoji: '\uD83D\uDE97',
-    description: 'Fill the car with arrows',
-    gridCols: 16,
-    gridRows: 16,
-    mask: _parseMask(carMaskCompact),
-    config: LevelConfig.extreme,
+    description: 'Fill the sports car with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _carMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[23]),
+    config: LevelConfig.extreme,
   ),
-SilhouetteLevel(
+  SilhouetteLevel(
     id: 25,
     name: 'Rangoli',
-    themeEmoji: '\uD83C\uDF00',
-    description: 'Fill the rangoli with arrows',
-    gridCols: 22,
-    gridRows: 22,
-    mask: _parseMask(rangoliMaskCompact),
-    config: LevelConfig.mega,
+    themeEmoji: '\uD83C\uDF38',
+    description: 'Fill the festive rangoli mandala with arrows',
+    gridCols: 26,
+    gridRows: 26,
+    mask: _rangoliMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[24]),
+    config: LevelConfig.mega,
   ),
   SilhouetteLevel(
     id: 26,
     name: 'Chakra',
-    themeEmoji: '\uD83D\uDEDE',
-    description: 'Fill the chakra with arrows',
-    gridCols: 21,
-    gridRows: 21,
-    mask: _parseMask(chakraMaskCompact),
-    config: LevelConfig.mega,
+    themeEmoji: '\u2638\uFE0F',
+    description: 'Fill the Dharma chakra with arrows',
+    gridCols: 26,
+    gridRows: 26,
+    mask: _chakraMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[25]),
+    config: LevelConfig.mega,
   ),
   SilhouetteLevel(
     id: 27,
     name: 'Taj Mahal',
-    themeEmoji: '\uD83D\uDD4C',
+    themeEmoji: '\uD83D\uDDC4\uFE0F',
     description: 'Fill the Taj Mahal with arrows',
-    gridCols: 26,
-    gridRows: 18,
-    mask: _parseMask(tajMahalMaskCompact),
-    config: LevelConfig.mega,
+    gridCols: 23,
+    gridRows: 24,
+    mask: _tajMahalMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[26]),
+    config: LevelConfig.mega,
   ),
   SilhouetteLevel(
     id: 28,
     name: 'Lotus Flower',
-    themeEmoji: '\uD83E\uDAB7',
-    description: 'Fill the lotus with arrows',
-    gridCols: 21,
-    gridRows: 13,
-    mask: _parseMask(lotusMaskCompact),
-    config: LevelConfig.large,
+    themeEmoji: '\uD83C\uDF3B',
+    description: 'Fill the lotus in the pond with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _lotusMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[27]),
+    config: LevelConfig.large,
   ),
   SilhouetteLevel(
     id: 29,
     name: 'Diya',
-    themeEmoji: '\uD83E\uDA94',
-    description: 'Fill the diya with arrows',
+    themeEmoji: '\uD83C\uDF87',
+    description: 'Fill the glowing diya lamp with arrows',
     gridCols: 19,
-    gridRows: 16,
-    mask: _parseMask(diyaMaskCompact),
-    config: LevelConfig.large,
+    gridRows: 24,
+    mask: _diyaMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[28]),
+    config: LevelConfig.large,
   ),
   SilhouetteLevel(
     id: 30,
     name: 'Lion',
     themeEmoji: '\uD83E\uDD81',
-    description: 'Fill the lion with arrows',
-    gridCols: 22,
-    gridRows: 20,
-    mask: _parseMask(lionMaskCompact),
-    config: LevelConfig.mega,
+    description: 'Fill the lion\u2019s mane with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _lionMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[29]),
+    config: LevelConfig.mega,
   ),
   SilhouetteLevel(
     id: 31,
     name: 'Trishul',
-    themeEmoji: '\uD83D\uDD31',
-    description: 'Fill the trishul with arrows',
-    gridCols: 24,
-    gridRows: 20,
-    mask: _parseMask(trishulMaskCompact),
-    config: LevelConfig.large,
+    themeEmoji: '\uD83D\uDEE1\uFE0F',
+    description: 'Fill the trident of power with arrows',
+    gridCols: 13,
+    gridRows: 24,
+    mask: _trishulMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[30]),
+    config: LevelConfig.large,
   ),
   SilhouetteLevel(
     id: 32,
     name: 'Hot Air Balloon',
     themeEmoji: '\uD83C\uDF88',
-    description: 'Fill the balloon with arrows',
-    gridCols: 20,
-    gridRows: 18,
-    mask: _parseMask(balloonMaskCompact),
-    config: LevelConfig.large,
+    description: 'Fill the hot air balloon with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _balloonMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[31]),
+    config: LevelConfig.large,
   ),
   SilhouetteLevel(
     id: 33,
     name: 'Snail',
-    themeEmoji: '\uD83C\uDF0C',
-    description: 'Fill the snail with arrows',
-    gridCols: 24,
-    gridRows: 18,
-    mask: _parseMask(snailMaskCompact),
-    config: LevelConfig.mega,
+    themeEmoji: '\uD83D\uDC0C',
+    description: 'Fill the spiral snail shell with arrows',
+    gridCols: 18,
+    gridRows: 24,
+    mask: _snailMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[32]),
+    config: LevelConfig.mega,
   ),
   SilhouetteLevel(
     id: 34,
     name: 'Om',
-    themeEmoji: '\uD83D\uDE49',
+    themeEmoji: '\u0950',
     description: 'Fill the Om symbol with arrows',
-    gridCols: 18,
-    gridRows: 22,
-    mask: _parseMask(omMaskCompact),
-    config: LevelConfig.large,
+    gridCols: 17,
+    gridRows: 24,
+    mask: _omMask(),
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[33]),
+    config: LevelConfig.large,
   ),
-
+  SilhouetteLevel(
+    id: 35,
+    name: 'Castle',
+    themeEmoji: '\uD83C\uDFF0',
+    description: 'Fill the lofty castle with arrows',
+    gridCols: 23,
+    gridRows: 24,
+    mask: _castleMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[34]),
+    config: LevelConfig.large,
+  ),
+  SilhouetteLevel(
+    id: 36,
+    name: 'Penguin',
+    themeEmoji: '\uD83D\uDC27',
+    description: 'Fill the waddling penguin with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _penguinMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[35]),
+    config: LevelConfig.medium,
+  ),
+  SilhouetteLevel(
+    id: 37,
+    name: 'Owl',
+    themeEmoji: '\uD83E\uDD89',
+    description: 'Fill the wise owl with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _owlMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[36]),
+    config: LevelConfig.hard,
+  ),
+  SilhouetteLevel(
+    id: 38,
+    name: 'Elephant',
+    themeEmoji: '\uD83D\uDC18',
+    description: 'Fill the elephant with arrows',
+    gridCols: 21,
+    gridRows: 24,
+    mask: _elephantMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[37]),
+    config: LevelConfig.large,
+  ),
+  SilhouetteLevel(
+    id: 39,
+    name: 'Cactus',
+    themeEmoji: '\uD83C\uDF35',
+    description: 'Fill the desert cactus with arrows',
+    gridCols: 15,
+    gridRows: 24,
+    mask: _cactusMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[38]),
+    config: LevelConfig.medium,
+  ),
+  SilhouetteLevel(
+    id: 40,
+    name: 'Umbrella',
+    themeEmoji: '\u2614',
+    description: 'Fill the rainswept umbrella with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _umbrellaMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[39]),
+    config: LevelConfig.easy,
+  ),
+  SilhouetteLevel(
+    id: 41,
+    name: 'Ice Cream',
+    themeEmoji: '\uD83C\uDF68',
+    description: 'Fill the ice cream sundae with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _iceCreamMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[40]),
+    config: LevelConfig.easy,
+  ),
+  SilhouetteLevel(
+    id: 42,
+    name: 'Anchor',
+    themeEmoji: '\u2693',
+    description: 'Fill the ship anchor with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _anchorMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[41]),
+    config: LevelConfig.hard,
+  ),
+  SilhouetteLevel(
+    id: 43,
+    name: 'Hourglass',
+    themeEmoji: '\u23F3',
+    description: 'Fill the runaway hourglass with arrows',
+    gridCols: 13,
+    gridRows: 24,
+    mask: _hourglassMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[42]),
+    config: LevelConfig.medium,
+  ),
+  SilhouetteLevel(
+    id: 44,
+    name: 'Guitar',
+    themeEmoji: '\uD83C\uDFB8',
+    description: 'Fill the acoustic guitar with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _guitarMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[43]),
+    config: LevelConfig.large,
+  ),
+  SilhouetteLevel(
+    id: 45,
+    name: 'Sailboat',
+    themeEmoji: '\u26F5',
+    description: 'Fill the sailboat riding the waves with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _sailboatMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[44]),
+    config: LevelConfig.medium,
+  ),
+  SilhouetteLevel(
+    id: 46,
+    name: 'Ladybug',
+    themeEmoji: '\uD83D\uDC1E',
+    description: 'Fill the ladybug on its leaf with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _ladybugMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[45]),
+    config: LevelConfig.easy,
+  ),
 ];
+
+// ---------------------------------------------------------------------------
+// Level progression.
+//
+// The hand-drawn silhouettes above are authored at a fixed, modest size. To make
+// the campaign actually ramp up - bigger pictures, more arrows and tighter
+// packing as the player advances - every level is scaled to a per-level cell
+// budget and given a progressively tougher generator profile. Early levels stay
+// compact and gentle; late levels grow into large boards that spill past the
+// screen and must be panned / zoomed to solve.
+// ---------------------------------------------------------------------------
+
+int _countMaskCells(List<List<bool>> mask) {
+  var count = 0;
+  for (final row in mask) {
+    for (final cell in row) {
+      if (cell) count++;
+    }
+  }
+  return count;
+}
+
+/// Cell budget for level index [i] of [n]. Grows smoothly from a small intro
+/// board to a jumbo finale so arrow counts climb with the level.
+int _targetCellCount(int i, int n) {
+  final t = n == 1 ? 0.0 : i / (n - 1);
+  return (110 + 350 * t).round(); // 110 cells -> 460 cells
+}
+
+/// Difficulty profile that scales with the level: more arrows allowed, and
+/// arrow strokes get a touch shorter so the same silhouette packs in more
+/// pieces (tighter fill), while the star rating tightens. The explicit
+/// [targetArrows] climbs smoothly so every level is denser than the one before.
+LevelConfig _progressionConfig(int i, int n) {
+  final t = n == 1 ? 0.0 : i / (n - 1);
+  return LevelConfig(
+    minArrows: (6 + 30 * t).round(),
+    maxArrows: (22 + 74 * t).round(),
+    minCells: 3,
+    maxCells: (13 - 3 * t).round(),
+    maxBends: (4 + 4 * t).round(),
+    largeArrowChance: 0.5 - 0.12 * t,
+    maxAttempts: (40 + 24 * t).round(),
+    moveSlack: (10 - 6 * t).round(),
+    targetArrows: (15 + 50 * t).round(),
+  );
+}
+
+List<SilhouetteLevel> _buildProgression(List<SilhouetteLevel> base) {
+  final n = base.length;
+  final result = <SilhouetteLevel>[];
+  for (var i = 0; i < n; i++) {
+    final b = base[i];
+    final baseCells = _countMaskCells(b.mask);
+    final target = _targetCellCount(i, n);
+    final scale =
+        math.sqrt(target / math.max(1, baseCells)).clamp(0.55, 2.4).toDouble();
+    final outRows = math.max(14, (b.gridRows * scale).round());
+    final outCols = math.max(11, (b.gridCols * scale).round());
+    final mask = resampleMask(b.mask, outRows, outCols);
+    result.add(SilhouetteLevel(
+      id: b.id,
+      name: b.name,
+      themeEmoji: b.themeEmoji,
+      description: b.description,
+      gridRows: outRows,
+      gridCols: outCols,
+      mask: mask,
+      arrowFactory: () => _generateProgressiveArrows(i),
+      config: _progressionConfig(i, n),
+    ));
+  }
+  return result;
+}
+
+final List<SilhouetteLevel> silhouetteLevels = _buildProgression(_baseLevels);

@@ -64,7 +64,9 @@ class ArrowPiece {
   final String id;
   final List<GridCell> cells;
   final ArrowDirection direction;
-  final int colorIndex;
+  /// Mutable so the generator can recolor a finished board coherently
+  /// (neighbouring arrows get distinct colors) without changing geometry.
+  int colorIndex;
   ArrowStatus status;
   bool highlighted;
   bool showHint;

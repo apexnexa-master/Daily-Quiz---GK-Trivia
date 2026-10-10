@@ -1,0 +1,676 @@
+# Task: Redesign and Upgrade My Flutter Arrow Escape Puzzle Generator to Produce Premium, Visually Beautiful Levels
+
+## 1. Project Context
+
+I am developing a Flutter arrow escape puzzle game.
+
+The gameplay is simple:
+
+* The board contains multiple arrows arranged inside a recognizable shape or silhouette.
+* The player taps an arrow.
+* If the arrow's path to the board edge is clear, it slides out of the screen.
+* If another arrow blocks its exit, the arrow cannot be removed yet.
+* The player must find the correct sequence to remove all arrows.
+
+I want to improve the game to achieve the visual quality, arrow arrangements, and overall presentation associated with games such as Arrow Away and Arrow Out Online.
+
+Use these games as visual inspiration for the general concept of colorful, tightly composed, picture-shaped arrow puzzles. Do not copy their exact level layouts, artwork, assets, or proprietary designs. Create original designs with comparable visual polish.
+
+My current game uses Flutter and Dart.
+
+## 2. Existing Architecture
+
+My current system has two main parts.
+
+### A. Silhouette and mask creation
+
+My `SilhouetteLevel` model contains:
+
+* `id`
+* `name`
+* `themeEmoji`
+* `description`
+* `gridCols`
+* `gridRows`
+* `mask`
+* `arrowFactory`
+* `config`
+
+The mask is a two-dimensional Boolean grid:
+
+* `true` means the cell belongs to the silhouette.
+* `false` means the cell is outside the silhouette.
+
+My `_MaskBuilder` drawing DSL supports operations such as:
+
+* `set_`, `clear`
+* `rect`, `clearRect`
+* `line`, `clearLine`
+* `stroke`, `clearLine`
+* `ellipse`, `carveEllipse`
+* `disc`, `carve`
+* `circleRing`
+* `star`, `diamond`, `triangle`
+* `rays`, `petalRing`
+
+The board uses approximately 24 rows and is designed for a portrait mobile screen.
+
+### B. Arrow generation
+
+My `PuzzleGenerator` currently:
+
+* Accepts the mask, board dimensions, level configuration, and a deterministic seed.
+* Computes erosion depths using `_computeDepths`.
+* Creates contour-following trails using `_placeSpiral`, `_walkSpiral`, and `_bestContourMove`.
+* Splits trails into arrow segments through `_chopAndPlaceTrails` and `_pickChop`.
+* Attempts to place arrows using `_tryPlaceRingSegment`.
+* Fills remaining cells through `_topUpLeftovers`, `_microFill`, `_pocketFill`, `_tryStraightPocket`, and `_tryLPocket`.
+* Uses `_growPath` to create additional bent paths.
+* Validates arrow escape paths through `_hasClearRun`.
+* Validates complete-board solvability through `arrowsAreSolvable`.
+* Generates multiple candidate boards and chooses the highest-scoring valid board.
+
+The generator currently scores factors such as fill percentage, arrow count, curved arrows, long arrows, fragments, and excess pieces.
+
+Some configuration fields may not be used. In particular, `largeArrowChance` was previously identified as apparently unused. Verify this against the actual current code before changing anything.
+
+Important existing functions include:
+
+* `_computeDepths`
+* `_placeSpiral`
+* `_walkSpiral`
+* `_bestContourMove`
+* `_chopAndPlaceTrails`
+* `_pickChop`
+* `_tryPlaceRingSegment`
+* `_growPath`
+* `_topUpLeftovers`
+* `_microFill`
+* `_pocketFill`
+* `_hasClearRun`
+* `_addPiece`
+* `generate`
+* `arrowsAreSolvable`
+
+These names describe my existing architecture. Inspect the repository to confirm the actual implementation before making changes.
+
+## 3. Primary Objective
+
+Transform the generator from a system that primarily fills a silhouette with solvable arrows into a system that creates attractive, intentional, picture-shaped arrow compositions.
+
+The output should feel designed rather than randomly generated.
+
+A successful board should have:
+
+* An instantly recognizable outer silhouette.
+* Attractive arrow arrangements that complement the silhouette.
+* Smooth, intentional path flow.
+* A balanced combination of straight and curved arrows.
+* Varied arrow lengths.
+* Consistent spacing and visual density.
+* Few awkward gaps, isolated cells, or tiny fragments.
+* A cohesive color arrangement.
+* A valid and genuinely playable escape puzzle.
+* Good visual quality on a portrait mobile screen.
+
+Do not optimize only for maximum cell coverage or maximum arrow count.
+
+A board with slightly lower coverage but beautiful arrow arrangements is preferable to a completely filled board that looks cluttered or mechanically generated.
+
+## 4. First Step: Inspect the Existing Implementation
+
+Before editing anything, inspect:
+
+* `PuzzleGenerator`
+* `SilhouetteLevel`
+* `_MaskBuilder`
+* `LevelConfig`
+* `ArrowPiece` and related arrow models
+* The arrow rendering widget
+* The board layout and cell sizing
+* Existing level definitions
+* Existing tests and solvability validation
+* Any existing level caching or persistence logic
+
+Trace the complete path from level creation to board rendering.
+
+Determine how an arrow's ordered cells, head, direction, body, bends, color, and exit behavior are represented.
+
+Identify any assumptions about:
+
+* Grid coordinates.
+* Arrow direction.
+* Path connectivity.
+* Head placement.
+* Occupancy.
+* Overlapping cells.
+* Arrow length.
+* Rendering orientation.
+
+Do not assume that the current arrow representation matches the design described in this prompt. Use the actual code as the source of truth.
+
+Preserve all working gameplay behavior unless a change is necessary and justified.
+
+## 5. Introduce a Design-Driven Generation Pipeline
+
+Refactor the generator into clearly separated stages while reusing existing code wherever appropriate.
+
+The intended pipeline is:
+
+1. Create or load the silhouette mask.
+2. Analyze the silhouette's geometry.
+3. Identify its major visual regions and directional flow.
+4. Generate candidate guide paths.
+5. Convert guide paths into valid arrow pieces.
+6. Resolve arrow directions and escape constraints.
+7. Fill remaining space selectively.
+8. Validate board geometry and solvability.
+9. Score visual quality and puzzle quality separately.
+10. Keep the best valid candidate.
+11. Render the final board and inspect its visual quality.
+
+Avoid rewriting the entire project without understanding it first.
+
+### 5.1 Silhouette analysis
+
+Continue using the Boolean mask as the basic shape representation.
+
+Analyze:
+
+* Connected components.
+* Boundary cells.
+* Distance from the outer boundary.
+* Local corridor width.
+* Narrow bottlenecks.
+* Interior holes.
+* Local direction and orientation.
+* Major branches and protrusions.
+* Regions where a recognizable feature should remain visible.
+
+Use the erosion-depth map as one source of geometric information, not as the only source of design information.
+
+For example:
+
+* A heart has two upper lobes and a narrowing lower point.
+* A bird has a body, head, wings, and tail.
+* An elephant has a body, head, trunk, and legs.
+* A fish has a body, tail, and fins.
+* A leaf has a central axis and directional veins.
+
+Do not rely on erosion depth alone to distinguish these features.
+
+### 5.2 Add guide paths and directional fields
+
+Introduce a mechanism for producing coherent arrow paths that follow the shape's structure.
+
+Explore two compatible methods:
+
+**Method A: Explicit guide paths**
+
+For selected levels, define a small number of original guide curves or grid paths that express the desired flow.
+
+A heart might use paths following the two lobes and converging toward its lower point.
+
+A bird might use paths following the wings, body, and tail.
+
+The guide paths should influence arrow placement, not force every arrow to follow exactly the same curve.
+
+**Method B: Automatically generated directional fields**
+
+For procedural levels, calculate a preferred direction for each region or cell.
+
+The direction field can consider:
+
+* Local silhouette geometry.
+* Distance from the boundary.
+* Nearby guide paths.
+* Principal orientation of a region.
+* Continuity with neighboring path segments.
+* Available space for bends.
+* Escape feasibility.
+
+Use this information to grow paths that look deliberate and cohesive.
+
+Do not implement an unnecessarily complicated mathematical system if a simpler path planner produces better results.
+
+### 5.3 Generate paths before splitting them into arrows
+
+This is an important architectural change.
+
+Do not make the generator's primary strategy a collection of unrelated short arrows that happen to fill the silhouette.
+
+First create coherent paths that flow through meaningful portions of the design.
+
+Then split those paths into arrow pieces at carefully selected positions.
+
+Choose segment boundaries that favor:
+
+* Natural arrow lengths.
+* Visually balanced distributions.
+* Appropriate straight sections.
+* Meaningful turns.
+* Avoidance of excessive short fragments.
+* Valid arrowhead placement.
+* Feasible escape directions.
+
+Preserve the existing concept of `_pickChop` if it remains useful, but improve its scoring criteria.
+
+Do not split paths solely according to a fixed target length.
+
+## 6. Improve the Visual Character of Arrows
+
+Create variation without introducing visual chaos.
+
+### 6.1 Arrow length distribution
+
+Avoid generating mostly identical arrows.
+
+Support a balanced distribution of:
+
+* Short arrows where space is limited.
+* Medium arrows as the primary building blocks.
+* Long arrows that establish the major visual flow.
+
+The exact distribution should depend on the board dimensions and silhouette.
+
+Use configurable target proportions rather than hardcoded assumptions wherever practical.
+
+### 6.2 Bend distribution
+
+Create a deliberate mixture of:
+
+* Straight arrows.
+* One-bend arrows.
+* Two-bend arrows.
+* Occasionally more complex arrows where the geometry supports them.
+
+Do not force every arrow to be curved.
+
+Do not allow excessive bends to make the board look like an arbitrary maze.
+
+Respect existing `maxBends` and related configuration constraints.
+
+### 6.3 Path continuity
+
+For each arrow:
+
+* Ensure consecutive cells are adjacent according to the current movement rules.
+* Ensure every bend is a valid turn.
+* Ensure the path does not self-intersect.
+* Ensure the path does not overlap another arrow.
+* Ensure the head and tail are correctly identified.
+* Ensure the direction agrees with the arrow's actual escape behavior.
+
+Use the actual model and rendering rules when implementing these checks.
+
+### 6.4 Visual spacing
+
+Avoid:
+
+* Dense clusters of tiny arrows.
+* Isolated cells.
+* Jagged, accidental-looking boundaries.
+* Awkward gaps between otherwise coherent paths.
+* Repetitive parallel tracks that make the picture look mechanical.
+* Overcrowded turns.
+* Arrowheads that obscure the silhouette's recognizable features.
+
+If a cell cannot be filled without seriously harming the composition, leave it empty rather than forcing an ugly arrow into it.
+
+Any empty cells must be visually intentional and consistent with the game's existing presentation.
+
+## 7. Redesign the Leftover-Filling Strategy
+
+My existing generator uses `_topUpLeftovers`, `_microFill`, and `_pocketFill`.
+
+These passes may be useful for coverage but can introduce visually poor fragments.
+
+Refactor them into a controlled refinement stage.
+
+For each leftover region:
+
+1. Identify its size and shape.
+2. Determine whether it can accommodate a natural arrow.
+3. Prefer an arrow that continues the region's existing visual flow.
+4. Evaluate several candidate paths when practical.
+5. Reject paths that produce awkward fragments or damage nearby arrangements.
+6. Place the best candidate only if its visual benefit justifies the placement.
+
+Prioritize leftover regions that can accept coherent arrows.
+
+Do not run unlimited retries.
+
+Use explicit attempt budgets and deterministic behavior so generation time stays predictable on mobile devices.
+
+Keep any fallback strategy that is necessary for reliable level generation, but prevent fallback arrows from dominating the board's appearance.
+
+## 8. Preserve and Strengthen Solvability
+
+The game must remain a genuine arrow escape puzzle.
+
+Retain and improve the existing validation architecture.
+
+### 8.1 Escape validation
+
+Inspect `_hasClearRun` and verify that the arrow can actually exit in the intended direction.
+
+Account for:
+
+* Other arrows' occupied cells.
+* The arrow's own body.
+* Arrowhead orientation.
+* Board boundaries.
+* Any side-clearance constraints that the existing game actually requires.
+
+Do not add lateral-clearance rules unless they match the real movement and collision behavior.
+
+The validator must match the actual player-facing tap rule.
+
+### 8.2 Full-board solvability
+
+Retain `arrowsAreSolvable` or an equivalent independent validator.
+
+It must repeatedly find a removable arrow, remove its occupied cells, and continue until all arrows are removed or no valid move remains.
+
+Reject unsolvable boards.
+
+### 8.3 Reverse-placement invariant
+
+Where possible, preserve a construction order that guarantees a valid removal sequence.
+
+If arrow A was placed before arrow B, the construction algorithm must ensure that its claimed reverse removal order is actually valid.
+
+Do not assume the invariant holds merely because `_hasClearRun` passed when each arrow was first placed. Prove the relationship between the construction order, occupancy state, and final board.
+
+### 8.4 Geometric validation
+
+Verify:
+
+* No two arrows occupy the same cell.
+* Every arrow cell belongs to the silhouette mask.
+* Every arrow is connected.
+* All arrow lengths respect the intended limits.
+* Every arrow's stored direction is consistent with its path.
+* All IDs are unique.
+* Board dimensions and mask dimensions match.
+
+Reject invalid candidates before scoring them.
+
+## 9. Create a Better Candidate-Scoring System
+
+Separate visual composition quality from gameplay quality.
+
+Do not use one simplistic score dominated by fill percentage.
+
+### A. Visual composition score
+
+Evaluate:
+
+* Silhouette readability.
+* Path smoothness.
+* Directional coherence.
+* Arrow-length distribution.
+* Bend distribution.
+* Spatial balance.
+* Fragmentation.
+* Gap quality.
+* Repetition of similar patterns.
+* Local overcrowding.
+* Consistency with the guide paths.
+* Color distribution.
+
+### B. Gameplay quality score
+
+Evaluate:
+
+* Solvability.
+* Number of arrows.
+* Distribution of arrow lengths.
+* Number of bends.
+* Difficulty of the puzzle.
+* Number of available moves at the beginning.
+* Diversity of removal choices.
+* Difficulty progression across levels.
+
+Solvability is mandatory. Never allow a visually attractive but unsolvable board to win.
+
+### C. Fill score
+
+Continue tracking fill percentage, but treat it as one factor among several.
+
+Avoid automatically rejecting a good composition merely because it cannot reach a fixed coverage threshold.
+
+### D. Scoring implementation
+
+Use configurable weights and document their meaning.
+
+Normalize scores where necessary so one metric does not overwhelm all others due to a different numerical range.
+
+Use a deterministic tie-breaker.
+
+Retain the best valid candidate found within the configured generation budget.
+
+Inspect the current early-exit logic and prevent it from stopping on a merely high-fill candidate with poor visual quality.
+
+## 10. Improve the Silhouette Definitions
+
+Audit the existing silhouettes, not just the generator.
+
+A weak mask cannot reliably produce attractive picture-shaped arrow art.
+
+For every silhouette, evaluate:
+
+* Outer contour recognizability.
+* Aspect ratio.
+* Grid resolution.
+* Narrow regions.
+* Tiny protrusions.
+* Internal holes.
+* Important visual features.
+* Connectedness.
+* Suitable arrow-path flow.
+* Compatibility with the current board rendering.
+
+Fatten narrow corridors where necessary.
+
+Preserve important features such as a bird's beak, an elephant's trunk, a heart's lobes, or a fish's tail.
+
+Do not blindly smooth every silhouette because distinctive features are important.
+
+Create original, polished silhouettes with clear outlines and well-balanced proportions.
+
+## 11. Improve Color Assignment
+
+Inspect the current `colorIndex` rendering system.
+
+Improve color distribution so neighboring arrows do not look like a completely random assortment.
+
+Requirements:
+
+* Use a cohesive palette appropriate to the game's existing theme.
+* Avoid excessive repetition of the same color in one local area.
+* Avoid accidental color striping unless it supports the composition.
+* Preserve adequate contrast between arrows and the background.
+* Ensure arrowheads and bodies remain readable.
+* Keep colors consistent with the game's light and dark themes, if both exist.
+
+Color assignment must not change arrow geometry or solvability.
+
+Use existing color infrastructure where possible rather than introducing an unnecessary dependency.
+
+## 12. Improve Level Difficulty and Variety
+
+The levels should not all look like variations of the same spiral.
+
+Introduce meaningful variety in:
+
+* Silhouette types.
+* Path flow.
+* Arrow lengths.
+* Bend complexity.
+* Board density.
+* Initial removable arrows.
+* Removal dependencies.
+* Number of visual regions.
+* Puzzle complexity.
+
+Define difficulty profiles using existing configuration fields where possible.
+
+Inspect every configuration field and determine whether it is actually used.
+
+If `largeArrowChance` remains unused, either implement its intended behavior meaningfully or remove it if it is redundant.
+
+Do not leave configuration fields that appear functional but have no effect.
+
+Difficulty must come from actual puzzle structure, not merely increasing the arrow count.
+
+## 13. Performance and Determinism
+
+The generator runs in a mobile application.
+
+Ensure:
+
+* Generation has a predictable upper bound.
+* Candidate attempts have a clear budget.
+* Pathfinding does not repeatedly perform unnecessarily expensive full-board scans.
+* Intermediate occupancy structures are updated safely.
+* Generation does not freeze the UI.
+* Identical level seeds produce identical geometry and color assignments where determinism is intended.
+* Changing one level does not accidentally alter unrelated levels.
+* Failed generation returns a valid fallback or a clear failure result.
+
+Use profiling or benchmarks to validate improvements rather than assuming the new generator is faster.
+
+## 14. Visual Debugging Tools
+
+Add optional development-only visualization tools to help diagnose generated boards.
+
+Where practical, support overlays for:
+
+* The original silhouette mask.
+* Erosion depths.
+* Guide paths.
+* Arrow segment boundaries.
+* Arrow IDs.
+* Arrow directions.
+* Uncovered mask cells.
+* Invalid or overlapping cells.
+* Escape rays.
+* Candidate scores.
+* Solvability removal order.
+
+Keep these tools out of the normal player experience.
+
+The purpose is to make it easy to understand why a board looks poor and which generation stage caused the problem.
+
+## 15. Automated Testing
+
+Add or update tests for:
+
+* Mask dimensions and connectedness.
+* Path adjacency.
+* Self-intersection.
+* Overlapping arrows.
+* Arrow direction consistency.
+* Escape-ray correctness.
+* Solvability.
+* Unique occupied cells.
+* Deterministic generation.
+* Valid output for every existing level.
+* Generation time.
+* Score calculation.
+* Edge cases involving thin corridors and internal holes.
+
+Generate multiple seeds per representative silhouette.
+
+Do not claim the generator is robust based on one successful example.
+
+Include regression tests for previously problematic shapes, especially narrow or highly detailed silhouettes.
+
+## 16. Implementation Strategy
+
+Implement the changes incrementally.
+
+### Phase 1: Audit
+
+Inspect the existing code, identify the causes of poor visual arrangements, and report the proposed changes by file and function.
+
+Do not modify unrelated parts of the application.
+
+### Phase 2: Establish a baseline
+
+Capture or otherwise inspect generated boards for several existing levels.
+
+Measure:
+
+* Fill percentage.
+* Arrow count.
+* Length and bend distributions.
+* Fragment count.
+* Solvability.
+* Generation time.
+* Visual quality.
+
+### Phase 3: Improve one representative level
+
+Start with a heart silhouette.
+
+Implement guide paths and the improved path planner for that level first.
+
+Preserve the current renderer and gameplay mechanics.
+
+### Phase 4: Improve scoring and refinement
+
+Introduce separate visual and gameplay scores.
+
+Reduce ugly leftover fragments and improve path segmentation.
+
+### Phase 5: Generalize
+
+Extend the new approach to a bird, elephant, fish, leaf, star, and other existing silhouettes.
+
+Do not assume one guide-path strategy will suit every shape.
+
+### Phase 6: Verify and compare
+
+Compare before-and-after boards at the same dimensions and scale.
+
+Run all relevant tests.
+
+Show actual generated results and explain the improvements and remaining limitations.
+
+## 17. Important Constraints
+
+* Use Flutter and Dart.
+* Follow the existing project architecture and coding style.
+* Preserve working gameplay mechanics.
+* Avoid adding third-party dependencies unless genuinely necessary.
+* Do not rewrite unrelated UI, navigation, advertisements, or monetization.
+* Do not hardcode manually designed arrows for every level as a substitute for improving procedural generation.
+* Manual guide paths are acceptable for selected silhouettes, but the system must also support procedural generation.
+* Do not remove solvability checks to improve visual appearance.
+* Do not force 100% coverage at the expense of quality.
+* Do not claim that a board looks better without examining the actual output.
+* Do not claim that a board is solvable without validating it.
+* Do not implement every proposed idea blindly. Inspect the code and select the simplest effective approach.
+* Preserve existing public interfaces unless changes are required.
+* Keep the code maintainable and understandable.
+
+## 18. Expected Deliverables
+
+When finished, provide:
+
+1. A concise audit of the main problems in the existing generator.
+2. A list of files modified and why.
+3. The implemented changes, not merely a conceptual proposal.
+4. The new path-generation and visual-scoring logic.
+5. Updated silhouette definitions where necessary.
+6. Tests and their actual results.
+7. Before-and-after screenshots or rendered boards, if the project environment supports them.
+8. A comparison of fill rate, arrow count, fragmentation, solvability, and generation time.
+9. Any remaining limitations.
+10. Clear instructions for adjusting visual-quality weights, arrow lengths, bends, colors, and difficulty.
+
+Start by inspecting the actual repository. Then implement the smallest high-impact improvement that makes the generated arrow compositions more intentional and visually attractive.
+
+The ultimate goal is a polished arrow puzzle game in which every level looks like a carefully composed piece of arrow artwork, while remaining fully solvable, performant, and suitable for procedural level generation.
