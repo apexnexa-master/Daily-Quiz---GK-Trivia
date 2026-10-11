@@ -20,6 +20,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/scoring/daily_challenge_service.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/daily_progress_service.dart';
 import '../../../../core/services/game_sfx.dart';
 import '../../../../core/scoring/game_performance.dart';
@@ -96,6 +98,12 @@ class _MathSprintScreenState extends ConsumerState<MathSprintScreen>
   final List<_FloatingScore> _floaters = [];
   WorkoutStep? _workoutStep;
 
+  /// Daily Challenge mode: one official submission for the day. Best-score and
+  /// workout paths are left untouched in this mode.
+  bool _argsRead = false;
+  bool _isDailyChallenge = false;
+  String? _playerName;
+
   bool get _isBn => _lang == 'bn';
   bool get _isHi => _lang == 'hi';
   String get _lang => ref.read(languageProvider);
@@ -146,6 +154,13 @@ class _MathSprintScreenState extends ConsumerState<MathSprintScreen>
     final step = args?['workoutStep'];
     if (step is WorkoutStep && _workoutStep == null) {
       _workoutStep = step;
+    }
+    if (!_argsRead) {
+      _argsRead = true;
+      if (args?['isDailyChallenge'] == true) {
+        _isDailyChallenge = true;
+        _playerName = AuthService().currentUser?.displayName;
+      }
     }
   }
 
@@ -350,12 +365,15 @@ class _MathSprintScreenState extends ConsumerState<MathSprintScreen>
     _runTimer.stop();
     _problemRing.stop();
 
-    final isNewBest = _engine.score > _best;
-    if (isNewBest) {
-      _best = _engine.score;
-      SharedPreferences.getInstance().then((prefs) {
-        prefs.setInt(_bestScoreKey, _engine.score);
-      });
+    var isNewBest = false;
+    if (!_isDailyChallenge) {
+      isNewBest = _engine.score > _best;
+      if (isNewBest) {
+        _best = _engine.score;
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.setInt(_bestScoreKey, _engine.score);
+        });
+      }
     }
 
     GameSfxService.instance.play(GameSfx.gameOver);
@@ -369,12 +387,20 @@ class _MathSprintScreenState extends ConsumerState<MathSprintScreen>
       ProgressionService.instance.recordSession(
         SessionRecord(
           gameId: 'math',
-          mode: _workoutStep != null
-              ? SessionMode.workoutGame
-              : SessionMode.practice,
+          mode: _isDailyChallenge
+              ? SessionMode.dailyChallenge
+              : _workoutStep != null
+                  ? SessionMode.workoutGame
+                  : SessionMode.practice,
           gameType: GameType.math,
           primaryPillar: BrainPillar.speed,
           performance: input,
+          isDailyChallenge: _isDailyChallenge,
+          challengeId: _isDailyChallenge
+              ? DailyChallengeService.todaysChallengeId('math')
+              : null,
+          playerName: _playerName,
+          durationSeconds: _engine.runSeconds,
         ),
       ),
     );
@@ -1543,26 +1569,30 @@ Can you beat me? 🚀
     );
 
     return GameResultsPanel(
-      title: _t("TIME'S UP!", 'সময় শেষ!', 'समय समाप्त!'),
+      title: _isDailyChallenge
+          ? _t('DAILY CHALLENGE!', 'দৈনিক চ্যালেঞ্জ!', 'दैनिक चुनौती!')
+          : _t("TIME'S UP!", 'সময় শেষ!', 'समय समाप्त!'),
       subtitle: _t(
         'Math sprint complete.',
         'গণিত স্প্রিন্ট সম্পন্ন।',
         'গণিত স্প্রিন্ট সম্পন্ন।',
       ),
       score: _engine.score,
-      isNewBest: _isNewBest,
+      isNewBest: _isDailyChallenge ? false : _isNewBest,
       stats: [solvedStat, accuracyStat, streakStat, levelStat],
       playAgainLabel: _t('PLAY AGAIN', 'আবার খেলুন', 'फिर से खेलें'),
       shareLabel: _t('SHARE SCORE', 'স্কোর শেয়ার করুন', 'स्कोर साझा करें'),
       exitLabel: _t('EXIT', 'ফেরত যান', 'बाहर जाएं'),
       footerHint: _t('Best: $_best', 'সেরা: $_best', 'सर्वश्रेष्ठ: $_best'),
       onPlayAgain: _playAgain,
-      onShare: _shareScore,
+      onShare: _isDailyChallenge ? null : _shareScore,
       onExit: _exitGame,
-      continueLabel: _workoutStep != null
-          ? _t('CONTINUE', 'চালিয়ে যান', 'जारी रखें')
-          : null,
-      onContinue: _workoutStep != null ? _exitGame : null,
+      continueLabel: _isDailyChallenge
+          ? _t('DONE', 'সম্পন্ন', 'पूर्ण')
+          : _workoutStep != null
+              ? _t('CONTINUE', 'চালিয়ে যান', 'जारी रखें')
+              : null,
+      onContinue: _isDailyChallenge || _workoutStep != null ? _exitGame : null,
     );
   }
 

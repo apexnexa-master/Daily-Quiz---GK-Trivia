@@ -21,7 +21,6 @@ import '../presentation/screens/admin_screen.dart';
 import '../presentation/screens/games/game_placeholder_screen.dart';
 import '../presentation/screens/knowledge_categories_screen.dart';
 import '../presentation/screens/games/arrow_escape_game_screen.dart';
-import '../presentation/screens/games/arrow_maze/arrow_maze_game_screen.dart';
 import '../presentation/screens/games/stroop_rush_screen.dart';
 import '../presentation/screens/games/synapse_recall/synapse_recall_screen.dart';
 import '../presentation/screens/games/math_sprint/math_sprint_screen.dart';
@@ -50,13 +49,11 @@ class AppRouter {
   // static const String premium = '/premium';
   static const String admin = '/admin';
   static const String arrowPuzzle = '/arrow-puzzle';
-  static const String arrowMaze = '/arrow-maze';
   static const String stroopRush = '/stroop-rush';
   static const String synapseRecall = '/synapse-recall';
   static const String mathSprint = '/math-sprint';
   static const String workout = '/workout';
 
-  static const String introArrowPuzzle = '/intro/arrow-puzzle';
   static const String introStroopRush = '/intro/stroop-rush';
   static const String introSynapseRecall = '/intro/synapse-recall';
   static const String introMathSprint = '/intro/math-sprint';
@@ -119,8 +116,6 @@ class AppRouter {
         return _build(const AdminScreen(), settings);
       case arrowPuzzle:
         return _buildFade(const ArrowEscapeGameScreen(), settings);
-      case arrowMaze:
-        return _buildFade(const ArrowMazeGameScreen(), settings);
       case stroopRush:
         return _buildFade(const StroopRushScreen(), settings);
       case synapseRecall:
@@ -139,14 +134,6 @@ class AppRouter {
           WorkoutScreen(presetId: args['presetId'] ?? 'balanced'),
           settings,
         );
-      case introArrowPuzzle:
-        return _buildFade(
-          GameIntroScreen(
-            gameData: GameIntroData.games['arrow-puzzle']!,
-            routeArgs: settings.arguments as Map<String, dynamic>?,
-          ),
-          settings,
-        );
       case introStroopRush:
         return _buildFade(
           GameIntroScreen(gameData: GameIntroData.games['stroop-rush']!),
@@ -159,7 +146,10 @@ class AppRouter {
         );
       case introMathSprint:
         return _buildFade(
-          GameIntroScreen(gameData: GameIntroData.games['math-sprint']!),
+          GameIntroScreen(
+            gameData: GameIntroData.games['math-sprint']!,
+            routeArgs: settings.arguments as Map<String, dynamic>?,
+          ),
           settings,
         );
       case introGkQuiz:

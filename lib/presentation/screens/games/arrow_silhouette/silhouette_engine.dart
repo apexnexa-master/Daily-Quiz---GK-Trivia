@@ -9,7 +9,17 @@ class SilhouetteEngine {
   late List<List<bool>> _occupied;
   int moveCount = 0;
   int hintCount = 0;
+  /// Id of the arrow currently highlighted as the cause of a blocked tap (the
+  /// blocker, not the arrow the player tapped). Drives the painter's pulsing
+  /// "blocked" glow.
   String? blockedFlashId;
+
+  /// Id of the arrow the player actually tapped when a block was flagged, and
+  /// the first cell of the blocker that lies on its escape path. The painter
+  /// draws a faint guide line from this arrow to [blockedImpactCell] so it is
+  /// obvious which arrow is in the way.
+  String? blockedFromId;
+  GridCell? blockedImpactCell;
   final List<_UndoState> _undoStack = [];
 
   SilhouetteEngine(this.level) {
@@ -90,6 +100,34 @@ class SilhouetteEngine {
     return true;
   }
 
+  /// Finds the nearest arrow occupying the cell directly in front of [arrow]'s
+  /// head along its escape direction — the arrow that is physically blocking it
+  /// — together with the blocking cell itself. Null when the path is clear.
+  ({ArrowPiece arrow, GridCell cell})? _findBlocker(ArrowPiece arrow) {
+    final head = arrow.headCell;
+    final dir = arrow.direction;
+    var r = head.row + dir.dy;
+    var c = head.col + dir.dx;
+    while (inBounds(r, c)) {
+      if (_occupied[r][c]) {
+        for (final a in arrows) {
+          if (a.status == ArrowStatus.active &&
+              a.cells.any((cell) => cell.row == r && cell.col == c)) {
+            return (arrow: a, cell: GridCell(r, c));
+          }
+        }
+      }
+      r += dir.dy;
+      c += dir.dx;
+    }
+    return null;
+  }
+
+  /// The nearest arrow occupying the cell directly in front of [arrow]'s head
+  /// along its escape direction — the arrow that is physically blocking it.
+  /// Null when nothing occupies the escape path.
+  ArrowPiece? blockingArrow(ArrowPiece arrow) => _findBlocker(arrow)?.arrow;
+
   /// Attempt to escape an arrow. Returns true if successful.
   bool escapeArrow(ArrowPiece arrow) {
     if (!canEscape(arrow)) return false;
@@ -107,8 +145,10 @@ class SilhouetteEngine {
     return true;
   }
 
-  /// A blocked tap: flash the arrow red and charge a wasted move so the star
-  /// rating rewards careful play. The move is retrievable via [undo].
+  /// A blocked tap: charge a wasted move on the tapped [arrow] so the star
+  /// rating rewards careful play (retrievable via [undo]), and flag the arrow
+  /// that is actually doing the blocking so the player can see what to clear
+  /// first. The blocked flash points at the blocker, not the tapped arrow.
   void flashBlocked(ArrowPiece arrow) {
     if (arrow.status != ArrowStatus.active) return;
     _undoStack.add(_UndoState(
@@ -117,10 +157,17 @@ class SilhouetteEngine {
       moveCount: moveCount,
     ));
     moveCount++;
-    blockedFlashId = arrow.id;
+    final hit = _findBlocker(arrow);
+    blockedFromId = arrow.id;
+    blockedImpactCell = hit?.cell;
+    blockedFlashId = hit?.arrow.id ?? arrow.id;
   }
 
-  void clearBlockedFlash() => blockedFlashId = null;
+  void clearBlockedFlash() {
+    blockedFlashId = null;
+    blockedFromId = null;
+    blockedImpactCell = null;
+  }
 
   bool get isBlockedFlashing => blockedFlashId != null;
 

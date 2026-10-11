@@ -669,7 +669,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                "Only official Daily Challenge submissions (GK Live Challenge and Arrow Puzzle 3D Daily Challenge) award leaderboard points. Practice modes and campaign levels never count. Each challenge grants one official attempt per day — retries can improve your personal best but never award extra points.",
+                "Only official Daily Challenge submissions (GK Live Challenge) award leaderboard points. Practice modes and campaign levels never count. Each challenge grants one official attempt per day — retries can improve your personal best but never award extra points.",
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,
@@ -724,7 +724,6 @@ class LeaderboardScreen extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 '• GK Quiz & Battle: Accuracy 60% + Difficulty 25% + Speed 15% (30s per question budget).\n'
-                '• Arrow Puzzle 3D: Difficulty 40% + Time 30% + Moves 20% + Quality 10%.\n'
                 '• Stroop Test: Accuracy 50% + Reaction 30% + Difficulty 20%.\n'
                 '• Synapse Recall: Sequence 50% + Accuracy 30% + Difficulty 20%.\n'
                 '• Math Speed: Accuracy 50% + Speed 30% + Difficulty 20% (6s per problem budget).',

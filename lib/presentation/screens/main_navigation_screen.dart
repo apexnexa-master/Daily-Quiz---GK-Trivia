@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'home_screen.dart';
 import 'play_zone_screen.dart';
-import 'battle_screen.dart';
+import 'profile_screen.dart';
 import 'leaderboard_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../providers/app_providers.dart';
@@ -69,8 +69,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         children: const [
           TabKeepAliveWrapper(child: HomeScreen()),
           TabKeepAliveWrapper(child: PlayZoneScreen()),
-          TabKeepAliveWrapper(child: BattleScreen(isTab: true)),
           TabKeepAliveWrapper(child: LeaderboardScreen(isTab: true)),
+          TabKeepAliveWrapper(child: ProfileScreen()),
         ],
       ),
       bottomNavigationBar: Container(
@@ -138,17 +138,17 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                     ),
                     _buildNavItem(
                       index: 2,
-                      icon: Icons.shield_outlined,
-                      activeIcon: Icons.shield_rounded,
-                      label: 'Battle',
+                      icon: Icons.leaderboard_outlined,
+                      activeIcon: Icons.leaderboard_rounded,
+                      label: 'Leaderboard',
                       isDark: isDark,
                       currentIndex: currentIndex,
                     ),
                     _buildNavItem(
                       index: 3,
-                      icon: Icons.leaderboard_outlined,
-                      activeIcon: Icons.leaderboard_rounded,
-                      label: 'Leaderboard',
+                      icon: Icons.person_outline_rounded,
+                      activeIcon: Icons.person_rounded,
+                      label: 'Profile',
                       isDark: isDark,
                       currentIndex: currentIndex,
                     ),

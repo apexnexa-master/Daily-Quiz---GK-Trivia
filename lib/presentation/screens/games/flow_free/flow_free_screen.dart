@@ -7,6 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/scoring/daily_challenge_service.dart';
+import '../../../../core/scoring/daily_puzzle.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/cloud_sync_service.dart';
 import '../../../../core/services/daily_progress_service.dart';
 import '../../../../core/services/game_sfx.dart';
@@ -49,6 +52,12 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   int _best = 0;
   int _elapsedSeconds = 0;
   bool _hasStartedDrawing = false;
+
+  /// Daily Challenge mode: one deterministic board, one official submission.
+  /// Level progress / best score are left untouched in this mode.
+  bool _argsRead = false;
+  bool _isDailyChallenge = false;
+  String? _playerName;
 
   Timer? _clockTimer;
   Timer? _autoStartTimer;
@@ -109,6 +118,20 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_argsRead) return;
+    _argsRead = true;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (args?['isDailyChallenge'] == true) {
+      _isDailyChallenge = true;
+      _playerName = AuthService().currentUser?.displayName;
+      _loadLevel(DailyPuzzle.flowFreeLevelNumber() - 1);
+    }
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _clockTimer?.cancel();
@@ -141,7 +164,12 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
       unawaited(prefs.setInt(_levelKey, startLevel));
     }
 
-    if (!mounted || _runStarted || _phase != _Phase.playing) return;
+    if (_isDailyChallenge ||
+        !mounted ||
+        _runStarted ||
+        _phase != _Phase.playing) {
+      return;
+    }
     final startIndex = startLevel - 1;
     if (startIndex == _currentLevelIndex) return;
     setState(() => _loadLevel(startIndex));
@@ -256,17 +284,20 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     _clockTimer?.cancel();
 
     final score = _calculateScore();
-    final isNewBest = score > _best;
-    if (isNewBest) {
-      _best = score;
-      SharedPreferences.getInstance().then((prefs) {
-        prefs.setInt(_bestScoreKey, score);
-      });
+    var isNewBest = false;
+    if (!_isDailyChallenge) {
+      isNewBest = score > _best;
+      if (isNewBest) {
+        _best = score;
+        SharedPreferences.getInstance().then((prefs) {
+          prefs.setInt(_bestScoreKey, score);
+        });
+      }
     }
 
     GameSfxService.instance.play(GameSfx.levelUp);
 
-    _persistProgress();
+    if (!_isDailyChallenge) _persistProgress();
 
     final input = FlowFreePerformanceInput(
       gridSize: _currentLevel.rows * _currentLevel.cols,
@@ -278,10 +309,18 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
       ProgressionService.instance.recordSession(
         SessionRecord(
           gameId: 'flowFree',
-          mode: SessionMode.practice,
+          mode: _isDailyChallenge
+              ? SessionMode.dailyChallenge
+              : SessionMode.practice,
           gameType: GameType.flowFree,
           primaryPillar: BrainPillar.logic,
           performance: input,
+          isDailyChallenge: _isDailyChallenge,
+          challengeId: _isDailyChallenge
+              ? DailyChallengeService.todaysChallengeId('flowFree')
+              : null,
+          playerName: _playerName,
+          durationSeconds: _elapsedSeconds,
         ),
       ),
     );
@@ -495,6 +534,34 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   // ── HUD ───────────────────────────────────────────────────────────────
 
   Widget _buildLevelChip(bool isDark) {
+    if (_isDailyChallenge) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(AppSpacing.rRound),
+          border: Border.all(
+            color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.bolt_rounded, size: 13, color: Color(0xFF00E5FF)),
+            const SizedBox(width: 4),
+            Text(
+              _t('DAILY', 'দৈনিক', 'दैनिक'),
+              style: GoogleFonts.montserrat(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return GestureDetector(
       onTap: _showLevelPicker,
       child: Container(
@@ -884,9 +951,11 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     final score = _calculateScore();
     final completed = _gameState.isComplete;
     return GameResultsPanel(
-      title: completed
-          ? _t('LEVEL COMPLETE!', 'লেভেল সম্পন্ন!', 'स्तर पूरा!')
-          : _t('GREAT START!', 'দারুণ শুরু!', 'शानदार शुरुआत!'),
+      title: _isDailyChallenge
+          ? _t('DAILY CHALLENGE!', 'দৈনিক চ্যালেঞ্জ!', 'दैनिक चुनौती!')
+          : completed
+              ? _t('LEVEL COMPLETE!', 'লেভেল সম্পন্ন!', 'स्तर पूरा!')
+              : _t('GREAT START!', 'দারুণ শুরু!', 'शानदार शुरुआत!'),
       subtitle: completed
           ? _t(
               'Grid ${_currentLevel.rows}×${_currentLevel.cols} cleared!',
@@ -930,8 +999,10 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
         'স্তর ${_currentLevelIndex + 1} • ${_currentLevel.difficulty}',
         'स्तर ${_currentLevelIndex + 1} • ${_currentLevel.difficulty}',
       ),
+      continueLabel: _isDailyChallenge ? _t('DONE', 'সম্পন্ন', 'पूर्ण') : null,
+      onContinue: _isDailyChallenge ? _exitGame : null,
       onPlayAgain: completed ? _nextLevel : _playAgain,
-      onShare: _playAgain,
+      onShare: _isDailyChallenge ? null : _playAgain,
       onExit: _exitGame,
     );
   }

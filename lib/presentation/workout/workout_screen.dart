@@ -7,7 +7,6 @@
 // transition before the next game and a final results summary with Brain Points.
 
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +18,6 @@ import '../../core/services/quiz/practice_quiz_service.dart';
 import '../../core/scoring/progression_service.dart';
 import '../../data/models/firestore_models.dart';
 import '../providers/app_providers.dart';
-import '../screens/games/arrow_puzzle/engine/data/campaign_data.dart';
 import 'workout_models.dart';
 
 class WorkoutScreen extends ConsumerStatefulWidget {
@@ -41,8 +39,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   int _pointsGained = 0;
   bool _wasDailyGoalCompleteBefore = false;
 
-  int? _arrowLevelId;
-  bool _arrowReady = false;
   Future<QuizModel?>? _quizPreloadFuture;
   bool _quizReady = false;
 
@@ -58,17 +54,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   void _prewarmGame(int index) {
     final game = _preset!.games[index];
     switch (game.id) {
-      case WorkoutGameId.arrowPuzzle:
-        _arrowLevelId = Random().nextInt(CampaignCatalog().totalLevels) + 1;
-        _arrowReady = false;
-        CampaignCatalog.generateInBackground(_arrowLevelId!)
-            .then((_) {
-              if (mounted && !_arrowReady) setState(() => _arrowReady = true);
-            })
-            .catchError((_) {
-              if (mounted && !_arrowReady) setState(() => _arrowReady = true);
-            });
-        break;
       case WorkoutGameId.gkQuiz:
         _quizReady = false;
         _ensureQuiz().then((_) {
@@ -92,8 +77,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   bool get _nextReady {
     final game = _preset!.games[_currentIndex];
     switch (game.id) {
-      case WorkoutGameId.arrowPuzzle:
-        return _arrowReady;
       case WorkoutGameId.gkQuiz:
         return _quizReady;
       case WorkoutGameId.stroopRush:
@@ -223,9 +206,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
     final args = <String, dynamic>{
       'workoutStep': step,
-      if (game.id == WorkoutGameId.arrowPuzzle) 'isDailyChallenge': true,
-      if (game.id == WorkoutGameId.arrowPuzzle && _arrowLevelId != null)
-        'preparedLevelId': _arrowLevelId,
     };
 
     final result =

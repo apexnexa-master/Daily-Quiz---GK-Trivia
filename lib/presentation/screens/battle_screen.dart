@@ -153,14 +153,6 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
   }
 
   void _startOfflineMode() {
-    if (_selectedGame == 'ARROW_MAZE') {
-      Navigator.pushNamed(context, '/arrow-puzzle');
-      // Reset state back to selectMode when they return so they don't get stuck
-      setState(() {
-        _arenaState = BattleArenaState.selectMode;
-      });
-      return;
-    }
     setState(() {
       _arenaState = BattleArenaState.searchingOffline;
       _isOnlineMode = false;
@@ -466,14 +458,6 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
           (_arenaState == BattleArenaState.lobbyWaiting ||
               _questions.isEmpty ||
               _isBattleOver)) {
-        final roomGameType = data['gameType'] ?? 'TRIVIA';
-        if (roomGameType == 'ARROW_MAZE') {
-          Navigator.pushNamed(context, '/arrow-maze');
-          setState(() {
-            _arenaState = BattleArenaState.selectMode;
-          });
-          return;
-        }
         // Parse questions from room
         final list = List<dynamic>.from(data['questions'] ?? []);
         setState(() {
@@ -1594,33 +1578,21 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _selectedGame == 'ARROW_MAZE'
-                                  ? (isBn
-                                      ? 'অ্যারো পাথ মেজ'
-                                      : isHi
-                                          ? 'एरो पाथ भूलभुलैया'
-                                          : 'Arrow Path Maze')
-                                  : (isBn
-                                      ? 'ট্রিভিয়া কুইজ'
-                                      : isHi
-                                          ? 'त्रिविया क्विज़'
-                                          : 'Trivia Duel'),
+                              isBn
+                                  ? 'ট্রিভিয়া কুইজ'
+                                  : isHi
+                                      ? 'त्रिविया क्विज़'
+                                      : 'Trivia Duel',
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              _selectedGame == 'ARROW_MAZE'
-                                  ? (isBn
-                                      ? 'গতিপথ মনে রেখে গোলকধাঁধা সমাধান'
-                                      : isHi
-                                          ? 'रास्ता याद रखकर भूलभुलैया'
-                                          : 'Solve the arrow maze to test memory')
-                                  : (isBn
-                                      ? 'সাধারণ জ্ঞান ও বুদ্ধিমত্তা'
-                                      : isHi
-                                          ? 'सामान्य ज्ञान और बुद्धि'
-                                          : 'General Knowledge & Intellect'),
+                              isBn
+                                  ? 'সাধারণ জ্ঞান ও বুদ্ধিমত্তা'
+                                  : isHi
+                                      ? 'सामान्य ज्ञान और बुद्धि'
+                                      : 'General Knowledge & Intellect',
                               style: TextStyle(
                                   fontSize: 12,
                                   color: isDark ? Colors.white54 : Colors.grey),

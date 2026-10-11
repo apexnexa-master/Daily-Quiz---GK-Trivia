@@ -133,6 +133,7 @@ class SilhouettePainter extends CustomPainter {
 
     _drawDotBackdrop(canvas, origin, cellSize, intro);
     _drawActiveArrows(canvas, origin, cellSize, intro);
+    _drawBlockerLink(canvas, origin, cellSize);
     _drawFlyOffs(canvas, cellSize);
   }
 
@@ -383,6 +384,62 @@ class SilhouettePainter extends CustomPainter {
     }
   }
 
+  /// A faint dashed guide from the arrow the player tapped to the cell of the
+  /// arrow that is blocking it, so the cause of a blocked tap is obvious.
+  void _drawBlockerLink(Canvas canvas, Offset origin, double cellSize) {
+    final fromId = engine.blockedFromId;
+    final impact = engine.blockedImpactCell;
+    if (fromId == null || impact == null) return;
+
+    ArrowPiece? from;
+    for (final a in engine.arrows) {
+      if (a.id == fromId) {
+        from = a;
+        break;
+      }
+    }
+    if (from == null) return;
+
+    final head = from.headCell;
+    final start = Offset(
+      origin.dx + (head.col + 0.5) * cellSize,
+      origin.dy + (head.row + 0.5) * cellSize,
+    );
+    final end = Offset(
+      origin.dx + (impact.col + 0.5) * cellSize,
+      origin.dy + (impact.row + 0.5) * cellSize,
+    );
+    if ((end - start).distance <= 0.5) return;
+
+    final paint = Paint()
+      ..color = const Color(0xFFFF1A3C).withValues(alpha: 0.6)
+      ..strokeWidth = max(1.5, cellSize * 0.09)
+      ..strokeCap = StrokeCap.round;
+
+    _drawDashedLine(canvas, start, end, cellSize, paint);
+    canvas.drawCircle(end, max(2.0, cellSize * 0.13), paint);
+  }
+
+  void _drawDashedLine(
+    Canvas canvas,
+    Offset a,
+    Offset b,
+    double cellSize,
+    Paint paint,
+  ) {
+    final total = (b - a).distance;
+    if (total <= 0) return;
+    final dir = (b - a) / total;
+    final dash = cellSize * 0.3;
+    final gap = cellSize * 0.22;
+    var d = 0.0;
+    while (d < total) {
+      final segEnd = min(d + dash, total);
+      canvas.drawLine(a + dir * d, a + dir * segEnd, paint);
+      d = segEnd + gap;
+    }
+  }
+
   void _drawFlyOffs(Canvas canvas, double cellSize) {
     for (final flyOff in flyOffs) {
       final arrow = flyOff.arrow;
@@ -420,6 +477,10 @@ class SilhouettePainter extends CustomPainter {
     if (oldDelegate.introductionValue != introductionValue) return true;
     if (oldDelegate.isDark != isDark) return true;
     if (engine.blockedFlashId != oldDelegate.engine.blockedFlashId) return true;
+    if (engine.blockedFromId != oldDelegate.engine.blockedFromId) return true;
+    if (engine.blockedImpactCell != oldDelegate.engine.blockedImpactCell) {
+      return true;
+    }
     final hintsHere = engine.arrows.any((a) => a.showHint);
     final hintsThere = oldDelegate.engine.arrows.any((a) => a.showHint);
     if (hintsHere != hintsThere) return true;

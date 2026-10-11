@@ -46,46 +46,6 @@ class GameIntroData {
   });
 
   static const Map<String, GameIntroData> games = {
-    'arrow-puzzle': GameIntroData(
-      id: 'arrow-puzzle',
-      title: 'ARROW PUZZLE',
-      titleBn: 'এরো পাজল',
-      titleHi: 'एरो पज़ल',
-      tagline: 'Tap. Slide. Escape.',
-      taglineBn: 'ট্যাপ করুন। স্লাইড করুন। বেরিয়ে পড়ুন।',
-      taglineHi: 'टैप करें। स्लाइड करें। बाहर निकलें।',
-      icon: Icons.route_rounded,
-      accentColor: Color(0xFF00F1FE),
-      secondaryColor: Color(0xFF0091FF),
-      brainBenefit:
-          'Sharpens logical reasoning and spatial awareness. Each puzzle requires you to plan multi-step paths, strengthening your prefrontal cortex — the brain region responsible for strategic thinking and problem solving.',
-      brainBenefitBn:
-          'যুক্তিবাদী চিন্তা ও স্থানিক সচেতনতা বাড়ায়। প্রতিটি পাজলে বহু-ধাপের পথ পরিকল্পনা করতে হয়, যা প্রিফ্রন্টাল কর্টেক্সকে শক্তিশালী করে।',
-      brainBenefitHi:
-          'तर्कशक्ति और स्थानिक जागरूकता बढ़ाता है। हर पज़ल में बहु-चरणीय मार्ग की योजना बनानी होती है, जो प्रीफ्रंटल कॉर्टेक्स को मजबूत करता है।',
-      rules: [
-        'The board is packed with blocks of different sizes',
-        'Each block has an arrow showing its exit direction',
-        'Tap a block to fly it off the board — only if its path is clear',
-        'A blocked tap costs a heart — you have 3',
-        'Stuck? Use a hint or undo your last move',
-      ],
-      rulesBn: [
-        'বোর্ড ভরা বিভিন্ন আকারের ব্লকে',
-        'প্রতিটি ব্লকে বেরোনোর দিক দেখানো তীর আছে',
-        'রাস্তা ফাঁকা থাকলে ট্যাপ করেই ব্লক উড়ে বেরোবে',
-        'আটকালে একটি হার্ট কমবে — মোট ৩টি',
-        'আটকে গেলে হিন্ট বা আনডু ব্যবহার করুন',
-      ],
-      rulesHi: [
-        'बोर्ड अलग-अलग आकार के ब्लॉकों से भरा है',
-        'हर ब्लॉक पर निकासी दिशा दिखाने वाला तीर है',
-        'रास्ता खाली हो तो टैप करते ही ब्लॉक उड़ जाएगा',
-        'अवरोध पर एक हार्ट कटेगा — कुल 3',
-        'फँस जाएँ तो हिंट या अनडू लें',
-      ],
-      targetRoute: '/arrow-maze',
-    ),
     'stroop-rush': GameIntroData(
       id: 'stroop-rush',
       title: 'STROOP RUSH',
@@ -331,9 +291,9 @@ class GameIntroData {
     ),
     'arrow-silhouette': GameIntroData(
       id: 'arrow-silhouette',
-      title: 'ARROW SILHOUETTE',
-      titleBn: 'এরো সিলুয়েট',
-      titleHi: 'एरो सिल्हूट',
+      title: 'ARROW PUZZLE',
+      titleBn: 'এরো পাজল',
+      titleHi: 'एरो पज़ल',
       tagline: 'Escape the silhouette. One tap at a time.',
       taglineBn: 'সিলুয়েট থেকে পালান। একবারে একটি ট্যাপ।',
       taglineHi: 'सिल्हूट से बचें। एक समय में एक टैप।',

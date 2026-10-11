@@ -45,23 +45,206 @@ List<ArrowPiece> _generateLevelArrows(SilhouetteLevel level) {
 /// require at least as many arrows as the one before it. Generation is
 /// deterministic and prefix-ordered, so the result is stable no matter which
 /// level is opened first; once a level is generated its arrows are reused.
-final List<PuzzleResult> _progressiveResults = <PuzzleResult>[];
+final List<int> _progressiveCounts = <int>[];
+final Map<int, List<ArrowPiece>> _progressiveArrowCache =
+    <int, List<ArrowPiece>>{};
+
+/// Deterministic per-level arrow counts for the whole campaign (in level order).
+/// Each level was generated with the previous level's count as its monotonic
+/// floor, so these numbers are reproducible from the fixed per-level seeds and
+/// let any level be generated in isolation. Regenerate them if the generator
+/// ever changes (`test/silhouette_generator_test.dart` prints the live values).
+const List<int> _kBakedCounts = <int>[
+  18, 19, 24, 25, 26, 26, 26, 26, 28, 28, // Heart..Butterfly
+  35, 35, 33, 33, 26, 34, 34, 37, 31, 36, // Sun..Key
+  43, 37, 41, 44, 45, 46, 46, 49, 52, 53, // Cat..Lion
+  49, 45, 57, 57, 49, 51, 69, 55, 60, 60, // Trishul..Umbrella
+  63, 68, 69, 70, 70, 72, 66, 52, 61, 68, // Ice Cream..Cherry
+  80, 78, 77, 78, // Pizza, Trophy, Pear, Whale
+];
+
+/// The arrow count of level [index] if it has already been generated.
+int? cachedArrowCount(int index) =>
+    index >= 0 && index < _progressiveCounts.length
+        ? _progressiveCounts[index]
+        : null;
+
+/// The generated arrows of level [index] if available. The returned list is
+/// the cache's own list, so callers that will mutate arrow state (the game
+/// engine) must work on a clone via [cloneArrows].
+List<ArrowPiece>? cachedArrows(int index) => _progressiveArrowCache[index];
+
+void storeProgressionCounts(List<int> counts) {
+  _progressiveCounts
+    ..clear()
+    ..addAll(counts);
+}
+
+void storeProgressionArrows(int index, List<ArrowPiece> arrows) {
+  _progressiveArrowCache[index] = arrows;
+}
+
+/// Deep-enough copy of [src] for a fresh play-through: new [ArrowPiece]
+/// instances (fresh mutable status/highlight/hint) sharing the immutable
+/// [GridCell]s. Used so replaying a level never inherits escaped arrows from a
+/// previous run.
+List<ArrowPiece> cloneArrows(List<ArrowPiece> src) {
+  return <ArrowPiece>[
+    for (final a in src)
+      ArrowPiece(
+        id: a.id,
+        cells: List<GridCell>.of(a.cells),
+        direction: a.direction,
+        colorIndex: a.colorIndex,
+      ),
+  ];
+}
+
+/// A [SilhouetteLevel] identical to [base] but whose arrows are served from
+/// [arrows] (cloned per call) instead of being regenerated. The game screen
+/// uses this to play a board that was generated ahead of time on a background
+/// isolate.
+SilhouetteLevel runtimeLevelWithArrows(
+  SilhouetteLevel base,
+  List<ArrowPiece> arrows,
+) {
+  return SilhouetteLevel(
+    id: base.id,
+    name: base.name,
+    themeEmoji: base.themeEmoji,
+    description: base.description,
+    gridCols: base.gridCols,
+    gridRows: base.gridRows,
+    mask: base.mask,
+    arrowFactory: () => cloneArrows(arrows),
+    config: base.config,
+  );
+}
 
 List<ArrowPiece> _generateProgressiveArrows(int index) {
-  while (_progressiveResults.length <= index) {
-    final i = _progressiveResults.length;
+  final existing = _progressiveArrowCache[index];
+  if (existing != null) return existing;
+
+  // The arrow counts are fully deterministic (fixed per-level seeds), so the
+  // campaign's counts are baked in. That lets us generate only the requested
+  // level with the correct monotonic floor instead of regenerating every
+  // earlier level first (which would take many seconds when a high level is
+  // opened directly). Falls back to the previous count when out of range.
+  while (_progressiveCounts.length <= index) {
+    _progressiveCounts.add(
+      _progressiveCounts.length < _kBakedCounts.length
+          ? _kBakedCounts[_progressiveCounts.length]
+          : 0,
+    );
+  }
+  final level = silhouetteLevels[index];
+  final floor = index == 0 ? 0 : _progressiveCounts[index - 1];
+  final generator = PuzzleGenerator(
+    rows: level.gridRows,
+    cols: level.gridCols,
+    mask: level.mask,
+    config: level.config,
+    seed: level.id,
+  );
+  final result = generator.generate(floorArrows: floor);
+  _progressiveCounts[index] = result.arrows.length;
+  _progressiveArrowCache[index] = result.arrows;
+  return result.arrows;
+}
+
+// ---------------------------------------------------------------------------
+// Background generation. Building a large board can take a noticeable fraction
+// of a second; on a full campaign the prefix up to a high level can take many
+// seconds. Running it on a separate isolate keeps the UI (and its loading
+// spinner) perfectly smooth instead of freezing the frame.
+// ---------------------------------------------------------------------------
+
+/// Plain, sendable description of a single level's generation inputs.
+class LevelGenSpec {
+  final int rows;
+  final int cols;
+  final int seed;
+  final List<List<bool>> mask;
+  final LevelConfig config;
+
+  LevelGenSpec({
+    required this.rows,
+    required this.cols,
+    required this.seed,
+    required this.mask,
+    required this.config,
+  });
+}
+
+/// Work request for [generateProgressionTask]: every spec from level 0 up to
+/// [targetIndex], plus the arrow counts already known (so the isolate can skip
+/// regenerating levels whose count is not needed).
+class ProgressionTask {
+  final List<LevelGenSpec> specs;
+  final List<int> knownCounts;
+  final int targetIndex;
+
+  ProgressionTask({
+    required this.specs,
+    required this.knownCounts,
+    required this.targetIndex,
+  });
+}
+
+class ProgressionOutput {
+  final List<int> counts;
+
+  /// Arrows of the requested (target) level. Empty on failure.
+  final List<ArrowPiece> targetArrows;
+
+  ProgressionOutput({required this.counts, required this.targetArrows});
+}
+
+ProgressionTask buildProgressionTask(int targetIndex) {
+  final specs = <LevelGenSpec>[];
+  final known = <int>[];
+  for (var i = 0; i <= targetIndex; i++) {
     final level = silhouetteLevels[i];
-    final floor = i == 0 ? 0 : _progressiveResults[i - 1].arrows.length;
-    final generator = PuzzleGenerator(
+    specs.add(LevelGenSpec(
       rows: level.gridRows,
       cols: level.gridCols,
+      seed: level.id,
       mask: level.mask,
       config: level.config,
-      seed: level.id,
+    ));
+    known.add(
+      i < targetIndex && i < _kBakedCounts.length ? _kBakedCounts[i] : -1,
     );
-    _progressiveResults.add(generator.generate(floorArrows: floor));
   }
-  return _progressiveResults[index].arrows;
+  return ProgressionTask(
+    specs: specs,
+    knownCounts: known,
+    targetIndex: targetIndex,
+  );
+}
+
+/// Runs on a background isolate (via `compute`). Fills the arrow-count prefix
+/// in order so each level keeps the monotonic floor, and returns the arrows of
+/// the requested level. Levels whose count is already known are skipped.
+ProgressionOutput generateProgressionTask(ProgressionTask task) {
+  final counts = List<int>.of(task.knownCounts);
+  List<ArrowPiece> target = const <ArrowPiece>[];
+  for (var i = 0; i <= task.targetIndex; i++) {
+    if (i < task.targetIndex && counts[i] >= 0) continue;
+    final spec = task.specs[i];
+    final floor = i == 0 ? 0 : counts[i - 1];
+    final generator = PuzzleGenerator(
+      rows: spec.rows,
+      cols: spec.cols,
+      mask: spec.mask,
+      config: spec.config,
+      seed: spec.seed,
+    );
+    final result = generator.generate(floorArrows: floor);
+    counts[i] = result.arrows.length;
+    if (i == task.targetIndex) target = result.arrows;
+  }
+  return ProgressionOutput(counts: counts, targetArrows: target);
 }
 
 /// Tiny drawing language for building tall, detailed silhouettes with lots of
@@ -1359,6 +1542,104 @@ List<List<bool>> _ladybugMask() {
   return b.build();
 }
 
+List<List<bool>> _envelopeMask() {
+  final b = _MaskBuilder(24, 19);
+  // A plump, rounded letter with a peaked flap: blobby body fills densely.
+  b.ellipse(12.5, 9, 8.2, 8.2);
+  b.triangle(4, 9, 14, 6.8);
+  b.carve(8, 9, 0.9);
+  b.carve(16, 5, 0.7);
+  b.carve(16, 13, 0.7);
+  return b.build();
+}
+
+List<List<bool>> _lockMask() {
+  final b = _MaskBuilder(24, 15);
+  // A single fat blob: round body merged with a solid shackle so the whole
+  // padlock fills as one piece.
+  b.disc(15, 7, 6.6);
+  b.disc(6.5, 7, 4.6);
+  b.rect(5, 4, 9, 10);
+  b.carve(15, 7, 1.2);
+  b.carve(11, 5, 0.7);
+  b.carve(11, 9, 0.7);
+  return b.build();
+}
+
+List<List<bool>> _musicNoteMask() {
+  final b = _MaskBuilder(24, 15);
+  // A single eighth note: a rounded head, a straight stem up its right side,
+  // and a flag sweeping off the top. (A beamed pair reads as a "goalpost" at
+  // this resolution, so avoid two parallel stems.)
+  b.ellipse(18.5, 4.5, 3.8, 2.8);
+  b.stroke(2, 7, 17, 7, width: 3);
+  b.stroke(2, 7, 6, 13, width: 4);
+  b.stroke(4, 9, 8, 12, width: 4);
+  return b.build();
+}
+
+List<List<bool>> _cherryMask() {
+  final b = _MaskBuilder(24, 17);
+  b.disc(17, 6, 4.4);
+  b.disc(18, 11.5, 4.0);
+  b.stroke(15, 6, 4, 8, width: 2);
+  b.stroke(15, 11, 4, 8, width: 2);
+  b.ellipse(3, 9, 3.2, 1.5);
+  b.carve(16, 5.5, 0.6);
+  b.carve(17, 11, 0.6);
+  return b.build();
+}
+
+List<List<bool>> _pizzaMask() {
+  final b = _MaskBuilder(24, 19);
+  b.triangle(2, 9.5, 21, 8.6);
+  b.ellipse(3, 9.5, 8.2, 2.1);
+  b.carve(9, 7, 1.2);
+  b.carve(13, 11, 1.2);
+  b.carve(16, 8, 1.2);
+  b.carve(19, 9, 1.0);
+  return b.build();
+}
+
+List<List<bool>> _trophyMask() {
+  final b = _MaskBuilder(24, 19);
+  // Plump bowl with chunky side handles, a short stem and a round base: all
+  // blobs merged together so the trophy fills densely.
+  b.disc(9, 9, 6.2);
+  b.disc(9, 2.8, 2.8);
+  b.disc(9, 15.2, 2.8);
+  b.rect(13, 8, 17, 10);
+  b.disc(21, 9, 4.2);
+  b.carve(9, 9, 1.0);
+  return b.build();
+}
+
+List<List<bool>> _pearMask() {
+  final b = _MaskBuilder(24, 19);
+  // Two stacked lobes (small on top, big below) so it reads as a pear and
+  // avoids the pure-disc symmetry the ring packer handles poorly.
+  b.disc(7.5, 9, 4.6);
+  b.disc(15, 9, 7.0);
+  b.stroke(3, 9, 5, 9, width: 2);
+  b.ellipse(3, 13, 2.4, 1.1);
+  b.carve(9, 9, 0.9);
+  b.carve(17, 6, 0.7);
+  return b.build();
+}
+
+List<List<bool>> _whaleMask() {
+  final b = _MaskBuilder(24, 21);
+  b.ellipse(13, 9, 6.0, 6.6);
+  b.stroke(9, 14, 5, 20, width: 3);
+  b.stroke(16, 14, 20, 20, width: 3);
+  b.triangle(6, 10, 10, 1.3);
+  b.carve(11, 5, 0.7);
+  b.disc(3, 4, 0.9);
+  b.disc(2, 6, 0.6);
+  b.disc(5, 3, 0.6);
+  return b.build();
+}
+
 // ---------------------------------------------------------------------------
 // Level catalogue.
 // ---------------------------------------------------------------------------
@@ -1870,6 +2151,94 @@ final List<SilhouetteLevel> _baseLevels = [
     arrowFactory: () => _generateLevelArrows(silhouetteLevels[45]),
     config: LevelConfig.easy,
   ),
+  SilhouetteLevel(
+    id: 47,
+    name: 'Envelope',
+    themeEmoji: '\u2709\uFE0F',
+    description: 'Fill the sealed envelope with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _envelopeMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[46]),
+    config: LevelConfig.medium,
+  ),
+  SilhouetteLevel(
+    id: 48,
+    name: 'Lock',
+    themeEmoji: '\uD83D\uDD12',
+    description: 'Fill the padlock with arrows',
+    gridCols: 15,
+    gridRows: 24,
+    mask: _lockMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[47]),
+    config: LevelConfig.hard,
+  ),
+  SilhouetteLevel(
+    id: 49,
+    name: 'Music Note',
+    themeEmoji: '\uD83C\uDFB5',
+    description: 'Fill the music note with arrows',
+    gridCols: 15,
+    gridRows: 24,
+    mask: _musicNoteMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[48]),
+    config: LevelConfig.medium,
+  ),
+  SilhouetteLevel(
+    id: 50,
+    name: 'Cherry',
+    themeEmoji: '\uD83C\uDF52',
+    description: 'Fill the cherries with arrows',
+    gridCols: 17,
+    gridRows: 24,
+    mask: _cherryMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[49]),
+    config: LevelConfig.medium,
+  ),
+  SilhouetteLevel(
+    id: 51,
+    name: 'Pizza',
+    themeEmoji: '\uD83C\uDF55',
+    description: 'Fill the pizza slice with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _pizzaMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[50]),
+    config: LevelConfig.large,
+  ),
+  SilhouetteLevel(
+    id: 52,
+    name: 'Trophy',
+    themeEmoji: '\uD83C\uDFC6',
+    description: 'Fill the champion trophy with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _trophyMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[51]),
+    config: LevelConfig.large,
+  ),
+  SilhouetteLevel(
+    id: 53,
+    name: 'Pear',
+    themeEmoji: '\uD83C\uDF50',
+    description: 'Fill the ripe pear with arrows',
+    gridCols: 19,
+    gridRows: 24,
+    mask: _pearMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[52]),
+    config: LevelConfig.large,
+  ),
+  SilhouetteLevel(
+    id: 54,
+    name: 'Whale',
+    themeEmoji: '\uD83D\uDC0B',
+    description: 'Fill the giant whale with arrows',
+    gridCols: 21,
+    gridRows: 24,
+    mask: _whaleMask(),
+    arrowFactory: () => _generateLevelArrows(silhouetteLevels[53]),
+    config: LevelConfig.mega,
+  ),
 ];
 
 // ---------------------------------------------------------------------------
@@ -1893,39 +2262,49 @@ int _countMaskCells(List<List<bool>> mask) {
   return count;
 }
 
-/// Cell budget for level index [i] of [n]. Grows smoothly from a small intro
-/// board to a jumbo finale so arrow counts climb with the level.
-int _targetCellCount(int i, int n) {
-  final t = n == 1 ? 0.0 : i / (n - 1);
-  return (110 + 350 * t).round(); // 110 cells -> 460 cells
+/// Number of steps in the original campaign ramp. Difficulty is scaled against
+/// the absolute level index over this fixed span (never against the current
+/// catalogue length), so appending new levels at the end leaves every earlier
+/// level's board and difficulty byte-for-byte identical.
+const double _progressionSpan = 45.0;
+
+/// Upper bound on the ramp so the largest boards stay fillable.
+const double _progressionMax = 1.15;
+
+double _progressionT(int i) => math.min(_progressionMax, i / _progressionSpan);
+
+/// Cell budget for level index [i]. Grows smoothly from a small intro board to
+/// a jumbo finale so arrow counts climb with the level.
+int _targetCellCount(int i) {
+  final t = _progressionT(i);
+  return (110 + 350 * t).round(); // 110 cells -> up to ~510 cells
 }
 
 /// Difficulty profile that scales with the level: more arrows allowed, and
 /// arrow strokes get a touch shorter so the same silhouette packs in more
 /// pieces (tighter fill), while the star rating tightens. The explicit
 /// [targetArrows] climbs smoothly so every level is denser than the one before.
-LevelConfig _progressionConfig(int i, int n) {
-  final t = n == 1 ? 0.0 : i / (n - 1);
+LevelConfig _progressionConfig(int i) {
+  final t = _progressionT(i);
   return LevelConfig(
-    minArrows: (6 + 30 * t).round(),
-    maxArrows: (22 + 74 * t).round(),
+    minArrows: (6 + 32 * t).round(),
+    maxArrows: (24 + 80 * t).round(),
     minCells: 3,
     maxCells: (13 - 3 * t).round(),
     maxBends: (4 + 4 * t).round(),
-    largeArrowChance: 0.5 - 0.12 * t,
-    maxAttempts: (40 + 24 * t).round(),
+    largeArrowChance: 0.48 - 0.11 * t,
+    maxAttempts: (46 + 28 * t).round(),
     moveSlack: (10 - 6 * t).round(),
-    targetArrows: (15 + 50 * t).round(),
+    targetArrows: (18 + 56 * t).round(),
   );
 }
 
 List<SilhouetteLevel> _buildProgression(List<SilhouetteLevel> base) {
-  final n = base.length;
   final result = <SilhouetteLevel>[];
-  for (var i = 0; i < n; i++) {
+  for (var i = 0; i < base.length; i++) {
     final b = base[i];
     final baseCells = _countMaskCells(b.mask);
-    final target = _targetCellCount(i, n);
+    final target = _targetCellCount(i);
     final scale =
         math.sqrt(target / math.max(1, baseCells)).clamp(0.55, 2.4).toDouble();
     final outRows = math.max(14, (b.gridRows * scale).round());
@@ -1940,7 +2319,7 @@ List<SilhouetteLevel> _buildProgression(List<SilhouetteLevel> base) {
       gridCols: outCols,
       mask: mask,
       arrowFactory: () => _generateProgressiveArrows(i),
-      config: _progressionConfig(i, n),
+      config: _progressionConfig(i),
     ));
   }
   return result;

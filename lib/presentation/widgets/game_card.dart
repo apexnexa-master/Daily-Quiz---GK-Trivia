@@ -53,6 +53,12 @@ class GameCard extends StatelessWidget {
   /// Localized label for the coming soon overlay.
   final String comingSoonLabel;
 
+  /// "New" state: a small accent tag pinned to the top-right corner.
+  final bool isNew;
+
+  /// Localized label for the new tag.
+  final String newLabel;
+
   /// Tap target. Disabled automatically when locked / coming soon.
   final VoidCallback? onTap;
 
@@ -89,6 +95,8 @@ class GameCard extends StatelessWidget {
     this.isLive = false,
     this.isComingSoon = false,
     this.comingSoonLabel = 'COMING SOON',
+    this.isNew = false,
+    this.newLabel = 'NEW',
     this.onTap,
     this.width,
     this.coverHeight = 150,
@@ -134,6 +142,12 @@ class GameCard extends StatelessWidget {
             top: compact ? 8 : 10,
             right: compact ? 8 : 10,
             child: _buildMetaPill(isDark, compact),
+          ),
+        if (isNew)
+          Positioned(
+            top: meta != null ? (compact ? 30 : 34) : (compact ? 8 : 10),
+            right: compact ? 8 : 10,
+            child: _buildNewTag(),
           ),
         Positioned(
           left: 0,
@@ -525,6 +539,40 @@ class GameCard extends StatelessWidget {
       return hsl.withLightness(0.78).toColor();
     }
     return accent;
+  }
+
+  /// Small accent "NEW" tag pinned to the corner to flag freshly added games.
+  Widget _buildNewTag() {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 7 : 8,
+        vertical: compact ? 3 : 4,
+      ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF6B81), Color(0xFFB388FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF6B81).withValues(alpha: 0.45),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Text(
+        newLabel,
+        style: TextStyle(
+          fontSize: compact ? 8 : 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.8,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 
   Widget _buildMetaPill(bool isDark, bool compact) {

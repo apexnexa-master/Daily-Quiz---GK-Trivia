@@ -12,7 +12,6 @@ import '../../core/services/daily_progress_service.dart';
 /// Identifiers for the currently playable games.
 enum WorkoutGameId {
   gkQuiz,
-  arrowPuzzle,
   stroopRush,
   synapseRecall,
   mathSprint,
@@ -143,15 +142,6 @@ class WorkoutPresets {
     gameType: GameType.challenge,
   );
 
-  static const WorkoutGameDef arrowPuzzle = WorkoutGameDef(
-    id: WorkoutGameId.arrowPuzzle,
-    titleEn: 'Arrow Puzzle',
-    titleBn: 'দিকনির্দেশ ধাঁধা',
-    titleHi: 'दिशा पहेली',
-    skill: WorkoutSkill.logic,
-    gameType: GameType.arrow,
-  );
-
   static const WorkoutGameDef stroopRush = WorkoutGameDef(
     id: WorkoutGameId.stroopRush,
     titleEn: 'Stroop Rush',
@@ -184,7 +174,7 @@ class WorkoutPresets {
     nameEn: 'Balanced',
     nameBn: 'সমন্বিত',
     nameHi: 'संतुलित',
-    games: [gkQuiz, arrowPuzzle, synapseRecall, stroopRush],
+    games: [gkQuiz, synapseRecall, stroopRush],
   );
 
   /// Every playable game in the app today. The workout game picker is driven
@@ -192,7 +182,6 @@ class WorkoutPresets {
   /// launcher case in `WorkoutScreen`) to show up everywhere.
   static const List<WorkoutGameDef> allGames = [
     gkQuiz,
-    arrowPuzzle,
     stroopRush,
     synapseRecall,
     mathSprint,
@@ -214,7 +203,7 @@ class WorkoutPresets {
     nameEn: 'Speed Focus',
     nameBn: 'গতি ফোকাস',
     nameHi: 'गति फोकस',
-    games: [stroopRush, arrowPuzzle, stroopRush],
+    games: [stroopRush, stroopRush],
   );
 
   static const WorkoutPreset logicFocus = WorkoutPreset(
@@ -222,7 +211,7 @@ class WorkoutPresets {
     nameEn: 'Logic Focus',
     nameBn: 'যুক্তি ফোকাস',
     nameHi: 'तर्क फोकस',
-    games: [arrowPuzzle, gkQuiz, arrowPuzzle],
+    games: [gkQuiz],
   );
 
   static const WorkoutPreset brainMix = WorkoutPreset(
@@ -230,7 +219,7 @@ class WorkoutPresets {
     nameEn: 'Brain Mix',
     nameBn: 'ব্রেন মিক্স',
     nameHi: 'ब्रेन मिक्स',
-    games: [gkQuiz, stroopRush, arrowPuzzle],
+    games: [gkQuiz, stroopRush],
   );
 
   static const List<WorkoutPreset> all = [
@@ -267,8 +256,6 @@ class WorkoutStep {
     switch (game.id) {
       case WorkoutGameId.gkQuiz:
         return AppRouter.quiz;
-      case WorkoutGameId.arrowPuzzle:
-        return AppRouter.arrowMaze;
       case WorkoutGameId.stroopRush:
         return AppRouter.stroopRush;
       case WorkoutGameId.mathSprint:

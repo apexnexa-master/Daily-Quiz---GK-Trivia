@@ -2,20 +2,31 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/scoring/daily_challenge_service.dart';
+import '../../../../core/scoring/daily_puzzle.dart';
+import '../../../../core/scoring/game_performance.dart';
+import '../../../../core/scoring/progression_service.dart';
+import '../../../../core/services/ad_service.dart';
+import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/daily_progress_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../providers/stats_providers.dart';
 import 'silhouette_models.dart';
 import 'silhouette_engine.dart';
 import 'silhouette_levels.dart';
 import 'silhouette_painter.dart';
 
 /// Testing helper: when true every level is playable regardless of progress.
-/// Flip back to `false` to restore the normal lock/unlock progression.
-const bool kUnlockAllLevels = true;
+/// Only allowed in debug builds — in production (release) levels start locked
+/// and unlock one-by-one as the player completes them.
+const bool kUnlockAllLevels = !kDebugMode;
 
 /// Minimum arrow cell size, in logical pixels. Boards that would have to shrink
 /// below this to fit the screen instead render larger and overflow the
@@ -44,10 +55,29 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
 
   bool _showWinOverlay = false;
   int _hintsRemaining = 3;
-  int _highestUnlocked = kUnlockAllLevels ? silhouetteLevels.length : 1;
+  /// Genuine progression: the first not-yet-completed level (the resume point).
+  /// [kUnlockAllLevels] only relaxes the level picker's lock display, it never
+  /// overwrites this, so progress is saved correctly.
+  int _unlockedLevel = 1;
   final Map<int, int> _starsMap = {};
   Timer? _blockedFlashTimer;
   bool _argsRead = false;
+
+  /// Daily Challenge mode: a single deterministic puzzle for the whole day,
+  /// submitted once. Progress/level-unlock is untouched in this mode.
+  bool _isDailyChallenge = false;
+  String? _playerName;
+
+  /// Lives: each tap on a blocked ("wrong") arrow costs one heart. When they run
+  /// out the game offers a rewarded-ad revive.
+  static const int _maxLives = 3;
+  int _lives = _maxLives;
+  bool _showGameOverOverlay = false;
+  bool _reviving = false;
+
+  /// Guards against overlapping level loads: only the most recent request is
+  /// allowed to install its engine once its (async) generation completes.
+  int _loadToken = 0;
 
   late AnimationController _tickerController;
   late AnimationController _introController;
@@ -78,15 +108,32 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     _argsRead = true;
     // Optionally start on a specific level, e.g. deep links or the debug
     // level picker can pass arguments: {'level': 12}.
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    final startLevel = args?['level'];
-    if (startLevel is int &&
-        startLevel >= 1 &&
-        startLevel <= silhouetteLevels.length) {
-      _currentLevelId = startLevel;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    _isDailyChallenge = args?['isDailyChallenge'] == true;
+    _bootstrap(args?['level'], daily: _isDailyChallenge);
+  }
+
+  /// Loads saved progress first, then starts on the last unfinished level (the
+  /// first one the player has not completed) instead of always level 1. An
+  /// explicit `{'level': n}` argument still wins.
+  Future<void> _bootstrap(dynamic startArg, {bool daily = false}) async {
+    await _loadProgress();
+    if (!mounted) return;
+    if (daily) {
+      _playerName = AuthService().currentUser?.displayName;
+      _loadLevel(DailyPuzzle.silhouetteLevelId(silhouetteLevels.length));
+      return;
     }
-    _loadProgress();
-    _loadLevel(_currentLevelId);
+    final int startLevel;
+    if (startArg is int &&
+        startArg >= 1 &&
+        startArg <= silhouetteLevels.length) {
+      startLevel = startArg;
+    } else {
+      startLevel = _unlockedLevel.clamp(1, silhouetteLevels.length);
+    }
+    _loadLevel(startLevel);
   }
 
   @override
@@ -105,14 +152,17 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
   void _loadLevel(int levelId, {bool animate = true}) async {
     final idx = levelId - 1;
     if (idx < 0 || idx >= silhouetteLevels.length) return;
+    final token = ++_loadToken;
 
-    _level = silhouetteLevels[idx];
     _currentLevelId = levelId;
 
     _timer?.cancel();
     _elapsedSeconds = 0;
     _timerStarted = false;
     _showWinOverlay = false;
+    _showGameOverOverlay = false;
+    _reviving = false;
+    _lives = _maxLives;
     _hintsRemaining = 3;
     _blockedFlashTimer?.cancel();
     _tickerController.stop();
@@ -125,10 +175,40 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
       _loaded = false;
     });
 
-    // Yield to the event loop so the loading indicator can render,
-    // then generate the puzzle off the main frame.
+    // Yield to the event loop so the loading indicator paints before any heavy
+    // work starts, then generate the board on a background isolate so the UI
+    // (and the spinner) never freeze.
     await Future.delayed(Duration.zero);
 
+    List<ArrowPiece> arrows;
+    try {
+      arrows = await _obtainArrows(idx);
+    } catch (_) {
+      // Last-resort fallback: generate synchronously. Slower, but it keeps the
+      // game playable instead of crashing or hanging.
+      try {
+        arrows = cloneArrows(silhouetteLevels[idx].generateArrows());
+      } catch (_) {
+        if (token == _loadToken && mounted) {
+          setState(() {
+            _isLoading = false;
+            _loaded = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not build this puzzle. Please try again.'),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    // A newer level load superseded this one while we were awaiting.
+    if (!mounted || token != _loadToken) return;
+
+    final runtimeLevel = runtimeLevelWithArrows(silhouetteLevels[idx], arrows);
+    _level = runtimeLevel;
     _engine = SilhouetteEngine(_level);
 
     // Precompute the intro reveal: a per-cell depth map and a per-arrow draw
@@ -149,6 +229,25 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     }
   }
 
+  /// Returns the arrows for level [idx], from the in-memory cache when present,
+  /// otherwise by generating the needed prefix on a background isolate.
+  Future<List<ArrowPiece>> _obtainArrows(int idx) async {
+    final cached = cachedArrows(idx);
+    if (cached != null) return cached;
+
+    final task = buildProgressionTask(idx);
+    ProgressionOutput output;
+    try {
+      output = await compute(generateProgressionTask, task);
+    } catch (_) {
+      // Isolates unavailable (or failed to start): do the work inline.
+      output = generateProgressionTask(task);
+    }
+    storeProgressionCounts(output.counts);
+    storeProgressionArrows(idx, output.targetArrows);
+    return output.targetArrows;
+  }
+
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -166,7 +265,9 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
       if (jsonStr == null || jsonStr.isEmpty) return;
       final data = jsonDecode(jsonStr) as Map<String, dynamic>;
       final highest = (data['highest'] as num?)?.toInt() ?? 1;
-      if (highest >= 1) _highestUnlocked = highest;
+      if (highest >= 1) {
+        _unlockedLevel = highest.clamp(1, silhouetteLevels.length);
+      }
       final stars = (data['stars'] as Map<String, dynamic>?) ?? {};
       stars.forEach((key, value) {
         final id = int.tryParse(key);
@@ -176,7 +277,6 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
         }
       });
     } catch (_) {}
-    if (kUnlockAllLevels) _highestUnlocked = silhouetteLevels.length;
   }
 
   Future<void> _saveProgress() async {
@@ -185,7 +285,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
       await prefs.setString(
         _saveKey,
         jsonEncode({
-          'highest': _highestUnlocked,
+          'highest': _unlockedLevel,
           'stars': _starsMap.map((k, v) => MapEntry('$k', v)),
         }),
       );
@@ -199,7 +299,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
   }
 
   void _onTapDown(TapDownDetails details, Size viewport) {
-    if (_showWinOverlay) return;
+    if (_showWinOverlay || _showGameOverOverlay || _reviving) return;
+    if (_lives <= 0) return;
     // Ignore taps until the design has finished drawing itself in.
     if (_introController.value < 1) return;
 
@@ -277,35 +378,112 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     final arrow = _engine.arrows.firstWhere((a) => a.id == arrowId);
     _blockedFlashTimer?.cancel();
     _tickerController.repeat();
+    final outOfLives = _lives <= 1;
     setState(() {
       _engine.flashBlocked(arrow); // charges a wasted move, retractable via undo
+      _lives = max(0, _lives - 1);
     });
     _blockedFlashTimer = Timer(const Duration(milliseconds: 420), () {
       if (!mounted) return;
-      setState(_engine.clearBlockedFlash);
+      setState(() {
+        _engine.clearBlockedFlash();
+        if (outOfLives) _showGameOverOverlay = true;
+      });
       if (!_engine.arrows.any((a) => a.showHint)) {
         _tickerController.stop();
       }
+      if (outOfLives) _timer?.cancel();
     });
+  }
+
+  /// Rewards the player with [AdService]'s rewarded video: if it completes, all
+  /// lives are restored and play resumes on the current board. When no ad is
+  /// available (e.g. offline / not yet loaded) the revive is granted anyway so
+  /// the player is never trapped.
+  Future<void> _revive() async {
+    if (_reviving) return;
+    setState(() => _reviving = true);
+    try {
+      var earned = false;
+      if (!AdService.instance.isRewardedReady) {
+        _showToast('Ad is loading, please wait...');
+        await AdService.instance.loadRewarded();
+        if (!AdService.instance.isRewardedReady) earned = true;
+      }
+      if (!earned && AdService.instance.isRewardedReady) {
+        earned = await AdService.instance.showRewarded();
+      }
+      if (!mounted) return;
+      if (earned) {
+        _blockedFlashTimer?.cancel();
+        setState(() {
+          _lives = _maxLives;
+          _showGameOverOverlay = false;
+          _engine.clearBlockedFlash();
+        });
+        if (_timerStarted) _startTimer();
+      } else {
+        _showToast('Watch the full ad to revive.');
+      }
+    } finally {
+      if (mounted) setState(() => _reviving = false);
+    }
+  }
+
+  void _showToast(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
   }
 
   void _onLevelComplete() {
     _timer?.cancel();
     final result = _engine.result(Duration(seconds: _elapsedSeconds));
-    _starsMap[_currentLevelId] = max(
-      _starsMap[_currentLevelId] ?? 0,
-      result.stars,
-    );
-    if (_currentLevelId >= _highestUnlocked) {
-      _highestUnlocked = _currentLevelId + 1;
+    if (_isDailyChallenge) {
+      // Daily Challenge never touches level-unlock progress — it only submits
+      // the one official attempt for today (extra attempts are practice).
+      _submitDailyChallenge(result);
+    } else {
+      _starsMap[_currentLevelId] = max(
+        _starsMap[_currentLevelId] ?? 0,
+        result.stars,
+      );
+      if (_currentLevelId >= _unlockedLevel) {
+        _unlockedLevel = min(_currentLevelId + 1, silhouetteLevels.length);
+      }
+      _saveProgress();
     }
-    _saveProgress();
     setState(() => _showWinOverlay = true);
   }
 
-  void _undo() {
-    _engine.clearBlockedFlash();
-    if (_engine.undo()) setState(() {});
+  /// Submits today's official Arrow Puzzle (silhouette) score. The service is
+  /// idempotent: only the first completion counts for the leaderboard / XP, so
+  /// later retries are safe practice runs.
+  void _submitDailyChallenge(LevelResult result) {
+    final record = SessionRecord(
+      gameId: 'arrowSilhouette',
+      mode: SessionMode.dailyChallenge,
+      gameType: GameType.arrowSilhouette,
+      primaryPillar: BrainPillar.logic,
+      performance: ArrowPerformanceInput(
+        level: _currentLevelId,
+        completed: true,
+        timeSeconds: _elapsedSeconds,
+        movesUsed: result.moves,
+        targetMoves: result.idealMoves,
+        hintsUsed: (3 - _hintsRemaining).clamp(0, 3),
+      ),
+      isDailyChallenge: true,
+      challengeId: DailyChallengeService.todaysChallengeId('arrowSilhouette'),
+      playerName: _playerName,
+      durationSeconds: _elapsedSeconds,
+    );
+    unawaited(ProgressionService.instance.recordSession(record));
+    try {
+      ProviderScope.containerOf(context, listen: false)
+          .invalidate(dailyProgressProvider);
+    } catch (_) {}
   }
 
   void _reset() => _loadLevel(_currentLevelId, animate: false);
@@ -391,6 +569,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                 ],
               ),
               if (_showWinOverlay) _buildWinOverlay(isDark),
+              if (_showGameOverOverlay) _buildGameOverOverlay(isDark),
             ],
           ),
         ),
@@ -401,37 +580,71 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
   Widget _buildHeader(bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            icon: Icon(Icons.arrow_back_rounded,
-                color: isDark ? Colors.white : Colors.black87),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'LEVEL $_currentLevelId',
-              style: GoogleFonts.montserrat(
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.5,
-                color: isDark ? Colors.white : Colors.black87,
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(Icons.arrow_back_rounded,
+                    color: isDark ? Colors.white : Colors.black87),
+                onPressed: () => Navigator.pop(context),
               ),
-            ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _isDailyChallenge
+                      ? 'DAILY CHALLENGE'
+                      : 'LEVEL $_currentLevelId',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              if (!_isDailyChallenge)
+                IconButton(
+                  tooltip: 'Levels',
+                  icon: Icon(Icons.grid_view_rounded,
+                      color: isDark ? Colors.white70 : Colors.black54, size: 22),
+                  onPressed: _showLevelPicker,
+                ),
+            ],
           ),
-          _buildStatChip(_formatTime(_elapsedSeconds), isDark),
-          const SizedBox(width: 8),
-          _buildStatChip('${_engine.moveCount}', isDark, highlight: true),
-          const SizedBox(width: 4),
-          IconButton(
-            tooltip: 'Levels',
-            icon: Icon(Icons.grid_view_rounded,
-                color: isDark ? Colors.white70 : Colors.black54, size: 22),
-            onPressed: _showLevelPicker,
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              _buildLives(isDark),
+              const Spacer(),
+              _buildStatChip(_formatTime(_elapsedSeconds), isDark),
+              const SizedBox(width: 8),
+              _buildStatChip('${_engine.moveCount}', isDark, highlight: true),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  /// Three red hearts: filled for remaining lives, outlined once spent.
+  Widget _buildLives(bool isDark) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(_maxLives, (i) {
+        final alive = i < _lives;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 1.5),
+          child: Icon(
+            alive ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            size: 20,
+            color: alive
+                ? const Color(0xFFEF4444)
+                : (isDark ? Colors.white24 : Colors.black26),
+          ),
+        );
+      }),
     );
   }
 
@@ -508,7 +721,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                     ),
                     itemBuilder: (_, index) {
                       final level = silhouetteLevels[index];
-                      final locked = level.id > _highestUnlocked;
+                      final locked =
+                          !kUnlockAllLevels && level.id > _unlockedLevel;
                       final selected = level.id == current;
                       final stars = _starsMap[level.id] ?? 0;
                       return GestureDetector(
@@ -730,14 +944,6 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
       child: Row(
         children: [
           _buildControlButton(
-            icon: Icons.undo_rounded,
-            label: 'Undo',
-            enabled: _engine.canUndo,
-            isDark: isDark,
-            onTap: _undo,
-          ),
-          const SizedBox(width: 6),
-          _buildControlButton(
             icon: Icons.lightbulb_outline_rounded,
             label: 'Hint ($_hintsRemaining)',
             enabled: _hintsRemaining > 0,
@@ -890,7 +1096,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'LEVEL COMPLETE!',
+                  _isDailyChallenge ? 'CHALLENGE COMPLETE!' : 'LEVEL COMPLETE!',
                   style: GoogleFonts.montserrat(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
@@ -945,10 +1151,58 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    if (_currentLevelId > 1) ...[
+                    if (_isDailyChallenge)
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text(
+                            'Done',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      )
+                    else ...[
+                      if (_currentLevelId > 1) ...[
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => _loadLevel(_currentLevelId - 1),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: BorderSide(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.24)
+                                    : Colors.black.withValues(alpha: 0.24),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: Text(
+                              'Prev',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.black.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () => _loadLevel(_currentLevelId - 1),
+                          onPressed: () => _loadLevel(_currentLevelId),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: BorderSide(
@@ -961,7 +1215,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                             ),
                           ),
                           child: Text(
-                            'Prev',
+                            'Retry',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: isDark
@@ -972,55 +1226,161 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                         ),
                       ),
                       const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _nextLevel,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            backgroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: Text(
+                            _currentLevelId < silhouetteLevels.length
+                                ? 'Next'
+                                : 'Exit',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => _loadLevel(_currentLevelId),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: BorderSide(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.24)
-                                : Colors.black.withValues(alpha: 0.24),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          'Retry',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? Colors.white70
-                                : Colors.black.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _nextLevel,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          _currentLevelId < silhouetteLevels.length
-                              ? 'Next'
-                              : 'Exit',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameOverOverlay(bool isDark) {
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.82),
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: const Color(0xFFEF4444).withValues(alpha: 0.5),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.2),
+                  blurRadius: 30,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.heart_broken_rounded,
+                  color: Color(0xFFEF4444),
+                  size: 64,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'OUT OF LIVES',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'You tapped too many blocked arrows. Watch a short ad to get your lives back and keep going.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: isDark
+                        ? Colors.white70
+                        : Colors.black.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _reviving ? null : _revive,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: const Color(0xFFEF4444),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    icon: _reviving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.play_circle_fill_rounded,
+                            color: Colors.white),
+                    label: Text(
+                      _reviving ? 'LOADING...' : 'REVIVE',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _reviving
+                        ? null
+                        : () => _loadLevel(_currentLevelId),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.24)
+                            : Colors.black.withValues(alpha: 0.24),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      'Restart Level',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? Colors.white70
+                            : Colors.black.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: _reviving ? null : () => Navigator.pop(context),
+                  child: Text(
+                    'Exit',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white54 : Colors.black45,
+                    ),
+                  ),
                 ),
               ],
             ),

@@ -12,7 +12,6 @@ import '../../core/utils/offline_manager.dart';
 import '../../core/services/daily_progress_service.dart';
 import '../widgets/game_card.dart';
 import '../widgets/workout_card.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/daily_challenge_auth.dart';
 import '../../routes/app_router.dart';
 
@@ -25,26 +24,15 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   Timer? _countdownTimer;
-  String _savedUsername = 'Explorer';
-  String _savedPhotoUrl = '';
 
   @override
   void initState() {
     super.initState();
-    _loadSavedIdentity();
     _countdownTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
     });
     QuizSchedulerService.instance.refreshTiming(force: true).then((_) {
       if (mounted) setState(() {});
-    });
-  }
-
-  Future<void> _loadSavedIdentity() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _savedUsername = prefs.getString('temp_username') ?? 'Explorer';
-      _savedPhotoUrl = prefs.getString('temp_photo_url') ?? '';
     });
   }
 
@@ -58,7 +46,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final ref = this.ref;
     final lang = ref.watch(languageProvider);
-    final quizAsync = ref.watch(todayQuizProvider);
     final dailyProgressAsync = ref.watch(dailyProgressProvider);
     final brainStatsAsync = ref.watch(brainStatsProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -133,7 +120,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ref.invalidate(currentUserProvider);
                       ref.invalidate(brainStatsProvider);
                       ref.invalidate(myWeeklyRankProvider);
-                      await _loadSavedIdentity();
                       await Future.delayed(const Duration(milliseconds: 500));
                     },
                     child: CustomScrollView(
@@ -166,8 +152,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                               // Main Bento Layout
                               // Recommended Workout Card (Bento Large)
-                              _buildWorkoutCard(
-                                  quizAsync, context, isBn, isHi, isDark),
+                              _buildWorkoutCard(context, isBn, isHi, isDark),
                               const SizedBox(height: 16),
 
                               // Quick Brain Workout (one-tap multi-game session)
@@ -197,11 +182,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildTopAppBar(BuildContext context, int streak, bool isBn, bool isHi) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currentUser = ref.watch(currentUserProvider).value;
-    final photoUrl = (currentUser?.photoUrl?.isNotEmpty == true)
-        ? currentUser!.photoUrl!
-        : (_savedPhotoUrl.isNotEmpty ? _savedPhotoUrl : null);
-    final username = currentUser?.displayName ?? _savedUsername;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
@@ -244,71 +224,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
-          // Avatar + name pill (same component style as the streak pill).
-          Flexible(
-            child: GestureDetector(
-              onTap: () => Navigator.pushNamed(context, '/profile'),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(6, 4, 12, 4),
-                decoration: BoxDecoration(
-                  color: (isDark ? Colors.white : Colors.black)
-                      .withValues(alpha: isDark ? 0.08 : 0.04),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isDark
-                        ? AppColors.neonCyan.withValues(alpha: 0.25)
-                        : Colors.black.withValues(alpha: 0.08),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ClipOval(
-                      child: SizedBox(
-                        width: 26,
-                        height: 26,
-                        child: photoUrl != null
-                            ? Image.network(
-                                photoUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    _avatarPlaceholder(isDark),
-                              )
-                            : _avatarPlaceholder(isDark),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        username,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _avatarPlaceholder(bool isDark) {
-    return Container(
-      color: (isDark ? AppColors.primary : AppColors.primaryDark)
-          .withValues(alpha: 0.15),
-      child: Icon(
-        Icons.person_rounded,
-        color: isDark ? AppColors.primary : AppColors.primaryDark,
-        size: 20,
       ),
     );
   }
@@ -1177,8 +1093,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildWorkoutCard(AsyncValue<dynamic> quizAsync, BuildContext context,
-      bool isBn, bool isHi, bool isDark) {
+  Widget _buildWorkoutCard(
+      BuildContext context, bool isBn, bool isHi, bool isDark) {
     final now = DateTime.now();
     final midnight = DateTime(now.year, now.month, now.day + 1);
     final difference = midnight.difference(now);
@@ -1212,25 +1128,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           clipBehavior: Clip.none,
           child: Row(
             children: [
-              // Card 1: GK Challenge (Open)
+              // Card 1: Arrow Puzzle daily challenge (one official attempt).
               _buildChallengeTile(
                 context: context,
                 isDark: isDark,
                 badgeText: isBn
-                    ? 'জিকে লাইভ'
+                    ? 'এরো'
                     : isHi
-                        ? 'जीके लाइव'
-                        : 'GK LIVE',
+                        ? 'एरो'
+                        : 'ARROWS',
                 title: isBn
-                    ? 'জিকে চ্যালেঞ্জ'
+                    ? 'এরো পাজল'
                     : isHi
-                        ? 'जीके चुनौती'
-                        : 'GK Challenge',
+                        ? 'एरो पज़ल'
+                        : 'Arrow Puzzle',
                 subtitle: isBn
-                    ? 'আজকের জিকে চ্যালেঞ্জ খেলুন'
+                    ? 'আজকের তীর পাজল'
                     : isHi
-                        ? 'जीके लाइव चुनौती खेलें'
-                        : 'Daily general knowledge run',
+                        ? 'आज की एरो पहेली'
+                        : "Today's silhouette puzzle",
                 timeLeft: timeLeftStr,
                 isLocked: false,
                 isLive: true,
@@ -1239,43 +1155,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     DailyChallengeAuth.requireLogin(context, ref);
                     return;
                   }
-                  quizAsync.whenData((quiz) {
-                    if (quiz != null) {
-                      ref.read(quizSessionProvider.notifier).startQuiz(quiz);
-                      Navigator.pushNamed(context, AppRouter.introGkQuiz);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                "Today's GK challenge is not available yet.")),
-                      );
-                    }
-                  });
+                  Navigator.pushNamed(
+                    context,
+                    AppRouter.introArrowSilhouette,
+                    arguments: {'isDailyChallenge': true},
+                  );
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/covers/gk_quiz.svg',
+                imagePath: null,
+                footerText: isBn
+                    ? 'এস্কেপ পাজল'
+                    : isHi
+                        ? 'एस्केप पहेली'
+                        : 'Escape puzzle',
               ),
               const SizedBox(width: 12),
-              // Card 2: Arrow Path Maze (Unlocked Daily Challenge)
+              // Card 2: Flow Free daily challenge (one official attempt).
               _buildChallengeTile(
                 context: context,
                 isDark: isDark,
                 badgeText: isBn
-                    ? 'যুক্তি'
+                    ? 'ফ্লো'
                     : isHi
-                        ? 'তর্ক'
-                        : 'LOGIC',
+                        ? 'फ्लो'
+                        : 'FLOW',
                 title: isBn
-                    ? 'দিকনির্দেশ ধাঁধা'
+                    ? 'ফ্লো ফ্রি'
                     : isHi
-                        ? 'दिशा पहेली'
-                        : 'Arrow Puzzle 3D',
+                        ? 'फ्लो फ्री'
+                        : 'Flow Free',
                 subtitle: isBn
-                    ? 'তর্ক ও প্যাটার্ন ওরিয়েন্টেশন'
+                    ? 'আজকের পাইপ পাজল'
                     : isHi
-                        ? 'तार्किक भूलभुलैया'
-                        : 'Directional speed tracking',
+                        ? 'आज की पाइप पहेली'
+                        : "Today's pipe puzzle",
                 timeLeft: timeLeftStr,
                 isLocked: false,
                 isLive: true,
@@ -1284,16 +1198,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     DailyChallengeAuth.requireLogin(context, ref);
                     return;
                   }
-                  Navigator.pushNamed(context, AppRouter.introArrowPuzzle, arguments: {
-                    'isDailyChallenge': true,
-                  });
+                  Navigator.pushNamed(
+                    context,
+                    AppRouter.introFlowFree,
+                    arguments: {'isDailyChallenge': true},
+                  );
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/covers/arrow_maze.svg',
+                imagePath: 'assets/covers/flow_free.svg',
+                footerText: isBn
+                    ? 'পাইপ পাজল'
+                    : isHi
+                        ? 'पाइप पहेली'
+                        : 'Pipe puzzle',
               ),
               const SizedBox(width: 12),
-              // Card 3: Math Speed Sprint
+              // Card 3: Math Speed Sprint (login-gated).
               _buildChallengeTile(
                 context: context,
                 isDark: isDark,
@@ -1312,10 +1233,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     : isHi
                         ? 'त्वरित गणना खेल'
                         : 'Mental arithmetic sprint',
+                timeLeft: timeLeftStr,
                 isLocked: false,
                 isLive: false,
                 onTap: () {
-                  Navigator.pushNamed(context, AppRouter.introMathSprint);
+                  if (!DailyChallengeAuth.canStart(ref)) {
+                    DailyChallengeAuth.requireLogin(context, ref);
+                    return;
+                  }
+                  Navigator.pushNamed(
+                    context,
+                    AppRouter.introMathSprint,
+                    arguments: {'isDailyChallenge': true},
+                  );
                 },
                 isBn: isBn,
                 isHi: isHi,
@@ -1459,6 +1389,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               isBn: isBn,
               isHi: isHi,
               badgeText: isBn
+                  ? 'তীর'
+                  : isHi
+                      ? 'तीर'
+                      : 'ARROWS',
+              title: isBn
+                  ? 'এরো পাজল'
+                  : isHi
+                      ? 'एरो पज़ल'
+                      : 'Arrow Puzzle',
+              subtitle: isBn
+                  ? 'তীর দিয়ে আকৃতি ভেঙে পালান'
+                  : isHi
+                      ? 'तीरों की आकृति तोड़कर बचें'
+                      : 'Escape arrows from silhouettes',
+              accent: accentCyan,
+              imagePath: null,
+              isNew: true,
+              footer: isBn
+                  ? 'পাজল'
+                  : isHi
+                      ? 'पहेली'
+                      : 'Escape puzzle',
+              onTap: () => Navigator.pushNamed(context, AppRouter.introArrowSilhouette),
+            ),
+            _buildRecommendedGameTile(
+              context: context,
+              isDark: isDark,
+              isBn: isBn,
+              isHi: isHi,
+              badgeText: isBn
                   ? 'পাজল'
                   : isHi
                       ? 'पहेली'
@@ -1569,64 +1529,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       : 'Focus & reaction',
               onTap: () => Navigator.pushNamed(context, AppRouter.introStroopRush),
             ),
-            _buildRecommendedGameTile(
-              context: context,
-              isDark: isDark,
-              isBn: isBn,
-              isHi: isHi,
-              badgeText: isBn
-                  ? 'যুক্তি'
-                  : isHi
-                      ? 'तर्क'
-                      : 'LOGIC',
-              title: isBn
-                  ? 'দিকনির্দেশ ধাঁধা'
-                  : isHi
-                      ? 'दिशा पहेली'
-                      : 'Arrow Puzzle 3D',
-              subtitle: isBn
-                  ? 'তর্ক ও প্যাটার্ন ওরিয়েন্টেশন'
-                  : isHi
-                      ? 'तार्किक भूलभुलैया'
-                      : 'Directional speed tracking',
-              accent: accentCyan,
-              imagePath: 'assets/covers/arrow_maze.svg',
-              footer: isBn
-                  ? 'যুক্তি ও দিকনির্দেশ'
-                  : isHi
-                      ? 'तर्क व दिशा'
-                      : 'Logic & orientation',
-              onTap: () => Navigator.pushNamed(context, AppRouter.introArrowPuzzle),
-            ),
-            _buildRecommendedGameTile(
-              context: context,
-              isDark: isDark,
-              isBn: isBn,
-              isHi: isHi,
-              badgeText: isBn
-                  ? 'তীর'
-                  : isHi
-                      ? 'तीर'
-                      : 'ARROWS',
-              title: isBn
-                  ? 'এরো সিলুয়েট'
-                  : isHi
-                      ? 'एरो सिल्हूट'
-                      : 'Arrow Silhouette',
-              subtitle: isBn
-                  ? 'তীর দিয়ে আকৃতি ভেঙে পালান'
-                  : isHi
-                      ? 'तीरों की आकृति तोड़कर बचें'
-                      : 'Escape arrows from silhouettes',
-              accent: accentCyan,
-              imagePath: null,
-              footer: isBn
-                  ? 'সিলুয়েট পাজল'
-                  : isHi
-                      ? 'सिल्हूट पहेली'
-                      : 'Silhouette puzzle',
-              onTap: () => Navigator.pushNamed(context, AppRouter.introArrowSilhouette),
-            ),
           ],
         ),
       ],
@@ -1646,6 +1548,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required VoidCallback onTap,
     String? imagePath,
     Widget? cover,
+    bool isNew = false,
   }) {
     return GameCard(
       fillHeight: true,
@@ -1656,6 +1559,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       accent: accent,
       badge: badgeText,
       isLive: true,
+      isNew: isNew,
       title: title,
       subtitle: subtitle,
       footer: footer,

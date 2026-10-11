@@ -79,27 +79,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
       ),
       ChallengeData(
         title: isBn
-            ? 'দিকনির্দেশক গোলকধাঁধা'
-            : isHi
-                ? 'दिशात्मक भूलभुलैया'
-                : 'Arrow Path Maze',
-        description: isBn
-            ? 'দিকপরিবর্তন দ্রুত সনাক্ত করে লজিক্যাল ও ভিজ্যুয়াল প্রক্রিয়া তীক্ষ্ণ করুন।'
-            : isHi
-                ? 'तीव्र दिशात्मक बदलावों को पहचानकर तार्किक संरचनाओं को नेविगेट करें।'
-                : 'Navigate complex logical structures by identifying rapid directional shifts.',
-        category: 'Logic',
-        duration: '2m',
-        icon: Icons.extension_rounded,
-        imagePath: 'assets/covers/arrow_maze.svg',
-        isLocked: false,
-        isImplemented: true,
-        onTap: () {
-          Navigator.pushNamed(context, AppRouter.introArrowPuzzle);
-        },
-      ),
-      ChallengeData(
-        title: isBn
             ? 'সিন্যাপ্স রিকল'
             : isHi
                 ? 'सिनैप्स रिकॉल'
@@ -226,10 +205,10 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
       ),
       ChallengeData(
         title: isBn
-            ? 'এরো সিলুয়েট'
+            ? 'এরো পাজল'
             : isHi
-                ? 'एरो सिल्हूट'
-                : 'Arrow Silhouette',
+                ? 'एरो पज़ल'
+                : 'Arrow Puzzle',
         description: isBn
             ? 'তীর দিয়ে গঠিত চিহ্নিত আকৃতি থেকে তীর সরিয়ে পালান।'
             : isHi
