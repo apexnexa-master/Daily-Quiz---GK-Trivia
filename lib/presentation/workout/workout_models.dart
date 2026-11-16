@@ -5,6 +5,8 @@
 // later only requires a new [WorkoutGameDef] entry plus the launcher case in
 // `WorkoutScreen` — the flow itself is driven by this list.
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import '../../routes/app_router.dart';
 import '../../core/services/daily_progress_service.dart';
@@ -186,6 +188,13 @@ class WorkoutPresets {
     synapseRecall,
     mathSprint,
   ];
+
+  /// Picks a fresh, distinct set of games from [allGames] at random. This keeps
+  /// every workout session varied instead of always replaying one preset.
+  static List<WorkoutGameDef> randomGames([int count = 3, Random? random]) {
+    final pool = List<WorkoutGameDef>.of(allGames)..shuffle(random);
+    return pool.take(count.clamp(1, allGames.length)).toList();
+  }
 
   /// Builds an ad-hoc preset from a user-picked list of games (e.g. the
   /// "choose 3 games" flow). Order is preserved as selected.

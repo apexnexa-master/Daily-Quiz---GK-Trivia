@@ -56,6 +56,17 @@ class OneLineLevel {
   final List<int> suggestedStarts;
   final int parSeconds;
 
+  /// Tutorial levels (1-10) let the stroke begin anywhere on the outline.
+  /// From level 11 onward the puzzle is "locked" to a single glowing
+  /// start vertex, so a wrong turn at a junction can strand the stroke
+  /// and the player has to plan ahead.
+  final bool startAnywhere;
+
+  /// The mandated start vertex when [startAnywhere] is false. For an
+  /// all-even figure this is a valid circuit start (the stroke returns
+  /// to it when complete).
+  final int startVertex;
+
   const OneLineLevel({
     required this.number,
     required this.name,
@@ -65,6 +76,8 @@ class OneLineLevel {
     required this.solution,
     required this.suggestedStarts,
     required this.parSeconds,
+    this.startAnywhere = true,
+    this.startVertex = 0,
   });
 
   int get edgeCount => edges.length;

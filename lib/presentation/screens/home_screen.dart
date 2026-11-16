@@ -1,6 +1,5 @@
 // lib/presentation/screens/home_screen.dart
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +12,7 @@ import '../../core/services/daily_progress_service.dart';
 import '../widgets/game_card.dart';
 import '../widgets/workout_card.dart';
 import '../utils/daily_challenge_auth.dart';
+import '../utils/account_linker.dart';
 import '../../routes/app_router.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -59,7 +59,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Daily progress metrics (streak, daily goal, brain score)
     final dailyProgress = dailyProgressAsync.value ?? const DailyProgress();
     final streak = dailyProgress.currentStreak;
-    // Metrics are hidden for guests and logged-out users.
+    // Guests are play-first users: they still see their local stats, and get a
+    // secondary prompt to link an account so their progress is backed up.
     final isGuest = currentUser?.isAnonymous ?? true;
     // Gamification stats drive the XP matrix (level + total XP).
     final gamificationStats = ref.watch(gamificationNotifierProvider).value;
@@ -102,7 +103,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               children: [
                 // Custom Header Bar matching BrainX branding
-                _buildTopAppBar(context, streak, isBn, isHi),
+                _buildTopAppBar(context, streak, dailyProgress,
+                    brainStatsAsync.value, xp, level, isBn, isHi),
                 const NetworkStatusBanner(),
 
                 Expanded(
@@ -130,38 +132,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               horizontal: 16, vertical: 12),
                           sliver: SliverList(
                             delegate: SliverChildListDelegate([
-                              // Top Metrics Bento Bar (guests see a login prompt instead)
-                              if (isGuest)
+                              // Guests get a compact save-progress prompt; the
+                              // full metrics live in the header pills and sheet.
+                              if (isGuest) ...[
                                 _buildGuestLoginCard(
-                                    context, isBn, isHi, isDark)
-                              else ...[
-                                _buildBrainSkillsHeader(
                                     context, isBn, isHi, isDark),
-                                const SizedBox(height: 10),
-                                _buildMetricsBentoBox(
-                                  dailyProgress,
-                                  brainStatsAsync.value,
-                                  xp,
-                                  level,
-                                  isBn,
-                                  isHi,
-                                  isDark,
-                                ),
+                                const SizedBox(height: 16),
                               ],
-                              const SizedBox(height: 20),
 
-                              // Main Bento Layout
-                              // Recommended Workout Card (Bento Large)
-                              _buildWorkoutCard(context, isBn, isHi, isDark),
-                              const SizedBox(height: 16),
-
-                              // Quick Brain Workout (one-tap multi-game session)
+                              // Daily Brain Workout — the one-tap hero action.
+                              _buildSectionHeader(
+                                icon: Icons.psychology_rounded,
+                                accent: AppColors.neonLime,
+                                title: isBn
+                                    ? 'দৈনিক ব্রেন প্র্যাকটিস'
+                                    : isHi
+                                        ? 'दैनिक ब्रेन प्रैक्टिस'
+                                        : 'DAILY BRAIN PRACTICE',
+                                isDark: isDark,
+                              ),
+                              const SizedBox(height: 12),
                               QuickBrainWorkoutCard(lang: lang),
                               const SizedBox(height: 24),
 
                               // Recommended Games — standalone quick-play games
                               _buildRecommendedGamesSection(
                                   context, isBn, isHi, isDark),
+                              const SizedBox(height: 24),
+
+                              // Today's Challenge — daily quiz, kept last so the
+                              // quick workout and recommendations lead the page.
+                              _buildWorkoutCard(context, isBn, isHi, isDark),
                               const SizedBox(height: 24),
 
                               const SizedBox(height: 100),
@@ -180,48 +181,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildTopAppBar(BuildContext context, int streak, bool isBn, bool isHi) {
+  Widget _buildTopAppBar(
+    BuildContext context,
+    int streak,
+    DailyProgress dailyProgress,
+    BrainStatsBundle? brainStats,
+    int xp,
+    int level,
+    bool isBn,
+    bool isHi,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final engineScore = brainStats?.brain.score ?? 0;
+    final brainScore = engineScore > 0
+        ? engineScore
+        : dailyProgress.brainScore.clamp(0, 100);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Streak pill — fire symbol + number only; tap to learn how it grows.
-          GestureDetector(
-            onTap: () => _showStreakDialog(context, streak, isBn, isHi, isDark),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: (isDark ? Colors.white : Colors.black)
-                    .withValues(alpha: isDark ? 0.08 : 0.04),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFFF97316).withValues(alpha: 0.3)
-                      : Colors.black.withValues(alpha: 0.08),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.local_fire_department_rounded,
-                    size: 16,
-                    color: Color(0xFFF97316),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$streak',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                    ),
-                  ),
-                ],
-              ),
+          _buildHeaderPill(
+            isDark: isDark,
+            icon: Icons.local_fire_department_rounded,
+            iconColor: const Color(0xFFF97316),
+            value: '$streak',
+            onTap: () => _showStreakDialog(context, streak,
+                dailyProgress.longestStreak, isBn, isHi, isDark),
+          ),
+          const SizedBox(width: 8),
+          // Brain pill — single glanceable score; tap opens the full summary.
+          _buildHeaderPill(
+            isDark: isDark,
+            icon: Icons.psychology_rounded,
+            iconColor: isDark ? AppColors.primary : AppColors.primaryDark,
+            value: '$brainScore',
+            onTap: () => _showBrainSkillsSheet(
+              context,
+              dailyProgress,
+              brainStats,
+              xp,
+              level,
+              isBn,
+              isHi,
+              isDark,
             ),
           ),
         ],
@@ -229,207 +233,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildBrainSkillsHeader(
-      BuildContext context, bool isBn, bool isHi, bool isDark) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
+  Widget _buildHeaderPill({
+    required bool isDark,
+    required IconData icon,
+    required Color iconColor,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: (isDark ? Colors.white : Colors.black)
+              .withValues(alpha: isDark ? 0.08 : 0.04),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark
+                ? iconColor.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.08),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: isDark ? 0.2 : 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child:
-                  const Icon(Icons.insights_rounded, size: 16, color: AppColors.primary),
-            ),
-            const SizedBox(width: 10),
+            Icon(icon, size: 16, color: iconColor),
+            const SizedBox(width: 6),
             Text(
-              isBn ? 'মস্তিষ্ক ও দক্ষতা' : isHi ? 'मस्तिष्क और कौशल' : 'Brain Skills',
+              value,
               style: TextStyle(
                 fontSize: 15,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w900,
                 color: isDark ? Colors.white : AppColors.textPrimaryLight,
               ),
             ),
           ],
-        ),
-        TextButton.icon(
-          onPressed: () {
-            ref.invalidate(brainStatsProvider);
-            ref.invalidate(myWeeklyRankProvider);
-            Navigator.pushNamed(context, '/stats');
-          },
-          icon: Icon(
-            Icons.view_agenda_rounded,
-            size: 16,
-            color: isDark ? AppColors.primary : AppColors.primaryDark,
-          ),
-          label: Text(
-            isBn ? 'সব দেখুন' : isHi ? 'सभी देखें' : 'View All',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: isDark ? AppColors.primary : AppColors.primaryDark,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMetricsBentoBox(DailyProgress dailyProgress,
-      BrainStatsBundle? brainStats, int xp, int level, bool isBn, bool isHi, bool isDark) {
-    // Engine Brain Score with a safe legacy fallback (before the first scored
-    // session the engine has no data yet).
-    final engine = brainStats?.brain.score ?? 0;
-    final brainScore =
-        engine > 0 ? engine : (dailyProgress.brainScore.clamp(0, 100));
-    final gamesCompleted =
-        dailyProgress.dailyGamesCompleted.clamp(0, dailyProgress.dailyGoal);
-    final dailyGoal = dailyProgress.dailyGoal;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF131A30).withValues(alpha: 0.25)
-                : Colors.white.withValues(alpha: 0.45),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark
-                  ? AppColors.neonCyan.withValues(alpha: 0.22)
-                  : Colors.black.withValues(alpha: 0.05),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: (isDark ? Colors.black : AppColors.primary)
-                    .withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-              if (isDark)
-                BoxShadow(
-                  color: AppColors.neonCyan.withValues(alpha: 0.08),
-                  blurRadius: 28,
-                  spreadRadius: -2,
-                ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // Daily Goal with mini progress bar
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => _showDailyGoalDialog(
-                      context, dailyProgress, isBn, isHi, isDark),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            dailyProgress.isDailyGoalComplete
-                                ? Icons.emoji_events_rounded
-                                : Icons.gps_fixed_rounded,
-                            color: const Color(0xFF10B981),
-                            size: 18,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$gamesCompleted/$dailyGoal',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w900,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.textPrimaryLight,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: dailyGoal > 0 ? gamesCompleted / dailyGoal : 0,
-                          backgroundColor: isDark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : Colors.black.withValues(alpha: 0.06),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            dailyProgress.isDailyGoalComplete
-                                ? AppColors.success
-                                : const Color(0xFF10B981),
-                          ),
-                          minHeight: 4,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        (isBn
-                                ? 'দৈনিক লক্ষ্য'
-                                : isHi
-                                    ? 'दैनिक लक्ष्य'
-                                    : 'Daily Goal')
-                            .toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          color: isDark
-                              ? AppColors.textTertiaryDark
-                              : AppColors.textTertiaryLight,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              _buildMetricItem(
-                icon: Icons.psychology_rounded,
-                iconColor: isDark ? AppColors.primary : AppColors.primaryDark,
-                label: isBn
-                    ? 'মস্তিষ্ক স্কোর'
-                    : isHi
-                        ? 'मस्तिष्क स्कोर'
-                        : 'Brain Score',
-                value: '$brainScore',
-                isDark: isDark,
-                valueWidget: _AnimatedCountUp(
-                  value: brainScore,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                onTap: () => _showBrainScoreDialog(
-                    context, dailyProgress, brainStats, isBn, isHi, isDark),
-              ),
-              const SizedBox(width: 8),
-              _buildMetricItem(
-                icon: Icons.bolt_rounded,
-                iconColor: const Color(0xFFF59E0B),
-                label: isBn ? 'অভিজ্ঞতা' : isHi ? 'एक्सपी' : 'XP',
-                value: '$xp',
-                isDark: isDark,
-                onTap: () =>
-                    _showXpDialog(context, xp, level, isBn, isHi, isDark),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -498,7 +337,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const SizedBox(width: 8),
           ElevatedButton(
-            onPressed: () => Navigator.pushNamed(context, '/login'),
+            // Link the anonymous account so the player keeps their streak and
+            // stats instead of starting over on a fresh Google account.
+            onPressed: () => AccountLinker.linkAccount(context, ref),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.warning,
               foregroundColor: Colors.black,
@@ -509,10 +350,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             child: Text(
               isBn
-                  ? 'লগইন'
+                  ? 'সংরক্ষণ'
                   : isHi
-                      ? 'लॉगिन'
-                      : 'Login',
+                      ? 'सहेजें'
+                      : 'Save',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),
@@ -521,8 +362,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _showStreakDialog(
-      BuildContext context, int streak, bool isBn, bool isHi, bool isDark) {
+  void _showStreakDialog(BuildContext context, int streak, int bestStreak,
+      bool isBn, bool isHi, bool isDark) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -566,6 +407,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                     color: Color(0xFFF97316),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.emoji_events_rounded,
+                      size: 14,
+                      color: Color(0xFFF59E0B),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      isBn
+                          ? 'সর্বোচ্চ ধারা'
+                          : isHi
+                              ? 'सर्वश्रेष्ठ स्ट्रीक'
+                              : 'Best Streak',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white54 : Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  '$bestStreak',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFFF59E0B),
                   ),
                 ),
               ],
@@ -625,6 +503,193 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showBrainSkillsSheet(
+    BuildContext context,
+    DailyProgress progress,
+    BrainStatsBundle? brainStats,
+    int xp,
+    int level,
+    bool isBn,
+    bool isHi,
+    bool isDark,
+  ) {
+    final engine = brainStats?.brain.score ?? 0;
+    final brainScore = engine > 0 ? engine : progress.brainScore.clamp(0, 100);
+    final gamesCompleted =
+        progress.dailyGamesCompleted.clamp(0, progress.dailyGoal);
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            12,
+            20,
+            20 + MediaQuery.of(sheetContext).padding.bottom,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.cardDark : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary
+                          .withValues(alpha: isDark ? 0.2 : 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.insights_rounded,
+                      size: 18,
+                      color: isDark ? AppColors.primary : AppColors.primaryDark,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isBn
+                              ? 'মস্তিষ্ক ও দক্ষতা'
+                              : isHi
+                                  ? 'मस्तिष्क और कौशल'
+                                  : 'Brain Skills',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.textPrimaryLight,
+                          ),
+                        ),
+                        Text(
+                          isBn
+                              ? 'আপনার অগ্রগতির সারাংশ'
+                              : isHi
+                                  ? 'आपकी प्रगति का सारांश'
+                                  : 'Your progress at a glance',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? Colors.white54 : Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.04)
+                      : Colors.black.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: [
+                    _buildMetricItem(
+                      icon: Icons.gps_fixed_rounded,
+                      iconColor: const Color(0xFF10B981),
+                      label: isBn
+                          ? 'দৈনিক লক্ষ্য'
+                          : isHi
+                              ? 'दैनिक लक्ष्य'
+                              : 'Daily Goal',
+                      value: '$gamesCompleted/${progress.dailyGoal}',
+                      isDark: isDark,
+                      onTap: () => _showDailyGoalDialog(
+                          context, progress, isBn, isHi, isDark),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildMetricItem(
+                      icon: Icons.psychology_rounded,
+                      iconColor:
+                          isDark ? AppColors.primary : AppColors.primaryDark,
+                      label: isBn
+                          ? 'মস্তিষ্ক স্কোর'
+                          : isHi
+                              ? 'मस्तिष्क स्कोर'
+                              : 'Brain Score',
+                      value: '$brainScore',
+                      isDark: isDark,
+                      onTap: () => _showBrainScoreDialog(
+                          context, progress, brainStats, isBn, isHi, isDark),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildMetricItem(
+                      icon: Icons.bolt_rounded,
+                      iconColor: const Color(0xFFF59E0B),
+                      label: isBn
+                          ? 'XP · লেভেল $level'
+                          : isHi
+                              ? 'XP · लेवल $level'
+                              : 'XP · LV $level',
+                      value: '$xp',
+                      isDark: isDark,
+                      onTap: () =>
+                          _showXpDialog(context, xp, level, isBn, isHi, isDark),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    ref.invalidate(brainStatsProvider);
+                    ref.invalidate(myWeeklyRankProvider);
+                    Navigator.pushNamed(context, '/stats');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        isDark ? AppColors.primary : AppColors.primaryDark,
+                    foregroundColor: isDark ? Colors.black : Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  icon: const Icon(Icons.view_agenda_rounded, size: 18),
+                  label: Text(
+                    isBn ? 'সব দেখুন' : isHi ? 'सभी देखें' : 'View All',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1441,35 +1506,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'पाइप पहेली'
                       : 'Pipe puzzle',
               onTap: () => Navigator.pushNamed(context, AppRouter.introFlowFree),
-            ),
-            _buildRecommendedGameTile(
-              context: context,
-              isDark: isDark,
-              isBn: isBn,
-              isHi: isHi,
-              badgeText: isBn
-                  ? 'স্ট্রোক'
-                  : isHi
-                      ? 'स्ट्रोक'
-                      : 'ONE STROKE',
-              title: isBn
-                  ? 'ওয়ান লাইন'
-                  : isHi
-                      ? 'वन लाइन'
-                      : 'One Line',
-              subtitle: isBn
-                  ? 'এক টানে পুরো ছবি আঁকুন'
-                  : isHi
-                      ? 'एक लकीर में आकृति बनाएँ'
-                      : 'Trace it in a single stroke',
-              accent: const Color(0xFFE040FB),
-              imagePath: 'assets/covers/one_line.svg',
-              footer: isBn
-                  ? 'ইউলার ট্রেইল'
-                  : isHi
-                      ? 'यूलर पथ'
-                      : 'Euler trail',
-              onTap: () => Navigator.pushNamed(context, AppRouter.introOneLine),
             ),
             _buildRecommendedGameTile(
               context: context,

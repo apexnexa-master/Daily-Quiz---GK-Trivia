@@ -34,7 +34,8 @@ class UsernameUtils {
           .collection('users')
           .where('display_name', isEqualTo: name.trim())
           .limit(1)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 4));
 
       for (final doc in result.docs) {
         if (doc.id != uid) return true;

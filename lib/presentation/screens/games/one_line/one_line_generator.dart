@@ -26,22 +26,6 @@ class _Link {
   int other(int v) => v == a ? b : a;
 }
 
-/// Sign-aware Delaunay circumcircle test: is point [d] strictly inside
-/// the circle through triangle (a, b, c)?
-bool _inCircumcircle(Offset a, Offset b, Offset c, Offset d) {
-  final ax = a.dx - d.dx, ay = a.dy - d.dy;
-  final bx = b.dx - d.dx, by = b.dy - d.dy;
-  final cx = c.dx - d.dx, cy = c.dy - d.dy;
-  final az = ax * ax + ay * ay;
-  final bz = bx * bx + by * by;
-  final cz = cx * cx + cy * cy;
-  final det = ax * (by * cz - bz * cy) -
-      ay * (bx * cz - bz * cx) +
-      az * (bx * cy - by * cx);
-  final orient = (b.dx - a.dx) * (c.dy - a.dy) - (b.dy - a.dy) * (c.dx - a.dx);
-  return orient > 0 ? det > 1e-12 : det < -1e-12;
-}
-
 class _Skeleton {
   final String name;
   final List<Offset> points;
@@ -50,7 +34,19 @@ class _Skeleton {
   /// Symmetric figures get a per-level rotation so repeated topology
   /// still looks fresh.
   final bool rotatable;
-  const _Skeleton(this.name, this.points, this.links, {this.rotatable = false});
+
+  /// Set for generated figures that are already an Eulerian graph by
+  /// construction: every vertex has even degree and the figure is
+  /// connected, so the whole skeleton is shipped as-is (no random
+  /// walk / parity repair that would break the symmetry).
+  final bool eulerian;
+
+  /// Preferred locked-level start vertex (index into [points]). When
+  /// null the builder picks the highest-degree / lowest vertex.
+  final int? startHint;
+
+  const _Skeleton(this.name, this.points, this.links,
+      {this.rotatable = false, this.eulerian = false, this.startHint});
 }
 
 class _Config {
@@ -60,14 +56,12 @@ class _Config {
   final int minEdges;
   final String difficulty;
 
-  /// Web levels ignore [skeletonPool] and build a fresh random
-  /// constellation (Delaunay web) every attempt instead. Remix levels
-  /// replay a hand-crafted skeleton with a fresh rotation/mirror and a
-  /// fuller link walk.
+  /// Symmetric levels ignore [skeletonPool] and build a fresh, already
+  /// Eulerian figure (mandala / rosette / flower / wheel) every attempt,
+  /// so the endless zone never repeats a shape.
   final bool procedural;
-  final bool remix;
 
-  /// Drawability thresholds -- dense webs relax these a little;
+  /// Drawability thresholds -- symmetric figures relax these a little;
   /// curated figures use the strict class defaults.
   final double minSpan;
   final double minGap;
@@ -79,7 +73,6 @@ class _Config {
     required this.minEdges,
     required this.difficulty,
     this.procedural = false,
-    this.remix = false,
     this.minSpan = OneLineGenerator.minEdgeSpan,
     this.minGap = OneLineGenerator.minSegmentGap,
   });
@@ -91,10 +84,11 @@ class OneLineGenerator {
   /// Drawability guarantees (normalized board units, board side = 1):
   /// every stroke must be long enough to drag and far enough from its
   /// neighbours that the pen can follow it without snapping onto the
-  /// wrong line.
-  static const double minEdgeSpan = 0.15;
-  static const double minSegmentGap = 0.08;
-  static const double minCrossingAngleDeg = 32;
+  /// wrong line. These are deliberately generous — a cramped figure is
+  /// miserable to trace, so the generator re-rolls until it is roomy.
+  static const double minEdgeSpan = 0.17;
+  static const double minSegmentGap = 0.12;
+  static const double minCrossingAngleDeg = 28;
 
   /// Effective drawability thresholds for [number] — dense procedural
   /// webs relax the stroke/gap minimums slightly.
@@ -708,11 +702,11 @@ class OneLineGenerator {
       _Link(3, 7),
       _Link(3, 6),
     ]),
-    // 30 ── Enneagram: a ring laced with three interlocked triangles
-    // (every chord skips two points — the classic {9/3} figure).
+    // 30 ── Enneagram: a nine-point ring threaded by a single open
+    // {@9/4} star so the chords stay long and well-spaced.
     _Skeleton(
         'Enneagram',
-        _ringPoints(9, radius: 0.42),
+        _ringPoints(9, radius: 0.44),
         const [
           _Link(0, 1),
           _Link(1, 2),
@@ -723,22 +717,22 @@ class OneLineGenerator {
           _Link(6, 7),
           _Link(7, 8),
           _Link(8, 0),
-          _Link(0, 3),
-          _Link(3, 6),
-          _Link(6, 0),
-          _Link(1, 4),
-          _Link(4, 7),
-          _Link(7, 1),
-          _Link(2, 5),
-          _Link(5, 8),
-          _Link(8, 2),
+          _Link(0, 4),
+          _Link(4, 8),
+          _Link(8, 3),
+          _Link(3, 7),
+          _Link(7, 2),
+          _Link(2, 6),
+          _Link(6, 1),
+          _Link(1, 5),
+          _Link(5, 0),
         ],
         rotatable: true),
-    // 31 ── Decagram: decagon threaded by one ten-point star polygon
-    // ({10/3}) — every chord spans three points.
+    // 31 ── Decagram: a decagon threaded by two interlocked pentagons
+    // ({10/4}) — long chords, no shallow crossings.
     _Skeleton(
         'Decagram',
-        _ringPoints(10, radius: 0.42),
+        _ringPoints(10, radius: 0.44),
         const [
           _Link(0, 1),
           _Link(1, 2),
@@ -750,18 +744,27 @@ class OneLineGenerator {
           _Link(7, 8),
           _Link(8, 9),
           _Link(9, 0),
-          _Link(0, 3),
-          _Link(3, 6),
-          _Link(6, 9),
-          _Link(9, 2),
-          _Link(2, 5),
-          _Link(5, 8),
-          _Link(8, 1),
-          _Link(1, 4),
-          _Link(4, 7),
-          _Link(7, 0),
+          _Link(0, 4),
+          _Link(4, 8),
+          _Link(8, 2),
+          _Link(2, 6),
+          _Link(6, 0),
+          _Link(1, 5),
+          _Link(5, 9),
+          _Link(9, 3),
+          _Link(3, 7),
+          _Link(7, 1),
         ],
         rotatable: true),
+
+    // ══ THEMATIC CAMPAIGN CATALOGUE ══════════════════════════════════
+    // Hand-drawn figures that ACTUALLY look like something (trees,
+    // houses, animals, faces, premium geometry...) instead of plain
+    // geometric primitives. Each figure is built as a union of closed
+    // loops, which makes every vertex even-degree by construction, so
+    // the whole figure ships exactly as drawn. Ordered easiest ->
+    // hardest; edge count climbs monotonically.
+    ..._thematicFigures(),
   ];
 
   /// Figures as actually played: duplicate-free links and every shape
@@ -796,7 +799,7 @@ class OneLineGenerator {
     // Bigger boards across the board: even simple figures claim most
     // of the play area, dense webs stretch towards its edges.
     final t = ((s.links.length - 7) / 11).clamp(0.0, 1.0);
-    final span = 0.80 + t * 0.15; // 0.80 .. 0.95
+    final span = 0.88 + t * 0.08; // 0.88 .. 0.96
     final w = maxX - minX;
     final h = maxY - minY;
     final scale = span / max(w <= 0 ? 1 : w, h <= 0 ? 1 : h);
@@ -809,77 +812,55 @@ class OneLineGenerator {
             Offset(0.5 + (p.dx - cx) * scale, 0.5 + (p.dy - cy) * scale),
         ],
         links,
-        rotatable: s.rotatable);
+        rotatable: s.rotatable,
+        eulerian: s.eulerian,
+        startHint: s.startHint);
   }
 
   /// Campaign: every one of these levels is a DIFFERENT hand-crafted
-  /// classic one-stroke figure, ordered easy to rich. No repeats —
+  /// one-stroke figure from the new catalogue (indices [_campaignStart]
+  /// onward), ordered easiest to richest by edge count. No repeats —
   /// level N draws skeleton [_curatedOrder[N - 1]].
-  static const List<int> _curatedOrder = [
-    0, // 1 Triangle
-    20, // 2 Hourglass
-    1, // 3 Square
-    21, // 4 Triforce
-    2, // 5 Pentagon
-    3, // 6 House
-    9, // 7 Arrow
-    8, // 8 Crown
-    7, // 9 Fish
-    4, // 10 Bowtie
-    5, // 11 Envelope
-    17, // 12 Ladder
-    11, // 13 Hexagon
-    15, // 14 Gem
-    12, // 15 Wheel
-    14, // 16 Octagram
-    22, // 17 Star of David
-    18, // 18 Pentagram K5
-    23, // 19 Diamond chain
-    24, // 20 Cube X
-    25, // 21 OctoWeb
-    16, // 22 Snowflake
-    13, // 23 Lattice
-    19, // 24 Octahedron
-    6, // 25 Star web
-    26, // 26 Star outline
-    27, // 27 Bolt
-    28, // 28 Rocket
-    29, // 29 Prism
-    30, // 30 Enneagram
-    31, // 31 Decagram
+  static const int _campaignStart = 32;
+
+  static final List<int> _curatedOrder = [
+    for (var i = _campaignStart; i < _rawSkeletons.length; i++) i,
   ];
 
   /// Levels 1-[_curatedOrder.length] teach the classic outlines. After
-  /// that the endless zone ALTERNATES fresh Delaunay constellations
-  /// with remixed rotations of every hand-crafted figure, so both
-  /// families keep appearing forever while density keeps growing.
+  /// that the endless zone builds a fresh symmetric figure every level —
+  /// no repeats, no cramped random webs.
   static _Config _configFor(int number) {
     final curatedCount = _curatedOrder.length;
     if (number <= curatedCount) {
       String label;
-      if (number <= 6) {
+      if (number <= 8) {
         label = 'Easy';
-      } else if (number <= 12) {
+      } else if (number <= 16) {
         label = 'Medium';
-      } else if (number <= 19) {
+      } else if (number <= 24) {
         label = 'Hard';
       } else {
         label = 'Expert';
       }
       return _Config(
         skeletonPool: [_curatedOrder[number - 1]],
-        minCoverage: number <= 3 ? 0.72 : 0.85,
+        minCoverage: 0.85,
         maxExtras: 2,
         minEdges: 3,
         difficulty: label,
+        // Hand-drawn figures carry finer detail than the plain primitives
+        // did, so the stroke/gap minimums relax a touch — recognisability
+        // matters more than blanket spacing.
+        minSpan: 0.12,
+        minGap: 0.09,
       );
     }
 
     final n = min(17, 6 + (number - curatedCount) ~/ 6);
-    final remix = (number - curatedCount).isOdd;
     String label;
     if (n <= 9) {
-      label = remix ? 'Expert' : 'Hard';
+      label = 'Hard';
     } else if (n <= 12) {
       label = 'Expert';
     } else {
@@ -887,56 +868,45 @@ class OneLineGenerator {
     }
     return _Config(
       skeletonPool: const [],
-      procedural: !remix,
-      remix: remix,
-      // Small skeletons (Square, Triangle...) cannot feed an 8-edge
-      // minimum once the walk stalls; 6 keeps them viable while large
-      // figures naturally ship far more.
-      minCoverage: remix ? 0.80 : 0.72,
-      maxExtras: 3,
-      minEdges: remix ? 6 : max(7, n * 5 ~/ 4),
+      procedural: true,
+      minCoverage: 1.0,
+      maxExtras: 0,
+      minEdges: 6,
       difficulty: label,
-      minSpan: remix ? 0.10 : 0.09,
-      minGap: remix ? 0.055 : 0.05,
+      minSpan: 0.15,
+      minGap: 0.11,
     );
-  }
-
-  /// Remix levels rotate through the richer half of the catalogue:
-  /// tiny outlines (Triangle, Square...) can never feed the
-  /// endless-zone density floor, so picking them would only force a
-  /// sparse fallback polygon.
-  static final List<int> _remixPool = [
-    for (int i = 0; i < _skeletons.length; i++)
-      if (_skeletons[i].links.length >= 8) i,
-  ];
-
-  /// Deterministic remix pick, keyed on the offset INTO the endless
-  /// zone so extending the campaign never reshuffles existing levels.
-  _Skeleton _remixPick(int number) {
-    final offset = number - _curatedOrder.length;
-    return _skeletons[_remixPool[(offset * 31 + 7) % _remixPool.length]];
   }
 
   /// Memoised levels. Doubles as the layout-history used to keep any
   /// two levels from shipping the same figure.
-  final Map<int, OneLineLevel> _memo = {};  /// Canonical geometry signature of a built level: sorted vertex
-  /// positions plus canonical edge pairs, so id remapping, mirroring
-  /// and walk order cannot hide a true duplicate.
-  String _layoutKey(OneLineLevel lv) {
-    final pos = <int, String>{};
-    for (final v in lv.vertices) {
-      pos[v.id] =
-          '${v.position.dx.toStringAsFixed(3)},${v.position.dy.toStringAsFixed(3)}';
-    }
-    final verts = pos.values.toList()..sort();
-    final edges = <String>[];
+  final Map<int, OneLineLevel> _memo = {};
+
+  /// Layout signatures already shipped, so no two levels ever repeat.
+  final Set<String> _seenLayouts = {};
+
+  /// Rotation-, reflection- and translation-invariant signature of a
+  /// built level. Figures that are congruent up to placement, mirroring
+  /// or rotation collapse to the same key, so the endless zone can never
+  /// re-serve the same shape just spun to a new angle.
+  String _shapeSignature(OneLineLevel lv) {
+    final p = [for (final v in lv.vertices) v.position];
+    final edgeLens = <int>[];
+    final incident = List<List<int>>.generate(lv.vertices.length, (_) => []);
     for (final e in lv.edges) {
-      final a = pos[e.a]!;
-      final b = pos[e.b]!;
-      edges.add(a.compareTo(b) <= 0 ? '$a~$b' : '$b~$a');
+      final d = ((p[e.b] - p[e.a]).distance * 1000).round();
+      edgeLens.add(d);
+      incident[e.a].add(d);
+      incident[e.b].add(d);
     }
-    edges.sort();
-    return '${verts.join(';')}#${edges.join(';')}';
+    edgeLens.sort();
+    final vkeys = <String>[];
+    for (final inc in incident) {
+      inc.sort();
+      vkeys.add(inc.join(','));
+    }
+    vkeys.sort();
+    return '${edgeLens.join('|')}#${vkeys.join(';')}';
   }
 
   /// Generates the deterministic puzzle for 1-based [number].
@@ -957,141 +927,273 @@ class OneLineGenerator {
     final cfg = _configFor(number);
     final rng = Random(number * 1000003 + 7);
 
+    // Best-of-N: every attempt re-rolls the rotation (and, for endless
+    // levels, the whole figure), and the roomiest, best-shaped result
+    // wins — so the player always gets the most traceable variant.
+    OneLineLevel? best;
+    double bestScore = double.negativeInfinity;
     OneLineLevel? duplicateStash;
-    for (int attempt = 0; attempt < 240; attempt++) {
-      // Curated levels own one hand-crafted skeleton each; remix
-      // levels rotate a deterministic pick from the full catalogue;
-      // web levels roll a brand-new constellation per attempt.
-      final _Skeleton sk;
-      if (cfg.procedural) {
-        sk = _proceduralWeb(number, rng);
-      } else if (cfg.remix) {
-        sk = _remixPick(number);
-      } else {
-        sk = _skeletons[cfg.skeletonPool.first];
-      }
+    for (int attempt = 0; attempt < 36; attempt++) {
+      final sk = cfg.procedural
+          ? _symmetricFigure(number, rng)
+          : _skeletons[cfg.skeletonPool.first];
       final mirror = attempt.isOdd || rng.nextBool();
       final level = _tryBuild(sk, cfg, rng, number, mirror);
       if (level == null) continue;
 
-      var clash = false;
-      final key = _layoutKey(level);
-      for (final existing in _memo.values) {
-        if (_layoutKey(existing) == key) {
-          clash = true;
-          break;
-        }
-      }
-      if (clash) {
-        // Prefer re-rolling over a fallback polygon; if every attempt
-        // collides (exhausted variety), ship the least-bad duplicate.
+      final key = _shapeSignature(level);
+      if (_seenLayouts.contains(key)) {
+        // Prefer re-rolling over a duplicate; if variety is exhausted
+        // the least-bad repeat is shipped rather than a fallback.
         duplicateStash ??= level;
         continue;
       }
-      _memo[number] = level;
-      return level;
+      final score = _qualityScore(level);
+      if (score > bestScore) {
+        bestScore = score;
+        best = level;
+      }
     }
-    final chosen = duplicateStash ?? _fallbackCycle(number);
+    final chosen = best ?? duplicateStash ?? _fallbackCycle(number);
     _memo[number] = chosen;
+    _seenLayouts.add(_shapeSignature(chosen));
     return chosen;
+  }
+
+  /// Ranks a candidate figure: breathing room first, then long strokes,
+  /// then a meatier edge count (capped so density never trumps clarity).
+  static double _qualityScore(OneLineLevel l) {
+    final m = _metricsOf(l.vertices, l.edges);
+    return m.minGap * 100 + m.minSpan * 40 + min(l.edges.length, 20) * 0.5;
+  }
+
+  /// Tightest non-touching line gap and shortest stroke in a figure.
+  static ({double minGap, double minSpan}) _metricsOf(
+      List<OneLineVertex> vertices, List<OneLineEdge> edges) {
+    final p = [for (final v in vertices) v.position];
+    var minSpan = double.infinity;
+    for (final e in edges) {
+      minSpan = min(minSpan, (p[e.b] - p[e.a]).distance);
+    }
+    var minGap = double.infinity;
+    for (var i = 0; i < edges.length; i++) {
+      for (var j = i + 1; j < edges.length; j++) {
+        final e = edges[i], f = edges[j];
+        if (e.a == f.a || e.a == f.b || e.b == f.a || e.b == f.b) continue;
+        final rel = _segmentRelation(p[e.a], p[e.b], p[f.a], p[f.b]);
+        if (!rel.crossing) minGap = min(minGap, rel.distance);
+      }
+    }
+    if (minGap == double.infinity) minGap = 1.0;
+    return (minGap: minGap, minSpan: minSpan);
   }
 
   // ── Construction pipeline ─────────────────────────────────────────
 
-  // ── Procedural constellations ──────────────────────────────────────
-  // Inspired by how modern one-line games scale content: hand-crafted
-  // classics for the opening campaign, then freshly generated planar
-  // webs whose topology is unique per level.
+  // ── Hand-crafted campaign figures ──────────────────────────────────
+  // Every figure below is ALL-EVEN by construction (each vertex degree 2
+  // or 4), connected, and fitted to a consistent span, so it ships
+  // exactly as designed — no random walk, no parity repair, no name that
+  // lies. Difficulty climbs purely by edge count.
 
-  /// Brand-new random figure for procedural levels: well-spaced points
-  /// joined by a Delaunay web (planar — strokes never cross), thinned
-  /// for airiness and kept connected. The regular walk/repair pipeline
-  /// then carves the Eulerian circuit out of it.
-  _Skeleton _proceduralWeb(int number, Random rng) {
-    final curated = _curatedOrder.length;
-    final n = min(17, 8 + max(0, number - curated) ~/ 6);
-    final style = (number * 7 + 3) % 3;
-    final pts = _scatterPoints(n, style, rng);
-    final links = _delaunayLinks(pts);
-    if (links.length < 4) return _proceduralWeb(number + 7919, rng);
-
-    // Thin a light random slice of edges so webs feel airy and leave
-    // repair room; connectivity is restored from the full set.
-    final thinned = <_Link>[
-      for (final l in links)
-        if (rng.nextDouble() >= 0.10) l,
-    ];
-    final alive = _connectComponents(pts, links, thinned);
-    return _Skeleton('Web', pts, alive, rotatable: true);
+  /// Octahedron projection: an equator square bridged to two apexes.
+  static _Skeleton _octahedron() {
+    return _fitSkeleton('Octahedron', const [
+      Offset(0.50, 0.06),
+      Offset(0.18, 0.36),
+      Offset(0.82, 0.36),
+      Offset(0.82, 0.76),
+      Offset(0.18, 0.76),
+      Offset(0.50, 0.97),
+    ], const [
+      _Link(1, 2), _Link(2, 3), _Link(3, 4), _Link(4, 1),
+      _Link(0, 1), _Link(0, 2), _Link(0, 3), _Link(0, 4),
+      _Link(5, 1), _Link(5, 2), _Link(5, 3), _Link(5, 4),
+    ]);
   }
 
-  /// Well-spaced points using one of three layout families (jittered
-  /// grid, concentric rings, best-candidate scatter) so consecutive
-  /// webs do not all feel alike.
-  List<Offset> _scatterPoints(int n, int style, Random rng) {
-    const m = 0.055;
-    switch (style % 3) {
-      case 0:
-        final cols = sqrt(n.toDouble()).ceil();
-        final rows = (n / cols).ceil();
-        final cw = (1 - 2 * m) / cols;
-        final ch = (1 - 2 * m) / rows;
-        return [
-          for (var r = 0; r < rows; r++)
-            for (var c = 0; c < cols; c++)
-              if (r * cols + c < n)
-                Offset(
-                  m + (c + 0.5) * cw + (rng.nextDouble() - 0.5) * cw * 0.5,
-                  m + (r + 0.5) * ch + (rng.nextDouble() - 0.5) * ch * 0.5,
-                ),
-        ];
-      case 1:
-        final pts = <Offset>[const Offset(0.5, 0.5)];
-        var ring = 1;
-        while (pts.length < n && ring < 6) {
-          final count = min(n - pts.length, ring * 5);
-          final radius = 0.20 * ring + rng.nextDouble() * 0.06;
-          final phase = rng.nextDouble() * 2 * pi;
-          for (var k = 0; k < count; k++) {
-            final ang = phase + k * 2 * pi / count;
-            pts.add(Offset(
-              0.5 + radius * cos(ang),
-              0.5 + radius * sin(ang),
-            ));
-          }
-          ring++;
-        }
-        return pts;
-      default:
-        final pts = <Offset>[];
-        for (var i = 0; i < n; i++) {
-          Offset best = const Offset(m, m);
-          var bestD = -1.0;
-          for (var t = 0; t < 24; t++) {
-            final cand = Offset(
-              m + rng.nextDouble() * (1 - 2 * m),
-              m + rng.nextDouble() * (1 - 2 * m),
-            );
-            var dmin = double.infinity;
-            for (final p in pts) {
-              dmin = min(dmin, (cand - p).distanceSquared);
-            }
-            if (dmin > bestD) {
-              bestD = dmin;
-              best = cand;
-            }
-          }
-          pts.add(best);
-        }
-        return pts;
+  /// Prism: two nested squares laced corner-to-corner.
+  static _Skeleton _prism() {
+    return _fitSkeleton('Prism', const [
+      Offset(0.10, 0.10),
+      Offset(0.90, 0.10),
+      Offset(0.90, 0.90),
+      Offset(0.10, 0.90),
+      Offset(0.34, 0.34),
+      Offset(0.66, 0.34),
+      Offset(0.66, 0.66),
+      Offset(0.34, 0.66),
+    ], const [
+      _Link(0, 1), _Link(1, 2), _Link(2, 3), _Link(3, 0),
+      _Link(4, 5), _Link(5, 6), _Link(6, 7), _Link(7, 4),
+      _Link(0, 4), _Link(0, 7), _Link(1, 5), _Link(1, 4),
+      _Link(2, 6), _Link(2, 5), _Link(3, 7), _Link(3, 6),
+    ]);
+  }
+
+  /// Diamond chain: four diamonds sharing middle corners.
+  static _Skeleton _diamondChain() {
+    return _fitSkeleton('DiamondChain', const [
+      Offset(0.08, 0.52),
+      Offset(0.29, 0.52),
+      Offset(0.50, 0.52),
+      Offset(0.71, 0.52),
+      Offset(0.92, 0.52),
+      Offset(0.185, 0.18),
+      Offset(0.395, 0.18),
+      Offset(0.605, 0.18),
+      Offset(0.815, 0.18),
+      Offset(0.185, 0.86),
+      Offset(0.395, 0.86),
+      Offset(0.605, 0.86),
+      Offset(0.815, 0.86),
+    ], const [
+      _Link(0, 5), _Link(5, 1), _Link(0, 9), _Link(9, 1),
+      _Link(1, 6), _Link(6, 2), _Link(1, 10), _Link(10, 2),
+      _Link(2, 7), _Link(7, 3), _Link(2, 11), _Link(11, 3),
+      _Link(3, 8), _Link(8, 4), _Link(3, 12), _Link(12, 4),
+    ]);
+  }
+
+  /// Petal flower: a hub with [petals] two-point petals looping to a rim.
+  static _Skeleton _flowerFig(String name, int petals) {
+    final outer = _ringAt(petals, 0.44, -pi / 2);
+    final inner = _ringAt(petals, 0.44, -pi / 2 + pi / petals);
+    final pts = <Offset>[const Offset(0.5, 0.5), ...outer, ...inner];
+    final links = <_Link>[];
+    for (var i = 0; i < petals; i++) {
+      final a = 1 + i;
+      final b = 1 + petals + i;
+      links.add(_Link(0, a));
+      links.add(_Link(a, b));
+      links.add(_Link(b, 0));
     }
+    return _fitSkeleton(name, pts, links);
   }
 
-  /// Bowyer–Watson Delaunay triangulation over [pts]; returns the
-  /// unique edges of the triangulation — a planar connected graph.
-  List<_Link> _delaunayLinks(List<Offset> pts) {
-    final n = pts.length;
-    if (n < 3) return [for (var i = 1; i < n; i++) _Link(0, i)];
+  /// Star mandala: an [n]-point ring threaded by the given star [steps].
+  /// Overlaying cycles keeps every degree even; coprime steps keep the
+  /// chords long and well spaced.
+  static _Skeleton _mandalaFig(String name, int n, List<int> steps) {
+    final pts = _ringAt(n, 0.42, -pi / 2);
+    final links = <_Link>[];
+    for (final s in steps) {
+      for (var i = 0; i < n; i++) {
+        links.add(_Link(i, (i + s) % n));
+      }
+    }
+    return _fitSkeleton(name, pts, links);
+  }
+
+  /// Woven rosette: an outer ring and a half-step inner ring stitched so
+  /// every node has degree four. The inner radius stays well inside the
+  /// outer so the woven diagonals never run tangent to the rings.
+  static _Skeleton _rosetteFig(String name, int n) {
+    const rOuter = 0.44;
+    const rInner = rOuter * 0.54;
+    final pts = <Offset>[
+      for (var i = 0; i < n; i++)
+        _polar(0.5, 0.5, rOuter, -pi / 2 + i * 2 * pi / n),
+      for (var i = 0; i < n; i++)
+        _polar(0.5, 0.5, rInner, -pi / 2 + pi / n + i * 2 * pi / n),
+    ];
+    final links = <_Link>[];
+    for (var i = 0; i < n; i++) {
+      links.add(_Link(i, (i + 1) % n));
+      links.add(_Link(n + i, n + (i + 1) % n));
+      links.add(_Link(i, n + i));
+      links.add(_Link(n + i, (i + 1) % n));
+    }
+    return _fitSkeleton(name, pts, links);
+  }
+
+  // ── Thematic catalogue builders ────────────────────────────────────
+  // Objects, animals, faces and premium geometry. Every figure is a
+  // union of closed loops that only meet at shared vertices — so the
+  // degree of every vertex is even and there are never two strokes on
+  // top of each other (no overlaps). Fitting is uniform, so shapes are
+  // never stretched or squashed.
+
+  static List<_Skeleton> _thematicFigures() {
+    final figures = <_Skeleton>[
+      // ── Easy: recognizable single outlines ──────────────────────────
+      _fig('Star', [_starLoop(5)]),
+      _fig('House', [
+        const [
+          Offset(0.50, 0.08),
+          Offset(0.92, 0.42),
+          Offset(0.92, 0.90),
+          Offset(0.08, 0.90),
+          Offset(0.08, 0.42),
+        ],
+      ]),
+      _fig('Heart', [_heartLoop()]),
+      _fig('Cat', [_catHeadLoop()]),
+      _fig('Tree', [_treeLoop()]),
+      _fig('Crown', [_crownLoop()]),
+      _fig('Diamond', [_diamondLoop(), _diamondInnerLoop()]),
+      _fig('Fish', [_fishBodyLoop(), _fishTailLoop()]),
+      _fig('Boat', [_boatHullLoop(), _boatSailLoop()]),
+      _fig('Rocket', [_rocketLoop(), _rocketLeftFin(), _rocketRightFin()]),
+      _fig('Leaf', [_leafLoop()]),
+      _fig('Key', [_keyLoop()]),
+      _fig('Bird', [_birdLoop()]),
+
+      // ── Medium: hub/detail figures with real junctions ─────────────
+      _flowerFig('Flower', 4),
+      _rosetteFig('Weave', 5),
+      _mandalaFig('Pinwheel', 6, const [1, 2]),
+      _flowerFig('Bloom', 5),
+      _octahedron(),
+      _prism(),
+      _mandalaFig('Starburst', 7, const [1, 2]),
+      _flowerFig('Lotus', 6),
+      _diamondChain(),
+
+      // ── Hard: dense interlocking geometry ──────────────────────────
+      _lattice(),
+      _mandalaFig('OctoWeb', 8, const [1, 3]),
+      _rosetteFig('Filigree', 6),
+      _mandalaFig('Pentagram', 5, const [1, 2]),
+      _rosetteFig('Rosette', 8),
+      _mandalaFig('Decagram', 10, const [1, 4]),
+      _rosetteFig('Webbing', 7),
+      _mandalaFig('Mandala', 12, const [1, 5]),
+      _mandalaFig('Enneagram', 9, const [1, 4, 5]),
+    ];
+    // Difficulty climbs with edge count — ship the simplest first.
+    figures.sort((a, b) => a.links.length.compareTo(b.links.length));
+    return figures;
+  }
+
+  /// Builds a figure from closed loops, merging coincident points into
+  /// shared vertices and dropping duplicate edges, then fitting it into
+  /// a centred unit box with a UNIFORM scale (aspect ratio preserved).
+  static _Skeleton _fig(String name, List<List<Offset>> loops) {
+    final pts = <Offset>[];
+    final idx = <String, int>{};
+    int vid(Offset o) {
+      final k = '${o.dx.toStringAsFixed(4)},${o.dy.toStringAsFixed(4)}';
+      final existing = idx[k];
+      if (existing != null) return existing;
+      final id = pts.length;
+      pts.add(o);
+      idx[k] = id;
+      return id;
+    }
+
+    final seen = <String>{};
+    final links = <_Link>[];
+    for (final loop in loops) {
+      if (loop.length < 3) continue;
+      for (var i = 0; i < loop.length; i++) {
+        final a = vid(loop[i]);
+        final b = vid(loop[(i + 1) % loop.length]);
+        if (a == b) continue;
+        final key = a < b ? '$a-$b' : '$b-$a';
+        if (seen.add(key)) links.add(_Link(a, b));
+      }
+    }
 
     var minX = double.infinity, minY = double.infinity;
     var maxX = double.negativeInfinity, maxY = double.negativeInfinity;
@@ -1101,90 +1203,357 @@ class OneLineGenerator {
       maxX = max(maxX, p.dx);
       maxY = max(maxY, p.dy);
     }
-    final dmax = max(maxX - minX, maxY - minY) * 10 + 10;
-    final midX = (minX + maxX) / 2, midY = (minY + maxY) / 2;
-    Offset vertex(int i) => i < n
-        ? pts[i]
-        : switch (i - n) {
-            0 => Offset(midX - dmax, midY - dmax),
-            1 => Offset(midX + dmax, midY - dmax),
-            _ => Offset(midX, midY + dmax),
-          };
-
-    var tris = <List<int>>[
-      [n, n + 1, n + 2],
+    const span = 0.90;
+    final w = maxX - minX, h = maxY - minY;
+    final scale = span / max(w <= 0 ? 1 : w, h <= 0 ? 1 : h);
+    final cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    final fitted = [
+      for (final p in pts)
+        Offset(0.5 + (p.dx - cx) * scale, 0.5 + (p.dy - cy) * scale),
     ];
-    for (var i = 0; i < n; i++) {
-      final p = pts[i];
-      final bad = <List<int>>[];
-      final keep = <List<int>>[];
-      for (final t in tris) {
-        (_inCircumcircle(vertex(t[0]), vertex(t[1]), vertex(t[2]), p)
-                ? bad
-                : keep)
-            .add(t);
-      }
-      // Boundary of the hole: edges that appear in exactly one bad tri.
-      final counts = <String, int>{};
-      final ends = <String, List<int>>{};
-      for (final t in bad) {
-        for (var e = 0; e < 3; e++) {
-          final a = t[e], b = t[(e + 1) % 3];
-          final key = a < b ? '$a-$b' : '$b-$a';
-          counts[key] = (counts[key] ?? 0) + 1;
-          ends[key] = [a, b];
-        }
-      }
-      for (final entry in counts.entries) {
-        if (entry.value == 1) keep.add([...ends[entry.key]!, i]);
-      }
-      tris = keep;
-    }
-
-    final seen = <String>{};
-    final links = <_Link>[];
-    for (final t in tris) {
-      for (var e = 0; e < 3; e++) {
-        final a = t[e], b = t[(e + 1) % 3];
-        if (a >= n || b >= n) continue;
-        final key = a < b ? '$a-$b' : '$b-$a';
-        if (seen.add(key)) links.add(_Link(a, b));
-      }
-    }
-    return links;
+    return _Skeleton(name, fitted, links, rotatable: false, eulerian: true);
   }
 
-  /// Re-adds the shortest missing candidate edges until the graph is a
-  /// single connected component.
-  List<_Link> _connectComponents(
-    List<Offset> pts,
-    List<_Link> candidates,
-    List<_Link> alive,
-  ) {
-    final parent = List<int>.generate(pts.length, (i) => i);
-    int find(int x) => parent[x] == x ? x : parent[x] = find(parent[x]);
-    void union(int a, int b) => parent[find(a)] = find(b);
-    for (final l in alive) {
-      union(l.a, l.b);
-    }
+  static List<Offset> _starLoop(int tips,
+      {double cx = 0.5,
+      double cy = 0.5,
+      double outer = 0.46,
+      double inner = 0.20}) {
+    final n = tips * 2;
+    return [
+      for (var i = 0; i < n; i++)
+        _polar(cx, cy, i.isEven ? outer : inner, -pi / 2 + i * pi / tips),
+    ];
+  }
 
-    final out = List<_Link>.of(alive);
-    while (true) {
-      _Link? shortest;
-      var bestDist = double.infinity;
-      for (final l in candidates) {
-        if (find(l.a) == find(l.b)) continue;
-        final d = (pts[l.a] - pts[l.b]).distanceSquared;
-        if (d < bestDist) {
-          bestDist = d;
-          shortest = l;
-        }
+  static List<Offset> _heartLoop({int n = 22}) {
+    final raw = <Offset>[];
+    for (var i = 0; i < 60; i++) {
+      final t = i * 2 * pi / 60;
+      final x = 16 * pow(sin(t), 3).toDouble();
+      final y = 13 * cos(t) -
+          5 * cos(2 * t) -
+          2 * cos(3 * t) -
+          cos(4 * t);
+      raw.add(Offset(x, -y)); // flip y so the point sits at the bottom
+    }
+    return _resampleLoop(raw, n);
+  }
+
+  /// Resamples a closed polyline into [count] points spaced uniformly by
+  /// arc length, so pointed parametric curves (heart, star…) never leave
+  /// two vertices so close the stroke becomes untraceable.
+  static List<Offset> _resampleLoop(List<Offset> loop, int count) {
+    final n = loop.length;
+    final cum = <double>[0];
+    for (var i = 0; i < n; i++) {
+      cum.add(cum[i] + (loop[(i + 1) % n] - loop[i]).distance);
+    }
+    final total = cum[n];
+    if (total <= 0) return List<Offset>.from(loop);
+    final out = <Offset>[];
+    var seg = 0;
+    for (var k = 0; k < count; k++) {
+      final target = total * k / count;
+      while (seg < n - 1 && cum[seg + 1] < target) {
+        seg++;
       }
-      if (shortest == null) break;
-      out.add(shortest);
-      union(shortest.a, shortest.b);
+      final segLen = cum[seg + 1] - cum[seg];
+      final t = segLen <= 0 ? 0.0 : (target - cum[seg]) / segLen;
+      final a = loop[seg];
+      final b = loop[(seg + 1) % n];
+      out.add(Offset(a.dx + (b.dx - a.dx) * t, a.dy + (b.dy - a.dy) * t));
     }
     return out;
+  }
+
+  /// Cat/animal head with pointy ears, drawn as one outline.
+  static List<Offset> _catHeadLoop() => const [
+        Offset(0.50, 0.88), // chin
+        Offset(0.24, 0.76),
+        Offset(0.12, 0.54),
+        Offset(0.14, 0.30),
+        Offset(0.20, 0.06), // left ear tip
+        Offset(0.40, 0.26),
+        Offset(0.50, 0.34), // dip between the ears
+        Offset(0.60, 0.26),
+        Offset(0.80, 0.06), // right ear tip
+        Offset(0.86, 0.30),
+        Offset(0.88, 0.54),
+        Offset(0.76, 0.76),
+      ];
+
+  /// Pine tree: a triangular canopy over a short trunk (one clean notch).
+  static List<Offset> _treeLoop() => const [
+        Offset(0.50, 0.06), // apex
+        Offset(0.88, 0.62), // canopy right
+        Offset(0.62, 0.62),
+        Offset(0.62, 0.92), // trunk right
+        Offset(0.38, 0.92), // trunk left
+        Offset(0.38, 0.62),
+        Offset(0.12, 0.62), // canopy left
+      ];
+
+  /// Crown outline: jewelled zig-zag top over a band.
+  static List<Offset> _crownLoop() => const [
+        Offset(0.10, 0.30),
+        Offset(0.26, 0.62),
+        Offset(0.38, 0.40),
+        Offset(0.50, 0.18),
+        Offset(0.62, 0.40),
+        Offset(0.74, 0.62),
+        Offset(0.90, 0.30),
+        Offset(0.90, 0.82),
+        Offset(0.10, 0.82),
+      ];
+
+  /// Big gem outline (a faceted octagon).
+  static List<Offset> _diamondLoop() => const [
+        Offset(0.50, 0.06),
+        Offset(0.86, 0.36),
+        Offset(0.72, 0.88),
+        Offset(0.28, 0.88),
+        Offset(0.14, 0.36),
+      ];
+
+  /// Inner gem facet sharing the top vertex so the two loops connect.
+  static List<Offset> _diamondInnerLoop() => const [
+        Offset(0.50, 0.06),
+        Offset(0.66, 0.40),
+        Offset(0.50, 0.72),
+        Offset(0.34, 0.40),
+      ];
+
+  static List<Offset> _fishBodyLoop() => const [
+        Offset(0.08, 0.50), // nose
+        Offset(0.34, 0.24),
+        Offset(0.66, 0.38),
+        Offset(0.72, 0.50), // tail attach point (a real body vertex)
+        Offset(0.66, 0.62),
+        Offset(0.34, 0.76),
+      ];
+
+  /// Tail fin attaches at a single shared body vertex (no overlap).
+  static List<Offset> _fishTailLoop() => const [
+        Offset(0.72, 0.50),
+        Offset(0.98, 0.30),
+        Offset(0.98, 0.70),
+      ];
+
+  static List<Offset> _boatHullLoop() => const [
+        Offset(0.12, 0.66),
+        Offset(0.50, 0.66),
+        Offset(0.82, 0.66),
+        Offset(0.70, 0.88),
+        Offset(0.30, 0.88),
+      ];
+
+  /// Sail triangle sharing the mast-base vertex of the hull.
+  static List<Offset> _boatSailLoop() => const [
+        Offset(0.50, 0.66),
+        Offset(0.50, 0.10),
+        Offset(0.80, 0.54),
+      ];
+
+  static List<Offset> _rocketLoop() => const [
+        Offset(0.50, 0.05), // nose
+        Offset(0.64, 0.30),
+        Offset(0.64, 0.80),
+        Offset(0.36, 0.80),
+        Offset(0.36, 0.30),
+      ];
+
+  /// Tail fins share a single body-corner vertex each (no overlaps).
+  static List<Offset> _rocketLeftFin() => const [
+        Offset(0.36, 0.80),
+        Offset(0.14, 0.94),
+        Offset(0.36, 0.94),
+      ];
+
+  static List<Offset> _rocketRightFin() => const [
+        Offset(0.64, 0.80),
+        Offset(0.86, 0.94),
+        Offset(0.64, 0.94),
+      ];
+
+  static List<Offset> _leafLoop() => const [
+        Offset(0.50, 0.06),
+        Offset(0.78, 0.24),
+        Offset(0.88, 0.54),
+        Offset(0.68, 0.84),
+        Offset(0.44, 0.94),
+        Offset(0.24, 0.78),
+        Offset(0.16, 0.46),
+        Offset(0.28, 0.20),
+      ];
+
+  static List<Offset> _keyLoop() => const [
+        Offset(0.10, 0.50), // bow left
+        Offset(0.14, 0.30),
+        Offset(0.30, 0.20),
+        Offset(0.46, 0.28),
+        Offset(0.50, 0.42), // bow/shaft top junction
+        Offset(0.92, 0.42), // shaft top right
+        Offset(0.92, 0.58), // shaft tip
+        Offset(0.74, 0.58),
+        Offset(0.74, 0.72), // tooth down
+        Offset(0.62, 0.72),
+        Offset(0.62, 0.58),
+        Offset(0.50, 0.58), // bow/shaft bottom junction
+        Offset(0.44, 0.72),
+        Offset(0.30, 0.82),
+        Offset(0.16, 0.72),
+      ];
+
+  static List<Offset> _birdLoop() => const [
+        Offset(0.10, 0.40), // beak
+        Offset(0.26, 0.30),
+        Offset(0.42, 0.34),
+        Offset(0.52, 0.20), // crown
+        Offset(0.66, 0.30),
+        Offset(0.86, 0.24), // wing tip
+        Offset(0.70, 0.52),
+        Offset(0.82, 0.74),
+        Offset(0.56, 0.66),
+        Offset(0.46, 0.84), // tail
+        Offset(0.28, 0.66),
+      ];
+
+  /// 3x3 lattice with two opposite cell diagonals (every degree even).
+  static _Skeleton _lattice() {
+    final pts = _gridPoints(3);
+    const links = [
+      _Link(0, 1), _Link(1, 2), _Link(3, 4), _Link(4, 5),
+      _Link(6, 7), _Link(7, 8),
+      _Link(0, 3), _Link(3, 6), _Link(1, 4), _Link(4, 7),
+      _Link(2, 5), _Link(5, 8),
+      _Link(1, 3), _Link(5, 7),
+    ];
+    return _fitSkeleton('Lattice', pts, links);
+  }
+
+  // ── Symmetric figure bank ──────────────────────────────────────────
+  // The endless zone draws from a family of clean, already-Eulerian
+  // figures — star mandalas, woven rosettes, petal flowers and spoked
+  // wheels. Each is built from concentric rings so the strokes stay
+  // long and evenly spaced, and the parameters vary per level so no two
+  // figures ever look the same.
+
+  _Skeleton _symmetricFigure(int number, Random rng) {
+    // Rotate through the three silhouettes so consecutive levels feel
+    // different, while the seeded rng keeps each one unique.
+    switch ((number * 5 + 1) % 3) {
+      case 0:
+        return _mandala(rng);
+      case 1:
+        return _rosette(rng);
+      default:
+        return _flower(rng);
+    }
+  }
+
+  /// Star mandala: n points on a ring threaded by two or three star
+  /// polygons. Overlaying cycles keeps every degree even by definition.
+  _Skeleton _mandala(Random rng) {
+    final n = 7 + rng.nextInt(6); // 7..12
+    final phase = rng.nextDouble() * 2 * pi;
+    final pts = _ringAt(n, 0.42, phase);
+    final maxStep = (n - 1) ~/ 2; // never n/2 (would duplicate edges)
+    final steps = <int>{1};
+    steps.add(2 + rng.nextInt(max(1, maxStep - 1)));
+    if (n >= 9 && rng.nextBool()) {
+      steps.add(2 + rng.nextInt(max(1, maxStep - 1)));
+    }
+    final links = <_Link>[];
+    for (final s in steps) {
+      for (var i = 0; i < n; i++) {
+        links.add(_Link(i, (i + s) % n));
+      }
+    }
+    return _fitSkeleton('Mandala', pts, links);
+  }
+
+  /// Woven rosette: an outer ring and a half-step inner ring stitched
+  /// together so every node has degree four.
+  _Skeleton _rosette(Random rng) {
+    final n = 5 + rng.nextInt(4); // 5..8
+    const rOuter = 0.44;
+    final rInner = rOuter * (0.50 + rng.nextDouble() * 0.08);
+    final phase = rng.nextDouble() * 2 * pi;
+    final pts = <Offset>[
+      for (var i = 0; i < n; i++)
+        _polar(0.5, 0.5, rOuter, phase + i * 2 * pi / n),
+      for (var i = 0; i < n; i++)
+        _polar(0.5, 0.5, rInner, phase + pi / n + i * 2 * pi / n),
+    ];
+    final links = <_Link>[];
+    for (var i = 0; i < n; i++) {
+      links.add(_Link(i, (i + 1) % n)); // outer ring
+      links.add(_Link(n + i, n + (i + 1) % n)); // inner ring
+      links.add(_Link(i, n + i)); // spoke
+      links.add(_Link(n + i, (i + 1) % n)); // woven diagonal
+    }
+    return _fitSkeleton('Rosette', pts, links);
+  }
+
+  /// Petal flower: a hub with n two-point petals looping out to a rim.
+  _Skeleton _flower(Random rng) {
+    final petals = 4 + rng.nextInt(5); // 4..8
+    final phase = rng.nextDouble() * 2 * pi;
+    final outer = _ringAt(petals, 0.44, phase);
+    final inner = _ringAt(petals, 0.44, phase + pi / petals);
+    final pts = <Offset>[const Offset(0.5, 0.5), ...outer, ...inner];
+    final links = <_Link>[];
+    for (var i = 0; i < petals; i++) {
+      final a = 1 + i;
+      final b = 1 + petals + i;
+      links.add(_Link(0, a));
+      links.add(_Link(a, b));
+      links.add(_Link(b, 0));
+    }
+    return _fitSkeleton('Flower', pts, links);
+  }
+
+  static Offset _polar(double cx, double cy, double r, double a) =>
+      Offset(cx + r * cos(a), cy + r * sin(a));
+
+  static List<Offset> _ringAt(int n, double radius, double phase) => [
+        for (var i = 0; i < n; i++)
+          _polar(0.5, 0.5, radius, phase + i * 2 * pi / n),
+      ];
+
+  /// Centres [pts] and scales them to a consistent span, then
+  /// de-duplicates [links]. Marked eulerian so the caller ships the
+  /// whole symmetric figure untouched.
+  static _Skeleton _fitSkeleton(
+      String name, List<Offset> pts, List<_Link> links) {
+    final seen = <String>{};
+    final dedup = <_Link>[];
+    for (final l in links) {
+      if (l.a == l.b) continue;
+      if (l.a < 0 || l.b < 0 || l.a >= pts.length || l.b >= pts.length) {
+        continue;
+      }
+      final key = l.a <= l.b ? '${l.a}-${l.b}' : '${l.b}-${l.a}';
+      if (seen.add(key)) dedup.add(l.a <= l.b ? l : _Link(l.b, l.a));
+    }
+    var minX = double.infinity, minY = double.infinity;
+    var maxX = double.negativeInfinity, maxY = double.negativeInfinity;
+    for (final p in pts) {
+      minX = min(minX, p.dx);
+      minY = min(minY, p.dy);
+      maxX = max(maxX, p.dx);
+      maxY = max(maxY, p.dy);
+    }
+    const span = 0.90;
+    final w = maxX - minX, h = maxY - minY;
+    final scale = span / max(w <= 0 ? 1 : w, h <= 0 ? 1 : h);
+    final cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    final fitted = [
+      for (final p in pts)
+        Offset(0.5 + (p.dx - cx) * scale, 0.5 + (p.dy - cy) * scale),
+    ];
+    return _Skeleton(name, fitted, dedup, rotatable: true, eulerian: true);
   }
 
   // ── Figure construction ───────────────────────────────────────────
@@ -1196,13 +1565,21 @@ class OneLineGenerator {
     int number,
     bool mirror,
   ) {
-    final used = _trailWalk(sk, cfg.minCoverage, rng);
-    if (used.isEmpty) return null;
-
-    _enrichWithParitySafeLinks(sk, used, cfg.maxExtras, rng);
-    // The whole point of this game variant: start anywhere on the
-    // outline. That demands an Eulerian circuit - every degree even.
-    if (!_repairToAllEven(sk, used)) return null;
+    final used = Set<int>.identity();
+    if (sk.eulerian) {
+      // Already an Eulerian circuit by construction — ship every link so
+      // the symmetric figure stays intact (no walk or parity repair).
+      for (var i = 0; i < sk.links.length; i++) {
+        used.add(i);
+      }
+    } else {
+      used.addAll(_trailWalk(sk, cfg.minCoverage, rng));
+      if (used.isEmpty) return null;
+      _enrichWithParitySafeLinks(sk, used, cfg.maxExtras, rng);
+      // The whole point of this game variant: start anywhere on the
+      // outline. That demands an Eulerian circuit - every degree even.
+      if (!_repairToAllEven(sk, used)) return null;
+    }
 
     // Keep only vertices the walk actually touched, remapping ids.
     final touched = <int>{};
@@ -1300,7 +1677,16 @@ class OneLineGenerator {
       return null;
     }
 
-    final solution = hierholzer(vertices.length, edges, null);
+    // Tutorial levels (1-10) let the stroke begin anywhere on the
+    // outline. From level 11 the start is locked to one glowing vertex,
+    // so a careless turn at a junction can strand the stroke and the
+    // player has to plan ahead.
+    final startAnywhere = number <= 10;
+    final startVertex =
+        startAnywhere ? 0 : _chooseStartVertex(vertices, edges, sk.startHint);
+
+    final solution = hierholzer(
+        vertices.length, edges, startAnywhere ? null : startVertex);
     if (solution == null || solution.length != edges.length + 1) return null;
 
     final par = max(6, edges.length * 5);
@@ -1313,7 +1699,39 @@ class OneLineGenerator {
       solution: solution,
       suggestedStarts: const [],
       parSeconds: par,
+      startAnywhere: startAnywhere,
+      startVertex: startVertex,
     );
+  }
+
+  /// Locked-level start: the busiest junction (highest degree), breaking
+  /// ties toward the bottom-most then left-most vertex so the mandated
+  /// start is stable and visually obvious. Honours a figure's startHint
+  /// when the figure author has one in mind.
+  static int _chooseStartVertex(
+      List<OneLineVertex> vertices, List<OneLineEdge> edges, int? hint) {
+    if (hint != null && hint >= 0 && hint < vertices.length) return hint;
+    final degree = List<int>.filled(vertices.length, 0);
+    for (final e in edges) {
+      degree[e.a]++;
+      degree[e.b]++;
+    }
+    var best = 0;
+    for (var v = 1; v < vertices.length; v++) {
+      final d = degree[v];
+      final bd = degree[best];
+      if (d > bd) {
+        best = v;
+      } else if (d == bd) {
+        final pv = vertices[v].position;
+        final pb = vertices[best].position;
+        if (pv.dy > pb.dy + 1e-9 ||
+            (pv.dy > pb.dy - 1e-9 && pv.dx < pb.dx - 1e-9)) {
+          best = v;
+        }
+      }
+    }
+    return best;
   }
 
   /// Randomized self-avoiding-in-links walk. The returned link set is an

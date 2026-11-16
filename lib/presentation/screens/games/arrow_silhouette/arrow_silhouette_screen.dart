@@ -24,9 +24,10 @@ import 'silhouette_levels.dart';
 import 'silhouette_painter.dart';
 
 /// Testing helper: when true every level is playable regardless of progress.
-/// Only allowed in debug builds — in production (release) levels start locked
-/// and unlock one-by-one as the player completes them.
-const bool kUnlockAllLevels = !kDebugMode;
+/// Keep this `false` so levels stay locked and unlock one-by-one as the player
+/// completes them (the shipped behaviour). Only flip it to `true` temporarily
+/// while debugging a level you have not unlocked yet.
+const bool kUnlockAllLevels = false;
 
 /// Minimum arrow cell size, in logical pixels. Boards that would have to shrink
 /// below this to fit the screen instead render larger and overflow the

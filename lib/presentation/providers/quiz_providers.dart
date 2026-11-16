@@ -1,4 +1,6 @@
 // lib/presentation/providers/quiz_providers.dart
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/quiz_service.dart';
 import '../../core/services/question_service.dart';
@@ -8,6 +10,8 @@ import '../../core/constants/app_constants.dart';
 import '../../data/models/firestore_models.dart';
 
 import '../../core/services/analytics_service.dart';
+import '../../core/services/ad_service.dart';
+import '../../core/services/notification_service.dart';
 import 'auth_providers.dart';
 import 'stats_providers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -161,6 +165,11 @@ class QuizSessionNotifier extends StateNotifier<QuizSessionState?> {
         totalQuestions: state!.quiz.questionCount,
         timeTaken: totalTimeTaken,
       );
+      // Feeds the retention-friendly interstitial pacing in AdService.
+      AdService.instance.recordQuizCompleted();
+      // Ask for notification permission only after the player has value, then
+      // schedule the daily quiz / streak reminders that actually bring them back.
+      unawaited(NotificationService.instance.configureRemindersAfterValue());
     } catch (e) {
       state = state!.copyWith(isSubmitting: false);
       rethrow;

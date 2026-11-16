@@ -4,7 +4,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../routes/app_router.dart';
 import 'auth_service.dart';
+import 'quiz/quiz_timing_manager.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -45,17 +48,68 @@ class NotificationService {
     playSound: true,
   );
 
+  static const String _permissionAskedKey = 'notif_permission_asked';
+  bool _remindersConfigured = false;
+  bool _localNotificationsReady = false;
+
   Future<void> initialize(AuthService authService) async {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-    final settings =
-        await _fcm.requestPermission(alert: true, badge: true, sound: true);
-
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    // Set everything up without prompting on first launch. The OS permission
+    // dialog is requested later, right after the player gets value from a quiz,
+    // which converts far better than a cold-start prompt.
+    if (!_localNotificationsReady) {
       await _setupLocalNotifications();
-      await _subscribeToTopics();
-      await _refreshAndSaveFcmToken(authService);
-      _listenForeground();
+    }
+    await _subscribeToTopics();
+    await _refreshAndSaveFcmToken(authService);
+    _listenForeground();
+  }
+
+  Future<bool> _hasPermission() async {
+    final settings = await _fcm.getNotificationSettings();
+    return settings.authorizationStatus == AuthorizationStatus.authorized ||
+        settings.authorizationStatus == AuthorizationStatus.provisional;
+  }
+
+  /// Requests notification permission once, then schedules the daily quiz and
+  /// streak reminders using the current quiz timing config. Safe to call after
+  /// every completed quiz — this is idempotent per app session.
+  Future<void> configureRemindersAfterValue() async {
+    if (_remindersConfigured) return;
+    try {
+      var granted = await _hasPermission();
+      if (!granted) {
+        final prefs = await SharedPreferences.getInstance();
+        final alreadyAsked = prefs.getBool(_permissionAskedKey) ?? false;
+        if (!alreadyAsked) {
+          await prefs.setBool(_permissionAskedKey, true);
+          final settings = await _fcm.requestPermission(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+          granted =
+              settings.authorizationStatus == AuthorizationStatus.authorized ||
+                  settings.authorizationStatus == AuthorizationStatus.provisional;
+        }
+      }
+      if (!granted) return;
+
+      // A quiz can finish before startup notification init completes.
+      if (!_localNotificationsReady) {
+        await _setupLocalNotifications();
+      }
+
+      final timing = QuizTimingManager.instance;
+      await timing.ensureTimingFresh();
+      await scheduleRemindersFromConfig(
+        quizStartHour: timing.quizStartHour,
+        quizStartMinute: timing.quizStartMinute,
+      );
+      _remindersConfigured = true;
+    } catch (e) {
+      debugPrint('[Notifications] Failed to configure reminders: $e');
     }
   }
 
@@ -76,12 +130,18 @@ class NotificationService {
     await _localNotif.initialize(
       const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
-        iOS: DarwinInitializationSettings(),
+        // Don't prompt at plugin init; permission is requested after value.
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
       ),
       onDidReceiveNotificationResponse: (response) {
         _handleNotificationTap(response.payload);
       },
     );
+    _localNotificationsReady = true;
   }
 
   Future<void> _subscribeToTopics() async {
@@ -126,7 +186,16 @@ class NotificationService {
     });
   }
 
-  void _handleNotificationTap(String? payload) {}
+  void _handleNotificationTap(String? payload) {
+    if (payload == null || payload.isEmpty) return;
+    // Reminders are only useful if tapping them takes the player somewhere
+    // actionable. Send them to the daily-quiz home surface.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final navigator = AppRouter.navigatorKey.currentState;
+      if (navigator == null) return;
+      navigator.pushNamedAndRemoveUntil(AppRouter.home, (route) => false);
+    });
+  }
 
   @pragma('vm:entry-point')
   static Future<void> handleBackgroundMessage(RemoteMessage message) async {
@@ -229,7 +298,7 @@ class NotificationService {
           icon: '@mipmap/ic_launcher',
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
@@ -264,7 +333,7 @@ class NotificationService {
           icon: '@mipmap/ic_launcher',
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,

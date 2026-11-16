@@ -212,7 +212,9 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
             CurvedAnimation(
                 parent: _entranceController, curve: Curves.easeOutCubic));
 
-    Future.delayed(const Duration(seconds: 2), () {
+    // Let the score reveal land first, then consider an interstitial. The
+    // AdService gates this by habit + frequency, so new users never see one.
+    Future.delayed(const Duration(milliseconds: 1200), () {
       if (mounted) AdService.instance.showInterstitial();
     });
   }

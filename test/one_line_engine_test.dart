@@ -37,7 +37,8 @@ void main() {
     });
 
     test('full circuit from a mid-edge touch completes the puzzle', () {
-      for (int n = 1; n <= 12; n++) {
+      // Mid-edge starts are a tutorial affordance (levels 1-10).
+      for (int n = 1; n <= 10; n++) {
         final level = gen.generateLevel(n);
         final engine = OneLineEngine()..reset(level);
 
@@ -133,7 +134,11 @@ void main() {
         final engine = OneLineEngine()..reset(level);
         expect(engine.suggestNextEdge(), isNull,
             reason: 'Level $n: no suggestion before the stroke starts');
-        engine.startAt(level.vertices.first.id);
+        final startId = level.startAnywhere
+            ? level.vertices.first.id
+            : level.startVertex;
+        expect(engine.startAt(startId), isTrue,
+            reason: 'Level $n: legal start rejected');
 
         // Follow ONLY hints; each must be untraced and incident to head,
         // and together they must solve the level.

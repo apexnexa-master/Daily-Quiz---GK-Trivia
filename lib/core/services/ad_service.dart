@@ -15,6 +15,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 
 class AdService {
@@ -26,12 +27,47 @@ class AdService {
   int _interstitialCountThisSession = 0;
   bool _isPro = false;
 
+  // ── Retention-friendly interstitial pacing ──────────────────
+  // New users should never meet an ad before they are hooked: suppress ads
+  // for the first N completed quizzes, then show at most one every N quizzes.
+  static const String _prefTotalQuizzes = 'ads_total_quizzes';
+  static const String _prefQuizzesSinceAd = 'ads_quizzes_since_ad';
+  static const int _minQuizzesBeforeFirstAd = 2;
+  static const int _quizzesBetweenInterstitials = 2;
+
+  int _totalQuizzesCompleted = 0;
+  int _quizzesSinceAd = 0;
+  bool _countersLoaded = false;
+
   // Call from main.dart after Firebase init
   Future<void> initialize() async {
+    await _loadCounters();
     await MobileAds.instance.initialize();
     // Preload first interstitial immediately
     await loadInterstitial();
     await loadRewarded();
+  }
+
+  Future<void> _loadCounters() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _totalQuizzesCompleted = prefs.getInt(_prefTotalQuizzes) ?? 0;
+      _quizzesSinceAd = prefs.getInt(_prefQuizzesSinceAd) ?? 0;
+    } catch (_) {}
+    _countersLoaded = true;
+  }
+
+  /// Called once whenever a quiz/game session is completed. Persisted so the
+  /// pacing survives app restarts.
+  Future<void> recordQuizCompleted() async {
+    if (!_countersLoaded) await _loadCounters();
+    _totalQuizzesCompleted++;
+    _quizzesSinceAd++;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_prefTotalQuizzes, _totalQuizzesCompleted);
+      await prefs.setInt(_prefQuizzesSinceAd, _quizzesSinceAd);
+    } catch (_) {}
   }
 
   void setProStatus(bool isPro) {
@@ -72,9 +108,14 @@ class AdService {
     );
   }
 
-  // Show interstitial — enforces session frequency cap
+  // Show interstitial — enforces session + retention pacing caps
   Future<bool> showInterstitial() async {
     if (_isPro) return false;
+    if (!_countersLoaded) await _loadCounters();
+
+    // Do not interrupt brand-new users before they have formed a habit.
+    if (_totalQuizzesCompleted < _minQuizzesBeforeFirstAd) return false;
+    if (_quizzesSinceAd < _quizzesBetweenInterstitials) return false;
     if (_interstitialCountThisSession >= AppConstants.maxInterstitialsPerSession) {
       return false;
     }
@@ -97,6 +138,11 @@ class AdService {
 
     await _interstitialAd!.show();
     _interstitialCountThisSession++;
+    _quizzesSinceAd = 0;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_prefQuizzesSinceAd, _quizzesSinceAd);
+    } catch (_) {}
     return true;
   }
 

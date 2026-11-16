@@ -53,6 +53,10 @@ class OneLineBoardState {
   /// win, the victory comet riding the finished figure.
   final double pulsePhase;
 
+  /// Vertex the stroke must start from on locked levels. Null on
+  /// tutorial levels where the player may begin anywhere.
+  final int? startVertexId;
+
   const OneLineBoardState({
     required this.vertices,
     required this.edges,
@@ -66,6 +70,7 @@ class OneLineBoardState {
     this.deadEndPulse = 0,
     this.winGlow = 0,
     this.pulsePhase = 0,
+    this.startVertexId,
   });
 
   /// A completed run plays its victory flare instead of live markers.
@@ -88,16 +93,24 @@ class OneLinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final inset = size.shortestSide * kOneLineBoardInset;
+    // The canvas is full-bleed, but the figure keeps its square
+    // proportions: vertices are mapped into the largest centred square,
+    // so a tall screen never stretches the puzzle out of shape.
+    final side = size.shortestSide;
+    final inset = side * kOneLineBoardInset;
     final board = Rect.fromLTWH(
-        inset, inset, size.width - inset * 2, size.height - inset * 2);
+      (size.width - side) / 2 + inset,
+      (size.height - side) / 2 + inset,
+      side - inset * 2,
+      side - inset * 2,
+    );
     Offset px(Offset norm) => Offset(
         board.left + norm.dx * board.width, board.top + norm.dy * board.height);
 
     final positions = <int, Offset>{
       for (final v in state.vertices) v.id: px(v.position),
     };
-    final baseW = size.shortestSide * 0.024;
+    final baseW = size.shortestSide * 0.019;
     final traceW = baseW; // drawn line matches the outline exactly
     final layerBounds = Offset.zero & size;
     final baseColor = isDark ? Colors.white : const Color(0xFF2B2140);
@@ -174,6 +187,34 @@ class OneLinePainter extends CustomPainter {
       );
     }
     canvas.restore();
+
+    // ── Locked-level start marker ────────────────────────────────────
+    // Levels 11+ must begin on one specific vertex: a pulsing target
+    // makes it unmistakable, and fades away once the stroke starts.
+    if (state.startVertexId != null &&
+        state.path.isEmpty &&
+        !state.isFinished) {
+      final sp = positions[state.startVertexId];
+      if (sp != null) {
+        final pulse = math.sin(state.pulsePhase * 2 * math.pi);
+        canvas.drawCircle(
+            sp,
+            baseW * (2.6 + 0.35 * pulse),
+            Paint()..color = accent.withValues(alpha: 0.18));
+        canvas.drawCircle(
+            sp,
+            baseW * (1.9 + 0.2 * pulse),
+            Paint()..color = accent.withValues(alpha: 0.28));
+        canvas.drawCircle(
+            sp,
+            baseW * 1.35,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = baseW * 0.55
+              ..color = Colors.white);
+        canvas.drawCircle(sp, baseW * 0.6, Paint()..color = accent);
+      }
+    }
 
     // ── Traced stroke: glow underlay + gradient core + live tip ──────
     final solved = state.isFinished;

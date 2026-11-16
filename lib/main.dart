@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/constants/app_constants.dart';
@@ -16,7 +17,7 @@ import 'core/services/question_tracking_service.dart';
 import 'core/services/gamification_service.dart';
 import 'core/services/cloud_sync_service.dart';
 import 'core/services/daily_progress_service.dart';
-import 'core/services/quiz_service.dart';
+import 'core/services/analytics_service.dart';
 import 'core/services/quiz/practice_quiz_service.dart';
 import 'core/scoring/progression_service.dart';
 import 'core/utils/offline_manager.dart';
@@ -40,7 +41,9 @@ void main() async {
   await Hive.initFlutter();
   await Hive.openBox<String>(AppConstants.hiveBoxQuiz);
   await Hive.openBox<String>(AppConstants.hiveBoxUser);
-  await QuizService.clearAllCachedQuizzes();
+  // NOTE: do not wipe the quiz cache on every launch. Cache keys are
+  // date-scoped (`quiz_yyyy-MM-dd_MODE`), so stale entries are never read and
+  // keeping them enables instant, offline-friendly cold starts.
 
   OfflineManager.instance.init();
 
@@ -75,6 +78,7 @@ class _GkQuizAppState extends ConsumerState<GkQuizApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    AnalyticsService.instance.logAppOpen();
     _initNotifications();
     UpdateService.instance.checkForUpdates();
   }
@@ -98,6 +102,7 @@ class _GkQuizAppState extends ConsumerState<GkQuizApp>
   Widget build(BuildContext context) {
     final isProAsync = ref.watch(isProProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final language = ref.watch(languageProvider);
 
     isProAsync.whenData((isPro) => AdService.instance.setProStatus(isPro));
 
@@ -108,6 +113,9 @@ class _GkQuizAppState extends ConsumerState<GkQuizApp>
       darkTheme: AppTheme.darkTheme,
       themeMode: _getThemeMode(themeMode),
       navigatorKey: AppRouter.navigatorKey,
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      ],
       onGenerateRoute: AppRouter.generateRoute,
       initialRoute: AppRouter.splash,
       themeAnimationDuration: const Duration(milliseconds: 280),
@@ -117,12 +125,18 @@ class _GkQuizAppState extends ConsumerState<GkQuizApp>
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      locale: const Locale('en'),
+      locale: Locale(language),
       supportedLocales: const [Locale('en'), Locale('hi'), Locale('bn')],
       builder: (context, child) {
+        final media = MediaQuery.of(context);
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.noScaling,
+          // Respect the user's accessibility font size, but cap it so the
+          // dense dashboard and game HUDs stay usable.
+          data: media.copyWith(
+            textScaler: media.textScaler.clamp(
+              minScaleFactor: 1.0,
+              maxScaleFactor: 1.3,
+            ),
           ),
           child: child ?? const SizedBox.shrink(),
         );

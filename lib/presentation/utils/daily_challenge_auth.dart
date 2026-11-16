@@ -7,11 +7,14 @@ import '../providers/auth_providers.dart';
 class DailyChallengeAuth {
   DailyChallengeAuth._();
 
-  /// Returns true when the user may start a daily challenge
-  /// (signed in with a real account, not a guest/anonymous session).
+  /// Returns true when the user may start a daily challenge.
+  ///
+  /// Play-first guests (Firebase anonymous sessions) are allowed to play so
+  /// the core daily loop is never gated behind a login wall. They can link an
+  /// account later from the dashboard to back up their progress.
   static bool canStart(WidgetRef ref) {
     final auth = ref.read(authServiceProvider);
-    return auth.isLoggedIn && !auth.isAnonymous;
+    return auth.isLoggedIn;
   }
 
   /// Shows a "login required for daily challenges" dialog.

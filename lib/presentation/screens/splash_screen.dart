@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../routes/app_router.dart';
+import '../providers/app_providers.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -68,19 +69,33 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   void _navigateAfterDelay() {
-    Future.delayed(const Duration(milliseconds: 2000), () async {
+    Future.delayed(const Duration(milliseconds: 1100), () async {
       final prefs = await SharedPreferences.getInstance();
       final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
 
-      // Use FirebaseAuth directly for reliable synchronous auth check.
-      // The StreamProvider may still be loading on cold start, causing
-      // ref.read(authStateProvider).value to return null even when the
-      // user is actually logged in.
-      final user = FirebaseAuth.instance.currentUser;
+      // Play-first: never block a brand-new user on a login screen. Create an
+      // anonymous account automatically so they can start the daily quiz in
+      // seconds; they can link Google later from the profile/home card.
+      var user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        try {
+          await ref
+              .read(authServiceProvider)
+              .signInAnonymously()
+              .timeout(const Duration(seconds: 8));
+        } catch (_) {
+          // Offline or auth unavailable — fall back to the login screen.
+        }
+        user = FirebaseAuth.instance.currentUser;
+      }
+
       if (!mounted) return;
 
       if (user == null) {
         Navigator.pushReplacementNamed(context, AppRouter.login);
+      } else if (user.isAnonymous) {
+        // Anonymous players go straight into the app; onboarding is optional.
+        Navigator.pushReplacementNamed(context, AppRouter.home);
       } else if (!onboardingComplete) {
         Navigator.pushReplacementNamed(context, AppRouter.onboarding);
       } else {

@@ -81,12 +81,14 @@ void main() {
       }
     });
 
-    test('is solvable from ANY point on the outline', () {
+    test('is solvable from ANY point on tutorial levels (1-10)', () {
       final gen = OneLineGenerator();
       final rng = Random(42);
 
-      for (int n = 1; n <= 40; n++) {
+      for (int n = 1; n <= 10; n++) {
         final level = gen.generateLevel(n);
+        expect(level.startAnywhere, isTrue,
+            reason: 'Level $n should allow starting anywhere');
         final idMax = level.vertices.map((v) => v.id).reduce(max);
 
         // Sample several touch points per level: random edge + t.
@@ -112,6 +114,21 @@ void main() {
               reason: 'Circuit must close back at the start point');
           expect(trail.length, splitEdges.length + 1);
         }
+      }
+    });
+
+    test('locked levels (11+) pin the start to one glowing vertex', () {
+      final gen = OneLineGenerator();
+      for (int n = 11; n <= 60; n++) {
+        final level = gen.generateLevel(n);
+        expect(level.startAnywhere, isFalse,
+            reason: 'Level $n should be start-locked');
+        expect(level.startVertex, inInclusiveRange(0, level.vertices.length - 1),
+            reason: 'Level $n startVertex out of range');
+        expect(level.solution.first, level.startVertex,
+            reason: 'Level $n solution must begin at the locked start');
+        expect(level.solution.last, level.startVertex,
+            reason: 'Level $n solution must close back at the locked start');
       }
     });
 
@@ -177,36 +194,90 @@ void main() {
           reason: 'Medium tier should not be easier than easy');
     });
 
-    test('extended campaign ships the new hand-crafted figures', () {
+    test('campaign ships the hand-crafted figures in order', () {
       final gen = OneLineGenerator();
       const expected = {
-        26: 'StarOutline',
-        27: 'Bolt',
-        28: 'Rocket',
-        29: 'Prism',
-        30: 'Enneagram',
-        31: 'Decagram',
+        1: 'House',
+        2: 'Tree',
+        3: 'Boat',
+        4: 'Leaf',
+        5: 'Crown',
+        6: 'Diamond',
+        7: 'Fish',
+        8: 'Star',
+        9: 'Pentagram',
+        10: 'Rocket',
+        11: 'Bird',
+        12: 'Cat',
+        13: 'Flower',
+        14: 'Pinwheel',
+        15: 'Octahedron',
+        16: 'Starburst',
+        17: 'Lattice',
+        18: 'Key',
+        19: 'Bloom',
+        20: 'Prism',
+        21: 'DiamondChain',
+        22: 'OctoWeb',
+        23: 'Lotus',
+        24: 'Enneagram',
+        25: 'Weave',
+        26: 'Decagram',
+        27: 'Heart',
+        28: 'Filigree',
+        29: 'Mandala',
+        30: 'Webbing',
+        31: 'Rosette',
       };
       expected.forEach((level, name) {
         expect(gen.generateLevel(level).name, name,
             reason: 'Level $level should be the $name figure');
       });
+      // No curated level may silently degrade to the fallback polygon.
+      for (int i = 1; i <= 31; i++) {
+        expect(gen.generateLevel(i).name, isNot('Polygon'),
+            reason: 'Level $i fell back to the plain polygon');
+      }
+      // Every curated figure is a different shape.
+      final names = [
+        for (int i = 1; i <= 31; i++) gen.generateLevel(i).name,
+      ];
+      expect(names.toSet().length, names.length,
+          reason: 'Campaign repeats a figure');
     });
 
-    test('endless zone alternates remix and web constellations', () {
+    test('campaign edge counts climb level-wise (difficulty ramp)', () {
       final gen = OneLineGenerator();
+      var prev = 0;
+      for (int i = 1; i <= 31; i++) {
+        final e = gen.generateLevel(i).edges.length;
+        expect(e, greaterThanOrEqualTo(prev),
+            reason: 'Level $i ($e edges) should not be easier than '
+                'level ${i - 1} ($prev edges)');
+        prev = e;
+      }
+    });
+
+    test('endless zone ships fresh symmetric figures', () {
+      final gen = OneLineGenerator();
+      const families = {'Mandala', 'Rosette', 'Flower'};
       final names = <String>[];
-      for (int i = 30; i <= 41; i++) {
+      for (int i = 32; i <= 60; i++) {
         final level = gen.generateLevel(i);
         expect(level.edges.length, greaterThanOrEqualTo(6),
             reason: 'Level $i too sparse');
+        expect(families.contains(level.name), isTrue,
+            reason: 'Level $i should be a symmetric figure, got ${level.name}');
         names.add(level.name);
       }
-      // Remix levels replay known skeleton names; web levels are 'Web'.
-      // Both families must appear across a dozen endless levels.
-      expect(names.contains('Web'), isTrue, reason: 'Web levels missing');
-      expect(names.toSet().length, greaterThan(1),
-          reason: 'Endless zone should mix both level families');
+      // Every family shows up across the endless levels...
+      expect(names.toSet(), families,
+          reason: 'Endless zone should rotate through all figure families');
+      // ...and consecutive levels never repeat the exact same layout.
+      for (var i = 1; i < names.length; i++) {
+        expect(names[i], isNot(names[i - 1]),
+            reason: 'Consecutive endless levels should differ');
+      }
     });
   });
 }

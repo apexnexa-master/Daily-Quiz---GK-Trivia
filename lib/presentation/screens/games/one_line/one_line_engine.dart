@@ -35,6 +35,13 @@ class OneLineEngine {
   int _backtracks = 0;
   int? _splitEdgeId;
 
+  /// When non-null the stroke may only begin at this vertex (levels 11+).
+  /// Null means the classic start-anywhere behaviour (tutorial levels).
+  int? _fixedStart;
+
+  /// The mandated start vertex, or null when the player may start anywhere.
+  int? get fixedStart => _fixedStart;
+
   // Live drag preview: the untraced edge currently being drawn from
   // head, and how far along it (0..1) the pen has travelled.
   int? _previewEdgeId;
@@ -43,6 +50,7 @@ class OneLineEngine {
   void reset(OneLineLevel level) {
     _pristineVertices = level.vertices;
     _pristineEdges = level.edges;
+    _fixedStart = level.startAnywhere ? null : level.startVertex;
     _restorePristine();
     _path.clear();
     _traced.clear();
@@ -140,9 +148,11 @@ class OneLineEngine {
   }
 
   /// Begins a fresh stroke at [vertexId]. Fails mid-stroke; call
-  /// [clearPath] first to restart the trace.
+  /// [clearPath] first to restart the trace. On locked levels only the
+  /// mandated start vertex is accepted.
   bool startAt(int vertexId) {
     if (started) return false;
+    if (_fixedStart != null && vertexId != _fixedStart) return false;
     if (!_vertices.any((v) => v.id == vertexId)) return false;
     _path.add(vertexId);
     return true;
@@ -152,8 +162,12 @@ class OneLineEngine {
   /// edge.b) along untraced edge [edgeId]. Touches exactly on an
   /// endpoint simply start at that vertex; otherwise the edge is split
   /// into two half-edges around a new virtual vertex.
+  ///
+  /// Locked levels ignore mid-edge starts entirely — the stroke must
+  /// begin exactly on the mandated start vertex.
   bool startOnEdge(int edgeId, double t) {
     if (started) return false;
+    if (_fixedStart != null) return false;
     final idx = _edges.indexWhere((e) => e.id == edgeId);
     if (idx < 0) return false;
     final edge = _edges[idx];

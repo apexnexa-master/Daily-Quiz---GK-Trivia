@@ -26,7 +26,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../games/widgets/countdown_overlay.dart';
 import '../../../games/widgets/game_scaffold.dart';
-import '../../../games/widgets/game_top_bar.dart';
 import '../../../providers/app_providers.dart';
 import 'one_line_engine.dart';
 import 'one_line_generator.dart';
@@ -90,7 +89,6 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
   double _backtrackErase = 0;
 
   static const Color _accent = Color(0xFFE040FB);
-  Color get _accentDeep => const Color(0xFFAA00FF);
 
   bool get _isBn => _lang == 'bn';
   bool get _isHi => _lang == 'hi';
@@ -294,10 +292,19 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
 
   /// MUST mirror the painter's inset exactly — hit-testing against a
   /// differently-inset rect makes strokes snap in the wrong place.
+  ///
+  /// The board is full-bleed, so the figure is mapped into the largest
+  /// centred square inside [size] (matching the painter) to keep the
+  /// puzzle's proportions intact.
   Rect _boardRect(Size size) {
-    final inset = size.shortestSide * kOneLineBoardInset;
+    final side = size.shortestSide;
+    final inset = side * kOneLineBoardInset;
     return Rect.fromLTWH(
-        inset, inset, size.width - inset * 2, size.height - inset * 2);
+      (size.width - side) / 2 + inset,
+      (size.height - side) / 2 + inset,
+      side - inset * 2,
+      side - inset * 2,
+    );
   }
 
   Map<int, Offset> _pixelPositions(Size size) {
@@ -477,6 +484,18 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
     final snapR = _snapRadius(box.size);
 
     if (!_engine.started) {
+      // Locked levels: the stroke must begin exactly on the mandated
+      // start vertex (no mid-edge starts), forcing a plan up front.
+      if (!_level.startAnywhere) {
+        final startPos = pos[_level.startVertex];
+        if (startPos != null &&
+            (p - startPos).distance <= snapR * 1.15 &&
+            _engine.startAt(_level.startVertex)) {
+          GameSfxService.instance.play(GameSfx.tap);
+          HapticFeedback.selectionClick();
+        }
+        return;
+      }
       final hit = _nearestUntracedEdge(p, pos);
       if (hit != null && hit.dist <= snapR) {
         if (_engine.startOnEdge(hit.edge.id, hit.t)) {
@@ -632,24 +651,35 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return GameScaffold(
+      safeArea: false,
       child: Stack(
         children: [
-          Column(
-            children: [
-              GameTopBar(
-                title: _t('ONE LINE', 'ওয়ান লাইন', 'वन लाइन'),
-                subtitle: _t(
-                    'One stroke — never repeat a line.',
-                    'এক টানে আঁকুন — রেখা দ্বিগুণ নয়।',
-                    'एक ही रेखा में — रेखा दोहराएँ नहीं।'),
-                trailing: _buildLevelChip(isDark),
+          // Full-bleed board: the figure stays square and centred while
+          // the background fills the entire screen.
+          Positioned.fill(child: _buildBoardArea(isDark)),
+          // Minimal HUD — level and time only (plus a subtle back).
+          Align(
+            alignment: Alignment.topCenter,
+            child: SafeArea(
+              bottom: false,
+              child: _buildTopHud(isDark),
+            ),
+          ),
+          // Hint + controls hugging the bottom edge, over the board.
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildStartHint(isDark),
+                  _buildDeadEndHint(isDark),
+                  _buildBottomControls(isDark),
+                  const SizedBox(height: 12),
+                ],
               ),
-              _buildProgressRow(isDark),
-              Expanded(child: _buildBoardArea(isDark)),
-              _buildDeadEndHint(isDark),
-              _buildBottomControls(isDark),
-              const SizedBox(height: 12),
-            ],
+            ),
           ),
           // Opaque backdrop while counting down — the board must not
           // peek through the transparent overlay.
@@ -675,136 +705,123 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
 
   // ── HUD ──────────────────────────────────────────────────────────────
 
-  Widget _buildLevelChip(bool isDark) {
-    return GestureDetector(
-      onTap: _showReplaySheet,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(AppSpacing.rRound),
-          border: Border.all(color: _accent.withValues(alpha: 0.4), width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.draw_rounded, size: 13, color: _accent),
-            const SizedBox(width: 4),
-            Text(
-              '${_t('LVL', 'স্তর', 'स्तर')} ${_currentLevelIndex + 1}',
-              style: GoogleFonts.montserrat(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                color: isDark ? Colors.white : AppColors.textPrimaryLight,
-              ),
-            ),
-            const SizedBox(width: 5),
-            const Icon(Icons.emoji_events_rounded,
-                size: 12, color: Color(0xFFFFC93C)),
-            const SizedBox(width: 2),
-            Text(
-              '$_best',
-              style: GoogleFonts.montserrat(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: (isDark ? Colors.white : Colors.black)
-                    .withValues(alpha: 0.75),
-              ),
-            ),
-            const SizedBox(width: 2),
-            Icon(Icons.keyboard_arrow_down_rounded,
-                size: 14, color: Colors.white.withValues(alpha: 0.5)),
-          ],
-        ),
-      ),
-    );
+  String _formatTime(int totalSeconds) {
+    final m = totalSeconds ~/ 60;
+    final s = totalSeconds % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildProgressRow(bool isDark) {
-    final progress = _engine.progress;
+  /// Top HUD kept deliberately spare: a back affordance plus the two
+  /// things a player actually needs — the current level and the clock.
+  Widget _buildTopHud(bool isDark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(6, 6, 12, 0),
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _pill(
-                isDark,
-                icon: Icons.category_rounded,
-                label: '${_level.name} · ${_level.difficulty}',
-              ),
-              _pill(
-                isDark,
-                icon: Icons.timer_outlined,
-                label: '$_elapsedSeconds${_t('s', 'সে', 'से')}',
-              ),
-              _pill(
-                isDark,
-                icon: Icons.linear_scale_rounded,
-                label: '${_engine.tracedCount}/${_engine.totalEdges}',
-                iconColor: _accent,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: SizedBox(
-              height: 6,
-              child: Stack(
-                children: [
-                  Container(
-                    color: (isDark ? Colors.white : Colors.black)
-                        .withValues(alpha: 0.08),
-                  ),
-                  FractionallySizedBox(
-                    widthFactor: progress.clamp(0.0, 1.0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient:
-                            LinearGradient(colors: [_accent, _accentDeep]),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          IconButton(
+            onPressed: () => Navigator.maybePop(context),
+            visualDensity: VisualDensity.compact,
+            style: IconButton.styleFrom(
+              backgroundColor:
+                  (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
             ),
+            icon: Icon(
+              Icons.arrow_back_rounded,
+              color: isDark ? Colors.white : AppColors.textPrimaryLight,
+            ),
+          ),
+          const Spacer(),
+          _hudChip(
+            isDark,
+            icon: Icons.grid_view_rounded,
+            label: '${_t('LEVEL', 'স্তর', 'स्तर')} ${_currentLevelIndex + 1}',
+            onTap: _showReplaySheet,
+            chevron: true,
+          ),
+          const SizedBox(width: 8),
+          _hudChip(
+            isDark,
+            icon: Icons.timer_outlined,
+            label: _formatTime(_elapsedSeconds),
+            accent: _accent,
           ),
         ],
       ),
     );
   }
 
-  Widget _pill(bool isDark,
-      {required IconData icon, required String label, Color? iconColor}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+  Widget _hudChip(
+    bool isDark, {
+    required IconData icon,
+    required String label,
+    Color? accent,
+    VoidCallback? onTap,
+    bool chevron = false,
+  }) {
+    final tint = accent ?? _accent;
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppSpacing.rRound),
+        border: Border.all(color: tint.withValues(alpha: 0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon,
-              size: 13,
-              color: iconColor ??
-                  (isDark
-                      ? AppColors.textTertiaryDark
-                      : AppColors.textTertiaryLight)),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14, color: tint),
+          const SizedBox(width: 6),
           Text(
             label,
             style: GoogleFonts.montserrat(
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: isDark
-                  ? AppColors.textSecondaryDark
-                  : AppColors.textSecondaryLight,
+              color: isDark ? Colors.white : AppColors.textPrimaryLight,
             ),
           ),
+          if (chevron) ...[
+            const SizedBox(width: 2),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                size: 15,
+                color: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: 0.5)),
+          ],
         ],
+      ),
+    );
+    if (onTap == null) return chip;
+    return GestureDetector(onTap: onTap, child: chip);
+  }
+
+  bool get _needsLockedStart =>
+      !_level.startAnywhere &&
+      _phase == _Phase.playing &&
+      _boardReady &&
+      !_showCountdown &&
+      !_engine.started;
+
+  Widget _buildStartHint(bool isDark) {
+    return AnimatedOpacity(
+      opacity: _needsLockedStart ? 1 : 0,
+      duration: const Duration(milliseconds: 220),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.place_rounded, size: 14, color: _accent),
+            const SizedBox(width: 6),
+            Text(
+              _t('Start at the glowing point', 'জ্বলন্ত বিন্দু থেকে শুরু করুন',
+                  'चमकते बिंदु से शुरू करें'),
+              style: GoogleFonts.montserrat(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: isDark ? AppColors.textSecondaryDark : Colors.black87,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -837,65 +854,50 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
   }
 
   Widget _buildBoardArea(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final side = math.min(constraints.maxWidth, constraints.maxHeight);
-          return Center(
-            child: Listener(
-              onPointerDown: _onPointerDown,
-              onPointerMove: _onPointerMove,
-              onPointerUp: _onPointerUp,
-              onPointerCancel: _onPointerCancel,
-              child: AnimatedBuilder(
-                animation: Listenable.merge([_outlineIn, _finishFlare, _pulse]),
-                builder: (context, _) {
-                  return Container(
-                    key: _boardKey,
-                    width: side,
-                    height: side,
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        radius: 0.9,
-                        colors: isDark
-                            ? [
-                                const Color(0xFF171126),
-                                const Color(0xFF0C0913),
-                              ]
-                            : [Colors.white, const Color(0xFFF4EDFB)],
-                      ),
-                      borderRadius: BorderRadius.circular(AppSpacing.rXl),
-                      border: Border.all(
-                        color: _accent.withValues(alpha: 0.18),
-                        width: 1,
-                      ),
-                    ),
-                    child: CustomPaint(
-                      painter: OneLinePainter(
-                        state: OneLineBoardState(
-                          vertices: _engine.vertices,
-                          edges: _engine.edges,
-                          path: _engine.path,
-                          tracedEdgeIds: _engine.tracedEdgeIds,
-                          previewEdgeId: _engine.previewEdgeId,
-                          previewT: _engine.previewT,
-                          backtrackErase: _backtrackErase,
-                          solution: _level.solution,
-                          buildProgress: _runStarted && !_outlineIn.isCompleted
-                              ? _outlineIn.value
-                              : null,
-                          deadEndPulse: _deadEndShown ? 1.0 : 0.0,
-                          winGlow: _finishFlare.value,
-                          pulsePhase: _pulse.isAnimating ? _pulse.value : 0,
-                        ),
-                        isDark: isDark,
-                      ),
-                      child: const SizedBox.expand(),
-                    ),
-                  );
-                },
+    return Listener(
+      onPointerDown: _onPointerDown,
+      onPointerMove: _onPointerMove,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_outlineIn, _finishFlare, _pulse]),
+        builder: (context, _) {
+          return Container(
+            key: _boardKey,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                radius: 0.9,
+                colors: isDark
+                    ? [
+                        const Color(0xFF171126),
+                        const Color(0xFF0C0913),
+                      ]
+                    : [Colors.white, const Color(0xFFF4EDFB)],
               ),
+            ),
+            child: CustomPaint(
+              painter: OneLinePainter(
+                state: OneLineBoardState(
+                  vertices: _engine.vertices,
+                  edges: _engine.edges,
+                  path: _engine.path,
+                  tracedEdgeIds: _engine.tracedEdgeIds,
+                  previewEdgeId: _engine.previewEdgeId,
+                  previewT: _engine.previewT,
+                  backtrackErase: _backtrackErase,
+                  solution: _level.solution,
+                  buildProgress: _runStarted && !_outlineIn.isCompleted
+                      ? _outlineIn.value
+                      : null,
+                  deadEndPulse: _deadEndShown ? 1.0 : 0.0,
+                  winGlow: _finishFlare.value,
+                  pulsePhase: _pulse.isAnimating ? _pulse.value : 0,
+                  startVertexId:
+                      _level.startAnywhere ? null : _level.startVertex,
+                ),
+                isDark: isDark,
+              ),
+              child: const SizedBox.expand(),
             ),
           );
         },

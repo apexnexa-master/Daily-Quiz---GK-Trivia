@@ -8,6 +8,14 @@ class AnalyticsService {
 
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
+  Future<void> logAppOpen() async {
+    try {
+      await _analytics.logAppOpen();
+    } catch (e) {
+      AppLogger.error('Failed to log App Open', error: e, name: 'ANALYTICS');
+    }
+  }
+
   Future<void> logScreenView(String screenName) async {
     try {
       await _analytics.logEvent(

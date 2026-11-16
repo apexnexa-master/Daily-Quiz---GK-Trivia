@@ -372,9 +372,8 @@ class _WorkoutGamePickerState extends State<_WorkoutGamePicker> {
   @override
   void initState() {
     super.initState();
-    final pool = List<WorkoutGameDef>.of(WorkoutPresets.allGames)..shuffle();
     _picked = widget.overridePreset?.games ??
-        WorkoutPresets.fromGames(pool.take(3).toList()).games;
+        WorkoutPresets.randomGames(3);
 
     // Advance every unlocked reel with a per-reel offset so the spin looks
     // organic instead of marching in lock-step.
@@ -760,10 +759,10 @@ class _WorkoutIntro extends StatelessWidget {
           Center(
             child: Text(
               isBn
-                  ? 'একটি সেশনে ${skills.length}টি দক্ষতা প্রশিক্ষণ দিন'
+                  ? 'মস্তিষ্ক সক্রিয় করতে ${skills.length}টি গেম খেলুন'
                   : isHi
-                      ? 'एक सेशन में ${skills.length} कौशल प्रशिक्षित करें'
-                      : 'Train ${skills.length} skills in one session',
+                      ? 'दिमाग सक्रिय करने के लिए ${skills.length} गेम खेलें'
+                      : 'Play ${skills.length} games to activate your brain',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
