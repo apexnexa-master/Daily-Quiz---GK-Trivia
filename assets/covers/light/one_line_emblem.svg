@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="olStar" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F9A8D4"/>
+      <stop offset="0.4" stop-color="#A855F7"/>
+      <stop offset="0.75" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <radialGradient id="olDot" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#FEF3C7"/>
+      <stop offset="0.5" stop-color="#FBBF24"/>
+      <stop offset="1" stop-color="#B45309"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="400" cy="332" rx="62" ry="10" fill="#000000" opacity="0.15"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="400" cy="244" r="84" stroke="#EC4899" stroke-width="4" opacity="0.28" stroke-dasharray="2 14"/>
+    <path d="M400 190 L413.5 225.4 L451.4 227.3 L421.9 251.1 L431.7 287.7 L400 267 L368.3 287.7 L378.1 251.1 L348.6 227.3 L386.5 225.4 Z" transform="translate(5 9)" stroke="#6D28D9" stroke-width="24" opacity="0.45"/>
+    <path d="M400 190 L413.5 225.4 L451.4 227.3 L421.9 251.1 L431.7 287.7 L400 267 L368.3 287.7 L378.1 251.1 L348.6 227.3 L386.5 225.4 Z" stroke="url(#olStar)" stroke-width="16"/>
+    <path d="M400 190 L413.5 225.4 L451.4 227.3 L421.9 251.1 L431.7 287.7 L400 267 L368.3 287.7 L378.1 251.1 L348.6 227.3 L386.5 225.4 Z" stroke="#FFFFFF" stroke-width="5" opacity="0.4"/>
+  </g>
+  <circle cx="400" cy="190" r="15" fill="#92400E" opacity="0.55"/>
+  <circle cx="400" cy="190" r="12" fill="url(#olDot)"/>
+  <circle cx="396" cy="186" r="4" fill="#FFFFFF" opacity="0.8"/>
+  <path d="M 470 218 L 474 227 L 483 231 L 474 235 L 470 244 L 466 235 L 457 231 L 466 227 Z" fill="#A5F3FC" opacity="0.9"/>
+  <path d="M 330 288 L 333 295 L 340 298 L 333 301 L 330 308 L 327 301 L 320 298 L 327 295 Z" fill="#F9A8D4" opacity="0.9"/>
+</svg>

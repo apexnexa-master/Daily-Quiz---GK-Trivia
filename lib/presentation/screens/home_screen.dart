@@ -1228,7 +1228,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: null,
+                icon: Icons.alt_route_rounded,
+                emblemPath: 'assets/covers/arrow_maze_emblem.svg',
                 footerText: isBn
                     ? 'এস্কেপ পাজল'
                     : isHi
@@ -1271,7 +1272,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/covers/flow_free.svg',
+                icon: Icons.water_drop_rounded,
+                emblemPath: 'assets/covers/flow_free_emblem.svg',
                 footerText: isBn
                     ? 'পাইপ পাজল'
                     : isHi
@@ -1314,7 +1316,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 },
                 isBn: isBn,
                 isHi: isHi,
-                imagePath: 'assets/covers/math_sprint.svg',
+                icon: Icons.calculate_rounded,
+                emblemPath: 'assets/covers/math_sprint_emblem.svg',
+                footerText: null,
               ),
             ],
           ),
@@ -1335,7 +1339,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required VoidCallback onTap,
     required bool isBn,
     required bool isHi,
-    String? imagePath,
+    required IconData icon,
+    String? emblemPath,
     String? footerText,
   }) {
     final categoryColor = isLive
@@ -1343,14 +1348,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         : (badgeText.contains('LOGIC') ||
                 badgeText.contains('যুক্তি') ||
                 badgeText.contains('तर्क')
-            ? const Color(0xFF00F1FE)
-            : const Color(0xFFB79CFF));
+            ? AppColors.gamingCyan
+            : AppColors.gamingViolet);
 
     return GameCard(
-      width: 210,
+      width: 172,
       compact: true,
-      coverAspectRatio: 1.45,
-      imagePath: imagePath,
+      coverAspectRatio: 1.0,
+      icon: icon,
+      emblemPath: emblemPath,
       accent: categoryColor,
       badge: badgeText,
       isLive: isLive,
@@ -1385,18 +1391,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .withValues(alpha: isDark ? 0.07 : 0.06);
     return Row(
       children: [
-        Container(
-          width: 26,
-          height: 26,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: accent.withValues(alpha: isDark ? 0.28 : 0.22),
-              width: 1,
-            ),
-          ),
-          child: Icon(icon, size: 14, color: iconColor),
+        SizedBox(
+          width: 24,
+          child: Icon(icon, size: 18, color: iconColor),
         ),
         const SizedBox(width: 8),
         Text(
@@ -1445,7 +1442,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             crossAxisCount: 2,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            mainAxisExtent: 172,
+            mainAxisExtent: 164,
           ),
           children: [
             _buildRecommendedGameTile(
@@ -1469,7 +1466,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'तीरों की आकृति तोड़कर बचें'
                       : 'Escape arrows from silhouettes',
               accent: accentCyan,
-              imagePath: null,
+              icon: Icons.alt_route_rounded,
+              emblemPath: 'assets/covers/arrow_maze_emblem.svg',
               isNew: true,
               footer: isBn
                   ? 'পাজল'
@@ -1499,7 +1497,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'रंगीन जोड़े जोड़ें'
                       : 'Connect matching colors',
               accent: accentEmerald,
-              imagePath: 'assets/covers/flow_free.svg',
+              icon: Icons.water_drop_rounded,
+              emblemPath: 'assets/covers/flow_free_emblem.svg',
               footer: isBn
                   ? 'পাইপ পাজল'
                   : isHi
@@ -1528,7 +1527,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'त्वरित गणना खेल'
                       : 'Mental arithmetic sprint',
               accent: accentPurple,
-              imagePath: 'assets/covers/math_sprint.svg',
+              icon: Icons.calculate_rounded,
+              emblemPath: 'assets/covers/math_sprint_emblem.svg',
               footer: isBn
                   ? 'মানসিক গণিত'
                   : isHi
@@ -1557,7 +1557,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ? 'प्रतिक्रिया व फोकस गति'
                       : 'Reaction & focus speed',
               accent: accentOrange,
-              imagePath: 'assets/covers/stroop_rush.svg',
+              icon: Icons.palette_rounded,
+              emblemPath: 'assets/covers/stroop_rush_emblem.svg',
               footer: isBn
                   ? 'ফোকাস ও প্রতিক্রিয়া'
                   : isHi
@@ -1582,6 +1583,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String footer,
     required Color accent,
     required VoidCallback onTap,
+    IconData? icon,
+    String? emblemPath,
     String? imagePath,
     Widget? cover,
     bool isNew = false,
@@ -1590,6 +1593,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       fillHeight: true,
       compact: true,
       coverHeight: 116,
+      icon: icon,
+      emblemPath: emblemPath,
       imagePath: imagePath,
       cover: cover,
       accent: accent,

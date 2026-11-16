@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="tgTeal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5EEAD4"/>
+      <stop offset="1" stop-color="#0D9488"/>
+    </linearGradient>
+    <linearGradient id="tgAmber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="1" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="tgPink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F9A8D4"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+    <linearGradient id="tgStar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF2B0"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="400" cy="330" rx="72" ry="10" fill="#000000" opacity="0.15"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 400 148 L 407 169 L 429 169 L 411 183 L 418 204 L 400 190 L 382 204 L 389 183 L 371 169 L 393 169 Z" transform="translate(4 7)" fill="#B45309" opacity="0.5"/>
+    <path d="M 400 148 L 407 169 L 429 169 L 411 183 L 418 204 L 400 190 L 382 204 L 389 183 L 371 169 L 393 169 Z" fill="url(#tgStar)"/>
+    <g transform="rotate(-6 400 293)">
+      <rect x="334" y="294" width="136" height="26" rx="10" transform="translate(6 8)" fill="#115E59" opacity="0.55"/>
+      <rect x="334" y="294" width="136" height="26" rx="10" fill="url(#tgTeal)"/>
+      <rect x="344" y="298" width="116" height="12" rx="5" fill="#ECFEFF" opacity="0.45"/>
+      <rect x="450" y="296" width="8" height="22" rx="4" fill="#FBBF24"/>
+    </g>
+    <g transform="rotate(4 400 267)">
+      <rect x="324" y="256" width="156" height="24" rx="9" transform="translate(6 8)" fill="#92400E" opacity="0.55"/>
+      <rect x="324" y="256" width="156" height="24" rx="9" fill="url(#tgAmber)"/>
+      <rect x="334" y="260" width="130" height="11" rx="5" fill="#FFFBEB" opacity="0.5"/>
+      <rect x="460" y="258" width="8" height="20" rx="4" fill="#F472B6"/>
+    </g>
+    <g transform="rotate(-3 400 232)">
+      <rect x="338" y="220" width="128" height="24" rx="9" transform="translate(6 8)" fill="#6D28D9" opacity="0.55"/>
+      <rect x="338" y="220" width="128" height="24" rx="9" fill="url(#tgPink)"/>
+      <rect x="348" y="224" width="104" height="11" rx="5" fill="#FFFFFF" opacity="0.5"/>
+    </g>
+  </g>
+  <path d="M 466 232 L 470 241 L 479 245 L 470 249 L 466 258 L 462 249 L 453 245 L 462 241 Z" fill="#A5F3FC" opacity="0.9"/>
+</svg>

@@ -1,7 +1,7 @@
 // lib/presentation/widgets/workout_card.dart
-// "Quick Brain Workout" home card — the primary one-tap action on Home.
-// The tile is the banner artwork itself (text lives on the image); the whole
-// card is a single tap target with an inline gradient START chip.
+// "Daily Brain Workout" hero card for Home. Matches the game tiles: charcoal
+// surface, a colorful 2.5D emblem, one crisp title/subtitle pair and a single
+// inline CTA. The whole card remains one tap target.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -15,16 +15,9 @@ class QuickBrainWorkoutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bannerAsset = isDark
-        ? 'assets/covers/workout_banner.svg'
-        : 'assets/covers/light/workout_banner.svg';
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
-    final titlePrefix = isBn
-        ? 'কুইক '
-        : isHi
-            ? 'क्विक '
-            : 'QUICK ';
+
     final titleWord = isBn
         ? 'ব্রেন'
         : isHi
@@ -36,150 +29,145 @@ class QuickBrainWorkoutCard extends StatelessWidget {
             ? ' वर्कआउट'
             : ' WORKOUT';
     final subtitle = isBn
-        ? 'মস্তিষ্ক সক্রিয় করতে ৩টি গেম'
+        ? '৩টি দ্রুত গেম · ৫ মিনিট'
         : isHi
-            ? 'दिमाग सक्रिय करने के लिए 3 गेम'
-            : '3 games to activate your brain';
+            ? '3 तेज़ गेम · 5 मिनट'
+            : '3 quick games · 5 minutes';
+    final badgeLabel = isBn
+        ? 'দৈনিক প্রশিক্ষণ'
+        : isHi
+            ? 'दैनिक प्रशिक्षण'
+            : 'DAILY TRAINING';
     final ctaLabel = isBn
         ? 'এখন খেলুন'
         : isHi
             ? 'अभी खेलें'
             : 'PLAY NOW';
-    final surface = isDark ? const Color(0xFF080C18) : Colors.white;
+
+    final lime = isDark ? AppColors.neonLime : const Color(0xFF0B8F6C);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF111827);
+    final textSecondary =
+        isDark ? AppColors.gamingTextSecondary : const Color(0xFF526075);
+    final emblemAsset = isDark
+        ? 'assets/covers/workout_brain_emblem.svg'
+        : 'assets/covers/light/workout_brain_emblem.svg';
 
     return AnimatedScaleButton(
       onTap: () => Navigator.pushNamed(context, '/workout'),
+      pressedScale: 0.97,
       child: Container(
         width: double.infinity,
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(22),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? const [Color(0xFF20262F), Color(0xFF171C24)]
+                : const [Colors.white, Color(0xFFF1F5F9)],
+          ),
           border: Border.all(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 1,
+            color: isDark
+                ? AppColors.gamingBorder
+                : Colors.black.withValues(alpha: 0.08),
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.neonLime.withValues(alpha: 0.16),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
+              color: AppColors.neonLime.withValues(
+                  alpha: isDark ? 0.14 : 0.10),
+              blurRadius: 26,
+              spreadRadius: -6,
+              offset: const Offset(0, 10),
             ),
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.28),
+              color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.06),
               blurRadius: 18,
-              offset: const Offset(0, 6),
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Stack(
           children: [
-            // Full artwork at its natural aspect ratio so nothing gets cropped.
-            AspectRatio(
-              aspectRatio: 1289 / 460,
-              child: SvgPicture.asset(
-                bannerAsset,
-                width: double.infinity,
-                fit: BoxFit.fill,
-              ),
-            ),
-            // Soft scrim so the headline stays readable over the artwork.
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      stops: const [0.34, 0.58, 1.0],
-                      colors: [
-                        Colors.transparent,
-                        surface.withValues(alpha: 0.0),
-                        surface.withValues(alpha: isDark ? 0.58 : 0.80),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Top-left badge: Daily Workout indicator
             Positioned(
-              top: 12,
-              left: 12,
+              right: -46,
+              top: -52,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                width: 200,
+                height: 200,
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.42)
-                      : Colors.white.withValues(alpha: 0.85),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.neonLime
-                        .withValues(alpha: isDark ? 0.35 : 0.55),
-                    width: 1,
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppColors.neonLime.withValues(
+                          alpha: isDark ? 0.14 : 0.10),
+                      AppColors.neonLime.withValues(alpha: 0.0),
+                    ],
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.bolt_rounded,
-                      color:
-                          isDark ? AppColors.neonLime : const Color(0xFF0B8F6C),
-                      size: 12,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isBn
-                          ? 'দৈনিক প্রশিক্ষণ'
-                          : isHi
-                              ? 'दैनिक प्रशिक्षण'
-                              : 'DAILY TRAINING',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.6,
-                        color: isDark ? Colors.white : const Color(0xFF1F2937),
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
-            // Text block in the banner's free right zone, stacked like the
-            // poster tiles: headline -> subtitle pill -> inline start chip.
-            Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 12, 14, 12),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+              child: Row(
+                children: [
+                  Expanded(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? AppColors.gamingBg.withValues(alpha: 0.55)
+                                  : Colors.white.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: lime.withValues(
+                                    alpha: isDark ? 0.38 : 0.42),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.bolt_rounded, size: 12, color: lime),
+                                const SizedBox(width: 4),
+                                Text(
+                                  badgeLabel,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.6,
+                                    color: textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 9),
                         Text.rich(
                           TextSpan(
                             children: [
-                              TextSpan(text: titlePrefix),
                               TextSpan(
                                 text: titleWord,
                                 style: TextStyle(
-                                  color: isDark
-                                      ? AppColors.neonLime
-                                      : const Color(0xFF0B8F6C),
+                                  color: lime,
                                   shadows: [
                                     Shadow(
-                                      color:
-                                          (isDark ? Colors.black : Colors.white)
-                                              .withValues(alpha: 0.7),
+                                      color: isDark
+                                          ? Colors.black.withValues(alpha: 0.6)
+                                          : Colors.white.withValues(alpha: 0.7),
                                       blurRadius: 8,
                                     ),
                                     Shadow(
-                                      color: AppColors.neonLime.withValues(
-                                          alpha: isDark ? 0.4 : 0.5),
+                                      color: lime.withValues(
+                                          alpha: isDark ? 0.35 : 0.25),
                                       blurRadius: 14,
                                     ),
                                   ],
@@ -188,110 +176,103 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                               TextSpan(text: titleSuffix),
                             ],
                           ),
-                          textAlign: TextAlign.right,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 17,
+                            fontSize: 20,
                             fontWeight: FontWeight.w900,
-                            letterSpacing: 0.2,
-                            height: 1.1,
-                            color:
-                                isDark ? Colors.white : const Color(0xFF111827),
-                            shadows: [
-                              Shadow(
-                                color: (isDark ? Colors.black : Colors.white)
-                                    .withValues(alpha: 0.7),
-                                blurRadius: 10,
-                              ),
-                              Shadow(
-                                color: Colors.black
-                                    .withValues(alpha: isDark ? 0.4 : 0.15),
-                                blurRadius: 3,
-                              ),
-                            ],
+                            letterSpacing: -0.2,
+                            height: 1.08,
+                            color: textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 7),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.black.withValues(alpha: 0.42)
-                                : Colors.white.withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.16)
-                                  : Colors.black.withValues(alpha: 0.08),
-                              width: 1,
+                        const SizedBox(height: 5),
+                        Text(
+                          subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            height: 1.25,
+                            color: textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              gradient: AppColors.workoutGradient,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.neonLime.withValues(
+                                      alpha: isDark ? 0.30 : 0.22),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.casino_rounded,
-                                size: 11,
-                                color: isDark
-                                    ? AppColors.neonLime
-                                    : const Color(0xFF0B8F6C),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                subtitle,
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.1,
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.92)
-                                      : const Color(0xFF33415C),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  ctaLabel,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                    color: Colors.black,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 13, vertical: 7),
-                          decoration: BoxDecoration(
-                            gradient: AppColors.workoutGradient,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    AppColors.neonLime.withValues(alpha: 0.30),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                ctaLabel,
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.6,
+                                const SizedBox(width: 3),
+                                const Icon(
+                                  Icons.arrow_forward_rounded,
                                   color: Colors.black,
+                                  size: 15,
                                 ),
-                              ),
-                              const SizedBox(width: 2),
-                              const Icon(
-                                Icons.play_arrow_rounded,
-                                color: Colors.black,
-                                size: 15,
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  SizedBox(
+                    width: 118,
+                    height: 118,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 112,
+                          height: 112,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                AppColors.neonLime.withValues(
+                                    alpha: isDark ? 0.16 : 0.12),
+                                AppColors.neonLime.withValues(alpha: 0.0),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SvgPicture.asset(
+                          emblemAsset,
+                          width: 116,
+                          height: 116,
+                          fit: BoxFit.contain,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

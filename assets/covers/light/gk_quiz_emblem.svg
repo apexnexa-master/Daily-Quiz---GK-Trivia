@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="gkQ" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#FFF2B0"/>
+      <stop offset="0.45" stop-color="#FFD24A"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="gkDot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE07A"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="gkSpark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#A5F3FC"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="400" cy="330" rx="62" ry="10" fill="#000000" opacity="0.15"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 378 222 C 378 196 392 184 409 184 C 431 184 446 199 446 219 C 446 237 436 247 422 255 C 412 261 410 267 410 279" transform="translate(6 10)" fill="none" stroke="#B45309" stroke-width="30" opacity="0.55"/>
+    <circle cx="416" cy="309" r="15" fill="#B45309" opacity="0.55"/>
+    <path d="M 378 222 C 378 196 392 184 409 184 C 431 184 446 199 446 219 C 446 237 436 247 422 255 C 412 261 410 267 410 279" fill="none" stroke="url(#gkQ)" stroke-width="26"/>
+    <circle cx="410" cy="303" r="15" fill="url(#gkDot)"/>
+    <path d="M 381 216 C 383 198 395 189 409 188" fill="none" stroke="#FFFFFF" stroke-width="7" opacity="0.45"/>
+    <path d="M 404 300 a 6 6 0 0 1 6 -3" fill="none" stroke="#FFFFFF" stroke-width="4" opacity="0.55"/>
+  </g>
+  <path d="M 466 178 L 471 191 L 484 196 L 471 201 L 466 214 L 461 201 L 448 196 L 461 191 Z" fill="url(#gkSpark)"/>
+  <path d="M 334 214 L 337 222 L 345 225 L 337 228 L 334 236 L 331 228 L 323 225 L 331 222 Z" fill="#A5F3FC" opacity="0.85"/>
+  <path d="M 464 292 L 466 297 L 471 299 L 466 301 L 464 306 L 462 301 L 457 299 L 462 297 Z" fill="#FFE07A" opacity="0.9"/>
+</svg>

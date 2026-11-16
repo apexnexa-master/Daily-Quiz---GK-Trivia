@@ -230,7 +230,7 @@ class AnimationEngine {
     state.route
       ..clear()
       ..addAll(grid.getExitRoute(arrow));
-    state.duration = state.route.length * 0.08;
+    state.duration = state.route.length * 0.055;
     state.elapsed = 0;
     state.done = false;
     _animations.add(state);

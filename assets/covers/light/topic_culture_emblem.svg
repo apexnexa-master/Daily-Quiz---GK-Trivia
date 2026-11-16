@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="tcuPalette" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#FFF7D6"/>
+      <stop offset="0.55" stop-color="#FCD34D"/>
+      <stop offset="1" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="tcuHandle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C4B5FD"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="tcuBrush" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F9A8D4"/>
+      <stop offset="1" stop-color="#DB2777"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="400" cy="330" rx="72" ry="10" fill="#000000" opacity="0.15"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="406" cy="260" rx="68" ry="52" fill="#92400E" opacity="0.5"/>
+    <ellipse cx="400" cy="250" rx="68" ry="52" fill="url(#tcuPalette)"/>
+    <ellipse cx="426" cy="268" rx="17" ry="12" fill="#B45309" opacity="0.7"/>
+    <ellipse cx="426" cy="268" rx="10" ry="7" fill="#FDE68A" opacity="0.5"/>
+    <circle cx="366" cy="230" r="12" fill="#F472B6"/>
+    <circle cx="394" cy="220" r="11" fill="#22D3EE"/>
+    <circle cx="418" cy="234" r="10" fill="#4ADE80"/>
+    <circle cx="380" cy="256" r="9" fill="#A78BFA"/>
+    <circle cx="362" cy="227" r="4" fill="#FFFFFF" opacity="0.65"/>
+    <circle cx="391" cy="217" r="3.5" fill="#FFFFFF" opacity="0.7"/>
+    <circle cx="415" cy="231" r="3" fill="#FFFFFF" opacity="0.7"/>
+    <g transform="rotate(35 440 250)">
+      <rect x="449" y="168" width="14" height="88" rx="7" transform="translate(4 6)" fill="#4C1D95" opacity="0.5"/>
+      <rect x="449" y="168" width="14" height="88" rx="7" fill="url(#tcuHandle)"/>
+      <rect x="446" y="250" width="20" height="18" rx="4" fill="#E2E8F0"/>
+      <path d="M 446 268 L 466 268 L 460 294 Q 456 304 448 294 Z" fill="url(#tcuBrush)"/>
+    </g>
+    <path d="M 352 236 C 360 222 376 214 390 214" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.4"/>
+  </g>
+  <path d="M 320 200 L 323 207 L 330 210 L 323 213 L 320 220 L 317 213 L 310 210 L 317 207 Z" fill="#A5F3FC" opacity="0.9"/>
+</svg>

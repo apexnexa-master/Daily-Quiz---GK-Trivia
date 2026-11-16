@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_animations.dart';
+import 'soft_duotone_icon.dart';
 
 class BattleArenaCard extends StatelessWidget {
   final String lang;
@@ -21,30 +22,35 @@ class BattleArenaCard extends StatelessWidget {
             : 'Duel friends in real-time online, or train offline against a bot!';
     final btnLabel = isBn ? 'যুদ্ধক্ষেত্রে প্রবেশ করুন' : isHi ? 'युद्ध में शामिल हों' : 'Enter Battle Arena';
 
+    const accent = AppColors.gamingGreen;
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [const Color(0xFF0F172A), const Color(0xFF0D9488), const Color(0xFF115E59)]
-              : [const Color(0xFFF0FDFA), const Color(0xFFCCFBF1), const Color(0xFF99F6E4)],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF20262F), Color(0xFF171C24)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
-          width: 1.5,
+          color: AppColors.gamingBorder,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D9488).withValues(alpha: isDark ? 0.3 : 0.1),
-            blurRadius: 20,
+            color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.12),
+            blurRadius: 18,
             offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: accent.withValues(alpha: isDark ? 0.08 : 0.06),
+            blurRadius: 26,
+            spreadRadius: -8,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         child: Stack(
           children: [
             Positioned(
@@ -54,8 +60,13 @@ class BattleArenaCard extends StatelessWidget {
                 width: 130,
                 height: 130,
                 decoration: BoxDecoration(
-                  color: Colors.teal.withValues(alpha: isDark ? 0.1 : 0.05),
                   shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      accent.withValues(alpha: 0.16),
+                      accent.withValues(alpha: 0.0),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -73,19 +84,19 @@ class BattleArenaCard extends StatelessWidget {
                           children: [
                             Text(
                               title,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
                                 letterSpacing: -0.2,
                               ),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               subtitle,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 11.5,
-                                color: isDark ? Colors.white60 : AppColors.textSecondaryLight,
+                                color: AppColors.gamingTextSecondary,
                                 height: 1.3,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -94,19 +105,11 @@ class BattleArenaCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : AppColors.success.withValues(alpha: 0.08),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.bolt_rounded,
-                          color: AppColors.success,
-                          size: 22,
-                        ),
+                      SoftDuotoneIcon(
+                        icon: Icons.sports_martial_arts_rounded,
+                        accent: accent,
+                        size: 44,
+                        isDark: isDark,
                       ),
                     ],
                   ),
@@ -119,27 +122,27 @@ class BattleArenaCard extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0D9488),
-                        borderRadius: BorderRadius.circular(14),
+                        color: accent,
+                        borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0D9488).withValues(alpha: 0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                            color: accent.withValues(alpha: 0.30),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.bolt_rounded, color: Colors.white, size: 16),
+                          const Icon(Icons.bolt_rounded, color: AppColors.gamingBg, size: 16),
                           const SizedBox(width: 8),
                           Text(
                             btnLabel,
                             style: const TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.gamingBg,
                             ),
                           ),
                         ],

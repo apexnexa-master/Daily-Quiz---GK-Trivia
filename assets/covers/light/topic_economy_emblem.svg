@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="teGold" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#FEF3C7"/>
+      <stop offset="0.5" stop-color="#FBBF24"/>
+      <stop offset="1" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="teArrow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D9F99D"/>
+      <stop offset="0.5" stop-color="#4ADE80"/>
+      <stop offset="1" stop-color="#15803D"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="400" cy="332" rx="72" ry="10" fill="#000000" opacity="0.15"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="350" cy="318" rx="32" ry="11" fill="#92400E" opacity="0.6"/>
+    <rect x="318" y="296" width="64" height="22" fill="url(#teGold)"/>
+    <ellipse cx="350" cy="296" rx="32" ry="11" fill="url(#teGold)"/>
+    <rect x="318" y="280" width="64" height="20" fill="url(#teGold)"/>
+    <ellipse cx="350" cy="280" rx="32" ry="11" fill="url(#teGold)"/>
+    <rect x="318" y="264" width="64" height="20" fill="url(#teGold)"/>
+    <ellipse cx="350" cy="264" rx="32" ry="11" fill="#FDE68A"/>
+    <ellipse cx="350" cy="264" rx="16" ry="6" fill="#FFFFFF" opacity="0.45"/>
+    <g transform="rotate(-35 420 256)">
+      <path d="M 384 240 L 430 240 L 430 218 L 468 256 L 430 294 L 430 272 L 384 272 Z" transform="translate(6 10)" fill="#14532D" opacity="0.55"/>
+      <path d="M 384 240 L 430 240 L 430 218 L 468 256 L 430 294 L 430 272 L 384 272 Z" fill="url(#teArrow)"/>
+      <path d="M 394 246 L 426 246 L 426 226 L 452 250" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.4"/>
+    </g>
+  </g>
+  <path d="M 468 194 L 472 203 L 481 207 L 472 211 L 468 220 L 464 211 L 455 207 L 464 203 Z" fill="#A5F3FC" opacity="0.9"/>
+  <path d="M 320 238 L 323 245 L 330 248 L 323 251 L 320 258 L 317 251 L 310 248 L 317 245 Z" fill="#FDE68A" opacity="0.9"/>
+</svg>

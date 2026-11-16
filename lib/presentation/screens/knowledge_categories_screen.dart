@@ -21,41 +21,49 @@ class _KnowledgeCategoriesScreenState extends ConsumerState<KnowledgeCategoriesS
       'name': 'General Knowledge',
       'subtitle': 'Broad spectrum trivia and intelligence',
       'icon': Icons.menu_book_rounded,
+      'emblem': 'assets/covers/topic_general_emblem.svg',
     },
     {
       'name': 'Indian History',
       'subtitle': 'Chronicles, eras, and freedom struggles',
       'icon': Icons.history_edu_rounded,
+      'emblem': 'assets/covers/topic_history_emblem.svg',
     },
     {
       'name': 'Geography',
       'subtitle': 'World maps, topography, and climates',
       'icon': Icons.public_rounded,
+      'emblem': 'assets/covers/topic_geography_emblem.svg',
     },
     {
       'name': 'Science',
       'subtitle': 'Physics, chemistry, biology, and tech',
       'icon': Icons.science_rounded,
+      'emblem': 'assets/covers/topic_science_emblem.svg',
     },
     {
       'name': 'Polity',
       'subtitle': 'Constitutions, governance, and rights',
       'icon': Icons.gavel_rounded,
+      'emblem': 'assets/covers/topic_polity_emblem.svg',
     },
     {
       'name': 'Economy',
       'subtitle': 'Macroeconomics, trade, and finance',
       'icon': Icons.monetization_on_rounded,
+      'emblem': 'assets/covers/topic_economy_emblem.svg',
     },
     {
       'name': 'Current Affairs',
       'subtitle': 'Recent global headlines and events',
       'icon': Icons.newspaper_rounded,
+      'emblem': 'assets/covers/topic_current_emblem.svg',
     },
     {
       'name': 'Art & Culture',
       'subtitle': 'Traditions, heritage, and monuments',
       'icon': Icons.palette_rounded,
+      'emblem': 'assets/covers/topic_culture_emblem.svg',
     },
   ];
 
@@ -157,9 +165,10 @@ class _KnowledgeCategoriesScreenState extends ConsumerState<KnowledgeCategoriesS
                       child: GameCard(
                         compact: true,
                         fillHeight: true,
-                        coverAspectRatio: 1.2,
+                        coverAspectRatio: 1.0,
                         accent: categoryColor,
-                        cover: _buildCategoryCover(categoryColor, icon),
+                        icon: icon,
+                        emblemPath: cat['emblem'] as String?,
                         title: localizedName,
                         subtitle: isBn
                             ? 'অনুশীলন শুরু করুন'
@@ -185,82 +194,11 @@ class _KnowledgeCategoriesScreenState extends ConsumerState<KnowledgeCategoriesS
   double _gridAspectRatio(BuildContext context) {
     const hPadding = 20.0;
     const spacing = 12.0;
-    // Poster tiles: text overlays the artwork, so the cell is simply
-    // width / ratio with no extra reserve for an info section.
-    const posterRatio = 1.2;
+    // Icon-led tiles stack the medallion above the text, so cells are taller
+    // than they are wide.
+    const posterRatio = 1.0;
     final cellWidth = (MediaQuery.sizeOf(context).width - hPadding * 2 - spacing) / 2;
     return cellWidth / (cellWidth / posterRatio);
-  }
-
-  Widget _buildCategoryCover(Color color, IconData icon) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withValues(alpha: isDark ? 0.32 : 0.26),
-            color.withValues(alpha: isDark ? 0.10 : 0.06),
-          ],
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -18,
-            top: -22,
-            child: Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: isDark ? 0.10 : 0.08),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            left: -22,
-            bottom: -26,
-            child: Container(
-              width: 78,
-              height: 78,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: isDark ? 0.07 : 0.06),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Align(
-            alignment: const Alignment(0, -0.45),
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: isDark ? 0.18 : 0.14),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: color.withValues(alpha: 0.40),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                color: GameCard.accentForeground(color, isDark),
-                size: 19,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showPracticeBottomSheet(

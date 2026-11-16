@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="tsGlass" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#7DD3FC"/>
+    </linearGradient>
+    <linearGradient id="tsLiquid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BEF264"/>
+      <stop offset="0.5" stop-color="#34D399"/>
+      <stop offset="1" stop-color="#0D9488"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="400" cy="330" rx="62" ry="10" fill="#000000" opacity="0.15"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 388 190 L 388 228 L 352 300 C 342 318 354 332 374 332 L 426 332 C 446 332 458 318 448 300 L 412 228 L 412 190 Z" transform="translate(6 10)" fill="#115E59" opacity="0.5"/>
+    <path d="M 388 190 L 388 228 L 352 300 C 342 318 354 332 374 332 L 426 332 C 446 332 458 318 448 300 L 412 228 L 412 190 Z" fill="url(#tsGlass)"/>
+    <path d="M 362 292 C 386 280 414 302 440 288 L 448 300 C 458 318 446 332 426 332 L 374 332 C 354 332 342 318 352 300 Z" fill="url(#tsLiquid)"/>
+    <path d="M 362 292 C 386 280 414 302 440 288" fill="none" stroke="#ECFCCB" stroke-width="5" opacity="0.6"/>
+    <rect x="386" y="176" width="28" height="22" rx="6" fill="url(#tsGlass)"/>
+    <rect x="380" y="170" width="40" height="12" rx="6" fill="#BAE6FD"/>
+    <circle cx="380" cy="308" r="7" fill="#FFFFFF" opacity="0.65"/>
+    <circle cx="404" cy="318" r="5" fill="#A7F3D0" opacity="0.8"/>
+    <circle cx="422" cy="304" r="4" fill="#FFFFFF" opacity="0.7"/>
+    <path d="M 372 296 C 368 274 378 258 388 246" fill="none" stroke="#FFFFFF" stroke-width="6" opacity="0.45"/>
+    <ellipse cx="400" cy="214" rx="46" ry="17" transform="rotate(-18 400 214)" fill="none" stroke="#A78BFA" stroke-width="4" opacity="0.75"/>
+    <circle cx="356" cy="220" r="6" fill="#FBBF24"/>
+    <circle cx="444" cy="206" r="5" fill="#22D3EE"/>
+  </g>
+  <path d="M 318 248 L 321 256 L 329 259 L 321 262 L 318 270 L 315 262 L 307 259 L 315 256 Z" fill="#A5F3FC" opacity="0.9"/>
+  <path d="M 476 270 L 478 276 L 484 278 L 478 280 L 476 286 L 474 280 L 468 278 L 474 276 Z" fill="#BEF264" opacity="0.9"/>
+</svg>

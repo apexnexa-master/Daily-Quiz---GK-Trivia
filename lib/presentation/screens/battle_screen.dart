@@ -1424,19 +1424,10 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
         .withValues(alpha: isDark ? 0.07 : 0.06);
     return Row(
       children: [
-        Container(
-          width: 26,
-          height: 26,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: accent.withValues(alpha: isDark ? 0.28 : 0.22),
-              width: 1,
-            ),
-          ),
+        SizedBox(
+          width: 24,
           child:
-              Icon(Icons.sports_kabaddi_rounded, size: 14, color: iconColor),
+              Icon(Icons.sports_kabaddi_rounded, size: 18, color: iconColor),
         ),
         const SizedBox(width: 8),
         Text(
@@ -1484,9 +1475,11 @@ class _BattleScreenState extends ConsumerState<BattleScreen>
     };
 
     return GameCard(
-      width: 210,
+      width: 172,
       compact: true,
-      coverAspectRatio: 1.45,
+      coverAspectRatio: 1.0,
+      icon: Icons.quiz_rounded,
+      emblemPath: imagePath?.replaceFirst('.svg', '_emblem.svg'),
       imagePath: imagePath,
       accent: categoryColor,
       badge: badgeText,

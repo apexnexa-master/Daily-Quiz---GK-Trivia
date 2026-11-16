@@ -16,6 +16,17 @@ class AppColors {
   static const Color slateDark = Color(0xFF070B16);
   static const Color slateNavy = Color(0xFF0A0F1E);
 
+  // ── Premium dark gaming palette ──────────────────────────────────────
+  static const Color gamingBg = Color(0xFF0D1117);
+  static const Color gamingSurface = Color(0xFF1C222C);
+  static const Color gamingSurfaceElevated = Color(0xFF252D38);
+  static const Color gamingBorder = Color(0xFF303946);
+  static const Color gamingCyan = Color(0xFF00F2FE);
+  static const Color gamingGreen = Color(0xFF39FF14);
+  static const Color gamingAmber = Color(0xFFFFB020);
+  static const Color gamingViolet = Color(0xFFB388FF);
+  static const Color gamingTextSecondary = Color(0xFFA0AAB8);
+
   /// Hero CTA gradient — aurora mint to sky blue.
   static const LinearGradient workoutGradient = LinearGradient(
     colors: [Color(0xFF00D9A6), Color(0xFF38BDF8)],
@@ -58,16 +69,16 @@ class AppColors {
   static const Color textSecondaryLight = Color(0xFF4C5877);
   static const Color textTertiaryLight = Color(0xFF909CBA);
 
-  // Dark Mode Surfaces (midnight indigo)
-  static const Color bgDark = Color(0xFF090E1D); // midnight indigo background
-  static const Color cardDark = Color(0xFF131A30); // surface-container
-  static const Color surfaceElevatedDark = Color(0xFF1B2444); // container-high
-  static const Color surfaceContainerHighest = Color(0xFF263156);
-  static const Color outlineVariant = Color(0xFF333F63);
-  static const Color outline = Color(0xFF7E8BAD);
-  static const Color textPrimaryDark = Color(0xFFEBF0FF); // on-surface
-  static const Color textSecondaryDark = Color(0xFFB7C3E4); // on-surface-variant
-  static const Color textTertiaryDark = Color(0xFF7886AB);
+  // Dark Mode Surfaces (premium charcoal gaming)
+  static const Color bgDark = gamingBg; // app background
+  static const Color cardDark = gamingSurface; // card surface
+  static const Color surfaceElevatedDark = gamingSurfaceElevated; // raised surface
+  static const Color surfaceContainerHighest = Color(0xFF2E3846);
+  static const Color outlineVariant = gamingBorder;
+  static const Color outline = Color(0xFF57647A);
+  static const Color textPrimaryDark = Color(0xFFF5F8FC); // on-surface
+  static const Color textSecondaryDark = gamingTextSecondary; // on-surface-variant
+  static const Color textTertiaryDark = Color(0xFF6B7787);
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
@@ -133,18 +144,18 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF060A16), // deepest midnight
-      Color(0xFF0A0F1F), // midnight indigo
-      Color(0xFF111A36), // deep iris navy
+      Color(0xFF0D1117), // premium charcoal
+      Color(0xFF0A0E14), // deep graphite
+      Color(0xFF111722), // lifted slate
     ],
-    stops: [0.0, 0.5, 1.0],
+    stops: [0.0, 0.55, 1.0],
   );
 
   /// Ambient glow hues used by decorative backdrop blobs (dark mode).
   static const List<Color> auroraGlowColors = [
-    Color(0xFF22D3EE), // cyan
-    Color(0xFF8B5CF6), // violet
-    Color(0xFF3EE6B0), // mint
+    Color(0xFF00F2FE), // electric cyan
+    Color(0xFFB388FF), // violet
+    Color(0xFF39FF14), // neon green
   ];
 
   // Category Color Map

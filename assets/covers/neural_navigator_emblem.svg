@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <radialGradient id="nnOrb" cx="0.32" cy="0.28" r="0.85">
+      <stop offset="0" stop-color="#7DD3FC"/>
+      <stop offset="0.45" stop-color="#2563EB"/>
+      <stop offset="1" stop-color="#1E1B4B"/>
+    </radialGradient>
+    <radialGradient id="nnGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#A5F3FC" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#A5F3FC" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="400" cy="330" rx="64" ry="10" fill="#000000" opacity="0.15"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="400" cy="250" rx="94" ry="34" transform="rotate(-22 400 250)" fill="none" stroke="#22D3EE" stroke-width="4" opacity="0.55" stroke-dasharray="12 9"/>
+    <circle cx="406" cy="260" r="56" fill="#1E3A8A" opacity="0.65"/>
+    <circle cx="400" cy="250" r="56" fill="url(#nnOrb)"/>
+    <path d="M 358 222 C 370 200 392 188 416 190" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.45"/>
+    <path d="M 400 250 L 372 214 M 400 250 L 428 206 M 400 250 L 440 268 M 400 250 L 382 290" fill="none" stroke="#A5F3FC" stroke-width="3.5" opacity="0.85"/>
+    <circle cx="372" cy="214" r="15" fill="url(#nnGlow)"/>
+    <circle cx="428" cy="206" r="17" fill="url(#nnGlow)"/>
+    <circle cx="440" cy="268" r="15" fill="url(#nnGlow)"/>
+    <circle cx="382" cy="290" r="14" fill="url(#nnGlow)"/>
+    <circle cx="372" cy="214" r="8" fill="#67E8F9"/>
+    <circle cx="428" cy="206" r="10" fill="#ECFEFF"/>
+    <circle cx="440" cy="268" r="8" fill="#67E8F9"/>
+    <circle cx="382" cy="290" r="7" fill="#A5F3FC"/>
+    <circle cx="400" cy="250" r="9" fill="#FFFFFF"/>
+  </g>
+  <path d="M 452 176 L 456 185 L 465 189 L 456 193 L 452 202 L 448 193 L 439 189 L 448 185 Z" fill="#A5F3FC" opacity="0.9"/>
+</svg>

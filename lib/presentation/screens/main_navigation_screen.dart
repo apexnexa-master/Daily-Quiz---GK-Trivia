@@ -122,7 +122,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                   children: [
                     _buildNavItem(
                       index: 0,
-                      icon: Icons.home_outlined,
+                      icon: Icons.home_rounded,
                       activeIcon: Icons.home_rounded,
                       label: 'Home',
                       isDark: isDark,
@@ -130,7 +130,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                     ),
                     _buildNavItem(
                       index: 1,
-                      icon: Icons.sports_esports_outlined,
+                      icon: Icons.sports_esports_rounded,
                       activeIcon: Icons.sports_esports_rounded,
                       label: 'Play Zone',
                       isDark: isDark,
@@ -138,7 +138,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                     ),
                     _buildNavItem(
                       index: 2,
-                      icon: Icons.leaderboard_outlined,
+                      icon: Icons.leaderboard_rounded,
                       activeIcon: Icons.leaderboard_rounded,
                       label: 'Leaderboard',
                       isDark: isDark,
@@ -146,7 +146,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                     ),
                     _buildNavItem(
                       index: 3,
-                      icon: Icons.person_outline_rounded,
+                      icon: Icons.person_rounded,
                       activeIcon: Icons.person_rounded,
                       label: 'Profile',
                       isDark: isDark,

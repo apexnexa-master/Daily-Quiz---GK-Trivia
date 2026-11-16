@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <radialGradient id="tgoOcean" cx="0.32" cy="0.28" r="0.85">
+      <stop offset="0" stop-color="#BAE6FD"/>
+      <stop offset="0.45" stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#0C4A6E"/>
+    </radialGradient>
+    <linearGradient id="tgoPin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="1" stop-color="#D97706"/>
+    </linearGradient>
+    <clipPath id="tgoClip">
+      <circle cx="400" cy="250" r="55"/>
+    </clipPath>
+  </defs>
+  <ellipse cx="400" cy="330" rx="64" ry="10" fill="#000000" opacity="0.15"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="406" cy="258" r="58" fill="#0C4A6E" opacity="0.55"/>
+    <circle cx="400" cy="250" r="58" fill="url(#tgoOcean)"/>
+    <g clip-path="url(#tgoClip)">
+      <path d="M 358 212 C 376 204 394 212 398 226 C 402 240 388 252 374 248 C 360 244 350 224 358 212 Z" fill="#4ADE80"/>
+      <path d="M 406 250 C 424 242 442 252 444 268 C 446 284 428 294 416 286 C 404 278 398 260 406 250 Z" fill="#22C55E"/>
+      <path d="M 370 274 C 382 268 392 278 390 288 C 388 298 374 302 366 294 C 358 286 360 278 370 274 Z" fill="#86EFAC"/>
+    </g>
+    <path d="M 360 218 C 372 200 392 190 412 190" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.45"/>
+    <path d="M 462 164 C 448 164 438 174 438 188 C 438 206 462 228 462 228 C 462 228 486 206 486 188 C 486 174 476 164 462 164 Z" transform="translate(4 6)" fill="#7C2D12" opacity="0.5"/>
+    <path d="M 462 164 C 448 164 438 174 438 188 C 438 206 462 228 462 228 C 462 228 486 206 486 188 C 486 174 476 164 462 164 Z" fill="url(#tgoPin)"/>
+    <circle cx="462" cy="187" r="8" fill="#FFFFFF" opacity="0.9"/>
+  </g>
+  <path d="M 334 288 L 337 296 L 345 299 L 337 302 L 334 310 L 331 302 L 323 299 L 331 296 Z" fill="#A5F3FC" opacity="0.9"/>
+</svg>

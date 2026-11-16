@@ -5,20 +5,30 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/theme/app_colors.dart';
+import 'soft_duotone_icon.dart';
 
-/// Cinematic full-bleed game tile used across every game listing in the app.
+/// Premium dark game tile used across every game listing in the app.
 ///
-/// The artwork fills the entire card (Netflix / Apple Arcade poster style);
-/// title, description and a small footer chip float over a soft bottom scrim.
-/// There is no separate play button - the whole tile is one tap target and a
-/// subtle chevron hints at navigation. All game tiles (daily challenges,
-/// play zone, battle, category grids) share this single design system.
+/// Each tile is a rounded charcoal card with a soft inner gradient, a thin
+/// border and a polished 2.5D vector emblem sitting above the title.
+/// Badge / meta pills live in the top row; compact tiles drop the bottom action
+/// pill so the larger emblem and title carry the card. The whole card is one
+/// tap target with a subtle press-scale.
 class GameCard extends StatelessWidget {
-  /// Asset image rendered as the full-bleed artwork of the card.
+  /// Asset image rendered as fallback artwork when no [icon] is supplied.
   final String? imagePath;
 
-  /// Custom cover widget (e.g. gradient + icon block for category tiles).
+  /// Compact flat-shaded vector emblem shown above the title.
+  ///
+  /// Takes priority over [icon] and artwork. The light-theme variant is loaded
+  /// automatically from `assets/covers/light/`.
+  final String? emblemPath;
+
+  /// Custom fallback artwork (e.g. gradient + icon block for category tiles).
   final Widget? cover;
+
+  /// Game icon rendered inside the 3D medallion above the title.
+  final IconData? icon;
 
   /// Game / category title.
   final String? title;
@@ -26,19 +36,21 @@ class GameCard extends StatelessWidget {
   /// Short supporting description shown under the title.
   final String? subtitle;
 
-  /// Small category label rendered as a pill on the cover (e.g. "LOGIC").
+  /// Small category label rendered as a pill on the top-left.
   final String? badge;
 
-  /// Small metadata string (duration, question count, ...) shown as a pill.
+  /// Small metadata string (duration, question count, ...) shown top-right.
   final String? meta;
 
   /// Optional icon next to [meta].
   final IconData? metaIcon;
 
-  /// Small footer hint rendered as an accent glass chip near the bottom.
+  /// Small footer hint rendered as an accent action pill near the bottom.
+  ///
+  /// Compact tiles omit it and rely on the whole-card tap affordance instead.
   final String? footer;
 
-  /// Accent color driving badge ring, footer chip dot and glow shadow.
+  /// Accent color driving the icon medallion, badges and glow.
   final Color? accent;
 
   /// Locked state: dimmed cover, lock badge and disabled tap.
@@ -47,7 +59,7 @@ class GameCard extends StatelessWidget {
   /// Live state: pulsing red dot inside the badge.
   final bool isLive;
 
-  /// Coming soon state: frosted blur overlay on the cover.
+  /// Coming soon state: frosted blur overlay on the card.
   final bool isComingSoon;
 
   /// Localized label for the coming soon overlay.
@@ -65,16 +77,13 @@ class GameCard extends StatelessWidget {
   /// Fixed card width. Omit to fill the available width.
   final double? width;
 
-  /// Total tile height when [coverAspectRatio] is not set. The artwork now
-  /// fills the entire card, so this is the full card height.
+  /// Total tile height when [coverAspectRatio] is not set.
   final double coverHeight;
 
-  /// When set, the whole tile scales with its width (`width / aspectRatio`)
-  /// keeping consistent poster proportions.
+  /// When set, the whole tile scales with its width (`width / aspectRatio`).
   final double? coverAspectRatio;
 
-  /// Whether the card should stretch to fill its parent height
-  /// (used inside fixed-extent grids).
+  /// Whether the card should stretch to fill its parent height.
   final bool fillHeight;
 
   /// Compact rendering: smaller type and spacing for dense grids.
@@ -83,7 +92,9 @@ class GameCard extends StatelessWidget {
   const GameCard({
     super.key,
     this.imagePath,
+    this.emblemPath,
     this.cover,
+    this.icon,
     this.title,
     this.subtitle,
     this.badge,
@@ -99,7 +110,7 @@ class GameCard extends StatelessWidget {
     this.newLabel = 'NEW',
     this.onTap,
     this.width,
-    this.coverHeight = 150,
+    this.coverHeight = 200,
     this.coverAspectRatio,
     this.fillHeight = false,
     this.compact = false,
@@ -107,7 +118,7 @@ class GameCard extends StatelessWidget {
             'Provide either [cover] or [imagePath], not both');
 
   /// Shared corner radius for every game card in the app.
-  static const double radius = 24;
+  static const double radius = 16;
 
   /// Returns a readable version of [accent] for text on tinted backgrounds.
   static Color accentForeground(Color accent, bool isDark) {
@@ -122,46 +133,42 @@ class GameCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? AppColors.cardDark : Colors.white;
-    final effectiveAccent = accent ?? AppColors.primary;
+    final effectiveAccent = accent ?? AppColors.gamingCyan;
     final isMuted = isLocked || isComingSoon;
 
-    Widget stack = Stack(
+    final stack = Stack(
       children: [
-        Positioned.fill(child: _buildArtwork(isDark, effectiveAccent)),
-        Positioned.fill(child: _buildScrim(isDark)),
-        if (badge != null)
-          Positioned(
-            top: compact ? 8 : 10,
-            left: compact ? 8 : 10,
-            child: _buildBadge(
-                accent: effectiveAccent, compact: compact, isDark: isDark),
-          ),
-        if (meta != null)
-          Positioned(
-            top: compact ? 8 : 10,
-            right: compact ? 8 : 10,
-            child: _buildMetaPill(isDark, compact),
-          ),
-        if (isNew)
-          Positioned(
-            top: meta != null ? (compact ? 30 : 34) : (compact ? 8 : 10),
-            right: compact ? 8 : 10,
-            child: _buildNewTag(),
-          ),
+        Positioned.fill(child: _buildTexture(isDark, effectiveAccent)),
         Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: _buildPosterContent(isDark, effectiveAccent, isMuted),
+          top: -56,
+          right: -48,
+          child: IgnorePointer(
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    effectiveAccent.withValues(alpha: isMuted ? 0.05 : 0.20),
+                    effectiveAccent.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned.fill(
+          child: _buildContent(isDark, effectiveAccent, isMuted),
         ),
         if (isLocked) Positioned.fill(child: _buildLockedOverlay(isDark)),
         if (isComingSoon) Positioned.fill(child: _buildComingSoonOverlay()),
       ],
     );
 
+    Widget sized = stack;
     if (!fillHeight) {
-      stack = coverAspectRatio != null
+      sized = coverAspectRatio != null
           ? AspectRatio(aspectRatio: coverAspectRatio!, child: stack)
           : SizedBox(height: coverHeight, child: stack);
     }
@@ -170,42 +177,189 @@ class GameCard extends StatelessWidget {
       width: width,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: baseColor,
         borderRadius: BorderRadius.circular(radius),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? const [Color(0xFF20262F), Color(0xFF171C24)]
+              : const [Colors.white, Color(0xFFF6F8FC)],
+        ),
         border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.07)
-              : Colors.black.withValues(alpha: 0.05),
+          color: isDark ? AppColors.gamingBorder : const Color(0xFFE4E9F0),
           width: 1,
         ),
         boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
           if (!isMuted)
             BoxShadow(
-              color: effectiveAccent.withValues(alpha: isDark ? 0.14 : 0.10),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
+              color: effectiveAccent.withValues(alpha: isDark ? 0.10 : 0.06),
+              blurRadius: 30,
+              spreadRadius: -8,
+              offset: const Offset(0, 10),
             ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
         ],
       ),
-      child: stack,
+      child: sized,
     );
 
     return AnimatedScaleButton(
       onTap: isMuted ? null : onTap,
+      pressedScale: 0.97,
       child: card,
     );
   }
 
-  // ── Artwork ────────────────────────────────────────────────────────────
+  // ── Surface texture ──────────────────────────────────────────────────
+
+  Widget _buildTexture(bool isDark, Color accent) {
+    return IgnorePointer(
+      child: CustomPaint(
+        painter: _DotTexturePainter(
+          isDark
+              ? Colors.white.withValues(alpha: 0.035)
+              : Colors.black.withValues(alpha: 0.025),
+        ),
+      ),
+    );
+  }
+
+  // ── Main content ─────────────────────────────────────────────────────
+
+  Widget _buildContent(bool isDark, Color accent, bool isMuted) {
+    final pad = compact ? 10.0 : 15.0;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(pad, pad * 0.85, pad, pad * 0.85),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildTopRow(isDark, accent, isMuted),
+          Expanded(child: _buildHero(isDark, accent)),
+          Text(
+            title ?? '',
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.inter(
+              fontSize: compact ? 14.5 : 18,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+              height: 1.15,
+              color: isMuted
+                  ? (isDark ? Colors.white54 : Colors.black45)
+                  : (isDark ? Colors.white : AppColors.textPrimaryLight),
+            ),
+          ),
+          if (subtitle != null && subtitle!.isNotEmpty) ...[
+            SizedBox(height: compact ? 2 : 5),
+            Text(
+              subtitle!,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: compact ? 9.5 : 12.5,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
+                color: isMuted
+                    ? (isDark ? Colors.white38 : Colors.black38)
+                    : (isDark
+                        ? AppColors.gamingTextSecondary
+                        : AppColors.textSecondaryLight),
+              ),
+            ),
+          ],
+          if (!compact && footer != null && footer!.isNotEmpty) ...[
+            SizedBox(height: 10),
+            Align(
+              alignment: Alignment.center,
+              child: _buildFooterPill(isDark, accent, isMuted),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ── Hero icon / artwork ──────────────────────────────────────────────
+
+  Widget _buildHero(bool isDark, Color accent) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final available = constraints.maxHeight;
+        if (available <= 0) return const SizedBox.shrink();
+
+        if (emblemPath != null) {
+          final preferred = compact ? 58.0 : 68.0;
+          final size = available < preferred ? available : preferred;
+          return Center(child: _buildEmblem(isDark, accent, size));
+        }
+
+        if (icon == null && (cover != null || imagePath != null)) {
+          return Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                height: available,
+                width: double.infinity,
+                child: _buildArtwork(isDark, accent),
+              ),
+            ),
+          );
+        }
+
+        final preferred = compact ? 46.0 : 60.0;
+        final size = available < preferred ? available : preferred;
+        return Center(child: _buildIconMedallion(isDark, accent, size));
+      },
+    );
+  }
+
+  Widget _buildEmblem(bool isDark, Color accent, double size) {
+    var path = emblemPath!;
+    if (!isDark &&
+        path.startsWith('assets/covers/') &&
+        path.endsWith('.svg') &&
+        !path.contains('covers/light/')) {
+      path = path.replaceFirst('assets/covers/', 'assets/covers/light/');
+    }
+    final glowSize = size * 1.18;
+    return SizedBox(
+      width: glowSize,
+      height: glowSize,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: glowSize,
+            height: glowSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  accent.withValues(alpha: isDark ? 0.20 : 0.12),
+                  accent.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+          SvgPicture.asset(
+            path,
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildArtwork(bool isDark, Color accent) {
     if (cover != null) return cover!;
-    // Light theme uses the pastel "morning" variants of the cover art.
     String? artPath = imagePath;
     if (!isDark &&
         artPath != null &&
@@ -230,170 +384,226 @@ class GameCard extends StatelessWidget {
         height: double.infinity,
       );
     }
-    return _buildIconCover(isDark, accent);
+    return _buildIconMedallion(isDark, accent, 60);
   }
 
-  /// Fallback artwork when no image/cover is supplied: a calm accent mesh
-  /// with a ghosted watermark glyph that keeps the lower-left text zone clear.
-  Widget _buildIconCover(bool isDark, Color accent) {
-    final base = isDark ? AppColors.cardDark : Colors.white;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color.lerp(base, accent, isDark ? 0.26 : 0.24)!,
-            Color.lerp(base, accent, isDark ? 0.08 : 0.08)!,
-          ],
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -28,
-            top: -30,
-            child: Container(
-              width: 130,
-              height: 130,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: accent.withValues(alpha: isDark ? 0.14 : 0.16),
-              ),
-            ),
-          ),
-          Positioned(
-            left: -34,
-            top: 40,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: accent.withValues(alpha: isDark ? 0.08 : 0.10),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 16,
-            top: 22,
-            child: Icon(
-              Icons.sports_esports_rounded,
-              size: 46,
-              color: accent.withValues(alpha: isDark ? 0.30 : 0.38),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildIconMedallion(bool isDark, Color accent, double size) {
+    if (size <= 4) return const SizedBox.shrink();
+    return SoftDuotoneIcon(
+      icon: icon ?? Icons.sports_esports_rounded,
+      accent: accent,
+      size: size,
+      isDark: isDark,
     );
   }
 
-  /// Bottom scrim so overlaid text always stays legible over any artwork.
-  /// Dark theme: black veil under white text. Light theme: soft white veil
-  /// under ink text over the pastel covers.
-  Widget _buildScrim(bool isDark) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          stops: const [0.0, 0.55, 1.0],
-          colors: isDark
-              ? [
-                  Colors.black.withValues(alpha: 0.82),
-                  Colors.black.withValues(alpha: 0.32),
-                  Colors.black.withValues(alpha: 0.0),
-                ]
-              : [
-                  Colors.white.withValues(alpha: 0.90),
-                  Colors.white.withValues(alpha: 0.34),
-                  Colors.white.withValues(alpha: 0.0),
-                ],
-        ),
-      ),
-    );
-  }
+  // ── Top pills ────────────────────────────────────────────────────────
 
-  // ── Overlaid content ──────────────────────────────────────────────────
+  Widget _buildTopRow(bool isDark, Color accent, bool isMuted) {
+    final showBadge = badge != null && badge!.isNotEmpty;
+    final showMeta = meta != null && meta!.isNotEmpty;
 
-  Widget _buildPosterContent(bool isDark, Color accent, bool isMuted) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-          compact ? 11 : 14, 0, compact ? 10 : 13, compact ? 10 : 13),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title ?? '',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.montserrat(
-              fontSize: compact ? 13.5 : 15.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.2,
-              height: 1.1,
-              color: isMuted
-                  ? (isDark ? Colors.white54 : Colors.black45)
-                  : (isDark ? Colors.white : AppColors.textPrimaryLight),
-              shadows: isDark
-                  ? [
-                      Shadow(
-                        color: Colors.black.withValues(alpha: 0.45),
-                        blurRadius: 8,
-                        offset: const Offset(0, 1),
-                      ),
-                    ]
-                  : null,
-            ),
-          ),
-          if (subtitle != null && subtitle!.isNotEmpty) ...[
-            const SizedBox(height: 3),
-            Text(
-              subtitle!,
-              maxLines: compact ? 1 : 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: compact ? 10 : 10.5,
-                height: 1.3,
-                color: isMuted
-                    ? (isDark ? Colors.white38 : Colors.black38)
-                    : (isDark
-                        ? Colors.white.withValues(alpha: 0.75)
-                        : AppColors.textSecondaryLight),
-              ),
-            ),
-          ],
-          const SizedBox(height: 7),
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final metaMaxWidth = constraints.maxWidth * 0.46;
+        return SizedBox(
+          height: compact ? 19 : 22,
+          child: Row(
             children: [
-              if (footer != null && footer!.isNotEmpty)
-                Flexible(child: _buildFooterChip(accent, isMuted, isDark))
-              else
-                const Spacer(),
-              const SizedBox(width: 8),
-              _buildChevron(isMuted, compact, isDark),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: showBadge
+                      ? _buildBadge(
+                          accent: accent,
+                          compact: compact,
+                          isDark: isDark,
+                          isMuted: isMuted,
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+              if (showMeta)
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: metaMaxWidth),
+                  child: _buildMetaPill(isDark, compact),
+                ),
+              if (isNew) ...[
+                if (showMeta) const SizedBox(width: 5),
+                _buildNewTag(),
+              ],
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildFooterChip(Color accent, bool isMuted, bool isDark) {
+  Widget _buildBadge({
+    required Color accent,
+    required bool compact,
+    required bool isDark,
+    required bool isMuted,
+  }) {
+    final tint = isMuted
+        ? (isDark ? Colors.white38 : Colors.black38)
+        : _chipAccent(accent, isDark);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      constraints: BoxConstraints(maxWidth: compact ? 110 : 150),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 7 : 8,
+        vertical: compact ? 3 : 4,
+      ),
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.black.withValues(alpha: 0.32)
-            : Colors.white.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(20),
+            ? AppColors.gamingBg.withValues(alpha: 0.62)
+            : Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isMuted
               ? (isDark
-                  ? Colors.white.withValues(alpha: 0.12)
+                  ? Colors.white.withValues(alpha: 0.10)
                   : Colors.black.withValues(alpha: 0.08))
-              : accent.withValues(alpha: isDark ? 0.30 : 0.40),
+              : accent.withValues(alpha: isDark ? 0.40 : 0.32),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLive) ...[
+            PulseWidget(
+              child: Container(
+                width: compact ? 5 : 6,
+                height: compact ? 5 : 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFF4D6D),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            SizedBox(width: compact ? 4 : 5),
+          ],
+          Flexible(
+            child: Text(
+              badge!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: compact ? 7.5 : 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: compact ? 0.5 : 0.7,
+                color: tint,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetaPill(bool isDark, bool compact) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 6 : 8,
+        vertical: compact ? 3 : 4,
+      ),
+      decoration: BoxDecoration(
+        color: isDark
+            ? AppColors.gamingBg.withValues(alpha: 0.62)
+            : Colors.white.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark
+              ? AppColors.gamingBorder
+              : Colors.black.withValues(alpha: 0.08),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (metaIcon != null) ...[
+            Icon(
+              metaIcon,
+              size: compact ? 10 : 11,
+              color: isDark ? AppColors.gamingTextSecondary : Colors.black54,
+            ),
+            const SizedBox(width: 4),
+          ],
+          Flexible(
+            child: Text(
+              meta!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: compact ? 8 : 9,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white70 : Colors.black87,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNewTag() {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 7 : 8,
+        vertical: compact ? 3 : 4,
+      ),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.gamingCyan, AppColors.gamingGreen],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.gamingCyan.withValues(alpha: 0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        newLabel,
+        style: TextStyle(
+          fontSize: compact ? 8 : 9,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.8,
+          color: AppColors.gamingBg,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooterPill(bool isDark, Color accent, bool isMuted) {
+    if (footer == null || footer!.isEmpty) {
+      return SizedBox(height: compact ? 16 : 18);
+    }
+
+    final tint = isMuted
+        ? (isDark ? Colors.white38 : Colors.black38)
+        : accent;
+    final textColor = isMuted
+        ? (isDark ? Colors.white38 : Colors.black38)
+        : (isDark ? Colors.white.withValues(alpha: 0.90) : AppColors.textPrimaryLight);
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 260),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 9 : 11,
+        vertical: compact ? 4 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: tint.withValues(alpha: isDark ? 0.10 : 0.08),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: tint.withValues(alpha: isDark ? 0.26 : 0.22),
           width: 1,
         ),
       ),
@@ -401,32 +611,29 @@ class GameCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 4,
-            height: 4,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isMuted
-                  ? (isDark ? Colors.white38 : Colors.black38)
-                  : _chipAccent(accent, isDark),
-            ),
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: tint),
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 6),
           Flexible(
             child: Text(
               footer!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: compact ? 8.5 : 9,
+                fontSize: compact ? 8.5 : 10,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
-                color: isMuted
-                    ? (isDark ? Colors.white54 : Colors.black45)
-                    : (isDark
-                        ? Colors.white.withValues(alpha: 0.9)
-                        : AppColors.textPrimaryLight),
+                letterSpacing: 0.2,
+                color: textColor,
               ),
             ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.arrow_forward_rounded,
+            size: compact ? 11 : 13,
+            color: tint,
           ),
         ],
       ),
@@ -443,95 +650,6 @@ class GameCard extends StatelessWidget {
     return accent;
   }
 
-  /// Minimal affordance replacing the old play button - the whole card is
-  /// already tappable, this only signals "there is more this way".
-  Widget _buildChevron(bool isMuted, bool compact, bool isDark) {
-    final size = compact ? 22.0 : 26.0;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isDark
-            ? Colors.black.withValues(alpha: 0.35)
-            : Colors.white.withValues(alpha: 0.88),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.16)
-              : Colors.black.withValues(alpha: 0.10),
-          width: 1,
-        ),
-      ),
-      child: Icon(
-        Icons.arrow_forward_rounded,
-        size: size * 0.52,
-        color: isMuted
-            ? (isDark ? Colors.white24 : Colors.black26)
-            : (isDark
-                ? Colors.white.withValues(alpha: 0.85)
-                : AppColors.textPrimaryLight),
-      ),
-    );
-  }
-
-  // ── Top pills ─────────────────────────────────────────────────────────
-  Widget _buildBadge({
-    required Color accent,
-    required bool compact,
-    required bool isDark,
-  }) {
-    final isMuted = isLocked || isComingSoon;
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 10,
-        vertical: compact ? 3 : 5,
-      ),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.black.withValues(alpha: 0.42)
-            : Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isMuted
-              ? (isDark
-                  ? Colors.white.withValues(alpha: 0.10)
-                  : Colors.black.withValues(alpha: 0.08))
-              : accent.withValues(alpha: isDark ? 0.45 : 0.50),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isLive) ...[
-            PulseWidget(
-              child: Container(
-                width: compact ? 5 : 6,
-                height: compact ? 5 : 6,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFF6B81),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-            SizedBox(width: compact ? 4 : 5),
-          ],
-          Text(
-            badge!,
-            style: TextStyle(
-              fontSize: compact ? 8 : 9,
-              fontWeight: FontWeight.w900,
-              letterSpacing: compact ? 0.5 : 0.7,
-              color: isMuted
-                  ? (isDark ? Colors.white54 : Colors.black45)
-                  : _chipAccent(accent, isDark),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Brightens [accent] until it reads cleanly on dark artwork pills.
   static Color _readableOnDark(Color accent) {
     final hsl = HSLColor.fromColor(accent);
@@ -541,100 +659,30 @@ class GameCard extends StatelessWidget {
     return accent;
   }
 
-  /// Small accent "NEW" tag pinned to the corner to flag freshly added games.
-  Widget _buildNewTag() {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 7 : 8,
-        vertical: compact ? 3 : 4,
-      ),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF6B81), Color(0xFFB388FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF6B81).withValues(alpha: 0.45),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Text(
-        newLabel,
-        style: TextStyle(
-          fontSize: compact ? 8 : 9,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.8,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetaPill(bool isDark, bool compact) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 6 : 8,
-        vertical: compact ? 3 : 4,
-      ),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.black.withValues(alpha: 0.42)
-            : Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.12)
-              : Colors.black.withValues(alpha: 0.08),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (metaIcon != null) ...[
-            Icon(
-              metaIcon,
-              size: compact ? 10 : 11,
-              color: isDark ? Colors.white70 : Colors.black54,
-            ),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            meta!,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white70 : Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── State overlays ────────────────────────────────────────────────────
+  // ── State overlays ───────────────────────────────────────────────────
 
   Widget _buildLockedOverlay(bool isDark) {
     return Container(
-      color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.35),
+      color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.38),
       child: Center(
         child: Container(
-          width: 40,
-          height: 40,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.8),
+            color: (isDark ? AppColors.gamingSurface : Colors.white)
+                .withValues(alpha: 0.85),
             shape: BoxShape.circle,
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: isDark ? AppColors.gamingBorder : Colors.black12,
               width: 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Icon(
             Icons.lock_rounded,
@@ -650,15 +698,15 @@ class GameCard extends StatelessWidget {
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
       child: Container(
-        color: Colors.black.withValues(alpha: 0.25),
+        color: AppColors.gamingBg.withValues(alpha: 0.42),
         child: Center(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.55),
-              borderRadius: BorderRadius.circular(12),
+              color: AppColors.gamingBg.withValues(alpha: 0.80),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: AppColors.gamingBorder,
                 width: 1,
               ),
             ),
@@ -687,4 +735,26 @@ class GameCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Faint dot grid that gives the dark tiles a subtle gaming texture.
+class _DotTexturePainter extends CustomPainter {
+  final Color color;
+
+  const _DotTexturePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    const step = 18.0;
+    for (double y = 10; y < size.height; y += step) {
+      for (double x = 10; x < size.width; x += step) {
+        canvas.drawCircle(Offset(x, y), 0.8, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DotTexturePainter oldDelegate) =>
+      oldDelegate.color != color;
 }

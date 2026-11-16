@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="amArrow" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#D9F99D"/>
+      <stop offset="0.45" stop-color="#A3E635"/>
+      <stop offset="1" stop-color="#4D7C0F"/>
+    </linearGradient>
+    <linearGradient id="amNode" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#A5F3FC"/>
+      <stop offset="1" stop-color="#0891B2"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="400" cy="332" rx="64" ry="10" fill="#000000" opacity="0.15"/>
+  <path d="M 330 306 C 356 306 368 280 376 258 C 386 230 414 218 444 210 C 462 206 474 192 478 176" fill="none" stroke="#22D3EE" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 13" opacity="0.7"/>
+  <circle cx="330" cy="306" r="9" fill="url(#amNode)"/>
+  <circle cx="478" cy="176" r="10" fill="#FBBF24"/>
+  <g transform="rotate(-25 400 250)" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M 342 224 L 406 224 L 406 196 L 462 248 L 406 300 L 406 272 L 342 272 Z" transform="translate(6 10)" fill="#365314" opacity="0.6"/>
+    <path d="M 342 224 L 406 224 L 406 196 L 462 248 L 406 300 L 406 272 L 342 272 Z" fill="url(#amArrow)"/>
+    <path d="M 352 230 L 402 230 L 402 205 L 446 248" fill="none" stroke="#FFFFFF" stroke-width="7" opacity="0.4"/>
+  </g>
+  <path d="M 456 186 L 459 194 L 467 197 L 459 200 L 456 208 L 453 200 L 445 197 L 453 194 Z" fill="#A5F3FC" opacity="0.9"/>
+  <path d="M 318 238 L 321 245 L 328 248 L 321 251 L 318 258 L 315 251 L 308 248 L 315 245 Z" fill="#D9F99D" opacity="0.8"/>
+</svg>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="msBody" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.55" stop-color="#E8EEF7"/>
+      <stop offset="1" stop-color="#B8C6D9"/>
+    </linearGradient>
+    <linearGradient id="msNose" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#FDBA74"/>
+      <stop offset="0.5" stop-color="#F97316"/>
+      <stop offset="1" stop-color="#DC2626"/>
+    </linearGradient>
+    <linearGradient id="msFin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F87171"/>
+      <stop offset="1" stop-color="#B91C1C"/>
+    </linearGradient>
+    <linearGradient id="msFlame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FEF08A"/>
+      <stop offset="0.45" stop-color="#FB923C"/>
+      <stop offset="1" stop-color="#EF4444"/>
+    </linearGradient>
+    <radialGradient id="msWindow" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0" stop-color="#CFFAFE"/>
+      <stop offset="0.5" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#0E7490"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="400" cy="338" rx="58" ry="10" fill="#000000" opacity="0.15"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 400 286 C 416 300 420 318 400 340 C 380 318 384 300 400 286 Z" fill="url(#msFlame)"/>
+    <path d="M 400 296 C 408 306 410 316 400 328 C 390 316 392 306 400 296 Z" fill="#FFF7CC"/>
+    <path d="M 364 246 L 334 290 L 364 280 Z" transform="translate(6 10)" fill="#7F1D1D" opacity="0.55"/>
+    <path d="M 436 246 L 466 290 L 436 280 Z" transform="translate(6 10)" fill="#7F1D1D" opacity="0.55"/>
+    <path d="M 364 246 L 334 290 L 364 280 Z" fill="url(#msFin)"/>
+    <path d="M 436 246 L 466 290 L 436 280 Z" fill="url(#msFin)"/>
+    <path d="M 400 152 C 424 178 436 210 436 244 L 436 272 C 436 284 426 292 414 292 L 386 292 C 374 292 364 284 364 272 L 364 244 C 364 210 376 178 400 152 Z" transform="translate(6 10)" fill="#0F172A" opacity="0.25"/>
+    <path d="M 400 152 C 424 178 436 210 436 244 L 436 272 C 436 284 426 292 414 292 L 386 292 C 374 292 364 284 364 272 L 364 244 C 364 210 376 178 400 152 Z" fill="url(#msBody)"/>
+    <path d="M 400 152 C 416 172 426 194 431 218 L 369 218 C 374 194 384 172 400 152 Z" fill="url(#msNose)"/>
+    <path d="M 386 200 C 378 222 377 252 381 274" fill="none" stroke="#FFFFFF" stroke-width="6" opacity="0.55"/>
+    <circle cx="400" cy="240" r="23" fill="#E2E8F0"/>
+    <circle cx="400" cy="240" r="17" fill="url(#msWindow)"/>
+    <ellipse cx="394" cy="234" rx="5" ry="7" transform="rotate(-30 394 234)" fill="#FFFFFF" opacity="0.7"/>
+    <path d="M 336 210 L 308 210 M 332 236 L 312 236" fill="none" stroke="#7DD3FC" stroke-width="6" opacity="0.55"/>
+    <path d="M 464 210 L 492 210 M 468 236 L 488 236" fill="none" stroke="#7DD3FC" stroke-width="6" opacity="0.55"/>
+  </g>
+  <path d="M 462 174 L 466 183 L 475 187 L 466 191 L 462 200 L 458 191 L 449 187 L 458 183 Z" fill="#FFE07A" opacity="0.95"/>
+</svg>

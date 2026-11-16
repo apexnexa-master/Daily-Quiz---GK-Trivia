@@ -34,10 +34,9 @@ class QuizCtaCard extends ConsumerWidget {
     final qCount = quiz!.questionCount;
     final mins = (qCount * 30 / 60).clamp(1, 99).toInt();
     final examMode = quiz!.examMode;
-    final cardGradient = LinearGradient(
-      colors: isDark 
-          ? [const Color(0xFF064E3B), const Color(0xFF0F766E), const Color(0xFF0891B2)]
-          : [const Color(0xFF10B981), const Color(0xFF0D9488), const Color(0xFF06B6D4)],
+    const accent = AppColors.gamingCyan;
+    const cardGradient = LinearGradient(
+      colors: [Color(0xFF20262F), Color(0xFF171C24)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
@@ -45,21 +44,27 @@ class QuizCtaCard extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: cardGradient,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.18),
-          width: 1.5,
+          color: AppColors.gamingBorder,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D9488).withValues(alpha: isDark ? 0.35 : 0.25),
-            blurRadius: 24,
+            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.14),
+            blurRadius: 18,
             offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: accent.withValues(alpha: isDark ? 0.10 : 0.08),
+            blurRadius: 28,
+            spreadRadius: -8,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         child: Stack(
           children: [
             // Ambient design elements
@@ -219,13 +224,20 @@ class QuizCtaCard extends ConsumerWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
-                        color: isQuizActive ? Colors.white : Colors.white24,
-                        borderRadius: BorderRadius.circular(14),
+                        color: isQuizActive
+                            ? accent
+                            : Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isQuizActive
+                              ? accent
+                              : AppColors.gamingBorder,
+                        ),
                         boxShadow: isQuizActive ? [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+                            color: accent.withValues(alpha: 0.28),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
                           )
                         ] : null,
                       ),
@@ -234,19 +246,19 @@ class QuizCtaCard extends ConsumerWidget {
                         children: [
                            Icon(
                             isQuizActive ? Icons.play_arrow_rounded : Icons.lock_rounded,
-                            color: isQuizActive ? const Color(0xFF0D9488) : Colors.white70,
+                            color: isQuizActive ? AppColors.gamingBg : Colors.white54,
                             size: 20,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             isQuizActive 
-                                ? (isBn ? 'চ্যালেঞ্জ শুরু করুন' : isHi ? 'চ্যালেঞ্জ শুরু করুন' : 'START CHALLENGE')
-                                : (isBn ? 'লক করা আছে' : isHi ? 'লক করা আছে' : 'LOCKED'),
+                                ? (isBn ? 'চ্যালেঞ্জ শুরু করুন' : isHi ? 'चुनौती शुरू करें' : 'START CHALLENGE')
+                                : (isBn ? 'লক করা আছে' : isHi ? 'लॉक है' : 'LOCKED'),
                             style: TextStyle(
                               fontSize: 13.5,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w800,
                               letterSpacing: 0.5,
-                              color: isQuizActive ? const Color(0xFF0D9488) : Colors.white70,
+                              color: isQuizActive ? AppColors.gamingBg : Colors.white54,
                             ),
                           ),
                         ],
@@ -318,35 +330,44 @@ class QuizCtaCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withValues(alpha: isDark ? 0.15 : 0.08),
-            AppColors.secondary.withValues(alpha: isDark ? 0.08 : 0.04),
-          ],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF20262F), Color(0xFF171C24)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15),
-          width: 1.5,
+          color: AppColors.gamingBorder,
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.32 : 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.15),
+              color: AppColors.gamingCyan.withValues(alpha: 0.12),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.gamingCyan.withValues(alpha: 0.28),
+              ),
             ),
-            child: const Icon(Icons.stars_rounded, size: 40, color: AppColors.primary),
+            child: const Icon(Icons.stars_rounded, size: 40, color: AppColors.gamingCyan),
           ),
           const SizedBox(height: 16),
           Text(
             isBn ? 'আজকের চ্যালেঞ্জ নেই' : isHi ? 'आज कोई चुनौती नहीं है' : 'No Challenge Today',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
             ),
           ),
           const SizedBox(height: 6),
@@ -356,9 +377,9 @@ class QuizCtaCard extends ConsumerWidget {
                 : isHi
                     ? 'आज की चुनौती के लिए बाद में देखें या अभ्यास मोड खेलें।'
                     : "Check back later for today's challenge or practice below.",
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
-              color: isDark ? Colors.white54 : Colors.grey[600],
+              color: AppColors.gamingTextSecondary,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,

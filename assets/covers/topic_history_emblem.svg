@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="thStone" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#FEF3C7"/>
+      <stop offset="0.5" stop-color="#FBBF24"/>
+      <stop offset="1" stop-color="#B45309"/>
+    </linearGradient>
+    <linearGradient id="thDome" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="1" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="400" cy="330" rx="76" ry="10" fill="#000000" opacity="0.15"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <rect x="326" y="300" width="148" height="18" rx="7" transform="translate(6 8)" fill="#7C2D12" opacity="0.55"/>
+    <rect x="326" y="300" width="148" height="18" rx="7" fill="url(#thStone)"/>
+    <path d="M 358 300 L 358 240 Q 358 214 384 214 L 416 214 Q 442 214 442 240 L 442 300 Z" transform="translate(6 8)" fill="#7C2D12" opacity="0.45"/>
+    <path d="M 358 300 L 358 240 Q 358 214 384 214 L 416 214 Q 442 214 442 240 L 442 300 Z" fill="url(#thStone)"/>
+    <path d="M 376 300 L 376 250 Q 376 236 390 236 L 410 236 Q 424 236 424 250 L 424 300 Z" fill="#7C2D12" opacity="0.75"/>
+    <rect x="336" y="248" width="24" height="52" rx="6" fill="url(#thStone)"/>
+    <rect x="440" y="248" width="24" height="52" rx="6" fill="url(#thStone)"/>
+    <circle cx="348" cy="248" r="14" fill="url(#thDome)"/>
+    <circle cx="452" cy="248" r="14" fill="url(#thDome)"/>
+    <rect x="388" y="196" width="24" height="18" rx="4" fill="url(#thStone)"/>
+    <circle cx="400" cy="198" r="18" fill="url(#thDome)"/>
+    <path d="M 400 180 L 400 148" stroke="#B45309" stroke-width="5"/>
+    <g transform="rotate(-6 419 160)">
+      <rect x="402" y="148" width="34" height="24" rx="3" fill="#FFFFFF"/>
+      <rect x="402" y="148" width="34" height="8" rx="3" fill="#FF9933"/>
+      <rect x="402" y="164" width="34" height="8" rx="3" fill="#16A34A"/>
+      <circle cx="419" cy="160" r="4" fill="#1D4ED8"/>
+    </g>
+    <path d="M 368 226 C 376 220 384 220 390 224" fill="none" stroke="#FFFFFF" stroke-width="5" opacity="0.45"/>
+  </g>
+  <path d="M 470 222 L 474 231 L 483 235 L 474 239 L 470 248 L 466 239 L 457 235 L 466 231 Z" fill="#A5F3FC" opacity="0.9"/>
+</svg>

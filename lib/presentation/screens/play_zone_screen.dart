@@ -471,7 +471,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                   crossAxisCount: 2,
                                   mainAxisSpacing: 12,
                                   crossAxisSpacing: 12,
-                                  mainAxisExtent: 172,
+                                  mainAxisExtent: 164,
                                 ),
                                 children: knowledgeGames.map((game) {
                                   return _buildPlayZoneGameTile(
@@ -510,7 +510,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                   crossAxisCount: 2,
                                   mainAxisSpacing: 12,
                                   crossAxisSpacing: 12,
-                                  mainAxisExtent: 172,
+                                  mainAxisExtent: 164,
                                 ),
                                 children: logicMemoryGames.map((game) {
                                   return _buildPlayZoneGameTile(
@@ -549,7 +549,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                   crossAxisCount: 2,
                                   mainAxisSpacing: 12,
                                   crossAxisSpacing: 12,
-                                  mainAxisExtent: 172,
+                                  mainAxisExtent: 164,
                                 ),
                                 children: focusGames.map((game) {
                                   return _buildPlayZoneGameTile(
@@ -588,7 +588,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                                   crossAxisCount: 2,
                                   mainAxisSpacing: 12,
                                   crossAxisSpacing: 12,
-                                  mainAxisExtent: 172,
+                                  mainAxisExtent: 164,
                                 ),
                                 children: mathGames.map((game) {
                                   return _buildPlayZoneGameTile(
@@ -626,18 +626,9 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         .withValues(alpha: isDark ? 0.07 : 0.06);
     return Row(
       children: [
-        Container(
-          width: 26,
-          height: 26,
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: isDark ? 0.16 : 0.12),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: accent.withValues(alpha: isDark ? 0.28 : 0.22),
-              width: 1,
-            ),
-          ),
-          child: Icon(icon, size: 14, color: iconColor),
+        SizedBox(
+          width: 24,
+          child: Icon(icon, size: 18, color: iconColor),
         ),
         const SizedBox(width: 8),
         Text(
@@ -692,6 +683,11 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
     return key;
   }
 
+  String? _emblemPathFor(String? coverPath) {
+    if (coverPath == null || !coverPath.endsWith('.svg')) return null;
+    return '${coverPath.substring(0, coverPath.length - 4)}_emblem.svg';
+  }
+
   Widget _buildPlayZoneGameTile({
     required BuildContext context,
     required bool isDark,
@@ -708,16 +704,20 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
             ? Colors.grey
             : (data.category.toLowerCase().contains('knowledge')
                 ? AppColors.primary
-                : (data.category.toLowerCase().contains('logic') ||
-                        data.category.toLowerCase().contains('memory') ||
-                        data.category.toLowerCase().contains('focus')
-                    ? const Color(0xFF00F1FE)
-                    : const Color(0xFFB79CFF)))));
+                : (data.category.toLowerCase().contains('memory')
+                    ? AppColors.gamingViolet
+                    : (data.category.toLowerCase().contains('focus')
+                        ? AppColors.gamingAmber
+                        : (data.category.toLowerCase().contains('math')
+                            ? AppColors.gamingGreen
+                            : AppColors.gamingCyan))))));
 
     return GameCard(
       fillHeight: true,
       compact: true,
       coverHeight: 116,
+      icon: data.icon,
+      emblemPath: _emblemPathFor(resolvedImagePath),
       imagePath: cover == null ? resolvedImagePath : null,
       cover: cover,
       accent: categoryColor,

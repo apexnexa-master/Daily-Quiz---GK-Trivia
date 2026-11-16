@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="stPink" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#FBCFE8"/>
+      <stop offset="0.5" stop-color="#F472B6"/>
+      <stop offset="1" stop-color="#DB2777"/>
+    </linearGradient>
+    <linearGradient id="stCyan" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#A5F3FC"/>
+      <stop offset="0.5" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#0891B2"/>
+    </linearGradient>
+    <linearGradient id="stYellow" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#FEF08A"/>
+      <stop offset="0.5" stop-color="#FACC15"/>
+      <stop offset="1" stop-color="#CA8A04"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="400" cy="330" rx="70" ry="10" fill="#000000" opacity="0.15"/>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(-58 34)">
+      <path d="M 400 166 C 414 184 432 200 432 220 C 432 241 418 256 400 256 C 382 256 368 241 368 220 C 368 200 386 184 400 166 Z" transform="translate(6 10)" fill="#0E7490" opacity="0.55"/>
+      <path d="M 400 166 C 414 184 432 200 432 220 C 432 241 418 256 400 256 C 382 256 368 241 368 220 C 368 200 386 184 400 166 Z" fill="url(#stCyan)"/>
+      <ellipse cx="388" cy="212" rx="8" ry="12" transform="rotate(-28 388 212)" fill="#FFFFFF" opacity="0.55"/>
+    </g>
+    <g transform="translate(58 34)">
+      <path d="M 400 166 C 414 184 432 200 432 220 C 432 241 418 256 400 256 C 382 256 368 241 368 220 C 368 200 386 184 400 166 Z" transform="translate(6 10)" fill="#854D0E" opacity="0.55"/>
+      <path d="M 400 166 C 414 184 432 200 432 220 C 432 241 418 256 400 256 C 382 256 368 241 368 220 C 368 200 386 184 400 166 Z" fill="url(#stYellow)"/>
+      <ellipse cx="388" cy="212" rx="8" ry="12" transform="rotate(-28 388 212)" fill="#FFFFFF" opacity="0.55"/>
+    </g>
+    <g>
+      <path d="M 400 160 C 416 180 436 198 436 220 C 436 243 420 260 400 260 C 380 260 364 243 364 220 C 364 198 384 180 400 160 Z" transform="translate(6 10)" fill="#9D174D" opacity="0.55"/>
+      <path d="M 400 160 C 416 180 436 198 436 220 C 436 243 420 260 400 260 C 380 260 364 243 364 220 C 364 198 384 180 400 160 Z" fill="url(#stPink)"/>
+      <ellipse cx="386" cy="208" rx="9" ry="14" transform="rotate(-28 386 208)" fill="#FFFFFF" opacity="0.6"/>
+    </g>
+  </g>
+  <circle cx="476" cy="196" r="7" fill="#F472B6"/>
+  <circle cx="324" cy="292" r="6" fill="#22D3EE"/>
+  <circle cx="470" cy="300" r="6" fill="#FACC15"/>
+  <path d="M 322 210 L 326 219 L 335 223 L 326 227 L 322 236 L 318 227 L 309 223 L 318 219 Z" fill="#FFFFFF" opacity="0.75"/>
+</svg>

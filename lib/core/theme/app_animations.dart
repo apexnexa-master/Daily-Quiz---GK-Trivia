@@ -123,11 +123,13 @@ class _StaggeredListItemState extends State<StaggeredListItem>
 class AnimatedScaleButton extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
+  final double pressedScale;
 
   const AnimatedScaleButton({
     super.key,
     required this.child,
     this.onTap,
+    this.pressedScale = 0.95,
   });
 
   @override
@@ -146,7 +148,8 @@ class _AnimatedScaleButtonState extends State<AnimatedScaleButton>
       vsync: this,
       duration: const Duration(milliseconds: 100),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: widget.pressedScale)
+        .animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }

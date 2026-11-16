@@ -62,10 +62,9 @@ Future<void> _startSynapse(WidgetTester tester, _Result result) async {
   await tester.tap(find.text('START'));
   await tester.pump(Duration.zero);
 
-  // Countdown: '3' '2' '1' 'GO!' — one animation completion per pump.
-  for (var i = 0; i < 4; i++) {
-    await tester.pump(const Duration(milliseconds: 700));
-  }
+  // Games start immediately after Start — no 3-2-1 countdown gate anymore.
+  await tester.pump();
+  await tester.pump();
 }
 
 /// Captures the memorize sequence (rendered in order on the board) and waits

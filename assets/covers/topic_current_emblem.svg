@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="tcPaper" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#DBEAFE"/>
+    </linearGradient>
+    <linearGradient id="tcPhoto" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#A5F3FC"/>
+      <stop offset="1" stop-color="#0284C7"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="400" cy="330" rx="70" ry="10" fill="#000000" opacity="0.15"/>
+  <g transform="rotate(-8 400 250)" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="336" y="194" width="132" height="112" rx="10" transform="translate(6 8)" fill="#1E3A8A" opacity="0.55"/>
+    <rect x="336" y="194" width="132" height="112" rx="10" fill="url(#tcPaper)"/>
+    <rect x="344" y="206" width="116" height="20" rx="5" fill="#2563EB"/>
+    <rect x="352" y="212" width="64" height="8" rx="4" fill="#DBEAFE" opacity="0.85"/>
+    <rect x="344" y="234" width="46" height="10" rx="5" fill="#EF4444"/>
+    <rect x="396" y="234" width="64" height="10" rx="5" fill="#BFDBFE"/>
+    <rect x="344" y="252" width="44" height="38" rx="5" fill="url(#tcPhoto)"/>
+    <path d="M 350 284 L 362 268 L 372 278 L 380 270 L 384 284 Z" fill="#FFFFFF" opacity="0.6"/>
+    <rect x="398" y="254" width="62" height="7" rx="3.5" fill="#CBD5E1"/>
+    <rect x="398" y="266" width="54" height="7" rx="3.5" fill="#CBD5E1"/>
+    <rect x="398" y="278" width="58" height="7" rx="3.5" fill="#CBD5E1"/>
+    <rect x="344" y="296" width="116" height="5" rx="2.5" fill="#E2E8F0"/>
+  </g>
+  <path d="M 470 182 L 474 191 L 483 195 L 474 199 L 470 208 L 466 199 L 457 195 L 466 191 Z" fill="#FDE68A" opacity="0.95"/>
+  <circle cx="468" cy="296" r="7" fill="#22D3EE"/>
+</svg>

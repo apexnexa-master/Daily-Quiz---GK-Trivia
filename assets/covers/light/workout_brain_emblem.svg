@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="280 130 240 240">
+  <defs>
+    <linearGradient id="wbBrain" x1="0.15" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#F5D0FE"/>
+      <stop offset="0.45" stop-color="#D946EF"/>
+      <stop offset="1" stop-color="#7E22CE"/>
+    </linearGradient>
+    <linearGradient id="wbBand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#BEF264"/>
+      <stop offset="0.5" stop-color="#00E5A0"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="wbBar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#A5F3FC"/>
+      <stop offset="0.5" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#0891B2"/>
+    </linearGradient>
+    <linearGradient id="wbPlate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ECFCCB"/>
+      <stop offset="0.5" stop-color="#A3E635"/>
+      <stop offset="1" stop-color="#4D7C0F"/>
+    </linearGradient>
+    <linearGradient id="wbBolt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FEF08A"/>
+      <stop offset="0.5" stop-color="#FBBF24"/>
+      <stop offset="1" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="400" cy="340" rx="74" ry="10" fill="#000000" opacity="0.15"/>
+  <g transform="translate(0 -8)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 400 182 C 388 168 366 168 354 182 C 336 180 320 194 322 214 C 308 226 310 250 326 260 C 322 280 338 296 358 292 C 366 308 390 312 400 300 C 410 312 434 308 442 292 C 462 296 478 280 474 260 C 490 250 492 226 478 214 C 480 194 464 180 446 182 C 434 168 412 168 400 182 Z" transform="translate(6 10)" fill="#581C87" opacity="0.55"/>
+    <path d="M 400 182 C 388 168 366 168 354 182 C 336 180 320 194 322 214 C 308 226 310 250 326 260 C 322 280 338 296 358 292 C 366 308 390 312 400 300 C 410 312 434 308 442 292 C 462 296 478 280 474 260 C 490 250 492 226 478 214 C 480 194 464 180 446 182 C 434 168 412 168 400 182 Z" fill="url(#wbBrain)"/>
+    <path d="M 400 184 C 394 206 406 222 400 242 C 394 262 406 282 400 300" fill="none" stroke="#701A75" stroke-width="5" opacity="0.55"/>
+    <path d="M 356 192 C 372 182 388 184 398 192" fill="none" stroke="#FFFFFF" stroke-width="7" opacity="0.35"/>
+    <path d="M 336 218 C 360 204 396 200 432 206" transform="translate(5 8)" fill="none" stroke="#166534" stroke-width="19" opacity="0.55"/>
+    <path d="M 336 218 C 360 204 396 200 432 206" fill="none" stroke="url(#wbBand)" stroke-width="15"/>
+    <path d="M 342 216 C 362 206 388 202 412 204" fill="none" stroke="#FFFFFF" stroke-width="4" opacity="0.45"/>
+  </g>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <rect x="348" y="296" width="20" height="34" rx="8" transform="translate(6 10)" fill="#365314" opacity="0.6"/>
+    <rect x="332" y="302" width="14" height="22" rx="6" transform="translate(6 10)" fill="#365314" opacity="0.6"/>
+    <rect x="432" y="296" width="20" height="34" rx="8" transform="translate(6 10)" fill="#365314" opacity="0.6"/>
+    <rect x="454" y="302" width="14" height="22" rx="6" transform="translate(6 10)" fill="#365314" opacity="0.6"/>
+    <rect x="372" y="302" width="56" height="14" rx="7" transform="translate(6 10)" fill="#155E75" opacity="0.6"/>
+    <rect x="348" y="296" width="20" height="34" rx="8" fill="url(#wbPlate)"/>
+    <rect x="332" y="302" width="14" height="22" rx="6" fill="url(#wbPlate)"/>
+    <rect x="432" y="296" width="20" height="34" rx="8" fill="url(#wbPlate)"/>
+    <rect x="454" y="302" width="14" height="22" rx="6" fill="url(#wbPlate)"/>
+    <rect x="372" y="302" width="56" height="14" rx="7" fill="url(#wbBar)"/>
+    <rect x="386" y="305" width="28" height="4" rx="2" fill="#FFFFFF" opacity="0.55"/>
+    <rect x="352" y="300" width="6" height="20" rx="3" fill="#FFFFFF" opacity="0.45"/>
+    <rect x="436" y="300" width="6" height="20" rx="3" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+  <path d="M 452 148 L 418 196 L 442 198 L 426 234 L 476 178 L 450 176 L 470 148 Z" transform="translate(4 7)" fill="#92400E" opacity="0.6"/>
+  <path d="M 452 148 L 418 196 L 442 198 L 426 234 L 476 178 L 450 176 L 470 148 Z" fill="url(#wbBolt)"/>
+  <path d="M 450 158 L 432 184 L 446 185 L 438 202" fill="none" stroke="#FFFBEB" stroke-width="4" opacity="0.55"/>
+  <path d="M 320 182 L 323 190 L 331 193 L 323 196 L 320 204 L 317 196 L 309 193 L 317 190 Z" fill="#A5F3FC" opacity="0.9"/>
+  <path d="M 476 254 L 479 261 L 486 264 L 479 267 L 476 274 L 473 267 L 466 264 L 473 261 Z" fill="#BEF264" opacity="0.9"/>
+</svg>
