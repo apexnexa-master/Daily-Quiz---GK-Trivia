@@ -30,7 +30,11 @@ class GameSfxService {
 
   static const String prefKey = 'game_sfx_enabled';
 
-  static String _asset(GameSfx sfx) => 'sfx/sfx_${sfx.name}.wav';
+  static String _asset(GameSfx sfx) => switch (sfx) {
+        GameSfx.levelUp => 'sfx/sfx_levelup.wav',
+        GameSfx.gameOver => 'sfx/sfx_gameover.wav',
+        _ => 'sfx/sfx_${sfx.name}.wav',
+      };
 
   /// Loads the muted preference. Safe to call from main(); repeated calls no-op.
   Future<void> init() async {

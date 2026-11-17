@@ -22,6 +22,7 @@ import '../../../games/widgets/game_results_panel.dart';
 import '../../../games/widgets/game_scaffold.dart';
 import '../../../games/widgets/game_top_bar.dart';
 import '../../../providers/app_providers.dart';
+import '../../../widgets/shimmer_loading.dart';
 import 'flow_free_models.dart';
 import 'flow_free_generator.dart';
 import 'flow_free_engine.dart';
@@ -52,6 +53,8 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   int _best = 0;
   int _elapsedSeconds = 0;
   bool _hasStartedDrawing = false;
+  bool _isLoading = true;
+  int _loadToken = 0;
 
   /// Daily Challenge mode: one deterministic board, one official submission.
   /// Level progress / best score are left untouched in this mode.
@@ -106,15 +109,8 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
       duration: const Duration(milliseconds: 950),
     );
     _loadBest();
-    _loadLevel(0);
+    unawaited(_loadLevel(0));
     _restoreProgress();
-    // Skip the in-game intro screen entirely — the shared GameIntroScreen is
-    // the single start screen. Kick off the countdown shortly after the route
-    // fade-in completes.
-    _autoStartTimer = Timer(const Duration(milliseconds: 500), () {
-      if (!mounted) return;
-      setState(() => _showCountdown = true);
-    });
   }
 
   @override
@@ -127,7 +123,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     if (args?['isDailyChallenge'] == true) {
       _isDailyChallenge = true;
       _playerName = AuthService().currentUser?.displayName;
-      _loadLevel(DailyPuzzle.flowFreeLevelNumber() - 1);
+      unawaited(_loadLevel(DailyPuzzle.flowFreeLevelNumber() - 1));
     }
   }
 
@@ -171,23 +167,69 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
       return;
     }
     final startIndex = startLevel - 1;
-    if (startIndex == _currentLevelIndex) return;
-    setState(() => _loadLevel(startIndex));
+    if (startIndex == _currentLevelIndex && !_isLoading) return;
+    unawaited(_loadLevel(startIndex));
   }
 
-  void _loadLevel(int index) {
-    final generator = FlowPuzzleGenerator();
-    _currentLevel = generator.generateLevel(index + 1);
+  Future<void> _loadLevel(int index, {bool autoStart = true}) async {
+    final token = ++_loadToken;
     _currentLevelIndex = index;
-    _gameState = FlowGameState(_currentLevel);
-    _elapsedSeconds = 0;
-    _hasStartedDrawing = false;
-    _boardReady = false;
-    _runStarted = false;
-    _dismissCellWarning();
-    final cells = _currentLevel.rows * _currentLevel.cols;
-    _boardReveal.duration =
-        Duration(milliseconds: math.min(1500, 550 + cells * 11));
+    _clockTimer?.cancel();
+    _autoStartTimer?.cancel();
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _showCountdown = false;
+      });
+    }
+    await Future<void>.delayed(Duration.zero);
+    try {
+      late final FlowLevel level;
+      try {
+        level = await loadFlowLevel(index + 1);
+      } catch (_) {
+        level = FlowPuzzleGenerator().generateLevel(index + 1);
+      }
+      if (!mounted || token != _loadToken) return;
+      _currentLevel = level;
+      _currentLevelIndex = index;
+      _gameState = FlowGameState(level);
+      _elapsedSeconds = 0;
+      _hasStartedDrawing = false;
+      _boardReady = false;
+      _runStarted = false;
+      _phase = _Phase.playing;
+      _isNewBest = false;
+      _dismissCellWarning();
+      final cells = level.rows * level.cols;
+      _boardReveal.duration =
+          Duration(milliseconds: math.min(1500, 550 + cells * 11));
+      if (mounted) setState(() => _isLoading = false);
+      if (autoStart) _scheduleAutoStart();
+      preloadFlowLevel(index + 2);
+    } catch (_) {
+      if (!mounted || token != _loadToken) return;
+      setState(() => _isLoading = false);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_t(
+              'Could not build the puzzle. Please try again.',
+              'পাজল তৈরি করা যায়নি। আবার চেষ্টা করুন।',
+              'पज़ल नहीं बन सका। कृपया फिर से प्रयास करें।',
+            )),
+          ),
+        );
+      }
+    }
+  }
+
+  void _scheduleAutoStart() {
+    _autoStartTimer?.cancel();
+    _autoStartTimer = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted || _isLoading || _runStarted) return;
+      setState(() => _showCountdown = true);
+    });
   }
 
   // ── Board intro choreography ────────────────────────────────────────────
@@ -202,7 +244,6 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     if (status != AnimationStatus.completed) return;
     if (!mounted || _phase != _Phase.playing) return;
     setState(() => _boardReady = true);
-    _startClock();
   }
 
   // ── "All pipes connected but cells empty" snackbar ─────────────────────
@@ -256,7 +297,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   // ── Flow control ──────────────────────────────────────────────────────
 
   void _beginRun() {
-    if (_runStarted) return;
+    if (_isLoading || _runStarted) return;
     _clockTimer?.cancel();
     setState(() {
       _showCountdown = false;
@@ -367,26 +408,19 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     return 1;
   }
 
-  void _playAgain() {
+  Future<void> _changeLevel(int index) async {
     GameSfxService.instance.play(GameSfx.tap);
-    _loadLevel(_currentLevelIndex);
-    _clockTimer?.cancel();
-    setState(() {
-      _phase = _Phase.playing;
-      _isNewBest = false;
-      _showCountdown = true;
-    });
+    await _loadLevel(index, autoStart: false);
+    if (!mounted) return;
+    setState(() => _showCountdown = true);
+  }
+
+  void _playAgain() {
+    unawaited(_changeLevel(_currentLevelIndex));
   }
 
   void _nextLevel() {
-    GameSfxService.instance.play(GameSfx.tap);
-    _loadLevel(_currentLevelIndex + 1);
-    _clockTimer?.cancel();
-    setState(() {
-      _phase = _Phase.playing;
-      _isNewBest = false;
-      _showCountdown = true;
-    });
+    unawaited(_changeLevel(_currentLevelIndex + 1));
   }
 
   void _exitGame() {
@@ -406,7 +440,10 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
     // Can start drawing from ANY non-empty cell (endpoint or path cell)
     final pairId = _gameState.getPairIdAt(row, col);
     if (pairId != null || _isEndpointCell(row, col)) {
-      if (!_hasStartedDrawing) _hasStartedDrawing = true;
+      if (!_hasStartedDrawing) {
+        _hasStartedDrawing = true;
+        _startClock();
+      }
       _dismissCellWarning();
       _gameState.startDrawing(FlowCell(row, col));
       HapticFeedback.selectionClick();
@@ -486,6 +523,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (_isLoading) return GameScaffold(child: _buildLoadingView(isDark));
 
     return GameScaffold(
       child: Stack(
@@ -501,10 +539,10 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
                 ),
                 trailing: _buildLevelChip(isDark),
               ),
-              const SizedBox(height: 4),
+              _buildStatsStrip(isDark),
               Expanded(child: _buildBoardArea(isDark)),
-              _buildUndoButtonBottom(isDark),
-              const SizedBox(height: 20),
+              _buildControls(isDark),
+              const SizedBox(height: 12),
             ],
           ),
           if (_boardFinish.isAnimating || _boardFinish.isCompleted)
@@ -526,6 +564,173 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
               onFinished: _beginRun,
               goLabel: _t('GO!', 'শুরু!', 'शुरू!'),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingView(bool isDark) {
+    return Column(
+      children: [
+        GameTopBar(
+          title: _t('FLOW FREE', 'ফ্লো ফ্রি', 'फ्लो फ्री'),
+          subtitle: _t(
+            'Building your board...',
+            'আপনার বোর্ড তৈরি হচ্ছে...',
+            'आपका बोर्ड बन रहा है...',
+          ),
+          trailing: _buildLevelChip(isDark),
+        ),
+        const Spacer(),
+        _buildLoaderCard(isDark),
+        const Spacer(flex: 2),
+      ],
+    );
+  }
+
+  Widget _buildLoaderCard(bool isDark) {
+    const accent = Color(0xFF00E5FF);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 36),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.tileDark : AppColors.tileLight,
+          borderRadius: BorderRadius.circular(AppSpacing.rXl),
+          border: isDark ? AppColors.tileBorderDark : AppColors.tileBorderLight,
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: isDark ? 0.12 : 0.08),
+              blurRadius: 28,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 54,
+              height: 54,
+              child: CircularProgressIndicator(
+                strokeWidth: 4,
+                valueColor: const AlwaysStoppedAnimation<Color>(accent),
+                backgroundColor: accent.withValues(alpha: 0.12),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _t('BUILDING THE GRID', 'গ্রিড তৈরি হচ্ছে', 'ग्रिड बन रहा है'),
+              style: GoogleFonts.montserrat(
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+                color: isDark ? Colors.white : AppColors.textPrimaryLight,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ShimmerBox(
+              width: 168,
+              height: 7,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            const SizedBox(height: 8),
+            ShimmerBox(
+              width: 118,
+              height: 7,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              '${_t('LEVEL', 'স্তর', 'स्तर')} ${_currentLevelIndex + 1}'
+              '${_isDailyChallenge ? '  •  ${_t('DAILY', 'দৈনিক', 'दैनिक')}' : ''}',
+              style: GoogleFonts.montserrat(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: isDark
+                    ? AppColors.textTertiaryDark
+                    : AppColors.textTertiaryLight,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsStrip(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildStatTile(
+              icon: Icons.timer_outlined,
+              label: _t('TIME', 'সময়', 'समय'),
+              value: '${_elapsedSeconds}s',
+              accent: const Color(0xFF00E5FF),
+              isDark: isDark,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildStatTile(
+              icon: Icons.emoji_events_outlined,
+              label: _t('BEST', 'সেরা', 'सर्वश्रेष्ठ'),
+              value: '$_best',
+              accent: AppColors.coin,
+              isDark: isDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color accent,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.tileDark : AppColors.tileLight,
+        borderRadius: BorderRadius.circular(14),
+        border: isDark ? AppColors.tileBorderDark : AppColors.tileBorderLight,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: accent),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                    color: isDark
+                        ? AppColors.textTertiaryDark
+                        : AppColors.textTertiaryLight,
+                  ),
+                ),
+                Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -722,45 +927,97 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
   }
 
   void _jumpToLevel(int index) {
-    _loadLevel(index);
-    _clockTimer?.cancel();
-    setState(() {
-      _phase = _Phase.playing;
-      _isNewBest = false;
-      _showCountdown = true;
-    });
+    if (index == _currentLevelIndex && !_isLoading) return;
+    unawaited(_changeLevel(index));
   }
 
-  Widget _buildUndoButtonBottom(bool isDark) {
-    final enabled =
+  Widget _buildControls(bool isDark) {
+    final canUndo =
         _gameState.canUndo && _phase == _Phase.playing && _boardReady;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: GestureDetector(
-        onTap: enabled ? _undoLastMove : null,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildControlButton(
+              icon: Icons.undo_rounded,
+              label: _t('UNDO', 'পূর্বাবস্থা', 'पूर्ववत'),
+              accent: const Color(0xFFFF9100),
+              enabled: canUndo,
+              isDark: isDark,
+              onTap: _undoLastMove,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildControlButton(
+              icon: Icons.restart_alt_rounded,
+              label: _t('RESTART', 'রিস্টার্ট', 'रीस्टार्ट'),
+              accent: const Color(0xFF00E5FF),
+              enabled: true,
+              isDark: isDark,
+              onTap: () => unawaited(_changeLevel(_currentLevelIndex)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlButton({
+    required IconData icon,
+    required String label,
+    required Color accent,
+    required bool enabled,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: enabled
-                ? const Color(0xFFFF9100).withValues(alpha: 0.12)
-                : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04),
-            shape: BoxShape.circle,
+                ? accent.withValues(alpha: isDark ? 0.12 : 0.08)
+                : (isDark ? AppColors.tileDark : AppColors.tileLight),
+            borderRadius: BorderRadius.circular(14),
             border: enabled
-                ? Border.all(
-                    color: const Color(0xFFFF9100).withValues(alpha: 0.35),
-                    width: 1,
-                  )
-                : null,
+                ? Border.all(color: accent.withValues(alpha: 0.4))
+                : isDark
+                    ? AppColors.tileBorderDark
+                    : AppColors.tileBorderLight,
           ),
-          child: Icon(
-            Icons.undo_rounded,
-            size: 20,
-            color: enabled
-                ? const Color(0xFFFF9100)
-                : (isDark
-                    ? AppColors.textTertiaryDark
-                    : AppColors.textTertiaryLight),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: enabled
+                    ? accent
+                    : (isDark
+                        ? AppColors.textTertiaryDark
+                        : AppColors.textTertiaryLight),
+              ),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: GoogleFonts.montserrat(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.6,
+                  color: enabled
+                      ? accent
+                      : (isDark
+                          ? AppColors.textTertiaryDark
+                          : AppColors.textTertiaryLight),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -795,14 +1052,18 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
                 width: maxSize,
                 height: maxSize,
                 decoration: BoxDecoration(
-                  color: (isDark ? Colors.white : Colors.black)
-                      .withValues(alpha: 0.04),
+                  color: isDark ? AppColors.tileDark : AppColors.tileLight,
                   borderRadius: BorderRadius.circular(AppSpacing.rXl),
-                  border: Border.all(
-                    color: (isDark ? Colors.white : Colors.black)
-                        .withValues(alpha: 0.08),
-                    width: 1,
-                  ),
+                  border: isDark
+                      ? AppColors.tileBorderDark
+                      : AppColors.tileBorderLight,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF)
+                          .withValues(alpha: isDark ? 0.12 : 0.08),
+                      blurRadius: 24,
+                    ),
+                  ],
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppSpacing.rXl),

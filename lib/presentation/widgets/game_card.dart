@@ -7,13 +7,12 @@ import '../../core/theme/app_animations.dart';
 import '../../core/theme/app_colors.dart';
 import 'soft_duotone_icon.dart';
 
-/// Premium dark game tile used across every game listing in the app.
+/// Modular matte game tile used across every game listing in the app.
 ///
-/// Each tile is a rounded charcoal card with a soft inner gradient, a thin
-/// border and a polished 2.5D vector emblem sitting above the title.
-/// Badge / meta pills live in the top row; compact tiles drop the bottom action
-/// pill so the larger emblem and title carry the card. The whole card is one
-/// tap target with a subtle press-scale.
+/// A solid charcoal surface with a crisp directional hairline border replaces
+/// ambient glows, so the enlarged 2.5D emblem stays the focal point. Badge /
+/// meta pills live in the top row; compact tiles drop the bottom action pill
+/// so the icon and title carry the card. The whole card is one tap target.
 class GameCard extends StatelessWidget {
   /// Asset image rendered as fallback artwork when no [icon] is supplied.
   final String? imagePath;
@@ -138,26 +137,6 @@ class GameCard extends StatelessWidget {
 
     final stack = Stack(
       children: [
-        Positioned.fill(child: _buildTexture(isDark, effectiveAccent)),
-        Positioned(
-          top: -56,
-          right: -48,
-          child: IgnorePointer(
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    effectiveAccent.withValues(alpha: isMuted ? 0.05 : 0.20),
-                    effectiveAccent.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
         Positioned.fill(
           child: _buildContent(isDark, effectiveAccent, isMuted),
         ),
@@ -178,30 +157,16 @@ class GameCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? const [Color(0xFF20262F), Color(0xFF171C24)]
-              : const [Colors.white, Color(0xFFF6F8FC)],
-        ),
-        border: Border.all(
-          color: isDark ? AppColors.gamingBorder : const Color(0xFFE4E9F0),
-          width: 1,
-        ),
+        color: isDark
+            ? (isMuted ? AppColors.gamingBg : AppColors.tileDark)
+            : (isMuted ? AppColors.tileRaisedLight : AppColors.tileLight),
+        border: isDark ? AppColors.tileBorderDark : AppColors.tileBorderLight,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: isDark ? 0.32 : 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          if (!isMuted)
-            BoxShadow(
-              color: effectiveAccent.withValues(alpha: isDark ? 0.10 : 0.06),
-              blurRadius: 30,
-              spreadRadius: -8,
-              offset: const Offset(0, 10),
-            ),
         ],
       ),
       child: sized,
@@ -214,24 +179,10 @@ class GameCard extends StatelessWidget {
     );
   }
 
-  // ── Surface texture ──────────────────────────────────────────────────
-
-  Widget _buildTexture(bool isDark, Color accent) {
-    return IgnorePointer(
-      child: CustomPaint(
-        painter: _DotTexturePainter(
-          isDark
-              ? Colors.white.withValues(alpha: 0.035)
-              : Colors.black.withValues(alpha: 0.025),
-        ),
-      ),
-    );
-  }
-
   // ── Main content ─────────────────────────────────────────────────────
 
   Widget _buildContent(bool isDark, Color accent, bool isMuted) {
-    final pad = compact ? 10.0 : 15.0;
+    final pad = compact ? 8.0 : 15.0;
     return Padding(
       padding: EdgeInsets.fromLTRB(pad, pad * 0.85, pad, pad * 0.85),
       child: Column(
@@ -245,9 +196,9 @@ class GameCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.inter(
-              fontSize: compact ? 14.5 : 18,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
+              fontSize: compact ? 14 : 18,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.25,
               height: 1.15,
               color: isMuted
                   ? (isDark ? Colors.white54 : Colors.black45)
@@ -259,22 +210,22 @@ class GameCard extends StatelessWidget {
             Text(
               subtitle!,
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: compact ? 1 : 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: compact ? 9.5 : 12.5,
+                fontSize: compact ? 9.5 : 12,
                 fontWeight: FontWeight.w500,
                 height: 1.3,
                 color: isMuted
-                    ? (isDark ? Colors.white38 : Colors.black38)
+                    ? (isDark ? Colors.white30 : Colors.black38)
                     : (isDark
-                        ? AppColors.gamingTextSecondary
+                        ? AppColors.gamingTextSecondary.withValues(alpha: 0.82)
                         : AppColors.textSecondaryLight),
               ),
             ),
           ],
           if (!compact && footer != null && footer!.isNotEmpty) ...[
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Align(
               alignment: Alignment.center,
               child: _buildFooterPill(isDark, accent, isMuted),
@@ -294,9 +245,9 @@ class GameCard extends StatelessWidget {
         if (available <= 0) return const SizedBox.shrink();
 
         if (emblemPath != null) {
-          final preferred = compact ? 58.0 : 68.0;
+          final preferred = compact ? 80.0 : 92.0;
           final size = available < preferred ? available : preferred;
-          return Center(child: _buildEmblem(isDark, accent, size));
+          return Center(child: _buildEmblem(isDark, size));
         }
 
         if (icon == null && (cover != null || imagePath != null)) {
@@ -312,14 +263,14 @@ class GameCard extends StatelessWidget {
           );
         }
 
-        final preferred = compact ? 46.0 : 60.0;
+        final preferred = compact ? 64.0 : 76.0;
         final size = available < preferred ? available : preferred;
         return Center(child: _buildIconMedallion(isDark, accent, size));
       },
     );
   }
 
-  Widget _buildEmblem(bool isDark, Color accent, double size) {
+  Widget _buildEmblem(bool isDark, double size) {
     var path = emblemPath!;
     if (!isDark &&
         path.startsWith('assets/covers/') &&
@@ -327,34 +278,11 @@ class GameCard extends StatelessWidget {
         !path.contains('covers/light/')) {
       path = path.replaceFirst('assets/covers/', 'assets/covers/light/');
     }
-    final glowSize = size * 1.18;
-    return SizedBox(
-      width: glowSize,
-      height: glowSize,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: glowSize,
-            height: glowSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  accent.withValues(alpha: isDark ? 0.20 : 0.12),
-                  accent.withValues(alpha: 0.0),
-                ],
-              ),
-            ),
-          ),
-          SvgPicture.asset(
-            path,
-            width: size,
-            height: size,
-            fit: BoxFit.contain,
-          ),
-        ],
-      ),
+    return SvgPicture.asset(
+      path,
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
     );
   }
 
@@ -407,7 +335,7 @@ class GameCard extends StatelessWidget {
       builder: (context, constraints) {
         final metaMaxWidth = constraints.maxWidth * 0.46;
         return SizedBox(
-          height: compact ? 19 : 22,
+          height: compact ? 17 : 22,
           child: Row(
             children: [
               Expanded(
@@ -455,9 +383,7 @@ class GameCard extends StatelessWidget {
         vertical: compact ? 3 : 4,
       ),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.gamingBg.withValues(alpha: 0.62)
-            : Colors.white.withValues(alpha: 0.85),
+        color: isDark ? AppColors.tileRaisedDark : AppColors.tileLight,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isMuted
@@ -509,14 +435,12 @@ class GameCard extends StatelessWidget {
         vertical: compact ? 3 : 4,
       ),
       decoration: BoxDecoration(
-        color: isDark
-            ? AppColors.gamingBg.withValues(alpha: 0.62)
-            : Colors.white.withValues(alpha: 0.85),
+        color: isDark ? AppColors.tileRaisedDark : AppColors.tileLight,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isDark
-              ? AppColors.gamingBorder
-              : Colors.black.withValues(alpha: 0.08),
+              ? const Color(0xFF46515F)
+              : const Color(0xFFD6DEE9),
           width: 1,
         ),
       ),
@@ -735,26 +659,4 @@ class GameCard extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Faint dot grid that gives the dark tiles a subtle gaming texture.
-class _DotTexturePainter extends CustomPainter {
-  final Color color;
-
-  const _DotTexturePainter(this.color);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    const step = 18.0;
-    for (double y = 10; y < size.height; y += step) {
-      for (double x = 10; x < size.width; x += step) {
-        canvas.drawCircle(Offset(x, y), 0.8, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DotTexturePainter oldDelegate) =>
-      oldDelegate.color != color;
 }

@@ -136,7 +136,10 @@ class AppRouter {
         );
       case introStroopRush:
         return _buildFade(
-          GameIntroScreen(gameData: GameIntroData.games['stroop-rush']!),
+          GameIntroScreen(
+            gameData: GameIntroData.games['stroop-rush']!,
+            routeArgs: settings.arguments as Map<String, dynamic>?,
+          ),
           settings,
         );
       case introSynapseRecall:

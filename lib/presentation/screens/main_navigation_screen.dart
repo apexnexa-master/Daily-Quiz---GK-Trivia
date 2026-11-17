@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,63 +61,48 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         _showQuitDialog(context, isDark);
       },
       child: Scaffold(
-      extendBody: true,
-      body: PageView(
-        controller: _pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: const [
-          TabKeepAliveWrapper(child: HomeScreen()),
-          TabKeepAliveWrapper(child: PlayZoneScreen()),
-          TabKeepAliveWrapper(child: LeaderboardScreen(isTab: true)),
-          TabKeepAliveWrapper(child: ProfileScreen()),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        color: Colors.transparent,
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          bottom: 16 + MediaQuery.of(context).padding.bottom,
-          top: 6,
+        extendBody: false,
+        body: PageView(
+          controller: _pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          children: const [
+            TabKeepAliveWrapper(child: HomeScreen()),
+            TabKeepAliveWrapper(child: PlayZoneScreen()),
+            TabKeepAliveWrapper(child: LeaderboardScreen(isTab: true)),
+            TabKeepAliveWrapper(child: ProfileScreen()),
+          ],
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF0D1428).withValues(alpha: 0.62)
-                : Colors.white.withValues(alpha: 0.65),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : Colors.black.withValues(alpha: 0.06),
-              width: 1.0,
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: isDark
+                    ? [AppColors.tileRaisedDark, AppColors.tileDark]
+                    : [AppColors.tileRaisedLight, AppColors.tileLight],
+              ),
+              border: Border(
+                top: BorderSide(
+                  color: isDark
+                      ? const Color(0xFF46515F)
+                      : const Color(0xFFD6DEE9),
+                ),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, -4),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: (isDark ? Colors.black : AppColors.primary)
-                    .withValues(alpha: isDark ? 0.35 : 0.08),
-                blurRadius: 32,
-                offset: const Offset(0, 10),
-                spreadRadius: -4,
-              ),
-              BoxShadow(
-                color: (isDark ? AppColors.primary : Colors.white)
-                    .withValues(alpha: isDark ? 0.03 : 0.25),
-                blurRadius: 16,
-                offset: const Offset(0, -2),
-                spreadRadius: -2,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(26),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: SizedBox(
+                height: 48,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildNavItem(
                       index: 0,
@@ -132,7 +116,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                       index: 1,
                       icon: Icons.sports_esports_rounded,
                       activeIcon: Icons.sports_esports_rounded,
-                      label: 'Play Zone',
+                      label: 'Play',
                       isDark: isDark,
                       currentIndex: currentIndex,
                     ),
@@ -140,7 +124,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                       index: 2,
                       icon: Icons.leaderboard_rounded,
                       activeIcon: Icons.leaderboard_rounded,
-                      label: 'Leaderboard',
+                      label: 'Ranks',
                       isDark: isDark,
                       currentIndex: currentIndex,
                     ),
@@ -159,7 +143,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           ),
         ),
       ),
-      ),
     );
   }
 
@@ -175,70 +158,40 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
     final activeColor = isDark ? AppColors.primary : AppColors.primaryDark;
     final inactiveColor =
         isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight;
-
-    return GestureDetector(
-      onTap: () {
-        if (currentIndex != index) {
-          ref.read(navigationTabProvider.notifier).state = index;
-        }
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark
-                  ? AppColors.primary.withValues(alpha: 0.12)
-                  : AppColors.primary.withValues(alpha: 0.08))
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isSelected
-                ? (isDark
-                    ? AppColors.primary.withValues(alpha: 0.2)
-                    : AppColors.primary.withValues(alpha: 0.1))
-                : Colors.transparent,
-            width: 1.2,
-          ),
-          boxShadow: [
-            if (isSelected && isDark)
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.06),
-                blurRadius: 12,
-                spreadRadius: 1,
-              ),
-          ],
-        ),
-        child: Row(
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (currentIndex != index) {
+            HapticFeedback.selectionClick();
+            ref.read(navigationTabProvider.notifier).state = index;
+          }
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              color: isSelected ? activeColor : inactiveColor,
-              size: 20,
-            ),
-            AnimatedCrossFade(
-              firstChild: Row(
-                children: [
-                  const SizedBox(width: 8),
-                   Text(
-                     label,
-                     style: GoogleFonts.montserrat(
-                       color: activeColor,
-                       fontWeight: FontWeight.w900,
-                       fontSize: 12,
-                       letterSpacing: -0.2,
-                     ),
-                   ),
-                ],
+            TweenAnimationBuilder<Color?>(
+              tween: ColorTween(
+                end: isSelected ? activeColor : inactiveColor,
               ),
-              secondChild: const SizedBox.shrink(),
-              crossFadeState: isSelected
-                  ? CrossFadeState.showFirst
-                  : CrossFadeState.showSecond,
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              builder: (context, color, _) => Icon(
+                isSelected ? activeIcon : icon,
+                color: color,
+                size: isSelected ? 22 : 20,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: GoogleFonts.montserrat(
+                color: isSelected ? activeColor : inactiveColor,
+                fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                fontSize: 10,
+                letterSpacing: 0,
+              ),
             ),
           ],
         ),

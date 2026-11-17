@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/material.dart';
 import 'flow_free_models.dart';
 
@@ -253,4 +255,36 @@ class _DifficultyConfig {
   final int rows, cols, numColors;
   final String difficulty;
   const _DifficultyConfig(this.rows, this.cols, this.numColors, this.difficulty);
+}
+
+final Map<int, FlowLevel> _flowLevelCache = <int, FlowLevel>{};
+final Map<int, Future<FlowLevel>> _flowLevelPending =
+    <int, Future<FlowLevel>>{};
+
+FlowLevel _generateFlowLevelSync(int number) =>
+    FlowPuzzleGenerator().generateLevel(number);
+
+Future<FlowLevel> loadFlowLevel(int number) async {
+  final cached = _flowLevelCache[number];
+  if (cached != null) return cached;
+  final pending = _flowLevelPending[number];
+  if (pending != null) return pending;
+
+  final future = compute(_generateFlowLevelSync, number);
+  _flowLevelPending[number] = future;
+  try {
+    final level = await future;
+    _flowLevelCache[number] = level;
+    return level;
+  } finally {
+    _flowLevelPending.remove(number);
+  }
+}
+
+void preloadFlowLevel(int number) {
+  if (_flowLevelCache.containsKey(number) ||
+      _flowLevelPending.containsKey(number)) {
+    return;
+  }
+  unawaited(loadFlowLevel(number).then((_) {}, onError: (Object _) {}));
 }

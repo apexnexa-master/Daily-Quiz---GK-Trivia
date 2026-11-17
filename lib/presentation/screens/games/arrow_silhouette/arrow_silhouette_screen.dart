@@ -34,6 +34,7 @@ const bool kUnlockAllLevels = false;
 /// viewport, where the player pans / zooms (InteractiveViewer) to reach the
 /// whole picture. Small boards (which fit comfortably) keep their fit size.
 const double _minCellSize = 20.0;
+const double _initialZoom = 0.88;
 
 class ArrowSilhouetteScreen extends StatefulWidget {
   const ArrowSilhouetteScreen({super.key});
@@ -347,7 +348,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     // Keep the train at a steady speed: longer arrows ride further, so their
     // animation is allowed proportionally more time.
     final rideCells = flyOff.total / cellSize;
-    final rideMs = (rideCells * 80).clamp(600.0, 3200.0).round();
+    final rideMs = (rideCells * 55).clamp(450.0, 2200.0).round();
     final controller = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: rideMs),
@@ -861,15 +862,14 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
         // the design shows instead of its top-left corner.
         if (_centeredForLevel != _currentLevelId) {
           _centeredForLevel = _currentLevelId;
-          final tx = layout.size.width > viewport.width
-              ? (viewport.width - layout.size.width) / 2
-              : 0.0;
-          final ty = layout.size.height > viewport.height
-              ? (viewport.height - layout.size.height) / 2
-              : 0.0;
+          final childWidth = max(viewport.width, layout.size.width);
+          final childHeight = max(viewport.height, layout.size.height);
+          final tx = (viewport.width - _initialZoom * childWidth) / 2;
+          final ty = (viewport.height - _initialZoom * childHeight) / 2;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _transformController.value = Matrix4.identity()
-              ..setTranslationRaw(tx, ty, 0);
+              ..translate(tx, ty)
+              ..scale(_initialZoom);
           });
         }
 

@@ -27,6 +27,21 @@ class AppColors {
   static const Color gamingViolet = Color(0xFFB388FF);
   static const Color gamingTextSecondary = Color(0xFFA0AAB8);
 
+  static const Color tileDark = Color(0xFF1B212A);
+  static const Color tileRaisedDark = Color(0xFF252D38);
+  static const Color tileLight = Color(0xFFFFFFFF);
+  static const Color tileRaisedLight = Color(0xFFF4F7FB);
+
+  static final Border tileBorderDark = Border.all(
+    color: const Color(0xFF46515F),
+    width: 1,
+  );
+
+  static final Border tileBorderLight = Border.all(
+    color: const Color(0xFFD6DEE9),
+    width: 1,
+  );
+
   /// Hero CTA gradient — aurora mint to sky blue.
   static const LinearGradient workoutGradient = LinearGradient(
     colors: [Color(0xFF00D9A6), Color(0xFF38BDF8)],

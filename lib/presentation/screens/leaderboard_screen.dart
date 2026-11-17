@@ -28,6 +28,7 @@ class LeaderboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
       body: SafeArea(
+        bottom: !isTab,
         child: Column(
           children: [
             _buildHeader(context, ref, lang, isDark, isBn, isHi),

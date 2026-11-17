@@ -238,16 +238,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
       return matchesCategory && matchesQuery;
     }).toList();
 
-    final knowledgeGames =
-        filteredChallenges.where((c) => c.category == 'Knowledge').toList();
-    final logicMemoryGames = filteredChallenges
-        .where((c) => c.category == 'Logic' || c.category == 'Memory')
-        .toList();
-    final focusGames =
-        filteredChallenges.where((c) => c.category == 'Focus').toList();
-    final mathGames =
-        filteredChallenges.where((c) => c.category == 'Math').toList();
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -443,165 +433,27 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                     ? _buildEmptyState(isDark, isBn, isHi)
                     : SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Topic 1: Trivia & Knowledge
-                            if (knowledgeGames.isNotEmpty) ...[
-                              _buildTopicHeader(
-                                title: isBn
-                                    ? 'জ্ঞান ও ট্রিভিয়া'
-                                    : isHi
-                                        ? 'ज्ञान और त्रिविया'
-                                        : 'Knowledge & Trivia',
-                                icon: Icons.menu_book_rounded,
-                                accent: AppColors.primary,
-                                isDark: isDark,
-                                isBn: isBn,
-                                isHi: isHi,
-                              ),
-                              const SizedBox(height: 10),
-                              GridView(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: EdgeInsets.zero,
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  mainAxisExtent: 164,
-                                ),
-                                children: knowledgeGames.map((game) {
-                                  return _buildPlayZoneGameTile(
-                                    context: context,
-                                    isDark: isDark,
-                                    data: game,
-                                    isBn: isBn,
-                                    isHi: isHi,
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 28),
-                            ],
-
-                            // Topic 2: Logic & Memory
-                            if (logicMemoryGames.isNotEmpty) ...[
-                              _buildTopicHeader(
-                                title: isBn
-                                    ? 'যুক্তি এবং মেমরি'
-                                    : isHi
-                                        ? 'तर्क और स्मृति'
-                                        : 'Logic & Memory',
-                                icon: Icons.psychology_rounded,
-                                accent: const Color(0xFF5FD9F2),
-                                isDark: isDark,
-                                isBn: isBn,
-                                isHi: isHi,
-                              ),
-                              const SizedBox(height: 10),
-                              GridView(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: EdgeInsets.zero,
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  mainAxisExtent: 164,
-                                ),
-                                children: logicMemoryGames.map((game) {
-                                  return _buildPlayZoneGameTile(
-                                    context: context,
-                                    isDark: isDark,
-                                    data: game,
-                                    isBn: isBn,
-                                    isHi: isHi,
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 28),
-                            ],
-
-                            // Topic 3: Focus & Attention
-                            if (focusGames.isNotEmpty) ...[
-                              _buildTopicHeader(
-                                title: isBn
-                                    ? 'মনোযোগ ও ফোকাস'
-                                    : isHi
-                                        ? 'ध्यान और फोकस'
-                                        : 'Focus & Attention',
-                                icon: Icons.center_focus_strong_rounded,
-                                accent: const Color(0xFFD98BFF),
-                                isDark: isDark,
-                                isBn: isBn,
-                                isHi: isHi,
-                              ),
-                              const SizedBox(height: 10),
-                              GridView(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: EdgeInsets.zero,
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  mainAxisExtent: 164,
-                                ),
-                                children: focusGames.map((game) {
-                                  return _buildPlayZoneGameTile(
-                                    context: context,
-                                    isDark: isDark,
-                                    data: game,
-                                    isBn: isBn,
-                                    isHi: isHi,
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 28),
-                            ],
-
-                            // Topic 4: Math & Numbers
-                            if (mathGames.isNotEmpty) ...[
-                              _buildTopicHeader(
-                                title: isBn
-                                    ? 'গণিত ও সংখ্যা'
-                                    : isHi
-                                        ? 'गणित और संख्याएँ'
-                                        : 'Math & Numbers',
-                                icon: Icons.calculate_rounded,
-                                accent: const Color(0xFFFFB169),
-                                isDark: isDark,
-                                isBn: isBn,
-                                isHi: isHi,
-                              ),
-                              const SizedBox(height: 10),
-                              GridView(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: EdgeInsets.zero,
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  mainAxisExtent: 164,
-                                ),
-                                children: mathGames.map((game) {
-                                  return _buildPlayZoneGameTile(
-                                    context: context,
-                                    isDark: isDark,
-                                    data: game,
-                                    isBn: isBn,
-                                    isHi: isHi,
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ],
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                        child: GridView(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            mainAxisExtent: 164,
+                          ),
+                          children: filteredChallenges.map((game) {
+                            return _buildPlayZoneGameTile(
+                              context: context,
+                              isDark: isDark,
+                              data: game,
+                              isBn: isBn,
+                              isHi: isHi,
+                            );
+                          }).toList(),
                         ),
                       ),
               ),
@@ -609,41 +461,6 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTopicHeader({
-    required String title,
-    required bool isDark,
-    required bool isBn,
-    required bool isHi,
-    IconData icon = Icons.grid_view_rounded,
-    Color accent = AppColors.primary,
-  }) {
-    final iconColor =
-        isDark ? accent : Color.lerp(accent, Colors.black, 0.30)!;
-    final lineColor = (isDark ? Colors.white : Colors.black)
-        .withValues(alpha: isDark ? 0.07 : 0.06);
-    return Row(
-      children: [
-        SizedBox(
-          width: 24,
-          child: Icon(icon, size: 18, color: iconColor),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          title,
-          style: GoogleFonts.montserrat(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.3,
-            color:
-                isDark ? Colors.white.withValues(alpha: 0.85) : Colors.grey.shade800,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Container(height: 1, color: lineColor)),
-      ],
     );
   }
 

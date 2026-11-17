@@ -2,7 +2,7 @@
 // STROOP RUSH — a color-word interference game.
 //
 // Flow: INTRO → COUNTDOWN → PLAY (turn-based, 3 lives) → RESULTS.
-// Rules alternate between "tap the INK color" and "tap the WRITTEN word".
+// Rules alternate between "tap the INK color" and "tap the WORD meaning".
 // Pacing ramps (turns shrink) and the palette grows from 5 to 7 colors.
 //
 // Visual language: neon-glass, matching Math Sprint — animated aurora, glowing
@@ -20,7 +20,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/scoring/daily_challenge_service.dart';
 import '../../../core/services/ad_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/services/daily_progress_service.dart';
 import '../../../core/services/game_sfx.dart';
 import '../../../core/scoring/game_performance.dart';
@@ -126,6 +128,10 @@ class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
   bool _reviving = false;
   bool _showCountdown = false;
 
+  bool _isDailyChallenge = false;
+  bool _argsRead = false;
+  String? _playerName;
+
   WorkoutStep? _workoutStep;
   int _workoutScore = 0;
 
@@ -189,6 +195,12 @@ class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
     final step = args?['workoutStep'];
     if (step is WorkoutStep && _workoutStep == null) {
       _workoutStep = step;
+    }
+    if (_argsRead) return;
+    _argsRead = true;
+    if (_workoutStep == null && args?['isDailyChallenge'] == true) {
+      _isDailyChallenge = true;
+      _playerName = AuthService().currentUser?.displayName;
     }
   }
 
@@ -357,7 +369,7 @@ class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
 
   void _startGame() {
     if (_playing) return;
-    GameSfxService.instance.play(GameSfx.tap);
+    GameSfxService.instance.play(GameSfx.countdown);
     _introPulse.stop();
     _introPulse.value = 0;
     setState(() {
@@ -548,7 +560,7 @@ class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
   }
 
   void _finishGame() {
-    final isNewBest = _score > _best;
+    final isNewBest = !_isDailyChallenge && _score > _best;
     _playing = false;
     _finished = true;
     if (isNewBest) {
@@ -557,7 +569,7 @@ class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
     }
     setState(() => _isNewBest = isNewBest);
     final prefs = _prefs;
-    if (prefs != null && isNewBest) {
+    if (!_isDailyChallenge && prefs != null && isNewBest) {
       prefs.setInt('stroop_best_score', _score);
     }
 
@@ -577,9 +589,11 @@ class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
       ProgressionService.instance.recordSession(
         SessionRecord(
           gameId: 'stroop',
-          mode: _workoutStep != null
-              ? SessionMode.workoutGame
-              : SessionMode.practice,
+          mode: _isDailyChallenge
+              ? SessionMode.dailyChallenge
+              : _workoutStep != null
+                  ? SessionMode.workoutGame
+                  : SessionMode.practice,
           gameType: GameType.stroop,
           primaryPillar: BrainPillar.reaction,
           performance: StroopPerformanceInput(
@@ -589,6 +603,11 @@ class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
                 _avgReactionSeconds > 0 ? _avgReactionSeconds * 1000 : null,
             difficulty: _speedPips,
           ),
+          isDailyChallenge: _isDailyChallenge,
+          challengeId: _isDailyChallenge
+              ? DailyChallengeService.todaysChallengeId('stroop')
+              : null,
+          playerName: _playerName,
         ),
       ),
     );
@@ -1090,7 +1109,7 @@ Can you beat me? 🚀
   // ---------------------------------------------------------------------------
   Widget _buildStatsRow(bool isDark) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: Row(
         children: [
           Expanded(
@@ -1102,9 +1121,8 @@ Can you beat me? 🚀
               isDark,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
-            flex: 2,
             child: _buildStatBox(
               _t('SCORE', 'স্কোর', 'स्कोर'),
               '$_score',
@@ -1112,6 +1130,18 @@ Can you beat me? 🚀
               AppColors.primary,
               isDark,
               countUp: true,
+              goldFlash: _flashStreak,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _buildStatBox(
+              _t('STREAK', 'স্ট্রিক', 'स्ट्रीक'),
+              '$_streak',
+              Icons.local_fire_department_rounded,
+              AppColors.streak,
+              isDark,
+              trailing: 'x${_comboMultiplier.toStringAsFixed(1)}',
               goldFlash: _flashStreak,
             ),
           ),
@@ -1132,7 +1162,7 @@ Can you beat me? 🚀
   }) {
     final boxAccent = goldFlash ? const Color(0xFFFBBF24) : accent;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1165,111 +1195,102 @@ Can you beat me? 🚀
       ),
       child: Stack(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: boxAccent.withValues(alpha: isDark ? 0.18 : 0.12),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: boxAccent.withValues(alpha: 0.35), width: 1),
-                ),
-                child: Icon(icon, size: 11, color: boxAccent),
-              ),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (countUp)
-                            TweenAnimationBuilder<double>(
-                              tween: Tween(end: _score.toDouble()),
-                              duration: const Duration(milliseconds: 450),
-                              curve: Curves.easeOutCubic,
-                              builder: (context, animated, _) => Text(
-                                '${animated.round()}',
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  color: isDark
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (countUp)
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(end: _score.toDouble()),
+                          duration: const Duration(milliseconds: 450),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, animated, _) => Text(
+                            '${animated.round()}',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.textPrimaryLight,
+                            ),
+                          ),
+                        )
+                      else
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          transitionBuilder: (child, anim) =>
+                              ScaleTransition(scale: anim, child: child),
+                          child: Text(
+                            value,
+                            key: ValueKey(value),
+                            style: GoogleFonts.montserrat(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                              color: goldFlash
+                                  ? const Color(0xFFFBBF24)
+                                  : isDark
                                       ? Colors.white
                                       : AppColors.textPrimaryLight,
-                                ),
-                              ),
-                            )
-                          else
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 180),
-                              transitionBuilder: (child, anim) =>
-                                  ScaleTransition(scale: anim, child: child),
-                              child: Text(
-                                value,
-                                key: ValueKey(value),
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  color: goldFlash
-                                      ? const Color(0xFFFBBF24)
-                                      : isDark
-                                          ? Colors.white
-                                          : AppColors.textPrimaryLight,
-                                  shadows: goldFlash
-                                      ? const [
-                                          Shadow(
-                                            color: Color(0xFFFBBF24),
-                                            blurRadius: 12,
-                                          ),
-                                        ]
-                                      : null,
-                                ),
-                              ),
+                              shadows: goldFlash
+                                  ? const [
+                                      Shadow(
+                                        color: Color(0xFFFBBF24),
+                                        blurRadius: 12,
+                                      ),
+                                    ]
+                                  : null,
                             ),
-                          if (trailing != null) ...[
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 1.5),
-                              decoration: BoxDecoration(
-                                color: boxAccent.withValues(
-                                    alpha: isDark ? 0.22 : 0.14),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                trailing,
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
-                                  color: boxAccent,
-                                ),
-                              ),
+                          ),
+                        ),
+                      if (trailing != null) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: boxAccent.withValues(
+                                alpha: isDark ? 0.22 : 0.14),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            trailing,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: boxAccent,
                             ),
-                          ],
-                        ],
-                      ),
-                    ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 11, color: boxAccent),
+                    const SizedBox(width: 4),
                     Text(
                       label,
                       style: TextStyle(
-                        fontSize: 8,
+                        fontSize: 9,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 0.7,
+                        letterSpacing: 0.8,
                         color: boxAccent,
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           Positioned(
             top: 0,
@@ -1298,10 +1319,12 @@ Can you beat me? 🚀
   // ---------------------------------------------------------------------------
   Widget _buildQuestion(bool isDark) {
     final isInk = _rule == _StroopRule.tapInk;
-    final accent = isInk ? const Color(0xFF3EC8FF) : const Color(0xFFB79CFF);
+    const accent = Color(0xFF3EC8FF);
+    final modeAccent =
+        isInk ? const Color(0xFF3EC8FF) : const Color(0xFFB79CFF);
     final highlight = isInk
         ? _t('INK COLOR', 'কালির রং', 'स्याही का रंग')
-        : _t('WRITTEN WORD', 'লেখা শব্দ', 'लिखा शब्द');
+        : _t('WORD MEANING', 'শব্দের অর্থ', 'शब्द का अर्थ');
     final tapLabel = _t('TAP THE ', 'ট্যাপ করুন: ', 'टैप करें: ');
 
     return AnimatedSwitcher(
@@ -1320,20 +1343,17 @@ Can you beat me? 🚀
         clipBehavior: Clip.antiAlias,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF1B2426), const Color(0xFF0E1415)]
-                : [const Color(0xFF1E293B), const Color(0xFF0F172A)],
+          color: isDark ? const Color(0xFF0B1526) : const Color(0xFF101A2C),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: accent.withValues(alpha: isDark ? 0.5 : 0.42),
+            width: 1.4,
           ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.6),
           boxShadow: [
             BoxShadow(
-              color: accent.withValues(alpha: isDark ? 0.22 : 0.18),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.32),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -1343,9 +1363,9 @@ Can you beat me? 🚀
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  isInk ? Icons.palette_rounded : Icons.hub_rounded,
+                  isInk ? Icons.palette_rounded : Icons.text_fields_rounded,
                   size: 15,
-                  color: accent,
+                  color: modeAccent,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -1354,7 +1374,7 @@ Can you beat me? 🚀
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.2,
-                    color: Colors.white.withValues(alpha: isDark ? 0.9 : 0.95),
+                    color: Colors.white.withValues(alpha: 0.92),
                   ),
                 ),
                 Text(
@@ -1366,7 +1386,7 @@ Can you beat me? 🚀
                     color: accent,
                     shadows: [
                       Shadow(
-                          color: accent.withValues(alpha: 0.8), blurRadius: 14),
+                          color: accent.withValues(alpha: 0.45), blurRadius: 8),
                     ],
                   ),
                 ),
@@ -1382,7 +1402,7 @@ Can you beat me? 🚀
                   gradient: LinearGradient(
                     colors: [
                       Colors.transparent,
-                      Colors.white.withValues(alpha: isDark ? 0.35 : 0.8),
+                      Colors.white.withValues(alpha: 0.12),
                       Colors.transparent,
                     ],
                   ),
@@ -1406,9 +1426,7 @@ Can you beat me? 🚀
             ? AppColors.success
             : _flashWrong
                 ? AppColors.error
-                : (isDark
-                    ? Colors.white.withValues(alpha: 0.16)
-                    : Colors.black.withValues(alpha: 0.10));
+                : (isDark ? const Color(0xFF46515F) : const Color(0xFFD6DEE9));
     final glowColor = _flashPerfect
         ? const Color(0xFFFBBF24)
         : _flashCorrect
@@ -1416,10 +1434,11 @@ Can you beat me? 🚀
             : _flashWrong
                 ? AppColors.error
                 : Colors.white;
-    final cardTint = isDark ? const Color(0xFF2E3637) : const Color(0xFFE2E8F0);
+    final cardTint =
+        isDark ? AppColors.tileRaisedDark : AppColors.tileRaisedLight;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 14),
       child: AnimatedBuilder(
         animation: _shake,
         builder: (context, child) {
@@ -1436,15 +1455,14 @@ Can you beat me? 🚀
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                cardTint.withValues(alpha: isDark ? 0.45 : 0.40),
-                (isDark ? const Color(0xFF131A30) : Colors.white)
-                    .withValues(alpha: 0.97),
+                cardTint,
+                isDark ? AppColors.tileDark : AppColors.tileLight,
               ],
             ),
-            borderRadius: BorderRadius.circular(32),
+            borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: borderColor,
-              width: flash ? 3 : 1.5,
+              width: flash ? 3 : 1.2,
             ),
             boxShadow: [
               BoxShadow(
@@ -1462,14 +1480,14 @@ Can you beat me? 🚀
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
                     child: _buildQuestion(isDark),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 18),
                   Expanded(
                     child: _buildRingStage(glowColor, flash, isDark),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
                   _buildRoundHint(isDark),
                 ],
               ),
@@ -1515,7 +1533,8 @@ Can you beat me? 🚀
         final pulse = lowTime ? 1 + sin(_timer.value * pi * 10) * 0.06 : 1.0;
         return LayoutBuilder(
           builder: (context, constraints) {
-            final side = min(constraints.maxWidth, constraints.maxHeight);
+            final side =
+                min(constraints.maxWidth, constraints.maxHeight) * 0.86;
             return Center(
               child: Transform.scale(
                 scale: pulse,
@@ -1534,16 +1553,16 @@ Can you beat me? 🚀
                           trackColor: isDark
                               ? Colors.white.withValues(alpha: 0.10)
                               : Colors.black.withValues(alpha: 0.07),
-                          strokeWidth: 9,
+                          strokeWidth: 8,
                         ),
                       ),
                       _GlowOrb(
-                        size: side * 0.74,
+                        size: side * 0.70,
                         color: glowColor,
-                        alpha: flash ? 0.32 : (isDark ? 0.10 : 0.30),
+                        alpha: flash ? 0.26 : (isDark ? 0.08 : 0.26),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 28),
+                        padding: const EdgeInsets.symmetric(horizontal: 22),
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 220),
                           transitionBuilder: (child, anim) => FadeTransition(
@@ -1563,17 +1582,17 @@ Can you beat me? 🚀
                               _text,
                               textAlign: TextAlign.center,
                               style: GoogleFonts.montserrat(
-                                fontSize: 84,
+                                fontSize: 72,
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: 2,
                                 color: _ink,
                                 shadows: [
                                   Shadow(
-                                      color: _ink.withValues(alpha: 0.5),
-                                      blurRadius: 26),
+                                      color: _ink.withValues(alpha: 0.36),
+                                      blurRadius: 16),
                                   Shadow(
-                                      color: _ink.withValues(alpha: 0.22),
-                                      blurRadius: 60),
+                                      color: _ink.withValues(alpha: 0.12),
+                                      blurRadius: 36),
                                 ],
                               ),
                             ),
@@ -1682,11 +1701,11 @@ Can you beat me? 🚀
 
     if (_has3Options) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
             for (var slot = 0; slot < 3; slot++) ...[
-              if (slot > 0) const SizedBox(width: 8),
+              if (slot > 0) const SizedBox(width: 10),
               Expanded(child: option(slot, compact: true)),
             ],
           ],
@@ -1694,11 +1713,11 @@ Can you beat me? 🚀
       );
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
           Expanded(child: option(0, compact: false)),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(child: option(1, compact: false)),
         ],
       ),
@@ -1853,8 +1872,8 @@ Can you beat me? 🚀
                         boxShadow: [
                           BoxShadow(
                             color:
-                                const Color(0xFFA855F7).withValues(alpha: 0.4),
-                            blurRadius: 28,
+                                const Color(0xFFA855F7).withValues(alpha: 0.24),
+                            blurRadius: 17,
                           ),
                         ],
                       ),
@@ -2479,6 +2498,19 @@ Can you beat me? 🚀
                           ),
                         ),
                         const SizedBox(height: 14),
+                        if (_isDailyChallenge) ...[
+                          Text(
+                            _t('DAILY CHALLENGE', 'দৈনিক চ্যালেঞ্জ',
+                                'दैनिक चुनौती'),
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                              color: const Color(0xFF3EC8FF),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 13, vertical: 6),
@@ -2651,7 +2683,7 @@ Can you beat me? 🚀
                             ],
                           ),
                         ),
-                        if (_workoutStep == null) ...[
+                        if (!_isDailyChallenge && _workoutStep == null) ...[
                           if (!_reviveUsed) ...[
                             const SizedBox(height: 16),
                             SizedBox(
@@ -2758,6 +2790,32 @@ Can you beat me? 🚀
                                 ),
                               ),
                             ],
+                          ),
+                        ],
+                        if (_isDailyChallenge) ...[
+                          const SizedBox(height: 18),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: FilledButton.icon(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.check_circle_rounded,
+                                  size: 18),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 0,
+                              ),
+                              label: Text(
+                                _t('DONE', 'সম্পন্ন', 'पूर्ण'),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5),
+                              ),
+                            ),
                           ),
                         ],
                         if (_workoutStep != null) ...[
@@ -3140,25 +3198,25 @@ class _ColorOptionState extends State<_ColorOption> {
     final compact = widget.compact;
     final height = compact ? 58.0 : 74.0;
     final fontSize = compact ? 16.0 : 20.0;
+    final radius = compact ? 20.0 : 24.0;
+    final lip = _pressed ? (compact ? 2.0 : 3.0) : (compact ? 6.0 : 9.0);
 
-    final Color fillTop;
-    final Color fillBottom;
+    final Color faceTop;
+    final Color faceBottom;
     if (isDark) {
-      fillTop =
-          Color.lerp(const Color(0xFF31445F), base, _pressed ? 0.20 : 0.04)!;
-      fillBottom =
-          Color.lerp(const Color(0xFF0C1420), base, _pressed ? 0.30 : 0.08)!;
+      faceTop = Color.lerp(base, const Color(0xFF101A2B), 0.42)!;
+      faceBottom = Color.lerp(base, const Color(0xFF070C16), 0.58)!;
     } else {
-      fillTop =
-          Color.lerp(const Color(0xFF3B4A5E), base, _pressed ? 0.16 : 0.03)!;
-      fillBottom =
-          Color.lerp(const Color(0xFF18212C), base, _pressed ? 0.24 : 0.06)!;
+      faceTop = Color.lerp(base, const Color(0xFF121A28), 0.38)!;
+      faceBottom = Color.lerp(base, const Color(0xFF0A111C), 0.55)!;
     }
+    final lipTop = Color.lerp(base, Colors.black, 0.62)!;
+    final lipBottom = Color.lerp(base, Colors.black, 0.78)!;
 
     return Opacity(
       opacity: widget.enabled ? 1 : 0.45,
       child: AnimatedScale(
-        scale: _pressed ? 0.95 : 1.0,
+        scale: _pressed ? 0.97 : 1.0,
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOutCubic,
         child: GestureDetector(
@@ -3177,90 +3235,119 @@ class _ColorOptionState extends State<_ColorOption> {
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [fillTop, fillBottom],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [lipTop, lipBottom],
               ),
-              borderRadius: BorderRadius.circular(compact ? 22 : 26),
+              borderRadius: BorderRadius.circular(radius),
               border: Border.all(
-                color: Colors.white.withValues(alpha: _pressed ? 0.35 : 0.15),
+                color: base.withValues(alpha: _pressed ? 0.55 : 0.8),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.18),
+                  color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.25),
+                  blurRadius: _pressed ? 6 : 16,
+                  offset: Offset(0, _pressed ? 4 : 10),
+                ),
+                BoxShadow(
+                  color: base.withValues(alpha: _pressed ? 0.12 : 0.26),
                   blurRadius: _pressed ? 8 : 18,
-                  offset: Offset(0, _pressed ? 3 : 9),
                 ),
               ],
             ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: height * 0.45,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.white
-                              .withValues(alpha: _pressed ? 0.10 : 0.16),
-                          Colors.white.withValues(alpha: 0),
-                        ],
-                      ),
-                    ),
-                  ),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              curve: Curves.easeOutCubic,
+              margin: EdgeInsets.only(bottom: lip),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [faceTop, faceBottom],
                 ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    height: height * 0.22,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0),
-                          Colors.black.withValues(alpha: isDark ? 0.30 : 0.16),
-                        ],
-                      ),
-                    ),
-                  ),
+                borderRadius: BorderRadius.circular(radius - 2),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  width: 1,
                 ),
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        widget.name,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        style: GoogleFonts.montserrat(
-                          fontSize: fontSize,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.8,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                                color: Colors.black.withValues(alpha: 0.6),
-                                blurRadius: 6),
-                            Shadow(
-                                color: Colors.black.withValues(alpha: 0.30),
-                                blurRadius: 14),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: height * 0.45,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white
+                                .withValues(alpha: _pressed ? 0.08 : 0.18),
+                            Colors.white.withValues(alpha: 0),
                           ],
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: compact ? 8 : 10,
+                              height: compact ? 8 : 10,
+                              decoration: BoxDecoration(
+                                color: base,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: base.withValues(alpha: 0.5),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 9),
+                            Text(
+                              widget.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              style: GoogleFonts.montserrat(
+                                fontSize: fontSize,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.8,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.5),
+                                      blurRadius: 4),
+                                  Shadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.20),
+                                      blurRadius: 8),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

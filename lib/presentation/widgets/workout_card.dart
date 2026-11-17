@@ -58,56 +58,22 @@ class QuickBrainWorkoutCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? const [Color(0xFF20262F), Color(0xFF171C24)]
-                : const [Colors.white, Color(0xFFF1F5F9)],
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: isDark ? AppColors.tileDark : AppColors.tileLight,
+        border: isDark ? AppColors.tileBorderDark : AppColors.tileBorderLight,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.32 : 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          border: Border.all(
-            color: isDark
-                ? AppColors.gamingBorder
-                : Colors.black.withValues(alpha: 0.08),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.neonLime.withValues(
-                  alpha: isDark ? 0.14 : 0.10),
-              blurRadius: 26,
-              spreadRadius: -6,
-              offset: const Offset(0, 10),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.06),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -46,
-              top: -52,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      AppColors.neonLime.withValues(
-                          alpha: isDark ? 0.14 : 0.10),
-                      AppColors.neonLime.withValues(alpha: 0.0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Padding(
+        ],
+      ),
+      child: Stack(
+        children: [
+          Padding(
+
               padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
               child: Row(
                 children: [
@@ -124,12 +90,12 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? AppColors.gamingBg.withValues(alpha: 0.55)
-                                  : Colors.white.withValues(alpha: 0.9),
+                                  ? AppColors.tileRaisedDark
+                                  : AppColors.tileRaisedLight,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: lime.withValues(
-                                    alpha: isDark ? 0.38 : 0.42),
+                                    alpha: isDark ? 0.55 : 0.45),
                               ),
                             ),
                             child: Row(
@@ -151,31 +117,8 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 9),
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: titleWord,
-                                style: TextStyle(
-                                  color: lime,
-                                  shadows: [
-                                    Shadow(
-                                      color: isDark
-                                          ? Colors.black.withValues(alpha: 0.6)
-                                          : Colors.white.withValues(alpha: 0.7),
-                                      blurRadius: 8,
-                                    ),
-                                    Shadow(
-                                      color: lime.withValues(
-                                          alpha: isDark ? 0.35 : 0.25),
-                                      blurRadius: 14,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              TextSpan(text: titleSuffix),
-                            ],
-                          ),
+                        Text(
+                          '$titleWord$titleSuffix',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -195,7 +138,8 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             height: 1.25,
-                            color: textSecondary,
+                            color:
+                                textSecondary.withValues(alpha: 0.85),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -244,32 +188,13 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   SizedBox(
-                    width: 118,
-                    height: 118,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 112,
-                          height: 112,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: RadialGradient(
-                              colors: [
-                                AppColors.neonLime.withValues(
-                                    alpha: isDark ? 0.16 : 0.12),
-                                AppColors.neonLime.withValues(alpha: 0.0),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SvgPicture.asset(
-                          emblemAsset,
-                          width: 116,
-                          height: 116,
-                          fit: BoxFit.contain,
-                        ),
-                      ],
+                    width: 132,
+                    height: 132,
+                    child: SvgPicture.asset(
+                      emblemAsset,
+                      width: 128,
+                      height: 128,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ],

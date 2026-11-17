@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Clean, borderless game icon with a soft duotone fill and a faint glow.
+/// Clean, borderless game icon with a soft duotone fill and a restrained halo.
 ///
-/// Replaces the old bordered squircle/token so tiles stay visually quiet and
-/// the game title remains the focal point.
+/// Kept deliberately quiet so it reads as a flat-shaded 2.5D mark on a matte
+/// modular tile instead of competing with the card title.
 class SoftDuotoneIcon extends StatelessWidget {
   final IconData icon;
   final Color accent;
@@ -23,7 +23,7 @@ class SoftDuotoneIcon extends StatelessWidget {
     final top = Color.lerp(accent, Colors.white, isDark ? 0.32 : 0.10)!;
     final bottom =
         isDark ? accent : Color.lerp(accent, Colors.black, 0.18)!;
-    final glyphSize = size * 0.74;
+    final glyphSize = size * 0.82;
 
     return SizedBox(
       width: size,
@@ -38,7 +38,7 @@ class SoftDuotoneIcon extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  accent.withValues(alpha: isDark ? 0.20 : 0.12),
+                  accent.withValues(alpha: isDark ? 0.08 : 0.06),
                   accent.withValues(alpha: 0.0),
                 ],
               ),

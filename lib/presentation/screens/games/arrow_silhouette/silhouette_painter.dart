@@ -245,9 +245,9 @@ class SilhouettePainter extends CustomPainter {
         ? points
         : points.sublist(0, max(1, (points.length * build).ceil()));
 
-    final shaftWidth = cellSize * 0.22;
+    final shaftWidth = cellSize * 0.18;
     final headLength = cellSize * 1.0;
-    final headWidth = shaftWidth * 2.2;
+    final headWidth = shaftWidth * 2.65;
 
     final fillColor =
         isBlocked ? const Color(0xFFFF1A3C) : (highlighted || showHint ? Colors.amber.shade400 : color);
