@@ -1006,9 +1006,18 @@ class OneLineGenerator {
       Offset(0.18, 0.76),
       Offset(0.50, 0.97),
     ], const [
-      _Link(1, 2), _Link(2, 3), _Link(3, 4), _Link(4, 1),
-      _Link(0, 1), _Link(0, 2), _Link(0, 3), _Link(0, 4),
-      _Link(5, 1), _Link(5, 2), _Link(5, 3), _Link(5, 4),
+      _Link(1, 2),
+      _Link(2, 3),
+      _Link(3, 4),
+      _Link(4, 1),
+      _Link(0, 1),
+      _Link(0, 2),
+      _Link(0, 3),
+      _Link(0, 4),
+      _Link(5, 1),
+      _Link(5, 2),
+      _Link(5, 3),
+      _Link(5, 4),
     ]);
   }
 
@@ -1024,10 +1033,22 @@ class OneLineGenerator {
       Offset(0.66, 0.66),
       Offset(0.34, 0.66),
     ], const [
-      _Link(0, 1), _Link(1, 2), _Link(2, 3), _Link(3, 0),
-      _Link(4, 5), _Link(5, 6), _Link(6, 7), _Link(7, 4),
-      _Link(0, 4), _Link(0, 7), _Link(1, 5), _Link(1, 4),
-      _Link(2, 6), _Link(2, 5), _Link(3, 7), _Link(3, 6),
+      _Link(0, 1),
+      _Link(1, 2),
+      _Link(2, 3),
+      _Link(3, 0),
+      _Link(4, 5),
+      _Link(5, 6),
+      _Link(6, 7),
+      _Link(7, 4),
+      _Link(0, 4),
+      _Link(0, 7),
+      _Link(1, 5),
+      _Link(1, 4),
+      _Link(2, 6),
+      _Link(2, 5),
+      _Link(3, 7),
+      _Link(3, 6),
     ]);
   }
 
@@ -1048,10 +1069,22 @@ class OneLineGenerator {
       Offset(0.605, 0.86),
       Offset(0.815, 0.86),
     ], const [
-      _Link(0, 5), _Link(5, 1), _Link(0, 9), _Link(9, 1),
-      _Link(1, 6), _Link(6, 2), _Link(1, 10), _Link(10, 2),
-      _Link(2, 7), _Link(7, 3), _Link(2, 11), _Link(11, 3),
-      _Link(3, 8), _Link(8, 4), _Link(3, 12), _Link(12, 4),
+      _Link(0, 5),
+      _Link(5, 1),
+      _Link(0, 9),
+      _Link(9, 1),
+      _Link(1, 6),
+      _Link(6, 2),
+      _Link(1, 10),
+      _Link(10, 2),
+      _Link(2, 7),
+      _Link(7, 3),
+      _Link(2, 11),
+      _Link(11, 3),
+      _Link(3, 8),
+      _Link(8, 4),
+      _Link(3, 12),
+      _Link(12, 4),
     ]);
   }
 
@@ -1129,13 +1162,17 @@ class OneLineGenerator {
       ]),
       _fig('Heart', [_heartLoop()]),
       _fig('Cat', [_catHeadLoop()]),
+      _fig('Swallow', [
+        _swallowBodyLoop(),
+        _swallowUpperWingLoop(),
+        _swallowLowerWingLoop(),
+      ]),
       _fig('Tree', [_treeLoop()]),
       _fig('Crown', [_crownLoop()]),
       _fig('Diamond', [_diamondLoop(), _diamondInnerLoop()]),
       _fig('Fish', [_fishBodyLoop(), _fishTailLoop()]),
       _fig('Boat', [_boatHullLoop(), _boatSailLoop()]),
       _fig('Rocket', [_rocketLoop(), _rocketLeftFin(), _rocketRightFin()]),
-      _fig('Leaf', [_leafLoop()]),
       _fig('Key', [_keyLoop()]),
       _fig('Bird', [_birdLoop()]),
 
@@ -1163,8 +1200,40 @@ class OneLineGenerator {
     ];
     // Difficulty climbs with edge count — ship the simplest first.
     figures.sort((a, b) => a.links.length.compareTo(b.links.length));
+    // Level 4 is the first "real" figure: a swallow in flight. It is
+    // deliberately richer than the three warm-up outlines before it.
+    final swallow =
+        figures.removeAt(figures.indexWhere((f) => f.name == 'Swallow'));
+    figures.insert(3, swallow);
     return figures;
   }
+
+  /// Symmetric swallow body: pointed beak, slim torso, forked tail.
+  static List<Offset> _swallowBodyLoop() => const [
+        Offset(0.08, 0.50),
+        Offset(0.30, 0.40),
+        Offset(0.56, 0.42),
+        Offset(0.90, 0.30),
+        Offset(0.74, 0.50),
+        Offset(0.90, 0.70),
+        Offset(0.56, 0.58),
+        Offset(0.30, 0.60),
+      ];
+
+  /// Each wing shares exactly one body vertex, so degrees stay even.
+  static List<Offset> _swallowUpperWingLoop() => const [
+        Offset(0.56, 0.42),
+        Offset(0.46, 0.10),
+        Offset(0.72, 0.12),
+        Offset(0.66, 0.26),
+      ];
+
+  static List<Offset> _swallowLowerWingLoop() => const [
+        Offset(0.56, 0.58),
+        Offset(0.46, 0.90),
+        Offset(0.72, 0.88),
+        Offset(0.66, 0.74),
+      ];
 
   /// Builds a figure from closed loops, merging coincident points into
   /// shared vertices and dropping duplicate edges, then fitting it into
@@ -1231,10 +1300,7 @@ class OneLineGenerator {
     for (var i = 0; i < 60; i++) {
       final t = i * 2 * pi / 60;
       final x = 16 * pow(sin(t), 3).toDouble();
-      final y = 13 * cos(t) -
-          5 * cos(2 * t) -
-          2 * cos(3 * t) -
-          cos(4 * t);
+      final y = 13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t);
       raw.add(Offset(x, -y)); // flip y so the point sits at the bottom
     }
     return _resampleLoop(raw, n);
@@ -1376,17 +1442,6 @@ class OneLineGenerator {
         Offset(0.64, 0.94),
       ];
 
-  static List<Offset> _leafLoop() => const [
-        Offset(0.50, 0.06),
-        Offset(0.78, 0.24),
-        Offset(0.88, 0.54),
-        Offset(0.68, 0.84),
-        Offset(0.44, 0.94),
-        Offset(0.24, 0.78),
-        Offset(0.16, 0.46),
-        Offset(0.28, 0.20),
-      ];
-
   static List<Offset> _keyLoop() => const [
         Offset(0.10, 0.50), // bow left
         Offset(0.14, 0.30),
@@ -1423,11 +1478,20 @@ class OneLineGenerator {
   static _Skeleton _lattice() {
     final pts = _gridPoints(3);
     const links = [
-      _Link(0, 1), _Link(1, 2), _Link(3, 4), _Link(4, 5),
-      _Link(6, 7), _Link(7, 8),
-      _Link(0, 3), _Link(3, 6), _Link(1, 4), _Link(4, 7),
-      _Link(2, 5), _Link(5, 8),
-      _Link(1, 3), _Link(5, 7),
+      _Link(0, 1),
+      _Link(1, 2),
+      _Link(3, 4),
+      _Link(4, 5),
+      _Link(6, 7),
+      _Link(7, 8),
+      _Link(0, 3),
+      _Link(3, 6),
+      _Link(1, 4),
+      _Link(4, 7),
+      _Link(2, 5),
+      _Link(5, 8),
+      _Link(1, 3),
+      _Link(5, 7),
     ];
     return _fitSkeleton('Lattice', pts, links);
   }
@@ -1685,8 +1749,8 @@ class OneLineGenerator {
     final startVertex =
         startAnywhere ? 0 : _chooseStartVertex(vertices, edges, sk.startHint);
 
-    final solution = hierholzer(
-        vertices.length, edges, startAnywhere ? null : startVertex);
+    final solution =
+        hierholzer(vertices.length, edges, startAnywhere ? null : startVertex);
     if (solution == null || solution.length != edges.length + 1) return null;
 
     final par = max(6, edges.length * 5);

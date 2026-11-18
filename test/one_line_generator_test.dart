@@ -123,7 +123,8 @@ void main() {
         final level = gen.generateLevel(n);
         expect(level.startAnywhere, isFalse,
             reason: 'Level $n should be start-locked');
-        expect(level.startVertex, inInclusiveRange(0, level.vertices.length - 1),
+        expect(
+            level.startVertex, inInclusiveRange(0, level.vertices.length - 1),
             reason: 'Level $n startVertex out of range');
         expect(level.solution.first, level.startVertex,
             reason: 'Level $n solution must begin at the locked start');
@@ -200,7 +201,7 @@ void main() {
         1: 'House',
         2: 'Tree',
         3: 'Boat',
-        4: 'Leaf',
+        4: 'Swallow',
         5: 'Crown',
         6: 'Diamond',
         7: 'Fish',
@@ -251,6 +252,12 @@ void main() {
       var prev = 0;
       for (int i = 1; i <= 31; i++) {
         final e = gen.generateLevel(i).edges.length;
+        // Level 4 is a deliberate showcase spike (the swallow figure),
+        // so resume the ramp from level 5 onwards.
+        if (i == 5) {
+          prev = e;
+          continue;
+        }
         expect(e, greaterThanOrEqualTo(prev),
             reason: 'Level $i ($e edges) should not be easier than '
                 'level ${i - 1} ($prev edges)');

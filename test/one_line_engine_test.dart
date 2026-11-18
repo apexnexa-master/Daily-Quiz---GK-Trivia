@@ -1,11 +1,37 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gk_quiz_app/presentation/screens/games/one_line/one_line_engine.dart';
 import 'package:gk_quiz_app/presentation/screens/games/one_line/one_line_generator.dart';
+import 'package:gk_quiz_app/presentation/screens/games/one_line/one_line_models.dart';
 
 void main() {
   final gen = OneLineGenerator();
 
   group('OneLineEngine', () {
+    test('final parallel edge completes instead of being read as undo', () {
+      const level = OneLineLevel(
+        number: 99,
+        name: 'parallel pair',
+        difficulty: 'test',
+        vertices: [
+          OneLineVertex(id: 0, position: Offset.zero),
+          OneLineVertex(id: 1, position: Offset(1, 1)),
+        ],
+        edges: [
+          OneLineEdge(id: 0, a: 0, b: 1),
+          OneLineEdge(id: 1, a: 0, b: 1),
+        ],
+        solution: [0, 1, 0],
+        suggestedStarts: [0],
+        parSeconds: 10,
+      );
+      final engine = OneLineEngine()..reset(level);
+      expect(engine.startAt(0), isTrue);
+      expect(engine.moveTo(1), 'traced');
+      expect(engine.isComplete, isFalse);
+      expect(engine.moveTo(0), 'traced');
+      expect(engine.isComplete, isTrue);
+    });
+
     test('startOnEdge splits the touched segment mid-stroke-free', () {
       final level = gen.generateLevel(1);
       final engine = OneLineEngine()..reset(level);
@@ -21,7 +47,8 @@ void main() {
       expect(engine.tracedCount, 0);
 
       // The split vertex sits at the end of the id space.
-      final maxId = level.vertices.map((v) => v.id).reduce((a, b) => a > b ? a : b);
+      final maxId =
+          level.vertices.map((v) => v.id).reduce((a, b) => a > b ? a : b);
       expect(engine.head, maxId + 1);
     });
 
@@ -90,8 +117,7 @@ void main() {
       final headAfterSplit = engine.head!;
 
       // Trace toward one endpoint, then undo back to the split point.
-      final firstMove =
-          engine.availableMovesFrom(headAfterSplit).first;
+      final firstMove = engine.availableMovesFrom(headAfterSplit).first;
       expect(engine.moveTo(firstMove), 'traced');
       expect(engine.undo(), isTrue);
       expect(engine.path, [headAfterSplit]);
@@ -123,8 +149,7 @@ void main() {
         }
         expect(engine.moveTo(moves.first), 'traced');
       }
-      expect(
-          engine.isComplete || engine.isDeadEnd, isTrue,
+      expect(engine.isComplete || engine.isDeadEnd, isTrue,
           reason: 'Walk must end complete or dead-ended');
     });
 
@@ -134,9 +159,8 @@ void main() {
         final engine = OneLineEngine()..reset(level);
         expect(engine.suggestNextEdge(), isNull,
             reason: 'Level $n: no suggestion before the stroke starts');
-        final startId = level.startAnywhere
-            ? level.vertices.first.id
-            : level.startVertex;
+        final startId =
+            level.startAnywhere ? level.vertices.first.id : level.startVertex;
         expect(engine.startAt(startId), isTrue,
             reason: 'Level $n: legal start rejected');
 
@@ -148,8 +172,7 @@ void main() {
           expect(hint, isNotNull, reason: 'Level $n stalled at step $guard');
           expect(engine.tracedEdgeIds.contains(hint), isFalse,
               reason: 'Level $n hinted an already-traced edge');
-          expect(
-              engine.edgeById(hint!)!.touches(engine.head!), isTrue,
+          expect(engine.edgeById(hint!)!.touches(engine.head!), isTrue,
               reason: 'Level $n hinted an edge away from head');
           expect(engine.moveTo(engine.edgeById(hint)!.other(engine.head!)),
               'traced');

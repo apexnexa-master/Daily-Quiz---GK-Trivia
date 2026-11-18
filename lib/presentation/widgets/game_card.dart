@@ -438,9 +438,7 @@ class GameCard extends StatelessWidget {
         color: isDark ? AppColors.tileRaisedDark : AppColors.tileLight,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDark
-              ? const Color(0xFF46515F)
-              : const Color(0xFFD6DEE9),
+          color: isDark ? const Color(0xFF46515F) : const Color(0xFFD6DEE9),
           width: 1,
         ),
       ),
@@ -510,12 +508,12 @@ class GameCard extends StatelessWidget {
       return SizedBox(height: compact ? 16 : 18);
     }
 
-    final tint = isMuted
-        ? (isDark ? Colors.white38 : Colors.black38)
-        : accent;
+    final tint = isMuted ? (isDark ? Colors.white38 : Colors.black38) : accent;
     final textColor = isMuted
         ? (isDark ? Colors.white38 : Colors.black38)
-        : (isDark ? Colors.white.withValues(alpha: 0.90) : AppColors.textPrimaryLight);
+        : (isDark
+            ? Colors.white.withValues(alpha: 0.90)
+            : AppColors.textPrimaryLight);
 
     return Container(
       constraints: const BoxConstraints(maxWidth: 260),
