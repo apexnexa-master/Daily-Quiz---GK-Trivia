@@ -8,6 +8,23 @@ class OneLineNavigation {
   static const double maxOffAxis = 1.15;
   static const double commitAt = 0.70;
 
+  static int? chooseStartVertex({
+    required Map<int, Offset> positions,
+    required Offset pointer,
+    required double snapRadius,
+  }) {
+    int? best;
+    var bestDistance = snapRadius;
+    for (final entry in positions.entries) {
+      final distance = (pointer - entry.value).distance;
+      if (distance <= bestDistance) {
+        bestDistance = distance;
+        best = entry.key;
+      }
+    }
+    return best;
+  }
+
   static ({int edgeId, int farId, double t})? choose({
     required Offset pointer,
     required int headId,

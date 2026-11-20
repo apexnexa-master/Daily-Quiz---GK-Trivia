@@ -1,0 +1,61 @@
+Both ends meet, but the figure isn't finished
+​Verdict: Yes — this is actually a classic "dead-end" trap in one-line puzzles. In graph theory (Eulerian paths/circuits), a player can close a sub-loop early and strand unvisited edges.
+​Crucial nuance: Don't trigger an instant "Game Over!" the millisecond the stroke touches a visited vertex if there are still valid unvisited edges leaving that vertex! A player might legally pass through a junction on their way to another unvisited branch. Only mark it as a stuck/dead-end state when the player reaches a node with zero remaining unvisited incident edges while the total graph still has unvisited edges.
+​Other "Wrong" States Worth Considering
+​Trying to retrace an already-drawn edge: Block movement along used edges (or flash the used edge red with a soft buzz/shake) rather than instantly failing on a 2-pixel jitter.
+​Leaving the playable track / straying too far: Either snap smoothly along the valid graph edges (super popular and forgiving in casual mobile games) or show a subtle warning glow if they drag way off-path. Edge-snapping usually makes puzzles feel much smoother on touchscreens.
+​2. What Figures & Sketches Users Enjoy Most
+​Players get bored if every level is just a random polygon. Mix recognizable silhouettes with clever graph traps:
+​1. Everyday Objects & Icons: Houses, envelopes, coffee mugs, umbrellas, keys, lightbulbs, bicycles, anchors, crowns. Easy to recognize at a glance, so players focus on route planning.
+​2. Cute Animals & Creatures: Cats, foxes, owls, fish, butterflies, tortoises, dinosaurs. High "reveal" satisfaction once the final line completes.
+​3. Geometric & Optical Shapes: Stars, diamonds, hourglasses, interlocking triangles, spiral-like loops, origami-style folds. Great for mid-to-late levels where pure logic shines.
+​4. Themed Packs / Chapters: Grouping levels into worlds (e.g., Nature, Travel, Food, Architecture) gives players a sense of collection and progression.
+​3. How to Generate Better, Non-Repeating Designs
+​If you hand-draw 50 levels, you'll run out of ideas — and if you randomly generate graphs without rules, some levels will be impossible to draw in one stroke.
+​The Math Rule Behind Every Valid Level (Euler's Rule)
+​A connected figure can be drawn in one continuous stroke if and only if:
+​0 vertices have an odd number of connected edges (Eulerian circuit — you can start and end anywhere, often at the same point), OR
+​Exactly 2 vertices have an odd number of connected edges (Eulerian trail — you must start at one odd vertex and end at the other).
+​If a shape has 4 or more odd-degree vertices, it is mathematically impossible in a single non-retracing line!
+​Practical Ways to Keep Designs Fresh & Non-Repeating
+​Template + Perturbation (Procedural Variation): Start from clean base templates (star, house, hexagon grid, bowtie, etc.) and vary vertex positions, subdivide edges (adding a midpoint node splits an edge into two, flipping the parity of adjacent nodes predictably), or toggle optional bridges/diagonals while verifying odd-vertex count is 0 or 2.
+​Parametric / Grid-Based Generator: Build a small grid or radial hub (e.g., 6–12 nodes), carve a valid Eulerian walk/circuit using a graph solver/validator at level-creation time (not at runtime), and deduplicate designs by checking canonical graph structure/hash so levels don't repeat.
+​Mechanic Twists Over Pure Shape Spam: Once players master basic shapes, introduce one-way directional edges, portal/jump nodes, or multi-hit edges (edges that must be crossed twice). A small set of clean shapes + new mechanics creates dozens of non-repeating puzzles without bloating art assets.
+
+
+
+Great one-line puzzle games follow a classic "teach → twist → master" loop. Instead of making levels harder just by turning them into unreadable hairballs of lines, increase difficulty by introducing new graph rules and route-planning traps every 10–15 levels.
+​1. Special Mechanics (To Keep Levels Fresh)
+​Introduce one mechanic per world/chapter. Each mechanic changes how the player reads a shape without requiring messy art:
+​Multi-Pass Edges (Double/Triple Lines): Marked with parallel stripes or a small x2 badge. The player must traverse that edge twice before it clears. Great for symmetrical shapes like butterflies or hourglasses where you need to "cross back" through a bottleneck.
+​One-Way Directional Edges: Marked with chevrons (>>>). Can only be traced in the arrow's direction. Immediately turns an open-ended symmetric shape into a strict routing puzzle.
+​Color-Matched Portals / Warp Nodes: Two nodes share a distinct color/ring. Entering one teleports the stroke out of the paired node without lifting the finger—allowing disconnected sub-figures to be solved in one continuous run.
+​Switch / Gate Edges: Stepping on a trigger node unlocks a dashed barrier edge elsewhere on the board (or toggles alternating bridges open/closed). Forces players to plan their visit order, not just edge coverage.
+​Fixed Start / End Pins: A glowing "Start" anchor or "Finish" flag on specific nodes. Removes the guesswork of finding odd-degree nodes on tricky shapes while forcing a specific path around traps.
+​2. Difficulty Progression Roadmap (100-Level Blueprint)
+​Pace difficulty in sawtooth waves rather than a steep wall: introduce a mechanic in an easy level, ramp up complexity for 8–10 levels, then give a breezy "reward silhouette" (like a cute animal or landmark) before the next twist.
+
+
+
+
+
+Stage / Levels Focus & New Mechanic Graph Complexity Player Skill Trained
+1–10: Onboarding Pure single-stroke tracing; obvious silhouettes (house, star, envelope). 4–7 nodes, 5–10 edges; 0 odd nodes (start anywhere) in levels 1–5, then 2 odd nodes. Discovering the "odd-node" starting rule naturally without math jargon.
+11–25: Dead-End Traps Introduce sub-loop traps (closing an inner triangle strands outer wings). 7–11 nodes, 11–16 edges; multiple intersecting loops. Look-ahead planning; clearing outer loops before sealing central hubs.
+26–40: One-Way Edges Add 1–3 directional arrows per figure. 8–12 nodes, 12–18 edges. Working backward from mandatory exit/entry arrows.
+41–55: Double-Pass Edges Add x2 bridges connecting two halves of a figure. 9–14 nodes, 14–22 edges. Managing bridge crossings so you don't strand yourself on the wrong side.
+56–70: Warp Portals Two-part figures (e.g., sun + cloud, key + lock) linked by 1–2 portal pairs. 10–15 nodes across 2 clusters. Treating two separate shapes as one unified route.
+71–85: Switch Gates Pressure-plate nodes that unlock locked segments mid-stroke. 10–16 nodes, 16–24 edges. Sequential dependency planning ("hit A before reaching B").
+86–100: Mastery Mix Combine 2 mechanics per level (e.g., One-Way + Double-Pass, or Portals + Gates). 12–18 nodes, 18–28 edges; clean iconic themes. Full spatial synthesis and multi-step deduction.
+
+
+
+
+
+Retention Loops That Keep Players Hooked
+​3-Tier Level Reveals: Show a faint dashed blueprint before drawing; as the player traces, fill the lines with glowing neon/ink; upon completion, morph the line art into a colored, animated illustration (e.g., the wireframe cat blinks and wags its tail).
+​Smart, Non-Spoiling Hints: Instead of drawing the whole solution for a stuck player, offer a tiered hint:
+​1. First tap: Highlight the required starting node(s) with a pulsing ring.
+​2. Second tap: Show the first 3–4 moves only.
+​Daily "One-Shot" Challenge: A single bespoke figure each day with a streak counter and custom ink/line trail skins unlocked every 7-day streak.
+​Zero-Friction Retry: Keep an instant "Undo 1 step" button (limited or recharge-based) and a single-tap reset—never show a "You Lose" screen that interrupts muscle memory.

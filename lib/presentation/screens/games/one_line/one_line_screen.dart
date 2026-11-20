@@ -1,9 +1,10 @@
 // lib/presentation/screens/games/one_line/one_line_screen.dart
 //
 // One-Line Drawing Puzzle — trace the whole figure with a single
-// continuous stroke (Eulerian circuit). Grab the outline at the glowing
-// start (or anywhere on tutorial levels) and drag all the way to the end
-// without lifting, closing a loop early, or doubling back. A broken rule
+// continuous stroke (Eulerian circuit/trail). Grab the outline wherever
+// you think the stroke should begin — no start point is revealed — and
+// drag all the way to the end without lifting, closing a loop early,
+// or doubling back. A broken rule
 // stamps a red cross and restarts the level from the beginning.
 // Progress persists locally and in Firestore; solved levels stay
 // replayable.
@@ -94,13 +95,15 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
   late final AnimationController _outlineIn; // intro: outline draws itself
   late final AnimationController _finishFlare; // success tick anim
   late final AnimationController _confetti; // one-shot victory burst
-  late final AnimationController _introSweep; // one-shot start hint
   late final AnimationController _failFlare; // red cross stamp
   late final AnimationController _pulse; // marker breathing + win comet
 
-  static const Color _accent = Color(0xFFFFD54F);
-  static const Color _success = Color(0xFF34D399);
-  static const Color _hintBlue = Color(0xFF38BDF8);
+  Color get _accent =>
+      context.isDarkMode ? const Color(0xFFFFD54F) : const Color(0xFFA86B00);
+  Color get _success =>
+      context.isDarkMode ? const Color(0xFF34D399) : AppColors.success;
+  Color get _hintBlue =>
+      context.isDarkMode ? const Color(0xFF38BDF8) : const Color(0xFF2563EB);
 
   bool get _isBn => _lang == 'bn';
   bool get _isHi => _lang == 'hi';
@@ -121,8 +124,6 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
         vsync: this, duration: const Duration(milliseconds: 700));
     _confetti = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1800));
-    _introSweep = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1500));
     _failFlare = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 500));
     _pulse = AnimationController(
@@ -145,7 +146,6 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
     _outlineIn.dispose();
     _finishFlare.dispose();
     _confetti.dispose();
-    _introSweep.dispose();
     _failFlare.dispose();
     _pulse.dispose();
     super.dispose();
@@ -195,7 +195,6 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
     _pulse.stop();
     _finishFlare.reset();
     _confetti.reset();
-    _introSweep.reset();
     _failFlare.reset();
     _resultWord = null;
     _outlineIn.duration =
@@ -212,7 +211,6 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
       _elapsedSeconds = 0;
     });
     _outlineIn.forward(from: 0);
-    _introSweep.forward(from: 0);
     _pulse.repeat();
     _startClock();
   }
@@ -289,7 +287,7 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
           .then((p) => p.setInt(_bestScoreKey, score));
     }
 
-    GameSfxService.instance.play(GameSfx.levelUp);
+    GameSfxService.instance.play(GameSfx.success);
     HapticFeedback.mediumImpact();
     _finishFlare.forward(from: 0);
     _confetti.forward(from: 0);
@@ -394,19 +392,14 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
     _hintEdgeId = null;
   }
 
-  int? _startingHintEdge() {
-    final solution = _level.solution;
-    if (solution.length < 2) return null;
-    return _edgeBetween(solution[0], solution[1])?.id;
-  }
-
   void _showHint() {
-    if (_phase != _Phase.playing || _engine.isComplete) return;
+    if (_phase != _Phase.playing || !_engine.started || _engine.isComplete) {
+      return;
+    }
     if (_hintsUsed >= _maxHints) return;
-    final edgeId =
-        _engine.started ? _engine.suggestNextEdge() : _startingHintEdge();
+    final edgeId = _engine.suggestNextEdge();
     if (edgeId == null) return;
-    GameSfxService.instance.play(GameSfx.tap);
+    GameSfxService.instance.play(GameSfx.hint);
     HapticFeedback.selectionClick();
     _setStateSafe(() {
       _hintsUsed++;
@@ -482,13 +475,6 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
 
   double _snapRadius(Size size) =>
       (size.shortestSide * 0.085).clamp(24.0, 46.0).toDouble();
-
-  OneLineEdge? _edgeBetween(int a, int b) {
-    for (final e in _engine.edges) {
-      if ((e.a == a && e.b == b) || (e.a == b && e.b == a)) return e;
-    }
-    return null;
-  }
 
   // ── Input ────────────────────────────────────────────────────────────
 
@@ -588,10 +574,18 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
     final snapR = _snapRadius(box.size);
 
     if (!_engine.started) {
+      final vertexId = OneLineNavigation.chooseStartVertex(
+        positions: pos,
+        pointer: p,
+        snapRadius: snapR,
+      );
+      if (vertexId != null && _engine.startAt(vertexId)) {
+        HapticFeedback.selectionClick();
+        return;
+      }
       final hit = _nearestUntracedEdge(p, pos);
       if (hit != null && hit.dist <= snapR) {
         if (_engine.startOnEdge(hit.edge.id, hit.t)) {
-          GameSfxService.instance.play(GameSfx.tap);
           HapticFeedback.selectionClick();
         }
       }
@@ -674,7 +668,6 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
     final outcome = _engine.moveTo(vertexId);
 
     if (outcome == 'traced') {
-      GameSfxService.instance.play(GameSfx.tap);
       HapticFeedback.selectionClick();
       _hideHint();
     }
@@ -692,7 +685,7 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
 
   void _clearStroke() {
     if (_phase != _Phase.playing || !_engine.started) return;
-    GameSfxService.instance.play(GameSfx.tap);
+    GameSfxService.instance.play(GameSfx.undo);
     _engine.clearPath();
     _hideHint();
     _strokeMoved = false;
@@ -709,7 +702,7 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
 
   @override
   Widget build(BuildContext context) {
-    const isDark = true;
+    final isDark = context.isDarkMode;
     return GameScaffold(
       safeArea: false,
       child: Stack(
@@ -750,11 +743,13 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
           // Opaque backdrop while counting down — the board must not
           // peek through the transparent overlay.
           if (_showCountdown)
-            const Positioned.fill(
+            Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF0A1020), Color(0xFF05070E)],
+                    colors: isDark
+                        ? const [Color(0xFF0A1020), Color(0xFF05070E)]
+                        : const [Color(0xFFF7F9FF), Color(0xFFE6EDFB)],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -793,7 +788,9 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 22, vertical: 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xE6080F1C),
+                      color: context.isDarkMode
+                          ? const Color(0xE6080F1C)
+                          : const Color(0xF2FFFFFF),
                       borderRadius: BorderRadius.circular(AppSpacing.rRound),
                       border: Border.all(color: tint.withValues(alpha: 0.65)),
                       boxShadow: [
@@ -858,17 +855,10 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
               _hudChip(
                 isDark,
                 icon: Icons.grid_view_rounded,
-                label:
-                    '${_t('LEVEL', 'স্তর', 'स्तर')} ${_currentLevelIndex + 1}',
+                label: '${_t('LEVEL', 'স্তর', 'स्तर')} '
+                    '${_currentLevelIndex + 1}',
                 onTap: _showReplaySheet,
                 chevron: true,
-              ),
-              const SizedBox(width: 8),
-              _hudChip(
-                isDark,
-                icon: Icons.timeline_rounded,
-                label: '${_engine.tracedCount}/${_engine.totalEdges}',
-                accent: OneLinePainter.successGreen,
               ),
               const SizedBox(width: 8),
               _hudChip(
@@ -955,17 +945,18 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
           _outlineIn,
           _finishFlare,
           _confetti,
-          _introSweep,
           _failFlare,
           _pulse,
         ]),
         builder: (context, _) {
           return Container(
             key: _boardKey,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: RadialGradient(
                 radius: 0.95,
-                colors: [Color(0xFF111B30), Color(0xFF05070E)],
+                colors: isDark
+                    ? const [Color(0xFF111B30), Color(0xFF05070E)]
+                    : const [Colors.white, AppColors.bgLight],
               ),
             ),
             child: CustomPaint(
@@ -987,10 +978,11 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
                       : null,
                   winGlow: _finishFlare.value,
                   pulsePhase: _pulse.isAnimating ? _pulse.value : 0,
-                  introSweepPhase: _introSweep.value,
                   confettiPhase: _confetti.value,
+                  hideNodeDots: _level.hideNodeDots,
                 ),
                 isDark: isDark,
+                accent: _accent,
               ),
               child: const SizedBox.expand(),
             ),
@@ -1017,7 +1009,9 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
                 letterSpacing: 4,
                 color: _lastStars >= 3
                     ? const Color(0xFFFFC93C)
-                    : Colors.white.withValues(alpha: 0.55),
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.55)
+                        : AppColors.textSecondaryLight),
               ),
             ),
             const SizedBox(height: 6),
@@ -1043,7 +1037,7 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
                 style: GoogleFonts.montserrat(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white54,
+                  color: isDark ? Colors.white54 : AppColors.textSecondaryLight,
                 ),
               ),
             const SizedBox(height: 8),
@@ -1098,7 +1092,9 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
             label: '${_t('HINT', 'ইঙ্গিত', 'संकेत')} ${_maxHints - _hintsUsed}',
             onTap: _showHint,
             tint: _hintBlue,
-            enabled: _hintsUsed < _maxHints && !_engine.isComplete,
+            enabled: _engine.started &&
+                _hintsUsed < _maxHints &&
+                !_engine.isComplete,
           ),
           _controlButton(
             isDark,
@@ -1152,7 +1148,8 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
 
   /// Replay sheet listing only already-solved levels.
   Future<void> _showReplaySheet() async {
-    GameSfxService.instance.play(GameSfx.tap);
+    GameSfxService.instance.play(GameSfx.replay);
+    final isDark = context.isDarkMode;
     final prefs = await SharedPreferences.getInstance();
     final solvedMax = math.max(0, (prefs.getInt(_levelKey) ?? 1) - 1);
     if (!mounted) return;
@@ -1167,7 +1164,7 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
         constraints: BoxConstraints(
             maxHeight: MediaQuery.of(sheetCtx).size.height * 0.6),
         decoration: BoxDecoration(
-          color: const Color(0xFF14101F),
+          color: isDark ? const Color(0xFF14101F) : AppColors.cardLight,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: _accent.withValues(alpha: 0.25)),
         ),
@@ -1179,7 +1176,7 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
             children: [
               Row(
                 children: [
-                  const Icon(Icons.replay_rounded, size: 16, color: _accent),
+                  Icon(Icons.replay_rounded, size: 16, color: _accent),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1188,14 +1185,18 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
                       style: GoogleFonts.montserrat(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color:
+                            isDark ? Colors.white : AppColors.textPrimaryLight,
                       ),
                     ),
                   ),
                   GestureDetector(
                     onTap: () => Navigator.pop(sheetCtx),
                     child: Icon(Icons.close_rounded,
-                        size: 18, color: Colors.white.withValues(alpha: 0.4)),
+                        size: 18,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.4)
+                            : AppColors.textTertiaryLight),
                   ),
                 ],
               ),
@@ -1212,7 +1213,10 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
                       ),
                       textAlign: TextAlign.center,
                       style: GoogleFonts.montserrat(
-                          fontSize: 12, color: Colors.white54),
+                          fontSize: 12,
+                          color: isDark
+                              ? Colors.white54
+                              : AppColors.textSecondaryLight),
                     ),
                   ),
                 )
@@ -1237,12 +1241,13 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
   }
 
   Widget _replayDot(int levelNumber, BuildContext sheetCtx) {
+    final isDark = context.isDarkMode;
     final isCurrent = levelNumber == _currentLevelIndex + 1;
     return GestureDetector(
       onTap: () {
         Navigator.pop(sheetCtx);
         if (!isCurrent) {
-          GameSfxService.instance.play(GameSfx.tap);
+          GameSfxService.instance.play(GameSfx.replay);
           _clockTimer?.cancel();
           _setStateSafe(() {
             _attemptsThisLevel = 0;
@@ -1259,7 +1264,11 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isCurrent ? _accent : Colors.white.withValues(alpha: 0.06),
+          color: isCurrent
+              ? _accent
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : AppColors.surfaceElevatedLight),
           border: Border.all(
             color: _accent.withValues(alpha: isCurrent ? 1 : 0.3),
             width: 1.2,
@@ -1269,7 +1278,9 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
             style: GoogleFonts.montserrat(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: isCurrent ? const Color(0xFF26062E) : Colors.white70,
+              color: isCurrent
+                  ? const Color(0xFF26062E)
+                  : (isDark ? Colors.white70 : AppColors.textPrimaryLight),
             )),
       ),
     );

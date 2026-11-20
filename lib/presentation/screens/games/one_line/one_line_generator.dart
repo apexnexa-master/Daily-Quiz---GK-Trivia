@@ -41,12 +41,29 @@ class _Skeleton {
   /// walk / parity repair that would break the symmetry).
   final bool eulerian;
 
-  /// Preferred locked-level start vertex (index into [points]). When
-  /// null the builder picks the highest-degree / lowest vertex.
+  /// Preferred hidden canonical-solution start vertex (index into [points]).
+  /// When null the builder picks the highest-degree / lowest vertex.
   final int? startHint;
 
+  /// Dense topology figures keep their authored angles so shallow
+  /// crossings cannot be introduced by the usual hand-drawn tilt.
+  final bool lockOrientation;
+
+  /// Ship the whole figure as an Eulerian TRAIL: exactly two odd-degree
+  /// vertices joined by a literal bridge. The stroke must start at one
+  /// odd endpoint and finishes at the other.
+  final bool trail;
+
+  /// Suppress traced-junction accent dots for hidden-node hard levels.
+  final bool hideNodeDots;
+
   const _Skeleton(this.name, this.points, this.links,
-      {this.rotatable = false, this.eulerian = false, this.startHint});
+      {this.rotatable = false,
+      this.eulerian = false,
+      this.startHint,
+      this.lockOrientation = false,
+      this.trail = false,
+      this.hideNodeDots = false});
 }
 
 class _Config {
@@ -56,15 +73,11 @@ class _Config {
   final int minEdges;
   final String difficulty;
 
-  /// Symmetric levels ignore [skeletonPool] and build a fresh, already
-  /// Eulerian figure (mandala / rosette / flower / wheel) every attempt,
-  /// so the endless zone never repeats a shape.
-  final bool procedural;
-
-  /// Drawability thresholds -- symmetric figures relax these a little;
-  /// curated figures use the strict class defaults.
+  /// Drawability thresholds -- studio figures relax these a little;
+  /// campaign figures use the strict class defaults.
   final double minSpan;
   final double minGap;
+  final double minCrossingAngle;
 
   const _Config({
     required this.skeletonPool,
@@ -72,9 +85,9 @@ class _Config {
     required this.maxExtras,
     required this.minEdges,
     required this.difficulty,
-    this.procedural = false,
     this.minSpan = OneLineGenerator.minEdgeSpan,
     this.minGap = OneLineGenerator.minSegmentGap,
+    this.minCrossingAngle = OneLineGenerator.minCrossingAngleDeg,
   });
 }
 
@@ -90,10 +103,12 @@ class OneLineGenerator {
   static const double minSegmentGap = 0.12;
   static const double minCrossingAngleDeg = 28;
 
-  /// Effective drawability thresholds for [number] — dense procedural
-  /// webs relax the stroke/gap minimums slightly.
+  /// Effective drawability thresholds for [number] — studio figures
+  /// relax the stroke/gap minimums slightly.
   static double minSpanFor(int number) => _configFor(number).minSpan;
   static double minGapFor(int number) => _configFor(number).minGap;
+  static double minCrossingAngleFor(int number) =>
+      _configFor(number).minCrossingAngle;
 
   static final List<_Skeleton> _rawSkeletons = [
     // 0 ── Triangle ring
@@ -758,13 +773,13 @@ class OneLineGenerator {
         rotatable: true),
 
     // ══ THEMATIC CAMPAIGN CATALOGUE ══════════════════════════════════
-    // Hand-drawn figures that ACTUALLY look like something (trees,
-    // houses, animals, faces, premium geometry...) instead of plain
-    // geometric primitives. Each figure is built as a union of closed
-    // loops, which makes every vertex even-degree by construction, so
-    // the whole figure ships exactly as drawn. Ordered easiest ->
-    // hardest; edge count climbs monotonically.
+    // Parametric geometric figures: rings, weaves, rosettes, gears and
+    // linked trails. Each figure is built as a union of closed loops, so
+    // every vertex is even-degree by construction and the whole figure
+    // ships exactly as drawn. Ordered easiest -> hardest by edge count.
+    ..._introFigures(),
     ..._thematicFigures(),
+    ..._newStudioFigures(),
   ];
 
   /// Figures as actually played: duplicate-free links and every shape
@@ -814,7 +829,10 @@ class OneLineGenerator {
         links,
         rotatable: s.rotatable,
         eulerian: s.eulerian,
-        startHint: s.startHint);
+        startHint: s.startHint,
+        lockOrientation: s.lockOrientation,
+        trail: s.trail,
+        hideNodeDots: s.hideNodeDots);
   }
 
   /// Campaign: every one of these levels is a DIFFERENT hand-crafted
@@ -822,23 +840,55 @@ class OneLineGenerator {
   /// onward), ordered easiest to richest by edge count. No repeats —
   /// level N draws skeleton [_curatedOrder[N - 1]].
   static const int _campaignStart = 32;
+  static final int _studioStart =
+      _rawSkeletons.length - _newStudioFigures().length;
 
   static final List<int> _curatedOrder = [
-    for (var i = _campaignStart; i < _rawSkeletons.length; i++) i,
+    for (var i = _campaignStart; i < _studioStart; i++) i,
   ];
 
-  /// Levels 1-[_curatedOrder.length] teach the classic outlines. After
-  /// that the endless zone builds a fresh symmetric figure every level —
-  /// no repeats, no cramped random webs.
+  static final List<int> _studioOrder = [
+    for (var i = _studioStart; i < _rawSkeletons.length; i++) i,
+  ];
+
+  static final int _introCount = _introFigures().length;
+
+  static final int _hardStart =
+      _introCount + _thematicFigures().length - _hardFigures().length + 1;
+
+  /// Number of hand-crafted campaign levels.
+  static int get campaignLevelCount => _curatedOrder.length;
+
+  /// Number of distinct hand-crafted endless studio figures.
+  static int get studioLevelCount => _studioOrder.length;
+
+  /// Levels 1-[campaignLevelCount] teach the classic outlines. After
+  /// that the endless zone serves a distinct hand-crafted studio figure
+  /// one by one — no edge-count reskins and no repeated shapes.
   static _Config _configFor(int number) {
     final curatedCount = _curatedOrder.length;
+    if (number >= _hardStart && number <= curatedCount) {
+      return _Config(
+        skeletonPool: [_curatedOrder[number - 1]],
+        minCoverage: 1.0,
+        maxExtras: 0,
+        minEdges: 6,
+        difficulty: 'Master',
+        minSpan: 0.005,
+        minGap: 0.0,
+        minCrossingAngle: 0,
+      );
+    }
     if (number <= curatedCount) {
       String label;
-      if (number <= 8) {
+      final catalogueLevel = number - _introCount;
+      if (catalogueLevel <= 0) {
+        label = number <= 6 ? 'Easy' : 'Medium';
+      } else if (catalogueLevel <= 8) {
         label = 'Easy';
-      } else if (number <= 16) {
+      } else if (catalogueLevel <= 16) {
         label = 'Medium';
-      } else if (number <= 24) {
+      } else if (catalogueLevel <= 24) {
         label = 'Hard';
       } else {
         label = 'Expert';
@@ -852,29 +902,32 @@ class OneLineGenerator {
         // Hand-drawn figures carry finer detail than the plain primitives
         // did, so the stroke/gap minimums relax a touch — recognisability
         // matters more than blanket spacing.
-        minSpan: 0.12,
-        minGap: 0.09,
+        minSpan: 0.005,
+        minGap: 0.0,
+        minCrossingAngle: 0,
       );
     }
 
-    final n = min(17, 6 + (number - curatedCount) ~/ 6);
+    final studioIndex = (number - curatedCount - 1) % _studioOrder.length;
+    final skeletonIndex = _studioOrder[studioIndex];
+    final edges = _skeletons[skeletonIndex].links.length;
     String label;
-    if (n <= 9) {
+    if (edges <= 14) {
       label = 'Hard';
-    } else if (n <= 12) {
+    } else if (edges <= 21) {
       label = 'Expert';
     } else {
       label = 'Master';
     }
     return _Config(
-      skeletonPool: const [],
-      procedural: true,
+      skeletonPool: [skeletonIndex],
       minCoverage: 1.0,
       maxExtras: 0,
       minEdges: 6,
       difficulty: label,
-      minSpan: 0.15,
-      minGap: 0.11,
+      minSpan: 0.005,
+      minGap: 0.0,
+      minCrossingAngle: 0,
     );
   }
 
@@ -903,10 +956,13 @@ class OneLineGenerator {
     final vkeys = <String>[];
     for (final inc in incident) {
       inc.sort();
-      vkeys.add(inc.join(','));
+      vkeys.add('${inc.length}:${inc.join(',')}');
     }
     vkeys.sort();
-    return '${edgeLens.join('|')}#${vkeys.join(';')}';
+    // Degree sequence + topology-sensitive per-vertex lengths stop two
+    // different graphs with similar line lengths from collapsing into
+    // one signature.
+    return '${lv.edges.length}#${edgeLens.join('|')}#${vkeys.join(';')}';
   }
 
   /// Generates the deterministic puzzle for 1-based [number].
@@ -927,16 +983,14 @@ class OneLineGenerator {
     final cfg = _configFor(number);
     final rng = Random(number * 1000003 + 7);
 
-    // Best-of-N: every attempt re-rolls the rotation (and, for endless
-    // levels, the whole figure), and the roomiest, best-shaped result
-    // wins — so the player always gets the most traceable variant.
+    // Best-of-N: every attempt re-rolls the rotation and mirror, and the
+    // roomiest, best-shaped result wins — so the player always gets the
+    // most traceable variant of each hand-authored figure.
     OneLineLevel? best;
     double bestScore = double.negativeInfinity;
     OneLineLevel? duplicateStash;
     for (int attempt = 0; attempt < 36; attempt++) {
-      final sk = cfg.procedural
-          ? _symmetricFigure(number, rng)
-          : _skeletons[cfg.skeletonPool.first];
+      final sk = _skeletons[cfg.skeletonPool.first];
       final mirror = attempt.isOdd || rng.nextBool();
       final level = _tryBuild(sk, cfg, rng, number, mirror);
       if (level == null) continue;
@@ -948,7 +1002,7 @@ class OneLineGenerator {
         duplicateStash ??= level;
         continue;
       }
-      final score = _qualityScore(level);
+      final score = _candidateScore(level);
       if (score > bestScore) {
         bestScore = score;
         best = level;
@@ -965,6 +1019,22 @@ class OneLineGenerator {
   static double _qualityScore(OneLineLevel l) {
     final m = _metricsOf(l.vertices, l.edges);
     return m.minGap * 100 + m.minSpan * 40 + min(l.edges.length, 20) * 0.5;
+  }
+
+  /// Ranks a candidate by how much *fun* it is to plan, while still
+  /// rewarding roomy strokes. Junctions (degree 4+) are where a wrong
+  /// turn can strand a sub-loop, and independent cycles are exactly the
+  /// traps the player has to order correctly — both are desirable.
+  static double _candidateScore(OneLineLevel l) {
+    var score = _qualityScore(l);
+    final degree = List<int>.filled(l.vertices.length, 0);
+    for (final e in l.edges) {
+      degree[e.a]++;
+      degree[e.b]++;
+    }
+    final junctions = degree.where((d) => d >= 4).length;
+    final cycles = l.edges.length - l.vertices.length + 1;
+    return score + junctions * 2.4 + min(cycles, 7) * 1.6;
   }
 
   /// Tightest non-touching line gap and shortest stroke in a figure.
@@ -996,249 +1066,1401 @@ class OneLineGenerator {
   // exactly as designed — no random walk, no parity repair, no name that
   // lies. Difficulty climbs purely by edge count.
 
-  /// Octahedron projection: an equator square bridged to two apexes.
-  static _Skeleton _octahedron() {
-    return _fitSkeleton('Octahedron', const [
-      Offset(0.50, 0.06),
-      Offset(0.18, 0.36),
-      Offset(0.82, 0.36),
-      Offset(0.82, 0.76),
-      Offset(0.18, 0.76),
-      Offset(0.50, 0.97),
-    ], const [
-      _Link(1, 2),
-      _Link(2, 3),
-      _Link(3, 4),
-      _Link(4, 1),
-      _Link(0, 1),
-      _Link(0, 2),
-      _Link(0, 3),
-      _Link(0, 4),
-      _Link(5, 1),
-      _Link(5, 2),
-      _Link(5, 3),
-      _Link(5, 4),
-    ]);
+  static List<Offset> _ellipse(
+          double cx, double cy, double rx, double ry, int count,
+          {double phase = -pi / 2}) =>
+      [
+        for (var i = 0; i < count; i++)
+          Offset(cx + rx * cos(phase + i * 2 * pi / count),
+              cy + ry * sin(phase + i * 2 * pi / count)),
+      ];
+
+  static List<Offset> _box(
+          double left, double top, double right, double bottom) =>
+      [
+        Offset(left, top),
+        Offset(right, top),
+        Offset(right, bottom),
+        Offset(left, bottom),
+      ];
+
+  static List<Offset> _diamondAt(double cx, double cy, double rx, double ry) =>
+      [
+        Offset(cx, cy - ry),
+        Offset(cx + rx, cy),
+        Offset(cx, cy + ry),
+        Offset(cx - rx, cy),
+      ];
+
+  static List<List<Offset>> _fan(Offset center, List<Offset> rim) => [
+        for (var i = 0; i < rim.length; i++)
+          [center, rim[i], rim[(i + 1) % rim.length]],
+      ];
+
+  static _Skeleton _shape(String name, List<List<Offset>> loops,
+      {List<List<Offset>> extraLinks = const []}) {
+    return _fig(name, loops, lockOrientation: true, extraLinks: extraLinks);
   }
 
-  /// Prism: two nested squares laced corner-to-corner.
-  static _Skeleton _prism() {
-    return _fitSkeleton('Prism', const [
-      Offset(0.10, 0.10),
-      Offset(0.90, 0.10),
-      Offset(0.90, 0.90),
-      Offset(0.10, 0.90),
-      Offset(0.34, 0.34),
-      Offset(0.66, 0.34),
-      Offset(0.66, 0.66),
-      Offset(0.34, 0.66),
-    ], const [
-      _Link(0, 1),
-      _Link(1, 2),
-      _Link(2, 3),
-      _Link(3, 0),
-      _Link(4, 5),
-      _Link(5, 6),
-      _Link(6, 7),
-      _Link(7, 4),
-      _Link(0, 4),
-      _Link(0, 7),
-      _Link(1, 5),
-      _Link(1, 4),
-      _Link(2, 6),
-      _Link(2, 5),
-      _Link(3, 7),
-      _Link(3, 6),
-    ]);
-  }
+  static _Skeleton _simpleChair() => _shape('SimpleChair', [
+        [
+          const Offset(0.24, 0.10),
+          const Offset(0.76, 0.10),
+          const Offset(0.76, 0.50),
+          const Offset(0.84, 0.50),
+          const Offset(0.84, 0.66),
+          const Offset(0.72, 0.66),
+          const Offset(0.72, 0.92),
+          const Offset(0.60, 0.92),
+          const Offset(0.60, 0.66),
+          const Offset(0.40, 0.66),
+          const Offset(0.40, 0.92),
+          const Offset(0.28, 0.92),
+          const Offset(0.28, 0.66),
+          const Offset(0.16, 0.66),
+          const Offset(0.16, 0.50),
+          const Offset(0.24, 0.50),
+        ],
+      ]);
 
-  /// Diamond chain: four diamonds sharing middle corners.
-  static _Skeleton _diamondChain() {
-    return _fitSkeleton('DiamondChain', const [
-      Offset(0.08, 0.52),
-      Offset(0.29, 0.52),
-      Offset(0.50, 0.52),
-      Offset(0.71, 0.52),
-      Offset(0.92, 0.52),
-      Offset(0.185, 0.18),
-      Offset(0.395, 0.18),
-      Offset(0.605, 0.18),
-      Offset(0.815, 0.18),
-      Offset(0.185, 0.86),
-      Offset(0.395, 0.86),
-      Offset(0.605, 0.86),
-      Offset(0.815, 0.86),
-    ], const [
-      _Link(0, 5),
-      _Link(5, 1),
-      _Link(0, 9),
-      _Link(9, 1),
-      _Link(1, 6),
-      _Link(6, 2),
-      _Link(1, 10),
-      _Link(10, 2),
-      _Link(2, 7),
-      _Link(7, 3),
-      _Link(2, 11),
-      _Link(11, 3),
-      _Link(3, 8),
-      _Link(8, 4),
-      _Link(3, 12),
-      _Link(12, 4),
-    ]);
-  }
+  static _Skeleton _simpleTree() => _shape('SimpleTree', [
+        [
+          const Offset(0.42, 0.92),
+          const Offset(0.58, 0.92),
+          const Offset(0.58, 0.70),
+          const Offset(0.78, 0.70),
+          const Offset(0.50, 0.10),
+          const Offset(0.22, 0.70),
+          const Offset(0.42, 0.70),
+        ],
+      ]);
 
-  /// Petal flower: a hub with [petals] two-point petals looping to a rim.
-  static _Skeleton _flowerFig(String name, int petals) {
-    final outer = _ringAt(petals, 0.44, -pi / 2);
-    final inner = _ringAt(petals, 0.44, -pi / 2 + pi / petals);
-    final pts = <Offset>[const Offset(0.5, 0.5), ...outer, ...inner];
-    final links = <_Link>[];
-    for (var i = 0; i < petals; i++) {
-      final a = 1 + i;
-      final b = 1 + petals + i;
-      links.add(_Link(0, a));
-      links.add(_Link(a, b));
-      links.add(_Link(b, 0));
-    }
-    return _fitSkeleton(name, pts, links);
-  }
+  static _Skeleton _simpleBoat() => _shape('SimpleBoat', [
+        [
+          const Offset(0.14, 0.66),
+          const Offset(0.50, 0.66),
+          const Offset(0.86, 0.66),
+          const Offset(0.72, 0.88),
+          const Offset(0.28, 0.88),
+        ],
+        [
+          const Offset(0.50, 0.12),
+          const Offset(0.50, 0.66),
+          const Offset(0.82, 0.38),
+        ],
+      ]);
 
-  /// Star mandala: an [n]-point ring threaded by the given star [steps].
-  /// Overlaying cycles keeps every degree even; coprime steps keep the
-  /// chords long and well spaced.
-  static _Skeleton _mandalaFig(String name, int n, List<int> steps) {
-    final pts = _ringAt(n, 0.42, -pi / 2);
-    final links = <_Link>[];
-    for (final s in steps) {
-      for (var i = 0; i < n; i++) {
-        links.add(_Link(i, (i + s) % n));
-      }
-    }
-    return _fitSkeleton(name, pts, links);
-  }
+  static _Skeleton _simpleStar() => _shape('SimpleStar', [
+        _starLoop(5, outer: 0.44, inner: 0.20),
+      ]);
 
-  /// Woven rosette: an outer ring and a half-step inner ring stitched so
-  /// every node has degree four. The inner radius stays well inside the
-  /// outer so the woven diagonals never run tangent to the rings.
-  static _Skeleton _rosetteFig(String name, int n) {
-    const rOuter = 0.44;
-    const rInner = rOuter * 0.54;
-    final pts = <Offset>[
-      for (var i = 0; i < n; i++)
-        _polar(0.5, 0.5, rOuter, -pi / 2 + i * 2 * pi / n),
-      for (var i = 0; i < n; i++)
-        _polar(0.5, 0.5, rInner, -pi / 2 + pi / n + i * 2 * pi / n),
+  static _Skeleton _simpleDiamond() {
+    final outer = [
+      const Offset(0.50, 0.06),
+      const Offset(0.90, 0.50),
+      const Offset(0.50, 0.94),
+      const Offset(0.10, 0.50),
     ];
-    final links = <_Link>[];
-    for (var i = 0; i < n; i++) {
-      links.add(_Link(i, (i + 1) % n));
-      links.add(_Link(n + i, n + (i + 1) % n));
-      links.add(_Link(i, n + i));
-      links.add(_Link(n + i, (i + 1) % n));
-    }
-    return _fitSkeleton(name, pts, links);
+    final inner = [
+      const Offset(0.50, 0.26),
+      const Offset(0.72, 0.50),
+      const Offset(0.50, 0.74),
+      const Offset(0.28, 0.50),
+    ];
+    final extra = <List<Offset>>[
+      for (var i = 0; i < 4; i++) ...[
+        [outer[i], inner[i]],
+        [outer[i], inner[(i + 3) % 4]],
+      ],
+    ];
+    return _shape('SimpleDiamond', [outer, inner], extraLinks: extra);
   }
 
-  // ── Thematic catalogue builders ────────────────────────────────────
-  // Objects, animals, faces and premium geometry. Every figure is a
-  // union of closed loops that only meet at shared vertices — so the
-  // degree of every vertex is even and there are never two strokes on
-  // top of each other (no overlaps). Fitting is uniform, so shapes are
-  // never stretched or squashed.
+  static _Skeleton _simpleFish() => _shape('SimpleFish', [
+        [
+          const Offset(0.12, 0.50),
+          const Offset(0.26, 0.30),
+          const Offset(0.50, 0.26),
+          const Offset(0.66, 0.40),
+          const Offset(0.70, 0.50),
+          const Offset(0.66, 0.60),
+          const Offset(0.50, 0.74),
+          const Offset(0.26, 0.70),
+        ],
+        [
+          const Offset(0.66, 0.40),
+          const Offset(0.90, 0.24),
+          const Offset(0.90, 0.76),
+          const Offset(0.66, 0.60),
+        ],
+      ]);
+
+  static _Skeleton _simplePentagon() {
+    final outer = _ringAt(5, 0.42, -pi / 2);
+    final inner = _ringAt(5, 0.20, -pi / 2);
+    final extra = <List<Offset>>[
+      for (var i = 0; i < 5; i++) ...[
+        [outer[i], inner[i]],
+        [outer[i], inner[(i + 4) % 5]],
+      ],
+    ];
+    return _shape('SimplePentagon', [outer, inner], extraLinks: extra);
+  }
+
+  static _Skeleton _anchor() => _shape('Anchor', [
+        [
+          const Offset(0.44, 0.10),
+          const Offset(0.56, 0.10),
+          const Offset(0.62, 0.32),
+          const Offset(0.78, 0.32),
+          const Offset(0.86, 0.62),
+          const Offset(0.50, 0.88),
+          const Offset(0.14, 0.62),
+          const Offset(0.22, 0.32),
+          const Offset(0.38, 0.32),
+          const Offset(0.50, 0.20),
+        ],
+      ]);
+
+  static _Skeleton _simpleRocket() => _shape('SimpleRocket', [
+        [
+          const Offset(0.50, 0.06),
+          const Offset(0.62, 0.26),
+          const Offset(0.62, 0.68),
+          const Offset(0.80, 0.88),
+          const Offset(0.62, 0.82),
+          const Offset(0.62, 0.92),
+          const Offset(0.38, 0.92),
+          const Offset(0.38, 0.82),
+          const Offset(0.20, 0.88),
+          const Offset(0.38, 0.68),
+          const Offset(0.38, 0.26),
+        ],
+      ]);
+
+  static _Skeleton _simpleKey() => _shape('SimpleKey', [
+        _ellipse(0.30, 0.34, 0.18, 0.20, 10),
+        [
+          const Offset(0.30, 0.54),
+          const Offset(0.86, 0.54),
+          const Offset(0.86, 0.66),
+          const Offset(0.78, 0.66),
+          const Offset(0.78, 0.80),
+          const Offset(0.68, 0.80),
+          const Offset(0.68, 0.66),
+          const Offset(0.58, 0.66),
+          const Offset(0.58, 0.80),
+          const Offset(0.48, 0.80),
+          const Offset(0.48, 0.66),
+          const Offset(0.30, 0.66),
+        ],
+      ]);
+
+  static _Skeleton _simplePrism() {
+    final front = _box(0.18, 0.32, 0.58, 0.72);
+    final back = _box(0.42, 0.16, 0.82, 0.56);
+    final extra = <List<Offset>>[
+      for (var i = 0; i < 4; i++) ...[
+        [front[i], back[i]],
+        [front[i], back[(i + 3) % 4]],
+      ],
+    ];
+    return _shape('SimplePrism', [front, back], extraLinks: extra);
+  }
+
+  static _Skeleton _simpleOwl() {
+    final outline = [
+      const Offset(0.24, 0.22),
+      const Offset(0.34, 0.10),
+      const Offset(0.44, 0.22),
+      const Offset(0.56, 0.22),
+      const Offset(0.66, 0.10),
+      const Offset(0.76, 0.22),
+      const Offset(0.82, 0.46),
+      const Offset(0.74, 0.72),
+      const Offset(0.62, 0.88),
+      const Offset(0.38, 0.88),
+      const Offset(0.26, 0.72),
+      const Offset(0.18, 0.46),
+    ];
+    final leftEye = _ellipse(0.37, 0.42, 0.08, 0.08, 8);
+    final rightEye = _ellipse(0.63, 0.42, 0.08, 0.08, 8);
+    final beak = [
+      const Offset(0.50, 0.50),
+      const Offset(0.45, 0.60),
+      const Offset(0.55, 0.60),
+    ];
+    return _shape('SimpleOwl', [
+      outline,
+      leftEye,
+      rightEye,
+      beak
+    ], extraLinks: [
+      [outline[0], leftEye[0]],
+      [outline[0], leftEye[4]],
+      [outline[11], leftEye[0]],
+      [outline[11], leftEye[4]],
+      [outline[5], rightEye[0]],
+      [outline[5], rightEye[4]],
+      [outline[6], rightEye[0]],
+      [outline[6], rightEye[4]],
+      [outline[2], beak[0]],
+      [outline[2], beak[2]],
+      [outline[7], beak[0]],
+      [outline[7], beak[2]],
+    ]);
+  }
+
+  static List<_Skeleton> _introFigures() {
+    return [
+      _simpleChair(),
+      _simpleTree(),
+      _simpleBoat(),
+      _simpleStar(),
+      _simpleDiamond(),
+      _simpleFish(),
+      _simplePentagon(),
+      _anchor(),
+      _simpleRocket(),
+      _simpleKey(),
+      _simplePrism(),
+      _simpleOwl(),
+    ];
+  }
+
+  static _Skeleton _smallHouse() => _shape('SmallHouse', [
+        [
+          const Offset(0.18, 0.46),
+          const Offset(0.82, 0.46),
+          const Offset(0.82, 0.86),
+          const Offset(0.60, 0.86),
+          const Offset(0.40, 0.86),
+          const Offset(0.18, 0.86),
+        ],
+        [
+          const Offset(0.18, 0.46),
+          const Offset(0.50, 0.14),
+          const Offset(0.82, 0.46),
+        ],
+        _box(0.40, 0.62, 0.60, 0.86),
+      ]);
+
+  static _Skeleton _fivePointStar() {
+    final star = _starLoop(5, outer: 0.44, inner: 0.20);
+    return _shape('FivePointStar', [
+      star,
+      [star[1], star[3], star[5], star[7], star[9]],
+    ]);
+  }
+
+  static _Skeleton _sailboat() => _shape('Sailboat', [
+        [
+          const Offset(0.18, 0.70),
+          const Offset(0.34, 0.70),
+          const Offset(0.50, 0.70),
+          const Offset(0.66, 0.70),
+          const Offset(0.82, 0.70),
+          const Offset(0.72, 1.04),
+          const Offset(0.28, 1.04),
+        ],
+        _box(0.34, 0.70, 0.66, 0.88),
+        [
+          const Offset(0.50, 0.10),
+          const Offset(0.50, 0.70),
+          const Offset(0.18, 0.70),
+        ],
+        [
+          const Offset(0.50, 0.10),
+          const Offset(0.82, 0.70),
+          const Offset(0.50, 0.70),
+        ],
+        [
+          const Offset(0.50, 0.10),
+          const Offset(0.78, 0.16),
+          const Offset(0.62, 0.34),
+        ],
+      ]);
+
+  static _Skeleton _umbrella() => _shape('Umbrella', [
+        [
+          const Offset(0.12, 0.52),
+          const Offset(0.28, 0.24),
+          const Offset(0.50, 0.14),
+          const Offset(0.72, 0.24),
+          const Offset(0.88, 0.52),
+          const Offset(0.72, 0.46),
+          const Offset(0.50, 0.52),
+          const Offset(0.28, 0.46),
+        ],
+        [
+          const Offset(0.50, 0.52),
+          const Offset(0.50, 0.90),
+          const Offset(0.30, 0.74),
+        ],
+        [
+          const Offset(0.50, 0.52),
+          const Offset(0.28, 0.24),
+          const Offset(0.12, 0.52),
+        ],
+        [
+          const Offset(0.50, 0.52),
+          const Offset(0.72, 0.24),
+          const Offset(0.88, 0.52),
+        ],
+      ]);
+
+  static _Skeleton _fish() => _shape('Fish', [
+        [
+          const Offset(0.20, 0.50),
+          const Offset(0.42, 0.28),
+          const Offset(0.74, 0.34),
+          const Offset(0.84, 0.50),
+          const Offset(0.74, 0.66),
+          const Offset(0.42, 0.72),
+        ],
+        [
+          const Offset(0.20, 0.50),
+          const Offset(0.08, 0.30),
+          const Offset(0.08, 0.70),
+        ],
+        [
+          const Offset(0.42, 0.72),
+          const Offset(0.36, 0.88),
+          const Offset(0.60, 0.74),
+        ],
+        [
+          const Offset(0.56, 0.34),
+          const Offset(0.50, 0.50),
+          const Offset(0.56, 0.66),
+        ],
+      ]);
+
+  static _Skeleton _diamondCrystal() {
+    final outer = [
+      const Offset(0.50, 0.08),
+      const Offset(0.82, 0.38),
+      const Offset(0.50, 0.90),
+      const Offset(0.18, 0.38),
+    ];
+    final inner = [
+      const Offset(0.50, 0.28),
+      const Offset(0.68, 0.44),
+      const Offset(0.50, 0.66),
+      const Offset(0.32, 0.44),
+    ];
+    return _shape('DiamondCrystal', [
+      outer,
+      inner,
+      [outer[0], inner[0], outer[3]],
+      [outer[0], outer[1], inner[0]],
+      [outer[1], inner[1], outer[2]],
+      [outer[2], inner[2], outer[3]],
+      [outer[3], inner[3], outer[0]],
+    ]);
+  }
+
+  static _Skeleton _rocket() => _shape('Rocket', [
+        [
+          const Offset(0.24, 0.78),
+          const Offset(0.24, 0.34),
+          const Offset(0.50, 0.08),
+          const Offset(0.76, 0.34),
+          const Offset(0.76, 0.78),
+        ],
+        [
+          const Offset(0.24, 0.52),
+          const Offset(0.10, 0.86),
+          const Offset(0.24, 0.78),
+        ],
+        [
+          const Offset(0.76, 0.52),
+          const Offset(0.90, 0.86),
+          const Offset(0.76, 0.78),
+        ],
+        [
+          const Offset(0.50, 0.08),
+          const Offset(0.40, 0.36),
+          const Offset(0.60, 0.36),
+        ],
+        [
+          const Offset(0.24, 0.78),
+          const Offset(0.50, 0.96),
+          const Offset(0.76, 0.78),
+        ],
+      ]);
+
+  static _Skeleton _coffeeCup() => _shape('CoffeeCup', [
+        [
+          const Offset(0.24, 0.40),
+          const Offset(0.36, 0.40),
+          const Offset(0.44, 0.40),
+          const Offset(0.56, 0.40),
+          const Offset(0.72, 0.40),
+          const Offset(0.66, 0.82),
+          const Offset(0.30, 0.82),
+        ],
+        [
+          const Offset(0.72, 0.48),
+          const Offset(0.88, 0.50),
+          const Offset(0.88, 0.70),
+          const Offset(0.72, 0.72),
+        ],
+        [
+          const Offset(0.16, 0.88),
+          const Offset(0.84, 0.88),
+          const Offset(0.72, 0.98),
+          const Offset(0.28, 0.98),
+        ],
+        [
+          const Offset(0.36, 0.40),
+          const Offset(0.30, 0.16),
+          const Offset(0.44, 0.40),
+        ],
+        [
+          const Offset(0.56, 0.40),
+          const Offset(0.50, 0.14),
+          const Offset(0.72, 0.40),
+        ],
+      ]);
+
+  static _Skeleton _butterfly() => _shape('Butterfly', [
+        [
+          const Offset(0.50, 0.24),
+          const Offset(0.58, 0.50),
+          const Offset(0.50, 0.80),
+          const Offset(0.42, 0.50),
+        ],
+        [
+          const Offset(0.50, 0.24),
+          const Offset(0.14, 0.16),
+          const Offset(0.10, 0.48),
+          const Offset(0.42, 0.50),
+        ],
+        [
+          const Offset(0.42, 0.50),
+          const Offset(0.12, 0.58),
+          const Offset(0.20, 0.86),
+          const Offset(0.50, 0.80),
+        ],
+        [
+          const Offset(0.50, 0.24),
+          const Offset(0.86, 0.16),
+          const Offset(0.90, 0.48),
+          const Offset(0.58, 0.50),
+        ],
+        [
+          const Offset(0.58, 0.50),
+          const Offset(0.88, 0.58),
+          const Offset(0.80, 0.86),
+          const Offset(0.50, 0.80),
+        ],
+        [
+          const Offset(0.50, 0.24),
+          const Offset(0.26, 0.06),
+          const Offset(0.50, 0.06),
+        ],
+      ]);
+
+  static _Skeleton _royalCrown() => _shape('RoyalCrown', [
+        [
+          const Offset(0.14, 0.58),
+          const Offset(0.26, 0.30),
+          const Offset(0.38, 0.52),
+          const Offset(0.50, 0.20),
+          const Offset(0.62, 0.52),
+          const Offset(0.74, 0.30),
+          const Offset(0.86, 0.58),
+        ],
+        [
+          const Offset(0.14, 0.58),
+          const Offset(0.34, 0.58),
+          const Offset(0.50, 0.58),
+          const Offset(0.66, 0.58),
+          const Offset(0.86, 0.58),
+          const Offset(0.86, 0.88),
+          const Offset(0.14, 0.88),
+        ],
+        [
+          const Offset(0.34, 0.58),
+          const Offset(0.66, 0.58),
+          const Offset(0.50, 0.78),
+        ],
+        [
+          const Offset(0.14, 0.58),
+          const Offset(0.34, 0.58),
+          const Offset(0.24, 0.76),
+        ],
+        [
+          const Offset(0.66, 0.58),
+          const Offset(0.86, 0.58),
+          const Offset(0.76, 0.76),
+        ],
+      ]);
+
+  static _Skeleton _crescentMoon() => _shape('CrescentMoon', [
+        [
+          const Offset(0.62, 0.10),
+          const Offset(0.36, 0.20),
+          const Offset(0.22, 0.46),
+          const Offset(0.30, 0.74),
+          const Offset(0.56, 0.90),
+          const Offset(0.40, 0.70),
+          const Offset(0.36, 0.46),
+          const Offset(0.48, 0.24),
+        ],
+        [
+          const Offset(0.62, 0.10),
+          const Offset(0.80, 0.30),
+          const Offset(0.86, 0.56),
+          const Offset(0.72, 0.82),
+          const Offset(0.56, 0.90),
+        ],
+        [
+          const Offset(0.62, 0.10),
+          const Offset(0.48, 0.24),
+          const Offset(0.80, 0.30),
+        ],
+        [
+          const Offset(0.56, 0.90),
+          const Offset(0.40, 0.70),
+          const Offset(0.72, 0.82),
+        ],
+      ]);
+
+  static _Skeleton _apple() => _shape('Apple', [
+        [
+          const Offset(0.50, 0.30),
+          const Offset(0.28, 0.24),
+          const Offset(0.14, 0.44),
+          const Offset(0.22, 0.72),
+          const Offset(0.50, 0.90),
+          const Offset(0.78, 0.72),
+          const Offset(0.86, 0.44),
+          const Offset(0.72, 0.24),
+        ],
+        [
+          const Offset(0.50, 0.30),
+          const Offset(0.50, 0.12),
+          const Offset(0.68, 0.18),
+        ],
+        [
+          const Offset(0.50, 0.30),
+          const Offset(0.28, 0.24),
+          const Offset(0.50, 0.12),
+        ],
+        [
+          const Offset(0.22, 0.72),
+          const Offset(0.50, 0.58),
+          const Offset(0.78, 0.72),
+        ],
+      ]);
+
+  static _Skeleton _candle() => _shape('Candle', [
+        _box(0.34, 0.34, 0.66, 0.86),
+        [
+          const Offset(0.50, 0.12),
+          const Offset(0.64, 0.30),
+          const Offset(0.50, 0.42),
+          const Offset(0.36, 0.30),
+        ],
+        [
+          const Offset(0.34, 0.34),
+          const Offset(0.50, 0.50),
+          const Offset(0.34, 0.66),
+        ],
+        [
+          const Offset(0.66, 0.34),
+          const Offset(0.50, 0.50),
+          const Offset(0.66, 0.66),
+        ],
+        [
+          const Offset(0.20, 0.88),
+          const Offset(0.80, 0.88),
+          const Offset(0.68, 0.98),
+          const Offset(0.32, 0.98),
+        ],
+      ]);
+
+  static _Skeleton _kite() => _shape('Kite', [
+        [
+          const Offset(0.50, 0.08),
+          const Offset(0.82, 0.40),
+          const Offset(0.50, 0.72),
+          const Offset(0.18, 0.40),
+        ],
+        [
+          const Offset(0.50, 0.08),
+          const Offset(0.50, 0.72),
+          const Offset(0.18, 0.40),
+        ],
+        [
+          const Offset(0.50, 0.08),
+          const Offset(0.82, 0.40),
+          const Offset(0.50, 0.72),
+        ],
+        [
+          const Offset(0.50, 0.72),
+          const Offset(0.62, 0.92),
+          const Offset(0.38, 0.92),
+        ],
+      ]);
+
+  static _Skeleton _paperAirplane() => _shape('PaperAirplane', [
+        [
+          const Offset(0.10, 0.44),
+          const Offset(0.90, 0.20),
+          const Offset(0.58, 0.82),
+        ],
+        [
+          const Offset(0.10, 0.44),
+          const Offset(0.42, 0.56),
+          const Offset(0.58, 0.82),
+        ],
+        [
+          const Offset(0.42, 0.56),
+          const Offset(0.90, 0.20),
+          const Offset(0.58, 0.82),
+        ],
+        [
+          const Offset(0.10, 0.44),
+          const Offset(0.90, 0.20),
+          const Offset(0.42, 0.56),
+        ],
+      ]);
+
+  static _Skeleton _mushroom() => _shape('Mushroom', [
+        [
+          const Offset(0.16, 0.54),
+          const Offset(0.26, 0.24),
+          const Offset(0.50, 0.12),
+          const Offset(0.74, 0.24),
+          const Offset(0.84, 0.54),
+        ],
+        [
+          const Offset(0.16, 0.54),
+          const Offset(0.38, 0.54),
+          const Offset(0.50, 0.66),
+          const Offset(0.62, 0.54),
+          const Offset(0.84, 0.54),
+        ],
+        [
+          const Offset(0.38, 0.66),
+          const Offset(0.38, 0.90),
+          const Offset(0.62, 0.90),
+          const Offset(0.62, 0.66),
+          const Offset(0.50, 0.66),
+        ],
+        [
+          const Offset(0.16, 0.54),
+          const Offset(0.38, 0.54),
+          const Offset(0.26, 0.24),
+        ],
+        [
+          const Offset(0.84, 0.54),
+          const Offset(0.74, 0.24),
+          const Offset(0.62, 0.54),
+        ],
+      ]);
+
+  static _Skeleton _turtle() => _shape('Turtle', [
+        _ellipse(0.50, 0.50, 0.32, 0.24, 6, phase: -pi / 2),
+        [
+          const Offset(0.18, 0.50),
+          const Offset(0.06, 0.30),
+          const Offset(0.06, 0.68),
+        ],
+        [
+          const Offset(0.82, 0.50),
+          const Offset(0.94, 0.30),
+          const Offset(0.94, 0.68),
+        ],
+        [
+          const Offset(0.32, 0.70),
+          const Offset(0.24, 0.90),
+          const Offset(0.42, 0.90),
+        ],
+        [
+          const Offset(0.68, 0.70),
+          const Offset(0.58, 0.90),
+          const Offset(0.76, 0.90),
+        ],
+        [
+          const Offset(0.50, 0.26),
+          const Offset(0.50, 0.50),
+          const Offset(0.24, 0.38),
+        ],
+        [
+          const Offset(0.50, 0.26),
+          const Offset(0.50, 0.50),
+          const Offset(0.76, 0.38),
+        ],
+      ]);
+
+  static _Skeleton _bell() => _shape('Bell', [
+        [
+          const Offset(0.50, 0.12),
+          const Offset(0.30, 0.28),
+          const Offset(0.22, 0.70),
+          const Offset(0.78, 0.70),
+          const Offset(0.70, 0.28),
+        ],
+        [
+          const Offset(0.22, 0.70),
+          const Offset(0.12, 0.86),
+          const Offset(0.30, 0.86),
+        ],
+        [
+          const Offset(0.78, 0.70),
+          const Offset(0.70, 0.86),
+          const Offset(0.88, 0.86),
+        ],
+        [
+          const Offset(0.30, 0.44),
+          const Offset(0.50, 0.56),
+          const Offset(0.70, 0.44),
+        ],
+        [
+          const Offset(0.50, 0.12),
+          const Offset(0.40, 0.30),
+          const Offset(0.60, 0.30),
+        ],
+      ]);
+
+  static _Skeleton _key() => _shape('Key', [
+        _ellipse(0.32, 0.34, 0.18, 0.18, 6),
+        [
+          const Offset(0.32, 0.16),
+          const Offset(0.32, 0.52),
+          const Offset(0.50, 0.34),
+        ],
+        [
+          const Offset(0.32, 0.52),
+          const Offset(0.86, 0.52),
+          const Offset(0.86, 0.66),
+          const Offset(0.32, 0.66),
+        ],
+        [
+          const Offset(0.66, 0.66),
+          const Offset(0.66, 0.84),
+          const Offset(0.78, 0.84),
+          const Offset(0.78, 0.66),
+        ],
+      ]);
+
+  static _Skeleton _mountainLandscape() => _shape('MountainLandscape', [
+        [
+          const Offset(0.08, 0.78),
+          const Offset(0.30, 0.28),
+          const Offset(0.48, 0.60),
+          const Offset(0.66, 0.18),
+          const Offset(0.92, 0.78),
+        ],
+        [
+          const Offset(0.08, 0.78),
+          const Offset(0.92, 0.78),
+          const Offset(0.80, 0.94),
+          const Offset(0.20, 0.94),
+        ],
+        [
+          const Offset(0.30, 0.28),
+          const Offset(0.38, 0.46),
+          const Offset(0.48, 0.60),
+        ],
+        [
+          const Offset(0.66, 0.18),
+          const Offset(0.76, 0.44),
+          const Offset(0.92, 0.78),
+        ],
+        [
+          const Offset(0.20, 0.94),
+          const Offset(0.50, 0.70),
+          const Offset(0.80, 0.94),
+        ],
+      ]);
+
+  static _Skeleton _windmill() => _shape('Windmill', [
+        [
+          const Offset(0.34, 0.90),
+          const Offset(0.40, 0.44),
+          const Offset(0.60, 0.44),
+          const Offset(0.66, 0.90),
+        ],
+        [
+          const Offset(0.34, 0.54),
+          const Offset(0.50, 0.38),
+          const Offset(0.66, 0.54),
+          const Offset(0.50, 0.70),
+        ],
+        [
+          const Offset(0.50, 0.38),
+          const Offset(0.20, 0.20),
+          const Offset(0.34, 0.54),
+        ],
+        [
+          const Offset(0.66, 0.54),
+          const Offset(0.80, 0.20),
+          const Offset(0.50, 0.38),
+        ],
+        [
+          const Offset(0.50, 0.70),
+          const Offset(0.20, 0.86),
+          const Offset(0.34, 0.54),
+        ],
+        [
+          const Offset(0.34, 0.54),
+          const Offset(0.80, 0.86),
+          const Offset(0.66, 0.54),
+        ],
+      ]);
+
+  static _Skeleton _owl() => _shape('Owl', [
+        [
+          const Offset(0.50, 0.12),
+          const Offset(0.24, 0.30),
+          const Offset(0.20, 0.66),
+          const Offset(0.50, 0.90),
+          const Offset(0.80, 0.66),
+          const Offset(0.76, 0.30),
+        ],
+        _ellipse(0.36, 0.40, 0.12, 0.12, 6),
+        _ellipse(0.64, 0.40, 0.12, 0.12, 6),
+        [
+          const Offset(0.50, 0.52),
+          const Offset(0.40, 0.66),
+          const Offset(0.60, 0.66),
+        ],
+        [
+          const Offset(0.36, 0.28),
+          const Offset(0.24, 0.14),
+          const Offset(0.30, 0.30),
+        ],
+        [
+          const Offset(0.64, 0.28),
+          const Offset(0.70, 0.14),
+          const Offset(0.76, 0.30),
+        ],
+      ]);
+
+  static _Skeleton _bicycle() => _shape('Bicycle', [
+        _ellipse(0.24, 0.72, 0.16, 0.16, 6),
+        _ellipse(0.76, 0.72, 0.16, 0.16, 6),
+        [
+          const Offset(0.24, 0.72),
+          const Offset(0.46, 0.42),
+          const Offset(0.76, 0.72),
+          const Offset(0.54, 0.72),
+        ],
+        [
+          const Offset(0.46, 0.42),
+          const Offset(0.38, 0.24),
+          const Offset(0.58, 0.24),
+        ],
+        [
+          const Offset(0.54, 0.72),
+          const Offset(0.68, 0.36),
+          const Offset(0.80, 0.38),
+        ],
+      ]);
+
+  static _Skeleton _castle() => _shape('Castle', [
+        [
+          const Offset(0.12, 0.86),
+          const Offset(0.12, 0.42),
+          const Offset(0.24, 0.42),
+          const Offset(0.24, 0.24),
+          const Offset(0.38, 0.24),
+          const Offset(0.38, 0.42),
+          const Offset(0.62, 0.42),
+          const Offset(0.62, 0.24),
+          const Offset(0.76, 0.24),
+          const Offset(0.76, 0.42),
+          const Offset(0.88, 0.42),
+          const Offset(0.88, 0.86),
+        ],
+        [
+          const Offset(0.12, 0.86),
+          const Offset(0.88, 0.86),
+          const Offset(0.88, 0.98),
+          const Offset(0.12, 0.98),
+        ],
+        _box(0.44, 0.60, 0.56, 0.86),
+        [
+          const Offset(0.24, 0.42),
+          const Offset(0.38, 0.42),
+          const Offset(0.31, 0.60),
+        ],
+        [
+          const Offset(0.62, 0.42),
+          const Offset(0.76, 0.42),
+          const Offset(0.69, 0.60),
+        ],
+      ]);
+
+  static _Skeleton _spiderWeb() {
+    const hub = Offset(0.50, 0.50);
+    final rim = _ellipse(0.50, 0.50, 0.42, 0.42, 10);
+    final inner = _ellipse(0.50, 0.50, 0.22, 0.22, 10, phase: pi / 10);
+    return _shape('SpiderWeb', [
+      rim,
+      inner,
+      ..._fan(hub, inner),
+      for (var i = 0; i < 10; i++)
+        [inner[i], rim[i], rim[(i + 1) % 10], inner[(i + 1) % 10]],
+    ]);
+  }
+
+  static _Skeleton _peacock() => _shape('Peacock', [
+        [
+          const Offset(0.50, 0.48),
+          const Offset(0.30, 0.66),
+          const Offset(0.42, 0.90),
+          const Offset(0.58, 0.90),
+          const Offset(0.70, 0.66),
+        ],
+        ..._fan(const Offset(0.50, 0.48), [
+          const Offset(0.14, 0.24),
+          const Offset(0.28, 0.10),
+          const Offset(0.50, 0.06),
+          const Offset(0.72, 0.10),
+          const Offset(0.86, 0.24),
+          const Offset(0.70, 0.66),
+          const Offset(0.30, 0.66),
+        ]),
+        [
+          const Offset(0.50, 0.48),
+          const Offset(0.36, 0.36),
+          const Offset(0.50, 0.26),
+          const Offset(0.64, 0.36),
+        ],
+      ]);
+
+  static _Skeleton _sailingShip() => _shape('SailingShip', [
+        [
+          const Offset(0.10, 0.70),
+          const Offset(0.90, 0.70),
+          const Offset(0.78, 0.92),
+          const Offset(0.22, 0.92),
+        ],
+        [
+          const Offset(0.32, 0.12),
+          const Offset(0.32, 0.70),
+          const Offset(0.10, 0.70),
+        ],
+        [
+          const Offset(0.32, 0.12),
+          const Offset(0.64, 0.70),
+          const Offset(0.32, 0.70),
+        ],
+        [
+          const Offset(0.64, 0.20),
+          const Offset(0.86, 0.70),
+          const Offset(0.64, 0.70),
+        ],
+        [
+          const Offset(0.10, 0.70),
+          const Offset(0.32, 0.70),
+          const Offset(0.22, 0.92),
+        ],
+        [
+          const Offset(0.64, 0.70),
+          const Offset(0.90, 0.70),
+          const Offset(0.78, 0.92),
+        ],
+      ]);
+
+  static _Skeleton _branchingTree() => _shape('BranchingTree', [
+        [
+          const Offset(0.42, 0.92),
+          const Offset(0.42, 0.56),
+          const Offset(0.58, 0.56),
+          const Offset(0.58, 0.92),
+        ],
+        [
+          const Offset(0.42, 0.72),
+          const Offset(0.14, 0.44),
+          const Offset(0.42, 0.56),
+        ],
+        [
+          const Offset(0.58, 0.72),
+          const Offset(0.86, 0.44),
+          const Offset(0.58, 0.56),
+        ],
+        [
+          const Offset(0.42, 0.56),
+          const Offset(0.22, 0.20),
+          const Offset(0.50, 0.38),
+        ],
+        [
+          const Offset(0.58, 0.56),
+          const Offset(0.78, 0.20),
+          const Offset(0.50, 0.38),
+        ],
+        [
+          const Offset(0.22, 0.20),
+          const Offset(0.50, 0.10),
+          const Offset(0.78, 0.20),
+        ],
+      ]);
+
+  static _Skeleton _interlockingPentagons() => _shape('InterlockingPentagons', [
+        _ringAt(5, 0.40, -pi / 2),
+        _ringAt(5, 0.40, pi / 2),
+        [
+          const Offset(0.50, 0.10),
+          const Offset(0.50, 0.90),
+          const Offset(0.12, 0.50),
+        ],
+        [
+          const Offset(0.50, 0.10),
+          const Offset(0.50, 0.90),
+          const Offset(0.88, 0.50),
+        ],
+      ]);
+
+  static _Skeleton _lighthouse() => _shape('Lighthouse', [
+        [
+          const Offset(0.36, 0.90),
+          const Offset(0.42, 0.40),
+          const Offset(0.58, 0.40),
+          const Offset(0.64, 0.90),
+        ],
+        [
+          const Offset(0.42, 0.40),
+          const Offset(0.40, 0.16),
+          const Offset(0.60, 0.16),
+          const Offset(0.58, 0.40),
+        ],
+        [
+          const Offset(0.40, 0.16),
+          const Offset(0.50, 0.06),
+          const Offset(0.60, 0.16),
+        ],
+        [
+          const Offset(0.40, 0.24),
+          const Offset(0.14, 0.32),
+          const Offset(0.22, 0.44),
+        ],
+        [
+          const Offset(0.60, 0.24),
+          const Offset(0.86, 0.32),
+          const Offset(0.78, 0.44),
+        ],
+        [
+          const Offset(0.36, 0.90),
+          const Offset(0.64, 0.90),
+          const Offset(0.72, 0.98),
+          const Offset(0.28, 0.98),
+        ],
+      ]);
+
+  static _Skeleton _elephant() => _shape('Elephant', [
+        [
+          const Offset(0.18, 0.34),
+          const Offset(0.36, 0.20),
+          const Offset(0.66, 0.20),
+          const Offset(0.82, 0.34),
+          const Offset(0.82, 0.58),
+          const Offset(0.66, 0.70),
+          const Offset(0.62, 0.90),
+          const Offset(0.50, 0.90),
+          const Offset(0.48, 0.62),
+          const Offset(0.36, 0.62),
+          const Offset(0.34, 0.90),
+          const Offset(0.22, 0.90),
+          const Offset(0.20, 0.58),
+        ],
+        [
+          const Offset(0.66, 0.20),
+          const Offset(0.90, 0.38),
+          const Offset(0.74, 0.52),
+        ],
+        [
+          const Offset(0.18, 0.34),
+          const Offset(0.10, 0.18),
+          const Offset(0.30, 0.24),
+        ],
+      ]);
+
+  static _Skeleton _camera() => _shape('Camera', [
+        [
+          const Offset(0.14, 0.36),
+          const Offset(0.30, 0.36),
+          const Offset(0.38, 0.22),
+          const Offset(0.62, 0.22),
+          const Offset(0.70, 0.36),
+          const Offset(0.86, 0.36),
+          const Offset(0.86, 0.78),
+          const Offset(0.14, 0.78),
+        ],
+        _ellipse(0.50, 0.56, 0.20, 0.20, 8),
+        [
+          const Offset(0.30, 0.36),
+          const Offset(0.70, 0.36),
+          const Offset(0.50, 0.56),
+        ],
+        [
+          const Offset(0.14, 0.78),
+          const Offset(0.86, 0.78),
+          const Offset(0.74, 0.92),
+          const Offset(0.26, 0.92),
+        ],
+      ]);
+
+  static _Skeleton _ferrisWheel() {
+    final rim = _ellipse(0.50, 0.50, 0.42, 0.42, 12);
+    return _shape('FerrisWheel', [
+      rim,
+      ..._fan(const Offset(0.50, 0.50), rim),
+      [
+        const Offset(0.50, 0.50),
+        const Offset(0.34, 0.92),
+        const Offset(0.66, 0.92),
+      ],
+      [
+        const Offset(0.34, 0.92),
+        const Offset(0.66, 0.92),
+        const Offset(0.74, 0.98),
+        const Offset(0.26, 0.98),
+      ],
+    ]);
+  }
+
+  static _Skeleton _guitar() => _shape('Guitar', [
+        [
+          const Offset(0.50, 0.10),
+          const Offset(0.60, 0.22),
+          const Offset(0.60, 0.40),
+          const Offset(0.76, 0.52),
+          const Offset(0.76, 0.74),
+          const Offset(0.50, 0.92),
+          const Offset(0.24, 0.74),
+          const Offset(0.24, 0.52),
+          const Offset(0.40, 0.40),
+          const Offset(0.40, 0.22),
+        ],
+        [
+          const Offset(0.40, 0.22),
+          const Offset(0.60, 0.22),
+          const Offset(0.50, 0.34),
+        ],
+        [
+          const Offset(0.50, 0.52),
+          const Offset(0.36, 0.70),
+          const Offset(0.64, 0.70),
+        ],
+        [
+          const Offset(0.50, 0.10),
+          const Offset(0.44, 0.04),
+          const Offset(0.56, 0.04),
+        ],
+      ]);
+
+  static _Skeleton _hotAirBalloon() => _shape('HotAirBalloon', [
+        [
+          const Offset(0.50, 0.06),
+          const Offset(0.74, 0.20),
+          const Offset(0.82, 0.44),
+          const Offset(0.66, 0.62),
+          const Offset(0.34, 0.62),
+          const Offset(0.18, 0.44),
+          const Offset(0.26, 0.20),
+        ],
+        [
+          const Offset(0.50, 0.06),
+          const Offset(0.62, 0.34),
+          const Offset(0.50, 0.62),
+          const Offset(0.38, 0.34),
+        ],
+        [
+          const Offset(0.34, 0.62),
+          const Offset(0.42, 0.82),
+          const Offset(0.58, 0.82),
+          const Offset(0.66, 0.62),
+        ],
+        [
+          const Offset(0.42, 0.82),
+          const Offset(0.58, 0.82),
+          const Offset(0.50, 0.94),
+        ],
+      ]);
+
+  static _Skeleton _dolphin() => _shape('Dolphin', [
+        [
+          const Offset(0.10, 0.52),
+          const Offset(0.34, 0.32),
+          const Offset(0.62, 0.28),
+          const Offset(0.84, 0.42),
+          const Offset(0.70, 0.58),
+          const Offset(0.44, 0.64),
+          const Offset(0.22, 0.62),
+        ],
+        [
+          const Offset(0.10, 0.52),
+          const Offset(0.06, 0.28),
+          const Offset(0.26, 0.38),
+        ],
+        [
+          const Offset(0.44, 0.64),
+          const Offset(0.36, 0.88),
+          const Offset(0.58, 0.70),
+        ],
+        [
+          const Offset(0.62, 0.28),
+          const Offset(0.56, 0.10),
+          const Offset(0.76, 0.22),
+        ],
+        [
+          const Offset(0.34, 0.32),
+          const Offset(0.48, 0.48),
+          const Offset(0.22, 0.62),
+        ],
+      ]);
+
+  static _Skeleton _clockTower() => _shape('ClockTower', [
+        [
+          const Offset(0.34, 0.92),
+          const Offset(0.38, 0.34),
+          const Offset(0.62, 0.34),
+          const Offset(0.66, 0.92),
+        ],
+        [
+          const Offset(0.38, 0.34),
+          const Offset(0.42, 0.14),
+          const Offset(0.58, 0.14),
+          const Offset(0.62, 0.34),
+        ],
+        [
+          const Offset(0.42, 0.14),
+          const Offset(0.50, 0.04),
+          const Offset(0.58, 0.14),
+        ],
+        _ellipse(0.50, 0.46, 0.14, 0.14, 8),
+        [
+          const Offset(0.50, 0.46),
+          const Offset(0.50, 0.36),
+          const Offset(0.58, 0.52),
+        ],
+        [
+          const Offset(0.34, 0.92),
+          const Offset(0.66, 0.92),
+          const Offset(0.74, 0.98),
+          const Offset(0.26, 0.98),
+        ],
+      ]);
+
+  static _Skeleton _trainEngine() => _shape('TrainEngine', [
+        [
+          const Offset(0.14, 0.78),
+          const Offset(0.14, 0.46),
+          const Offset(0.38, 0.46),
+          const Offset(0.46, 0.28),
+          const Offset(0.72, 0.28),
+          const Offset(0.86, 0.46),
+          const Offset(0.86, 0.78),
+        ],
+        [
+          const Offset(0.14, 0.78),
+          const Offset(0.86, 0.78),
+          const Offset(0.78, 0.90),
+          const Offset(0.22, 0.90),
+        ],
+        _ellipse(0.30, 0.84, 0.10, 0.10, 6),
+        _ellipse(0.70, 0.84, 0.10, 0.10, 6),
+        [
+          const Offset(0.46, 0.28),
+          const Offset(0.46, 0.12),
+          const Offset(0.62, 0.12),
+        ],
+        [
+          const Offset(0.38, 0.46),
+          const Offset(0.50, 0.60),
+          const Offset(0.72, 0.46),
+        ],
+      ]);
+
+  static _Skeleton _geometricRose() {
+    final inner = _ellipse(0.50, 0.50, 0.20, 0.20, 8, phase: pi / 8);
+    final outer = _ellipse(0.50, 0.50, 0.44, 0.44, 8);
+    return _shape('GeometricRose', [
+      inner,
+      outer,
+      for (var i = 0; i < 8; i++)
+        [inner[i], outer[i], outer[(i + 1) % 8], inner[(i + 1) % 8]],
+    ]);
+  }
+
+  static _Skeleton _compass() {
+    final rim = _ellipse(0.50, 0.50, 0.42, 0.42, 12);
+    return _shape('Compass', [
+      rim,
+      _ellipse(0.50, 0.50, 0.22, 0.22, 8, phase: pi / 8),
+      [
+        const Offset(0.50, 0.08),
+        const Offset(0.60, 0.44),
+        const Offset(0.92, 0.50),
+        const Offset(0.60, 0.56),
+        const Offset(0.50, 0.92),
+        const Offset(0.40, 0.56),
+        const Offset(0.08, 0.50),
+        const Offset(0.40, 0.44),
+      ],
+    ]);
+  }
 
   static List<_Skeleton> _thematicFigures() {
-    final figures = <_Skeleton>[
-      // ── Easy: recognizable single outlines ──────────────────────────
-      _fig('Star', [_starLoop(5)]),
-      _fig('House', [
-        const [
-          Offset(0.50, 0.08),
-          Offset(0.92, 0.42),
-          Offset(0.92, 0.90),
-          Offset(0.08, 0.90),
-          Offset(0.08, 0.42),
-        ],
-      ]),
-      _fig('Heart', [_heartLoop()]),
-      _fig('Cat', [_catHeadLoop()]),
-      _fig('Swallow', [
-        _swallowBodyLoop(),
-        _swallowUpperWingLoop(),
-        _swallowLowerWingLoop(),
-      ]),
-      _fig('Tree', [_treeLoop()]),
-      _fig('Crown', [_crownLoop()]),
-      _fig('Diamond', [_diamondLoop(), _diamondInnerLoop()]),
-      _fig('Fish', [_fishBodyLoop(), _fishTailLoop()]),
-      _fig('Boat', [_boatHullLoop(), _boatSailLoop()]),
-      _fig('Rocket', [_rocketLoop(), _rocketLeftFin(), _rocketRightFin()]),
-      _fig('Key', [_keyLoop()]),
-      _fig('Bird', [_birdLoop()]),
-
-      // ── Medium: hub/detail figures with real junctions ─────────────
-      _flowerFig('Flower', 4),
-      _rosetteFig('Weave', 5),
-      _mandalaFig('Pinwheel', 6, const [1, 2]),
-      _flowerFig('Bloom', 5),
-      _octahedron(),
-      _prism(),
-      _mandalaFig('Starburst', 7, const [1, 2]),
-      _flowerFig('Lotus', 6),
-      _diamondChain(),
-
-      // ── Hard: dense interlocking geometry ──────────────────────────
-      _lattice(),
-      _mandalaFig('OctoWeb', 8, const [1, 3]),
-      _rosetteFig('Filigree', 6),
-      _mandalaFig('Pentagram', 5, const [1, 2]),
-      _rosetteFig('Rosette', 8),
-      _mandalaFig('Decagram', 10, const [1, 4]),
-      _rosetteFig('Webbing', 7),
-      _mandalaFig('Mandala', 12, const [1, 5]),
-      _mandalaFig('Enneagram', 9, const [1, 4, 5]),
+    return [
+      _smallHouse(),
+      _fivePointStar(),
+      _sailboat(),
+      _umbrella(),
+      _fish(),
+      _diamondCrystal(),
+      _rocket(),
+      _coffeeCup(),
+      _butterfly(),
+      _royalCrown(),
+      _crescentMoon(),
+      _apple(),
+      _candle(),
+      _kite(),
+      _paperAirplane(),
+      _mushroom(),
+      _turtle(),
+      _bell(),
+      _key(),
+      _mountainLandscape(),
+      _windmill(),
+      _owl(),
+      _bicycle(),
+      _castle(),
+      _spiderWeb(),
+      _peacock(),
+      _sailingShip(),
+      _branchingTree(),
+      _interlockingPentagons(),
+      _lighthouse(),
+      _elephant(),
+      _camera(),
+      _ferrisWheel(),
+      _guitar(),
+      _hotAirBalloon(),
+      _dolphin(),
+      _clockTower(),
+      _trainEngine(),
+      _geometricRose(),
+      _compass(),
+      ..._hardFigures(),
     ];
-    // Difficulty climbs with edge count — ship the simplest first.
-    figures.sort((a, b) => a.links.length.compareTo(b.links.length));
-    // Level 4 is the first "real" figure: a swallow in flight. It is
-    // deliberately richer than the three warm-up outlines before it.
-    final swallow =
-        figures.removeAt(figures.indexWhere((f) => f.name == 'Swallow'));
-    figures.insert(3, swallow);
-    return figures;
   }
-
-  /// Symmetric swallow body: pointed beak, slim torso, forked tail.
-  static List<Offset> _swallowBodyLoop() => const [
-        Offset(0.08, 0.50),
-        Offset(0.30, 0.40),
-        Offset(0.56, 0.42),
-        Offset(0.90, 0.30),
-        Offset(0.74, 0.50),
-        Offset(0.90, 0.70),
-        Offset(0.56, 0.58),
-        Offset(0.30, 0.60),
-      ];
-
-  /// Each wing shares exactly one body vertex, so degrees stay even.
-  static List<Offset> _swallowUpperWingLoop() => const [
-        Offset(0.56, 0.42),
-        Offset(0.46, 0.10),
-        Offset(0.72, 0.12),
-        Offset(0.66, 0.26),
-      ];
-
-  static List<Offset> _swallowLowerWingLoop() => const [
-        Offset(0.56, 0.58),
-        Offset(0.46, 0.90),
-        Offset(0.72, 0.88),
-        Offset(0.66, 0.74),
-      ];
 
   /// Builds a figure from closed loops, merging coincident points into
   /// shared vertices and dropping duplicate edges, then fitting it into
   /// a centred unit box with a UNIFORM scale (aspect ratio preserved).
-  static _Skeleton _fig(String name, List<List<Offset>> loops) {
+  static _Skeleton _fig(String name, List<List<Offset>> loops,
+      {bool lockOrientation = false,
+      bool trail = false,
+      bool hideNodeDots = false,
+      List<List<Offset>> extraLinks = const []}) {
     final pts = <Offset>[];
     final idx = <String, int>{};
     int vid(Offset o) {
@@ -1263,6 +2485,143 @@ class OneLineGenerator {
         if (seen.add(key)) links.add(_Link(a, b));
       }
     }
+    // Bridges are explicit two-point links so a closed helper loop
+    // cannot accidentally add a third side (which would make the graph
+    // all-even again and destroy the dead-end trap).
+    for (final pair in extraLinks) {
+      if (pair.length != 2) continue;
+      final a = vid(pair[0]);
+      final b = vid(pair[1]);
+      if (a == b) continue;
+      final key = a < b ? '$a-$b' : '$b-$a';
+      if (seen.add(key)) links.add(_Link(a, b));
+    }
+
+    List<int> oddVertices() {
+      final degree = List<int>.filled(pts.length, 0);
+      for (final link in links) {
+        degree[link.a]++;
+        degree[link.b]++;
+      }
+      return [
+        for (var i = 0; i < pts.length; i++)
+          if (degree[i].isOdd) i,
+      ];
+    }
+
+    List<List<int>> components() {
+      final adjacency = List<List<int>>.generate(pts.length, (_) => <int>[]);
+      for (final link in links) {
+        adjacency[link.a].add(link.b);
+        adjacency[link.b].add(link.a);
+      }
+      final visited = <int>{};
+      final result = <List<int>>[];
+      for (var start = 0; start < pts.length; start++) {
+        if (!visited.add(start)) continue;
+        final stack = [start];
+        final component = <int>[];
+        while (stack.isNotEmpty) {
+          final current = stack.removeLast();
+          component.add(current);
+          for (final next in adjacency[current]) {
+            if (visited.add(next)) stack.add(next);
+          }
+        }
+        result.add(component);
+      }
+      return result;
+    }
+
+    void addEvenBridge(int a, int b) {
+      final pa = pts[a];
+      final pb = pts[b];
+      final d = pb - pa;
+      final len = d.distance;
+      if (len < 1e-6) return;
+      final n = Offset(-d.dy, d.dx) * (0.035 / len);
+      final m = Offset((pa.dx + pb.dx) / 2, (pa.dy + pb.dy) / 2);
+      final p1 = pts.length;
+      pts.add(pa + n);
+      final p2 = pts.length;
+      pts.add(m + n);
+      final p3 = pts.length;
+      pts.add(pb - n);
+      final p4 = pts.length;
+      pts.add(m - n);
+      links.addAll([
+        _Link(a, p1),
+        _Link(p1, p2),
+        _Link(p2, b),
+        _Link(b, p3),
+        _Link(p3, p4),
+        _Link(p4, a),
+      ]);
+    }
+
+    void addOddBridge(int a, int b) {
+      final pa = pts[a];
+      final pb = pts[b];
+      final d = pb - pa;
+      final len = d.distance;
+      if (len < 1e-6) return;
+      final n = Offset(-d.dy, d.dx) * (0.02 / len);
+      final mid = pts.length;
+      pts.add(Offset((pa.dx + pb.dx) / 2, (pa.dy + pb.dy) / 2) + n);
+      links.addAll([_Link(a, mid), _Link(mid, b)]);
+    }
+
+    for (int guard = 0; guard < 64; guard++) {
+      final parts = components();
+      if (parts.length <= 1) break;
+      parts.sort((a, b) => b.length.compareTo(a.length));
+      final main = parts.first;
+      final other = parts[1];
+      var bestA = main.first;
+      var bestB = other.first;
+      var best = double.infinity;
+      for (final a in main) {
+        for (final b in other) {
+          final d = (pts[a] - pts[b]).distance;
+          if (d < best) {
+            best = d;
+            bestA = a;
+            bestB = b;
+          }
+        }
+      }
+      addEvenBridge(bestA, bestB);
+    }
+
+    final keepOdd = <int>{};
+    if (trail) {
+      final endpoints = [...oddVertices()]
+        ..sort((a, b) => pts[a].dy.compareTo(pts[b].dy));
+      if (endpoints.length >= 2) {
+        keepOdd.add(endpoints.first);
+        keepOdd.add(endpoints.last);
+      }
+    }
+    for (int guard = 0; guard < 64; guard++) {
+      final repairable =
+          oddVertices().where((v) => !keepOdd.contains(v)).toList();
+      if (repairable.length < 2) break;
+      var bestI = 0;
+      var bestJ = 1;
+      var bestScore = double.infinity;
+      for (var i = 0; i < repairable.length; i++) {
+        for (var j = i + 1; j < repairable.length; j++) {
+          final d = (pts[repairable[i]] - pts[repairable[j]]).distance;
+          final score = (d - 0.24).abs();
+          if (score < bestScore) {
+            bestScore = score;
+            bestI = i;
+            bestJ = j;
+          }
+        }
+      }
+      addOddBridge(repairable[bestI], repairable[bestJ]);
+    }
 
     var minX = double.infinity, minY = double.infinity;
     var maxX = double.negativeInfinity, maxY = double.negativeInfinity;
@@ -1272,7 +2631,7 @@ class OneLineGenerator {
       maxX = max(maxX, p.dx);
       maxY = max(maxY, p.dy);
     }
-    const span = 0.90;
+    const span = 0.94;
     final w = maxX - minX, h = maxY - minY;
     final scale = span / max(w <= 0 ? 1 : w, h <= 0 ? 1 : h);
     final cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
@@ -1280,7 +2639,12 @@ class OneLineGenerator {
       for (final p in pts)
         Offset(0.5 + (p.dx - cx) * scale, 0.5 + (p.dy - cy) * scale),
     ];
-    return _Skeleton(name, fitted, links, rotatable: false, eulerian: true);
+    return _Skeleton(name, fitted, links,
+        rotatable: false,
+        eulerian: true,
+        lockOrientation: lockOrientation,
+        trail: trail,
+        hideNodeDots: hideNodeDots);
   }
 
   static List<Offset> _starLoop(int tips,
@@ -1295,287 +2659,700 @@ class OneLineGenerator {
     ];
   }
 
-  static List<Offset> _heartLoop({int n = 22}) {
-    final raw = <Offset>[];
-    for (var i = 0; i < 60; i++) {
-      final t = i * 2 * pi / 60;
-      final x = 16 * pow(sin(t), 3).toDouble();
-      final y = 13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t);
-      raw.add(Offset(x, -y)); // flip y so the point sits at the bottom
-    }
-    return _resampleLoop(raw, n);
+  static List<Offset> _bar(Offset a, Offset b, double thickness) {
+    final d = b - a;
+    final len = d.distance;
+    if (len < 1e-6) return [a];
+    final n = Offset(-d.dy, d.dx) * (thickness / len);
+    final m = Offset((a.dx + b.dx) / 2, (a.dy + b.dy) / 2);
+    return [a, a + n, m + n, b, b - n, m - n];
   }
 
-  /// Resamples a closed polyline into [count] points spaced uniformly by
-  /// arc length, so pointed parametric curves (heart, star…) never leave
-  /// two vertices so close the stroke becomes untraceable.
-  static List<Offset> _resampleLoop(List<Offset> loop, int count) {
-    final n = loop.length;
-    final cum = <double>[0];
-    for (var i = 0; i < n; i++) {
-      cum.add(cum[i] + (loop[(i + 1) % n] - loop[i]).distance);
-    }
-    final total = cum[n];
-    if (total <= 0) return List<Offset>.from(loop);
-    final out = <Offset>[];
-    var seg = 0;
-    for (var k = 0; k < count; k++) {
-      final target = total * k / count;
-      while (seg < n - 1 && cum[seg + 1] < target) {
-        seg++;
-      }
-      final segLen = cum[seg + 1] - cum[seg];
-      final t = segLen <= 0 ? 0.0 : (target - cum[seg]) / segLen;
-      final a = loop[seg];
-      final b = loop[(seg + 1) % n];
-      out.add(Offset(a.dx + (b.dx - a.dx) * t, a.dy + (b.dy - a.dy) * t));
-    }
-    return out;
-  }
+  static List<Offset> _gearLoop(
+          double cx, double cy, double outer, double inner, int teeth) =>
+      _starLoop(teeth, cx: cx, cy: cy, outer: outer, inner: inner);
 
-  /// Cat/animal head with pointy ears, drawn as one outline.
-  static List<Offset> _catHeadLoop() => const [
-        Offset(0.50, 0.88), // chin
-        Offset(0.24, 0.76),
-        Offset(0.12, 0.54),
-        Offset(0.14, 0.30),
-        Offset(0.20, 0.06), // left ear tip
-        Offset(0.40, 0.26),
-        Offset(0.50, 0.34), // dip between the ears
-        Offset(0.60, 0.26),
-        Offset(0.80, 0.06), // right ear tip
-        Offset(0.86, 0.30),
-        Offset(0.88, 0.54),
-        Offset(0.76, 0.76),
-      ];
-
-  /// Pine tree: a triangular canopy over a short trunk (one clean notch).
-  static List<Offset> _treeLoop() => const [
-        Offset(0.50, 0.06), // apex
-        Offset(0.88, 0.62), // canopy right
-        Offset(0.62, 0.62),
-        Offset(0.62, 0.92), // trunk right
-        Offset(0.38, 0.92), // trunk left
-        Offset(0.38, 0.62),
-        Offset(0.12, 0.62), // canopy left
-      ];
-
-  /// Crown outline: jewelled zig-zag top over a band.
-  static List<Offset> _crownLoop() => const [
-        Offset(0.10, 0.30),
-        Offset(0.26, 0.62),
-        Offset(0.38, 0.40),
-        Offset(0.50, 0.18),
-        Offset(0.62, 0.40),
-        Offset(0.74, 0.62),
-        Offset(0.90, 0.30),
-        Offset(0.90, 0.82),
-        Offset(0.10, 0.82),
-      ];
-
-  /// Big gem outline (a faceted octagon).
-  static List<Offset> _diamondLoop() => const [
-        Offset(0.50, 0.06),
-        Offset(0.86, 0.36),
-        Offset(0.72, 0.88),
-        Offset(0.28, 0.88),
-        Offset(0.14, 0.36),
-      ];
-
-  /// Inner gem facet sharing the top vertex so the two loops connect.
-  static List<Offset> _diamondInnerLoop() => const [
-        Offset(0.50, 0.06),
-        Offset(0.66, 0.40),
-        Offset(0.50, 0.72),
-        Offset(0.34, 0.40),
-      ];
-
-  static List<Offset> _fishBodyLoop() => const [
-        Offset(0.08, 0.50), // nose
-        Offset(0.34, 0.24),
-        Offset(0.66, 0.38),
-        Offset(0.72, 0.50), // tail attach point (a real body vertex)
-        Offset(0.66, 0.62),
-        Offset(0.34, 0.76),
-      ];
-
-  /// Tail fin attaches at a single shared body vertex (no overlap).
-  static List<Offset> _fishTailLoop() => const [
-        Offset(0.72, 0.50),
-        Offset(0.98, 0.30),
-        Offset(0.98, 0.70),
-      ];
-
-  static List<Offset> _boatHullLoop() => const [
-        Offset(0.12, 0.66),
-        Offset(0.50, 0.66),
-        Offset(0.82, 0.66),
-        Offset(0.70, 0.88),
-        Offset(0.30, 0.88),
-      ];
-
-  /// Sail triangle sharing the mast-base vertex of the hull.
-  static List<Offset> _boatSailLoop() => const [
-        Offset(0.50, 0.66),
-        Offset(0.50, 0.10),
-        Offset(0.80, 0.54),
-      ];
-
-  static List<Offset> _rocketLoop() => const [
-        Offset(0.50, 0.05), // nose
-        Offset(0.64, 0.30),
-        Offset(0.64, 0.80),
-        Offset(0.36, 0.80),
-        Offset(0.36, 0.30),
-      ];
-
-  /// Tail fins share a single body-corner vertex each (no overlaps).
-  static List<Offset> _rocketLeftFin() => const [
-        Offset(0.36, 0.80),
-        Offset(0.14, 0.94),
-        Offset(0.36, 0.94),
-      ];
-
-  static List<Offset> _rocketRightFin() => const [
-        Offset(0.64, 0.80),
-        Offset(0.86, 0.94),
-        Offset(0.64, 0.94),
-      ];
-
-  static List<Offset> _keyLoop() => const [
-        Offset(0.10, 0.50), // bow left
-        Offset(0.14, 0.30),
-        Offset(0.30, 0.20),
-        Offset(0.46, 0.28),
-        Offset(0.50, 0.42), // bow/shaft top junction
-        Offset(0.92, 0.42), // shaft top right
-        Offset(0.92, 0.58), // shaft tip
-        Offset(0.74, 0.58),
-        Offset(0.74, 0.72), // tooth down
-        Offset(0.62, 0.72),
-        Offset(0.62, 0.58),
-        Offset(0.50, 0.58), // bow/shaft bottom junction
-        Offset(0.44, 0.72),
-        Offset(0.30, 0.82),
-        Offset(0.16, 0.72),
-      ];
-
-  static List<Offset> _birdLoop() => const [
-        Offset(0.10, 0.40), // beak
-        Offset(0.26, 0.30),
-        Offset(0.42, 0.34),
-        Offset(0.52, 0.20), // crown
-        Offset(0.66, 0.30),
-        Offset(0.86, 0.24), // wing tip
-        Offset(0.70, 0.52),
-        Offset(0.82, 0.74),
-        Offset(0.56, 0.66),
-        Offset(0.46, 0.84), // tail
-        Offset(0.28, 0.66),
-      ];
-
-  /// 3x3 lattice with two opposite cell diagonals (every degree even).
-  static _Skeleton _lattice() {
-    final pts = _gridPoints(3);
-    const links = [
-      _Link(0, 1),
-      _Link(1, 2),
-      _Link(3, 4),
-      _Link(4, 5),
-      _Link(6, 7),
-      _Link(7, 8),
-      _Link(0, 3),
-      _Link(3, 6),
-      _Link(1, 4),
-      _Link(4, 7),
-      _Link(2, 5),
-      _Link(5, 8),
-      _Link(1, 3),
-      _Link(5, 7),
+  static List<_Skeleton> _hardFigures() {
+    return [
+      _twinSquaresConnectedByBridge(),
+      _twinStarsConnectedByBridge(),
+      _twinHousesConnectedByBridge(),
+      _twoInterlockingRings(),
+      _doubleHelix(),
+      _suspensionBridge(),
+      _geometricDragon(),
+      _grandPiano(),
+      _spaceSatellite(),
+      _verticalSpan(
+        'MultiBridgeCastle',
+        [
+          const [
+            Offset(0.50, 0.06),
+            Offset(0.78, 0.18),
+            Offset(0.78, 0.38),
+            Offset(0.50, 0.46),
+            Offset(0.22, 0.38),
+            Offset(0.22, 0.18),
+          ],
+          const [
+            Offset(0.50, 0.46),
+            Offset(0.64, 0.30),
+            Offset(0.50, 0.20),
+            Offset(0.36, 0.30),
+          ],
+          const [
+            Offset(0.50, 0.58),
+            Offset(0.84, 0.68),
+            Offset(0.78, 0.92),
+            Offset(0.22, 0.92),
+            Offset(0.16, 0.68),
+          ],
+          const [
+            Offset(0.50, 0.58),
+            Offset(0.68, 0.72),
+            Offset(0.60, 0.86),
+            Offset(0.40, 0.86),
+            Offset(0.32, 0.72),
+          ],
+        ],
+        const Offset(0.50, 0.46),
+        const Offset(0.50, 0.58),
+      ),
+      _verticalSpan(
+        'SnowflakeNetwork',
+        [
+          _starLoop(6, cx: 0.5, cy: 0.27, outer: 0.20, inner: 0.09),
+          _starLoop(6, cx: 0.5, cy: 0.73, outer: 0.20, inner: 0.09),
+          const [
+            Offset(0.50, 0.47),
+            Offset(0.60, 0.36),
+            Offset(0.72, 0.40),
+            Offset(0.66, 0.54),
+          ],
+          const [
+            Offset(0.50, 0.53),
+            Offset(0.40, 0.64),
+            Offset(0.28, 0.60),
+            Offset(0.34, 0.46),
+          ],
+        ],
+        const Offset(0.50, 0.47),
+        const Offset(0.50, 0.53),
+      ),
+      _verticalSpan(
+        'AncientCityWithMultipleBridges',
+        [
+          const [
+            Offset(0.12, 0.42),
+            Offset(0.12, 0.20),
+            Offset(0.30, 0.20),
+            Offset(0.30, 0.30),
+            Offset(0.50, 0.30),
+            Offset(0.50, 0.12),
+            Offset(0.70, 0.12),
+            Offset(0.70, 0.28),
+            Offset(0.88, 0.28),
+            Offset(0.88, 0.42),
+          ],
+          const [
+            Offset(0.12, 0.42),
+            Offset(0.88, 0.42),
+            Offset(0.88, 0.50),
+            Offset(0.12, 0.50),
+          ],
+          const [
+            Offset(0.10, 0.64),
+            Offset(0.10, 0.52),
+            Offset(0.34, 0.52),
+            Offset(0.34, 0.60),
+            Offset(0.50, 0.60),
+            Offset(0.50, 0.50),
+            Offset(0.76, 0.50),
+            Offset(0.76, 0.58),
+            Offset(0.90, 0.58),
+            Offset(0.90, 0.64),
+          ],
+          const [
+            Offset(0.10, 0.64),
+            Offset(0.90, 0.64),
+            Offset(0.90, 0.92),
+            Offset(0.10, 0.92),
+          ],
+        ],
+        const Offset(0.50, 0.42),
+        const Offset(0.50, 0.50),
+      ),
     ];
-    return _fitSkeleton('Lattice', pts, links);
   }
 
-  // ── Symmetric figure bank ──────────────────────────────────────────
-  // The endless zone draws from a family of clean, already-Eulerian
-  // figures — star mandalas, woven rosettes, petal flowers and spoked
-  // wheels. Each is built from concentric rings so the strokes stay
-  // long and evenly spaced, and the parameters vary per level so no two
-  // figures ever look the same.
-
-  _Skeleton _symmetricFigure(int number, Random rng) {
-    // Rotate through the three silhouettes so consecutive levels feel
-    // different, while the seeded rng keeps each one unique.
-    switch ((number * 5 + 1) % 3) {
-      case 0:
-        return _mandala(rng);
-      case 1:
-        return _rosette(rng);
-      default:
-        return _flower(rng);
-    }
-  }
-
-  /// Star mandala: n points on a ring threaded by two or three star
-  /// polygons. Overlaying cycles keeps every degree even by definition.
-  _Skeleton _mandala(Random rng) {
-    final n = 7 + rng.nextInt(6); // 7..12
-    final phase = rng.nextDouble() * 2 * pi;
-    final pts = _ringAt(n, 0.42, phase);
-    final maxStep = (n - 1) ~/ 2; // never n/2 (would duplicate edges)
-    final steps = <int>{1};
-    steps.add(2 + rng.nextInt(max(1, maxStep - 1)));
-    if (n >= 9 && rng.nextBool()) {
-      steps.add(2 + rng.nextInt(max(1, maxStep - 1)));
-    }
-    final links = <_Link>[];
-    for (final s in steps) {
-      for (var i = 0; i < n; i++) {
-        links.add(_Link(i, (i + s) % n));
-      }
-    }
-    return _fitSkeleton('Mandala', pts, links);
-  }
-
-  /// Woven rosette: an outer ring and a half-step inner ring stitched
-  /// together so every node has degree four.
-  _Skeleton _rosette(Random rng) {
-    final n = 5 + rng.nextInt(4); // 5..8
-    const rOuter = 0.44;
-    final rInner = rOuter * (0.50 + rng.nextDouble() * 0.08);
-    final phase = rng.nextDouble() * 2 * pi;
-    final pts = <Offset>[
-      for (var i = 0; i < n; i++)
-        _polar(0.5, 0.5, rOuter, phase + i * 2 * pi / n),
-      for (var i = 0; i < n; i++)
-        _polar(0.5, 0.5, rInner, phase + pi / n + i * 2 * pi / n),
+  static _Skeleton _twinSquaresConnectedByBridge() {
+    const left = [
+      Offset(0.08, 0.24),
+      Offset(0.40, 0.24),
+      Offset(0.40, 0.42),
+      Offset(0.40, 0.62),
+      Offset(0.40, 0.76),
+      Offset(0.08, 0.76),
     ];
-    final links = <_Link>[];
-    for (var i = 0; i < n; i++) {
-      links.add(_Link(i, (i + 1) % n)); // outer ring
-      links.add(_Link(n + i, n + (i + 1) % n)); // inner ring
-      links.add(_Link(i, n + i)); // spoke
-      links.add(_Link(n + i, (i + 1) % n)); // woven diagonal
-    }
-    return _fitSkeleton('Rosette', pts, links);
+    const right = [
+      Offset(0.60, 0.24),
+      Offset(0.60, 0.42),
+      Offset(0.60, 0.62),
+      Offset(0.60, 0.76),
+      Offset(0.92, 0.76),
+      Offset(0.92, 0.24),
+    ];
+    return _shape('TwinSquaresConnectedByBridge', [
+      left,
+      right,
+      _bar(const Offset(0.40, 0.42), const Offset(0.60, 0.42), 0.05),
+      _bar(const Offset(0.40, 0.62), const Offset(0.60, 0.62), 0.05),
+      _bar(const Offset(0.16, 0.50), const Offset(0.32, 0.50), 0.04),
+      _bar(const Offset(0.68, 0.50), const Offset(0.84, 0.50), 0.04),
+    ]);
   }
 
-  /// Petal flower: a hub with n two-point petals looping out to a rim.
-  _Skeleton _flower(Random rng) {
-    final petals = 4 + rng.nextInt(5); // 4..8
-    final phase = rng.nextDouble() * 2 * pi;
-    final outer = _ringAt(petals, 0.44, phase);
-    final inner = _ringAt(petals, 0.44, phase + pi / petals);
-    final pts = <Offset>[const Offset(0.5, 0.5), ...outer, ...inner];
-    final links = <_Link>[];
-    for (var i = 0; i < petals; i++) {
-      final a = 1 + i;
-      final b = 1 + petals + i;
-      links.add(_Link(0, a));
-      links.add(_Link(a, b));
-      links.add(_Link(b, 0));
+  static _Skeleton _twinStarsConnectedByBridge() {
+    final left = _starLoop(5, cx: 0.27, cy: 0.50, outer: 0.20, inner: 0.09);
+    final right = _starLoop(5, cx: 0.73, cy: 0.50, outer: 0.20, inner: 0.09);
+    return _shape('TwinStarsConnectedByBridge', [
+      left,
+      right,
+      [left[1], left[3], left[5], left[7], left[9]],
+      [right[1], right[3], right[5], right[7], right[9]],
+      _bar(left[2], right[8], 0.05),
+      _bar(left[4], right[6], 0.05),
+    ]);
+  }
+
+  static _Skeleton _twinHousesConnectedByBridge() {
+    const leftRoof = [
+      Offset(0.06, 0.50),
+      Offset(0.20, 0.28),
+      Offset(0.34, 0.50),
+    ];
+    const leftBody = [
+      Offset(0.06, 0.50),
+      Offset(0.34, 0.50),
+      Offset(0.34, 0.66),
+      Offset(0.34, 0.88),
+      Offset(0.06, 0.88),
+    ];
+    const rightRoof = [
+      Offset(0.66, 0.50),
+      Offset(0.80, 0.28),
+      Offset(0.94, 0.50),
+    ];
+    const rightBody = [
+      Offset(0.66, 0.50),
+      Offset(0.94, 0.50),
+      Offset(0.94, 0.88),
+      Offset(0.66, 0.88),
+      Offset(0.66, 0.66),
+    ];
+    return _shape('TwinHousesConnectedByBridge', [
+      leftRoof,
+      leftBody,
+      rightRoof,
+      rightBody,
+      _bar(const Offset(0.34, 0.66), const Offset(0.66, 0.66), 0.05),
+      _bar(const Offset(0.34, 0.88), const Offset(0.66, 0.88), 0.05),
+    ]);
+  }
+
+  static _Skeleton _twoInterlockingRings() {
+    const top = Offset(0.50, 0.24);
+    const bottom = Offset(0.50, 0.76);
+    return _shape('TwoInterlockingRings', [
+      [
+        top,
+        const Offset(0.34, 0.18),
+        const Offset(0.16, 0.32),
+        const Offset(0.08, 0.50),
+        const Offset(0.16, 0.68),
+        const Offset(0.34, 0.82),
+        bottom,
+        const Offset(0.42, 0.68),
+        const Offset(0.42, 0.32),
+      ],
+      [
+        top,
+        const Offset(0.66, 0.18),
+        const Offset(0.84, 0.32),
+        const Offset(0.92, 0.50),
+        const Offset(0.84, 0.68),
+        const Offset(0.66, 0.82),
+        bottom,
+        const Offset(0.58, 0.68),
+        const Offset(0.58, 0.32),
+      ],
+      [
+        top,
+        const Offset(0.30, 0.40),
+        const Offset(0.24, 0.50),
+        const Offset(0.30, 0.60),
+        bottom,
+        const Offset(0.44, 0.60),
+        const Offset(0.44, 0.40),
+      ],
+      [
+        top,
+        const Offset(0.70, 0.40),
+        const Offset(0.76, 0.50),
+        const Offset(0.70, 0.60),
+        bottom,
+        const Offset(0.56, 0.60),
+        const Offset(0.56, 0.40),
+      ],
+      [
+        const Offset(0.34, 0.18),
+        const Offset(0.66, 0.18),
+        bottom,
+        const Offset(0.66, 0.82),
+        const Offset(0.34, 0.82),
+        top,
+      ],
+    ]);
+  }
+
+  static _Skeleton _doubleHelix() {
+    final left = [
+      for (final y in [0.24, 0.50, 0.76]) _diamondAt(0.28, y, 0.12, 0.14),
+    ];
+    final right = [
+      for (final y in [0.24, 0.50, 0.76]) _diamondAt(0.72, y, 0.12, 0.14),
+    ];
+    final loops = <List<Offset>>[...left, ...right];
+    for (var i = 0; i < 3; i++) {
+      loops.add(_bar(left[i][1], right[i][3], 0.05));
     }
-    return _fitSkeleton('Flower', pts, links);
+    loops.add(_bar(left[0][2], right[1][0], 0.05));
+    loops.add(_bar(left[1][2], right[2][0], 0.05));
+    loops.add(_bar(left[2][1], right[0][2], 0.05));
+    return _shape('DoubleHelix', loops);
+  }
+
+  static _Skeleton _suspensionBridge() {
+    const leftTower = [
+      Offset(0.12, 0.30),
+      Offset(0.24, 0.30),
+      Offset(0.24, 0.70),
+      Offset(0.24, 0.84),
+      Offset(0.12, 0.84),
+      Offset(0.12, 0.70),
+    ];
+    const rightTower = [
+      Offset(0.76, 0.30),
+      Offset(0.76, 0.70),
+      Offset(0.76, 0.84),
+      Offset(0.88, 0.84),
+      Offset(0.88, 0.70),
+      Offset(0.88, 0.30),
+    ];
+    const cable = [
+      Offset(0.12, 0.30),
+      Offset(0.50, 0.12),
+      Offset(0.88, 0.30),
+      Offset(0.76, 0.44),
+      Offset(0.64, 0.48),
+      Offset(0.50, 0.54),
+      Offset(0.36, 0.48),
+      Offset(0.24, 0.44),
+    ];
+    const deck = [
+      Offset(0.08, 0.70),
+      Offset(0.36, 0.70),
+      Offset(0.64, 0.70),
+      Offset(0.92, 0.70),
+      Offset(0.92, 0.84),
+      Offset(0.64, 0.84),
+      Offset(0.36, 0.84),
+      Offset(0.08, 0.84),
+    ];
+    return _shape('SuspensionBridge', [
+      leftTower,
+      rightTower,
+      cable,
+      deck,
+      _bar(const Offset(0.24, 0.44), const Offset(0.36, 0.70), 0.04),
+      _bar(const Offset(0.36, 0.48), const Offset(0.64, 0.70), 0.04),
+      _bar(const Offset(0.76, 0.44), const Offset(0.64, 0.70), 0.04),
+    ]);
+  }
+
+  static _Skeleton _geometricDragon() {
+    final b1 = _diamondAt(0.30, 0.52, 0.10, 0.12);
+    final b2 = _diamondAt(0.48, 0.44, 0.10, 0.12);
+    final b3 = _diamondAt(0.66, 0.52, 0.10, 0.12);
+    return _shape('GeometricDragon', [
+      b1,
+      b2,
+      b3,
+      [b1[3], const Offset(0.08, 0.28), const Offset(0.10, 0.76), b1[2]],
+      [b2[0], const Offset(0.42, 0.10), const Offset(0.58, 0.12), b2[1]],
+      [b2[2], const Offset(0.58, 0.88), const Offset(0.42, 0.90), b2[3]],
+      [b3[1], const Offset(0.90, 0.26), const Offset(0.92, 0.58), b3[2]],
+      _bar(b1[1], b2[3], 0.05),
+      _bar(b2[1], b3[3], 0.05),
+    ]);
+  }
+
+  static _Skeleton _grandPiano() {
+    final top = [
+      for (final x in [0.16, 0.29, 0.42, 0.55, 0.68, 0.81, 0.90])
+        Offset(x, 0.56),
+    ];
+    final bottom = [
+      for (final x in [0.16, 0.29, 0.42, 0.55, 0.68, 0.81, 0.90])
+        Offset(x, 0.78),
+    ];
+    final loops = <List<Offset>>[
+      [
+        const Offset(0.16, 0.24),
+        const Offset(0.52, 0.14),
+        const Offset(0.90, 0.28),
+        ...top.reversed,
+      ],
+      [...top, ...bottom.reversed],
+      [
+        const Offset(0.16, 0.24),
+        const Offset(0.52, 0.04),
+        const Offset(0.90, 0.28),
+      ],
+    ];
+    for (var i = 0; i < top.length; i += 2) {
+      loops.add(_bar(top[i], bottom[i], 0.04));
+    }
+    loops.add(_bar(bottom[1], const Offset(0.29, 0.94), 0.04));
+    loops.add(_bar(bottom[5], const Offset(0.81, 0.94), 0.04));
+    return _shape('GrandPiano', loops);
+  }
+
+  static _Skeleton _spaceSatellite() {
+    const body = [
+      Offset(0.38, 0.38),
+      Offset(0.62, 0.38),
+      Offset(0.62, 0.50),
+      Offset(0.62, 0.62),
+      Offset(0.38, 0.62),
+      Offset(0.38, 0.50),
+    ];
+    const leftPanel = [
+      Offset(0.06, 0.42),
+      Offset(0.38, 0.42),
+      Offset(0.38, 0.58),
+      Offset(0.06, 0.58),
+    ];
+    const rightPanel = [
+      Offset(0.62, 0.42),
+      Offset(0.94, 0.42),
+      Offset(0.94, 0.58),
+      Offset(0.62, 0.58),
+    ];
+    return _shape('SpaceSatellite', [
+      body,
+      leftPanel,
+      rightPanel,
+      [
+        const Offset(0.50, 0.38),
+        const Offset(0.42, 0.20),
+        const Offset(0.50, 0.12),
+        const Offset(0.58, 0.20),
+      ],
+      _bar(const Offset(0.22, 0.42), const Offset(0.22, 0.58), 0.04),
+      _bar(const Offset(0.78, 0.42), const Offset(0.78, 0.58), 0.04),
+      _bar(const Offset(0.50, 0.62), const Offset(0.50, 0.92), 0.04),
+    ]);
+  }
+
+  static _Skeleton _verticalSpan(
+    String name,
+    List<List<Offset>> loops,
+    Offset topAnchor,
+    Offset bottomAnchor,
+  ) {
+    final mid = Offset(0.5, (topAnchor.dy + bottomAnchor.dy) / 2);
+    return _fig(
+      name,
+      loops,
+      lockOrientation: true,
+      trail: true,
+      hideNodeDots: true,
+      extraLinks: [
+        [topAnchor, mid],
+        [mid, bottomAnchor],
+      ],
+    );
+  }
+
+  static List<_Skeleton> _newStudioFigures() {
+    return [
+      _mechanicalSpider(),
+      _octopus(),
+      _peacockWithDetailedFeathers(),
+      _clockworkMachine(),
+      _treehouseNetwork(),
+      _eagleWithSpreadWings(),
+      _citySkylineNetwork(),
+      _impossibleKnot(),
+      _solarSystem(),
+      _mechanicalRobot(),
+      _phoenix(),
+      _galacticConstellation(),
+      _interconnectedClockTowers(),
+      _giantGearNetwork(),
+      _theUltimateKingdom(),
+    ];
+  }
+
+  static _Skeleton _mechanicalSpider() {
+    final body = _ellipse(0.50, 0.48, 0.13, 0.12, 8);
+    final loops = <List<Offset>>[body];
+    for (var i = 0; i < 8; i++) {
+      final angle = -pi / 2 + i * pi / 4;
+      final foot = _polar(0.5, 0.48, 0.44, angle + 0.06);
+      loops.add(_bar(body[i], foot, 0.035));
+    }
+    loops.add(_ellipse(0.50, 0.48, 0.06, 0.05, 6));
+    return _shape('MechanicalSpider', loops);
+  }
+
+  static _Skeleton _octopus() {
+    final head = _ellipse(0.50, 0.34, 0.22, 0.18, 8);
+    final loops = <List<Offset>>[head];
+    for (var i = 3; i <= 7; i++) {
+      final tipX = 0.16 + (i - 3) * 0.17;
+      loops.add(_bar(head[i], Offset(tipX, 0.92), 0.04));
+    }
+    loops.add(_bar(const Offset(0.50, 0.16), const Offset(0.50, 0.06), 0.03));
+    return _shape('Octopus', loops);
+  }
+
+  static _Skeleton _peacockWithDetailedFeathers() {
+    const center = Offset(0.50, 0.44);
+    final rim = _ellipse(0.50, 0.40, 0.42, 0.32, 10, phase: pi);
+    final loops = <List<Offset>>[
+      _diamondAt(0.50, 0.64, 0.12, 0.20),
+      rim,
+    ];
+    for (var i = 0; i < rim.length; i++) {
+      loops.add(_bar(center, rim[i], 0.035));
+    }
+    loops.add(_bar(center, const Offset(0.50, 0.84), 0.04));
+    return _shape('PeacockWithDetailedFeathers', loops);
+  }
+
+  static _Skeleton _clockworkMachine() {
+    final central = _gearLoop(0.50, 0.50, 0.17, 0.11, 8);
+    final satellites = [
+      _gearLoop(0.20, 0.22, 0.12, 0.07, 6),
+      _gearLoop(0.80, 0.22, 0.12, 0.07, 6),
+      _gearLoop(0.20, 0.78, 0.12, 0.07, 6),
+      _gearLoop(0.80, 0.78, 0.12, 0.07, 6),
+    ];
+    final loops = <List<Offset>>[central, ...satellites];
+    for (var i = 0; i < satellites.length; i++) {
+      loops.add(_bar(central[i * 2], satellites[i][0], 0.045));
+    }
+    return _shape('ClockworkMachine', loops);
+  }
+
+  static _Skeleton _treehouseNetwork() {
+    final crowns = [
+      _ellipse(0.24, 0.30, 0.16, 0.14, 8),
+      _ellipse(0.50, 0.22, 0.18, 0.16, 8),
+      _ellipse(0.76, 0.30, 0.16, 0.14, 8),
+    ];
+    final loops = <List<Offset>>[...crowns];
+    for (var i = 0; i < crowns.length; i++) {
+      loops.add(_bar(crowns[i][4], Offset(0.24 + i * 0.26, 0.90), 0.045));
+    }
+    loops.add(_bar(crowns[0][2], crowns[1][6], 0.04));
+    loops.add(_bar(crowns[1][2], crowns[2][6], 0.04));
+    loops.add(_bar(const Offset(0.24, 0.74), const Offset(0.50, 0.78), 0.04));
+    loops.add(_bar(const Offset(0.50, 0.78), const Offset(0.76, 0.74), 0.04));
+    return _shape('TreehouseNetwork', loops);
+  }
+
+  static _Skeleton _eagleWithSpreadWings() {
+    final body = _diamondAt(0.50, 0.54, 0.11, 0.18);
+    return _shape('EagleWithSpreadWings', [
+      body,
+      [body[0], const Offset(0.26, 0.14), const Offset(0.08, 0.30), body[1]],
+      [body[0], const Offset(0.74, 0.14), const Offset(0.92, 0.30), body[3]],
+      [body[2], const Offset(0.34, 0.90), const Offset(0.50, 0.78), body[3]],
+      [body[2], const Offset(0.66, 0.90), const Offset(0.50, 0.78)],
+      [body[0], const Offset(0.44, 0.06), const Offset(0.56, 0.06), body[1]],
+      _bar(const Offset(0.26, 0.14), const Offset(0.08, 0.48), 0.04),
+      _bar(const Offset(0.74, 0.14), const Offset(0.92, 0.48), 0.04),
+    ]);
+  }
+
+  static _Skeleton _citySkylineNetwork() {
+    final towers = [
+      _box(0.06, 0.42, 0.24, 0.88),
+      _box(0.28, 0.24, 0.46, 0.88),
+      _box(0.54, 0.34, 0.72, 0.88),
+      _box(0.76, 0.18, 0.94, 0.88),
+    ];
+    final loops = <List<Offset>>[...towers];
+    for (var i = 0; i < towers.length - 1; i++) {
+      loops.add(_bar(towers[i][1], towers[i + 1][0], 0.04));
+      loops.add(_bar(towers[i][2], towers[i + 1][3], 0.04));
+    }
+    loops.add(_bar(const Offset(0.15, 0.42), const Offset(0.15, 0.08), 0.03));
+    loops.add(_bar(const Offset(0.85, 0.18), const Offset(0.85, 0.06), 0.03));
+    return _shape('CitySkylineNetwork', loops);
+  }
+
+  static _Skeleton _impossibleKnot() {
+    const a = [
+      Offset(0.20, 0.30),
+      Offset(0.55, 0.18),
+      Offset(0.80, 0.50),
+      Offset(0.45, 0.82),
+    ];
+    const b = [
+      Offset(0.20, 0.70),
+      Offset(0.55, 0.82),
+      Offset(0.80, 0.50),
+      Offset(0.45, 0.18),
+    ];
+    return _shape('ImpossibleKnot', [
+      a,
+      b,
+      _bar(const Offset(0.20, 0.30), const Offset(0.20, 0.70), 0.045),
+      _bar(const Offset(0.45, 0.18), const Offset(0.55, 0.18), 0.04),
+      _bar(const Offset(0.45, 0.82), const Offset(0.55, 0.82), 0.04),
+    ]);
+  }
+
+  static _Skeleton _solarSystem() {
+    final sun = _ellipse(0.50, 0.50, 0.14, 0.14, 10);
+    final planets = [
+      _ellipse(0.14, 0.20, 0.08, 0.08, 6),
+      _ellipse(0.86, 0.20, 0.07, 0.07, 6),
+      _ellipse(0.14, 0.80, 0.07, 0.07, 6),
+      _ellipse(0.86, 0.80, 0.09, 0.09, 6),
+    ];
+    final loops = <List<Offset>>[sun, ...planets];
+    for (var i = 0; i < planets.length; i++) {
+      loops.add(_bar(sun[i * 2], planets[i][0], 0.035));
+    }
+    loops.add(_ellipse(0.50, 0.50, 0.42, 0.38, 12));
+    return _shape('SolarSystem', loops);
+  }
+
+  static _Skeleton _mechanicalRobot() {
+    const head = [
+      Offset(0.36, 0.10),
+      Offset(0.64, 0.10),
+      Offset(0.64, 0.34),
+      Offset(0.36, 0.34),
+    ];
+    const torso = [
+      Offset(0.32, 0.38),
+      Offset(0.68, 0.38),
+      Offset(0.68, 0.72),
+      Offset(0.32, 0.72),
+    ];
+    return _shape('MechanicalRobot', [
+      head,
+      torso,
+      _bar(const Offset(0.36, 0.22), const Offset(0.64, 0.22), 0.04),
+      _bar(const Offset(0.36, 0.10), const Offset(0.10, 0.30), 0.04),
+      _bar(const Offset(0.64, 0.10), const Offset(0.90, 0.30), 0.04),
+      _bar(const Offset(0.32, 0.72), const Offset(0.20, 0.94), 0.045),
+      _bar(const Offset(0.68, 0.72), const Offset(0.80, 0.94), 0.045),
+      _bar(const Offset(0.42, 0.50), const Offset(0.58, 0.50), 0.04),
+    ]);
+  }
+
+  static _Skeleton _phoenix() {
+    final body = _diamondAt(0.50, 0.46, 0.12, 0.22);
+    return _shape('Phoenix', [
+      body,
+      [body[0], const Offset(0.20, 0.10), const Offset(0.06, 0.36), body[1]],
+      [body[0], const Offset(0.80, 0.10), const Offset(0.94, 0.36), body[3]],
+      [body[2], const Offset(0.28, 0.94), const Offset(0.42, 0.76), body[3]],
+      [body[2], const Offset(0.72, 0.94), const Offset(0.58, 0.76), body[1]],
+      [body[0], const Offset(0.44, 0.04), const Offset(0.56, 0.04), body[1]],
+      _bar(body[1], body[3], 0.04),
+      _bar(const Offset(0.20, 0.10), const Offset(0.06, 0.60), 0.035),
+      _bar(const Offset(0.80, 0.10), const Offset(0.94, 0.60), 0.035),
+    ]);
+  }
+
+  static _Skeleton _galacticConstellation() {
+    final stars = _ellipse(0.50, 0.50, 0.42, 0.34, 8, phase: -pi / 2);
+    final loops = <List<Offset>>[stars];
+    for (var i = 0; i < stars.length; i++) {
+      loops.add(_bar(stars[i], stars[(i + 2) % stars.length], 0.035));
+    }
+    loops.add(_starLoop(5, cx: 0.5, cy: 0.5, outer: 0.18, inner: 0.08));
+    return _shape('GalacticConstellation', loops);
+  }
+
+  static _Skeleton _interconnectedClockTowers() {
+    final left = _box(0.10, 0.30, 0.40, 0.92);
+    final right = _box(0.60, 0.22, 0.90, 0.92);
+    return _shape('InterconnectedClockTowers', [
+      left,
+      right,
+      _ellipse(0.25, 0.46, 0.10, 0.10, 8),
+      _ellipse(0.75, 0.38, 0.10, 0.10, 8),
+      _bar(const Offset(0.25, 0.46), const Offset(0.25, 0.18), 0.03),
+      _bar(const Offset(0.75, 0.38), const Offset(0.75, 0.10), 0.03),
+      _bar(const Offset(0.40, 0.64), const Offset(0.60, 0.64), 0.05),
+      _bar(const Offset(0.40, 0.92), const Offset(0.60, 0.92), 0.05),
+    ]);
+  }
+
+  static _Skeleton _giantGearNetwork() {
+    final gears = [
+      _gearLoop(0.50, 0.24, 0.18, 0.11, 8),
+      _gearLoop(0.24, 0.72, 0.16, 0.10, 7),
+      _gearLoop(0.76, 0.72, 0.16, 0.10, 7),
+    ];
+    return _shape('GiantGearNetwork', [
+      ...gears,
+      _bar(gears[0][4], gears[1][0], 0.045),
+      _bar(gears[0][0], gears[2][0], 0.045),
+      _bar(gears[1][4], gears[2][4], 0.045),
+    ]);
+  }
+
+  static _Skeleton _theUltimateKingdom() {
+    const keep = [
+      Offset(0.30, 0.34),
+      Offset(0.70, 0.34),
+      Offset(0.70, 0.88),
+      Offset(0.30, 0.88),
+    ];
+    const leftTower = [
+      Offset(0.08, 0.46),
+      Offset(0.22, 0.20),
+      Offset(0.36, 0.46),
+      Offset(0.36, 0.88),
+      Offset(0.08, 0.88),
+    ];
+    const rightTower = [
+      Offset(0.64, 0.46),
+      Offset(0.78, 0.20),
+      Offset(0.92, 0.46),
+      Offset(0.92, 0.88),
+      Offset(0.64, 0.88),
+    ];
+    return _shape('TheUltimateKingdom', [
+      keep,
+      leftTower,
+      rightTower,
+      _starLoop(6, cx: 0.50, cy: 0.18, outer: 0.12, inner: 0.05),
+      _bar(const Offset(0.22, 0.20), const Offset(0.50, 0.34), 0.04),
+      _bar(const Offset(0.78, 0.20), const Offset(0.50, 0.34), 0.04),
+      _bar(const Offset(0.30, 0.88), const Offset(0.70, 0.88), 0.05),
+      _bar(const Offset(0.50, 0.88), const Offset(0.50, 0.98), 0.035),
+    ]);
   }
 
   static Offset _polar(double cx, double cy, double r, double a) =>
@@ -1585,40 +3362,6 @@ class OneLineGenerator {
         for (var i = 0; i < n; i++)
           _polar(0.5, 0.5, radius, phase + i * 2 * pi / n),
       ];
-
-  /// Centres [pts] and scales them to a consistent span, then
-  /// de-duplicates [links]. Marked eulerian so the caller ships the
-  /// whole symmetric figure untouched.
-  static _Skeleton _fitSkeleton(
-      String name, List<Offset> pts, List<_Link> links) {
-    final seen = <String>{};
-    final dedup = <_Link>[];
-    for (final l in links) {
-      if (l.a == l.b) continue;
-      if (l.a < 0 || l.b < 0 || l.a >= pts.length || l.b >= pts.length) {
-        continue;
-      }
-      final key = l.a <= l.b ? '${l.a}-${l.b}' : '${l.b}-${l.a}';
-      if (seen.add(key)) dedup.add(l.a <= l.b ? l : _Link(l.b, l.a));
-    }
-    var minX = double.infinity, minY = double.infinity;
-    var maxX = double.negativeInfinity, maxY = double.negativeInfinity;
-    for (final p in pts) {
-      minX = min(minX, p.dx);
-      minY = min(minY, p.dy);
-      maxX = max(maxX, p.dx);
-      maxY = max(maxY, p.dy);
-    }
-    const span = 0.90;
-    final w = maxX - minX, h = maxY - minY;
-    final scale = span / max(w <= 0 ? 1 : w, h <= 0 ? 1 : h);
-    final cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-    final fitted = [
-      for (final p in pts)
-        Offset(0.5 + (p.dx - cx) * scale, 0.5 + (p.dy - cy) * scale),
-    ];
-    return _Skeleton(name, fitted, dedup, rotatable: true, eulerian: true);
-  }
 
   // ── Figure construction ───────────────────────────────────────────
 
@@ -1630,9 +3373,9 @@ class OneLineGenerator {
     bool mirror,
   ) {
     final used = Set<int>.identity();
-    if (sk.eulerian) {
-      // Already an Eulerian circuit by construction — ship every link so
-      // the symmetric figure stays intact (no walk or parity repair).
+    if (sk.trail || sk.eulerian) {
+      // Authored circuits and bridge trails ship every link so their
+      // topology stays intact.
       for (var i = 0; i < sk.links.length; i++) {
         used.add(i);
       }
@@ -1656,9 +3399,11 @@ class OneLineGenerator {
     // Symmetric figures spin to a fresh orientation each level;
     // pictorial ones get a subtle hand-drawn tilt so no two levels
     // ever render the exact same figure.
-    final angle = sk.rotatable
-        ? rng.nextDouble() * 2 * pi
-        : (rng.nextDouble() - 0.5) * 0.24;
+    final angle = sk.lockOrientation
+        ? 0.0
+        : sk.rotatable
+            ? rng.nextDouble() * 2 * pi
+            : (rng.nextDouble() - 0.5) * 0.24;
     final cosA = cos(angle);
     final sinA = sin(angle);
 
@@ -1731,27 +3476,42 @@ class OneLineGenerator {
     }
     if (edges.length < cfg.minEdges) return null;
 
-    // Eulerian-circuit invariants: connectivity + zero odd vertices.
+    // Connected + 0 odd vertices for circuits, exactly 2 for bridge
+    // trails. A trail's odd endpoints are the only legal start/finish.
     if (!_isConnected(vertices.length, edges)) return null;
-    if (_oddDegreeVertices(vertices.length, edges).isNotEmpty) return null;
-
-    // Playability: reject cramped layouts (lines too close, strokes
-    // too short, shallow-angle overlaps) before shipping the level.
-    if (!_isDrawable(vertices, edges, minSpan: cfg.minSpan, gap: cfg.minGap)) {
+    final odds = _oddDegreeVertices(vertices.length, edges);
+    if (sk.trail) {
+      if (odds.length != 2) return null;
+    } else if (odds.isNotEmpty) {
       return null;
     }
 
-    // Tutorial levels (1-10) let the stroke begin anywhere on the
-    // outline. From level 11 the start is locked to one glowing vertex,
-    // so a careless turn at a junction can strand the stroke and the
-    // player has to plan ahead.
-    final startAnywhere = number <= 10;
-    final startVertex =
-        startAnywhere ? 0 : _chooseStartVertex(vertices, edges, sk.startHint);
+    // Playability: reject cramped layouts (lines too close, strokes
+    // too short, shallow-angle overlaps) before shipping the level.
+    if (!_isDrawable(vertices, edges,
+        minSpan: cfg.minSpan,
+        gap: cfg.minGap,
+        minCrossingAngle: cfg.minCrossingAngle)) {
+      return null;
+    }
+
+    // Tutorial levels (1-10) are all-even circuits, so their solution
+    // works from any outline point. Later levels keep a hidden canonical
+    // solution start; bridge trails have two valid odd endpoints. The UI
+    // never reveals or enforces either one — wrong starts just dead-end.
+    final startAnywhere = number <= 10 && !sk.trail;
+    final startVertex = startAnywhere
+        ? 0
+        : sk.trail
+            ? _chooseTrailStart(vertices, odds)
+            : _chooseStartVertex(vertices, edges, sk.startHint);
+    final alternateStartVertex =
+        sk.trail ? odds.firstWhere((v) => v != startVertex) : null;
 
     final solution =
         hierholzer(vertices.length, edges, startAnywhere ? null : startVertex);
     if (solution == null || solution.length != edges.length + 1) return null;
+    if (sk.trail && !odds.contains(solution.last)) return null;
 
     final par = max(6, edges.length * 5);
     return OneLineLevel(
@@ -1765,12 +3525,14 @@ class OneLineGenerator {
       parSeconds: par,
       startAnywhere: startAnywhere,
       startVertex: startVertex,
+      alternateStartVertex: alternateStartVertex,
+      hideNodeDots: sk.hideNodeDots,
     );
   }
 
-  /// Locked-level start: the busiest junction (highest degree), breaking
-  /// ties toward the bottom-most then left-most vertex so the mandated
-  /// start is stable and visually obvious. Honours a figure's startHint
+  /// Hidden canonical solution start: the busiest junction (highest
+  /// degree), breaking ties toward the bottom-most then left-most vertex
+  /// so the generated solution is stable. Honours a figure's startHint
   /// when the figure author has one in mind.
   static int _chooseStartVertex(
       List<OneLineVertex> vertices, List<OneLineEdge> edges, int? hint) {
@@ -1793,6 +3555,22 @@ class OneLineGenerator {
             (pv.dy > pb.dy - 1e-9 && pv.dx < pb.dx - 1e-9)) {
           best = v;
         }
+      }
+    }
+    return best;
+  }
+
+  /// Bridge-trail start: the upper (then left-most) odd endpoint. Both
+  /// odds are legal, but one stable choice keeps the hidden canonical
+  /// start and the authored solution consistent.
+  static int _chooseTrailStart(
+      List<OneLineVertex> vertices, List<int> oddVertices) {
+    var best = oddVertices.first;
+    for (final v in oddVertices.skip(1)) {
+      final p = vertices[v].position;
+      final bp = vertices[best].position;
+      if (p.dy < bp.dy - 1e-9 || (p.dy < bp.dy + 1e-9 && p.dx < bp.dx - 1e-9)) {
+        best = v;
       }
     }
     return best;
@@ -2001,6 +3779,7 @@ class OneLineGenerator {
     List<OneLineEdge> edges, {
     double minSpan = minEdgeSpan,
     double gap = minSegmentGap,
+    double minCrossingAngle = minCrossingAngleDeg,
   }) {
     final p = [for (final v in vertices) v.position];
     for (final e in edges) {
@@ -2019,7 +3798,7 @@ class OneLineGenerator {
                       .abs() %
                   pi;
           if (acute > pi / 2) acute = pi - acute;
-          if (acute * 180 / pi < minCrossingAngleDeg) return false;
+          if (acute * 180 / pi < minCrossingAngle) return false;
         } else if (rel.distance < gap) {
           return false;
         }

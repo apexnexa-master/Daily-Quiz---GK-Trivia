@@ -4,11 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gk_quiz_app/presentation/screens/games/one_line/one_line_generator.dart';
 import 'package:gk_quiz_app/presentation/screens/games/one_line/one_line_models.dart';
 
+const trailLevels = {
+  'MultiBridgeCastle',
+  'SnowflakeNetwork',
+  'AncientCityWithMultipleBridges',
+};
+
 void main() {
   group('OneLineGenerator', () {
-    test('generates solvable levels for 1-60', () {
+    test('generates solvable levels across campaign and endless', () {
       final gen = OneLineGenerator();
-      for (int i = 1; i <= 60; i++) {
+      for (int i = 1; i <= 120; i++) {
         final level = gen.generateLevel(i);
         expect(level.edges, isNotEmpty, reason: 'Level $i should have edges');
         expect(level.vertices.length, greaterThanOrEqualTo(3),
@@ -34,8 +40,8 @@ void main() {
         expect(keys.length, level.edges.length,
             reason: 'Level $i has duplicate edges');
 
-        // Eulerian CIRCUIT condition: zero odd-degree vertices. This is
-        // what lets the player start the stroke anywhere on the outline.
+        // Circuits have zero odd vertices; bridge-trail levels have
+        // exactly two, which are the only legal start/finish endpoints.
         final degree = <int, int>{};
         for (final e in level.edges) {
           degree[e.a] = (degree[e.a] ?? 0) + 1;
@@ -45,9 +51,10 @@ void main() {
           degree.putIfAbsent(id, () => 0);
         }
         final oddCount = degree.values.where((d) => d.isOdd).length;
-        expect(oddCount, 0,
+        final expectedOdds = trailLevels.contains(level.name) ? 2 : 0;
+        expect(oddCount, expectedOdds,
             reason: 'Level $i has $oddCount odd-degree vertices '
-                '(circuits must have none)');
+                '(expected $expectedOdds for ${level.name})');
 
         // Connectivity: BFS from any vertex reaches all vertices.
         final adj = <int, List<int>>{};
@@ -117,9 +124,30 @@ void main() {
       }
     });
 
-    test('locked levels (11+) pin the start to one glowing vertex', () {
+    test('Anchor branches are directionally distinct', () {
+      final level = OneLineGenerator().generateLevel(8);
+      final pos = {for (final v in level.vertices) v.id: v.position};
+
+      for (int i = 0; i < level.edges.length; i++) {
+        for (int j = i + 1; j < level.edges.length; j++) {
+          final a = level.edges[i];
+          final b = level.edges[j];
+          for (final shared in [a.a, a.b]) {
+            if (!b.touches(shared)) continue;
+            final va = pos[a.other(shared)]! - pos[shared]!;
+            final vb = pos[b.other(shared)]! - pos[shared]!;
+            final cross = va.dx * vb.dy - va.dy * vb.dx;
+            final dot = va.dx * vb.dx + va.dy * vb.dy;
+            expect(cross.abs() > 1e-4 || dot <= 0, isTrue,
+                reason: 'Edges ${a.id}/${b.id} overlap at vertex $shared');
+          }
+        }
+      }
+    });
+
+    test('later levels keep a hidden canonical solution start', () {
       final gen = OneLineGenerator();
-      for (int n = 11; n <= 60; n++) {
+      for (int n = 11; n <= 120; n++) {
         final level = gen.generateLevel(n);
         expect(level.startAnywhere, isFalse,
             reason: 'Level $n should be start-locked');
@@ -128,8 +156,48 @@ void main() {
             reason: 'Level $n startVertex out of range');
         expect(level.solution.first, level.startVertex,
             reason: 'Level $n solution must begin at the locked start');
-        expect(level.solution.last, level.startVertex,
-            reason: 'Level $n solution must close back at the locked start');
+        if (trailLevels.contains(level.name)) {
+          expect(level.solution.last, isNot(level.startVertex),
+              reason: 'Level $n trail must finish at the other odd endpoint');
+        } else {
+          expect(level.solution.last, level.startVertex,
+              reason: 'Level $n solution must close back at the locked start');
+        }
+      }
+    });
+
+    test('bridge trails keep two hidden valid endpoints', () {
+      final gen = OneLineGenerator();
+      for (int n = OneLineGenerator.campaignLevelCount - 2;
+          n <= OneLineGenerator.campaignLevelCount;
+          n++) {
+        final level = gen.generateLevel(n);
+        expect(trailLevels.contains(level.name), isTrue,
+            reason: 'Level $n should be a bridge trail');
+        expect(level.startAnywhere, isFalse);
+        expect(level.hideNodeDots, isTrue);
+
+        final degree = <int, int>{for (final v in level.vertices) v.id: 0};
+        for (final e in level.edges) {
+          degree[e.a] = degree[e.a]! + 1;
+          degree[e.b] = degree[e.b]! + 1;
+        }
+        final odds = {
+          for (final entry in degree.entries.where((e) => e.value.isOdd))
+            entry.key,
+        };
+        expect(odds.length, 2);
+        final upper = odds.reduce((a, b) =>
+            level.vertices[a].position.dy <= level.vertices[b].position.dy
+                ? a
+                : b);
+        final lower = odds.firstWhere((v) => v != upper);
+        expect(level.startVertex, upper,
+            reason: 'Level $n primary start should be the upper endpoint');
+        expect(level.alternateStartVertex, lower,
+            reason: 'Level $n should also accept the lower endpoint');
+        expect(level.solution.last, lower,
+            reason: 'Level $n primary solution should finish at the lower end');
       }
     });
 
@@ -198,92 +266,162 @@ void main() {
     test('campaign ships the hand-crafted figures in order', () {
       final gen = OneLineGenerator();
       const expected = {
-        1: 'House',
-        2: 'Tree',
-        3: 'Boat',
-        4: 'Swallow',
-        5: 'Crown',
-        6: 'Diamond',
-        7: 'Fish',
-        8: 'Star',
-        9: 'Pentagram',
-        10: 'Rocket',
-        11: 'Bird',
-        12: 'Cat',
-        13: 'Flower',
-        14: 'Pinwheel',
-        15: 'Octahedron',
-        16: 'Starburst',
-        17: 'Lattice',
-        18: 'Key',
-        19: 'Bloom',
-        20: 'Prism',
-        21: 'DiamondChain',
-        22: 'OctoWeb',
-        23: 'Lotus',
-        24: 'Enneagram',
-        25: 'Weave',
-        26: 'Decagram',
-        27: 'Heart',
-        28: 'Filigree',
-        29: 'Mandala',
-        30: 'Webbing',
-        31: 'Rosette',
+        1: 'SimpleChair',
+        2: 'SimpleTree',
+        3: 'SimpleBoat',
+        4: 'SimpleStar',
+        5: 'SimpleDiamond',
+        6: 'SimpleFish',
+        7: 'SimplePentagon',
+        8: 'Anchor',
+        9: 'SimpleRocket',
+        10: 'SimpleKey',
+        11: 'SimplePrism',
+        12: 'SimpleOwl',
+        13: 'SmallHouse',
+        14: 'FivePointStar',
+        15: 'Sailboat',
+        16: 'Umbrella',
+        17: 'Fish',
+        18: 'DiamondCrystal',
+        19: 'Rocket',
+        20: 'CoffeeCup',
+        21: 'Butterfly',
+        22: 'RoyalCrown',
+        23: 'CrescentMoon',
+        24: 'Apple',
+        25: 'Candle',
+        26: 'Kite',
+        27: 'PaperAirplane',
+        28: 'Mushroom',
+        29: 'Turtle',
+        30: 'Bell',
+        31: 'Key',
+        32: 'MountainLandscape',
+        33: 'Windmill',
+        34: 'Owl',
+        35: 'Bicycle',
+        36: 'Castle',
+        37: 'SpiderWeb',
+        38: 'Peacock',
+        39: 'SailingShip',
+        40: 'BranchingTree',
+        41: 'InterlockingPentagons',
+        42: 'Lighthouse',
+        43: 'Elephant',
+        44: 'Camera',
+        45: 'FerrisWheel',
+        46: 'Guitar',
+        47: 'HotAirBalloon',
+        48: 'Dolphin',
+        49: 'ClockTower',
+        50: 'TrainEngine',
+        51: 'GeometricRose',
+        52: 'Compass',
+        53: 'TwinSquaresConnectedByBridge',
+        54: 'TwinStarsConnectedByBridge',
+        55: 'TwinHousesConnectedByBridge',
+        56: 'TwoInterlockingRings',
+        57: 'DoubleHelix',
+        58: 'SuspensionBridge',
+        59: 'GeometricDragon',
+        60: 'GrandPiano',
+        61: 'SpaceSatellite',
+        62: 'MultiBridgeCastle',
+        63: 'SnowflakeNetwork',
+        64: 'AncientCityWithMultipleBridges',
       };
+
+      expect(OneLineGenerator.campaignLevelCount, expected.length);
       expected.forEach((level, name) {
         expect(gen.generateLevel(level).name, name,
             reason: 'Level $level should be the $name figure');
       });
       // No curated level may silently degrade to the fallback polygon.
-      for (int i = 1; i <= 31; i++) {
+      for (int i = 1; i <= OneLineGenerator.campaignLevelCount; i++) {
         expect(gen.generateLevel(i).name, isNot('Polygon'),
             reason: 'Level $i fell back to the plain polygon');
       }
       // Every curated figure is a different shape.
       final names = [
-        for (int i = 1; i <= 31; i++) gen.generateLevel(i).name,
+        for (int i = 1; i <= OneLineGenerator.campaignLevelCount; i++)
+          gen.generateLevel(i).name,
       ];
       expect(names.toSet().length, names.length,
           reason: 'Campaign repeats a figure');
     });
 
-    test('campaign edge counts climb level-wise (difficulty ramp)', () {
+    test('campaign complexity climbs across tiers (difficulty ramp)', () {
       final gen = OneLineGenerator();
-      var prev = 0;
-      for (int i = 1; i <= 31; i++) {
-        final e = gen.generateLevel(i).edges.length;
-        // Level 4 is a deliberate showcase spike (the swallow figure),
-        // so resume the ramp from level 5 onwards.
-        if (i == 5) {
-          prev = e;
-          continue;
+      double avg(int lo, int hi) {
+        var total = 0;
+        for (int i = lo; i <= hi; i++) {
+          total += gen.generateLevel(i).edges.length;
         }
-        expect(e, greaterThanOrEqualTo(prev),
-            reason: 'Level $i ($e edges) should not be easier than '
-                'level ${i - 1} ($prev edges)');
-        prev = e;
+        return total / (hi - lo + 1);
+      }
+
+      final tiers = [
+        avg(1, 10),
+        avg(11, 20),
+        avg(21, 30),
+        avg(31, 40),
+        avg(41, 52),
+        avg(53, OneLineGenerator.campaignLevelCount),
+      ];
+      for (var i = 1; i < tiers.length; i++) {
+        expect(tiers[i], greaterThanOrEqualTo(tiers[i - 1]),
+            reason: 'Campaign tier $i should not be easier than tier ${i - 1}');
       }
     });
 
-    test('endless zone ships fresh symmetric figures', () {
+    test('endless zone ships distinct hand-crafted studio figures', () {
       final gen = OneLineGenerator();
-      const families = {'Mandala', 'Rosette', 'Flower'};
+      const studio = [
+        'MechanicalSpider',
+        'Octopus',
+        'PeacockWithDetailedFeathers',
+        'ClockworkMachine',
+        'TreehouseNetwork',
+        'EagleWithSpreadWings',
+        'CitySkylineNetwork',
+        'ImpossibleKnot',
+        'SolarSystem',
+        'MechanicalRobot',
+        'Phoenix',
+        'GalacticConstellation',
+        'InterconnectedClockTowers',
+        'GiantGearNetwork',
+        'TheUltimateKingdom',
+      ];
+      expect(OneLineGenerator.studioLevelCount, studio.length);
+      final first = OneLineGenerator.campaignLevelCount + 1;
       final names = <String>[];
-      for (int i = 32; i <= 60; i++) {
-        final level = gen.generateLevel(i);
+      for (var i = 0; i < studio.length; i++) {
+        final level = gen.generateLevel(first + i);
+        expect(level.name, studio[i],
+            reason: 'Endless level ${first + i} should be ${studio[i]}');
         expect(level.edges.length, greaterThanOrEqualTo(6),
-            reason: 'Level $i too sparse');
-        expect(families.contains(level.name), isTrue,
-            reason: 'Level $i should be a symmetric figure, got ${level.name}');
+            reason: 'Endless level ${first + i} too sparse');
+        expect(level.name, isNot('Polygon'),
+            reason: 'Endless level ${first + i} fell back to the polygon');
         names.add(level.name);
       }
-      // Every family shows up across the endless levels...
-      expect(names.toSet(), families,
-          reason: 'Endless zone should rotate through all figure families');
-      // ...and consecutive levels never repeat the exact same layout.
-      for (var i = 1; i < names.length; i++) {
-        expect(names[i], isNot(names[i - 1]),
-            reason: 'Consecutive endless levels should differ');
+      expect(names.toSet().length, names.length,
+          reason: 'Endless zone repeats a studio figure');
+    });
+
+    test('studio figures never reuse campaign names', () {
+      final gen = OneLineGenerator();
+      final campaign = {
+        for (int i = 1; i <= OneLineGenerator.campaignLevelCount; i++)
+          gen.generateLevel(i).name,
+      };
+      final first = OneLineGenerator.campaignLevelCount + 1;
+      for (var i = 0; i < OneLineGenerator.studioLevelCount; i++) {
+        expect(campaign.contains(gen.generateLevel(first + i).name), isFalse,
+            reason:
+                'Studio figure at level ${first + i} reuses a campaign name');
       }
     });
   });

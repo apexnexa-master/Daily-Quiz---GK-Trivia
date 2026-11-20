@@ -1187,7 +1187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ? 'আজকের চ্যালেঞ্জ'
         : isHi
             ? 'आज की चुनौती'
-            : "Today's Challenge";
+            : "TODAY'S CHALLENGE";
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1532,30 +1532,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               isBn: isBn,
               isHi: isHi,
               badgeText: isBn
-                  ? 'গণিত'
+                  ? 'ট্রেস'
                   : isHi
-                      ? 'गणित'
-                      : 'MATH',
+                      ? 'ट्रेस'
+                      : 'TRACE',
               title: isBn
-                  ? 'ম্যাথ স্প্রিন্ট'
+                  ? 'ওয়ান লাইন'
                   : isHi
-                      ? 'मैथ स्प्रिंट'
-                      : 'Math Sprint',
+                      ? 'वन लाइन'
+                      : 'One Line',
               subtitle: isBn
-                  ? 'গতি ও হিসাব পরীক্ষা'
+                  ? 'একটি ধারাবাহিক স্ট্রোকে আকৃতি আঁকুন'
                   : isHi
-                      ? 'त्वरित गणना खेल'
-                      : 'Mental arithmetic sprint',
+                      ? 'एक निरंतर स्ट्रोक में आकृति बनाएँ'
+                      : 'Draw shapes in one continuous stroke',
               accent: accentPurple,
-              icon: Icons.calculate_rounded,
-              emblemPath: 'assets/covers/math_sprint_emblem.svg',
+              icon: Icons.draw_rounded,
+              emblemPath: 'assets/covers/one_line_emblem.svg',
               footer: isBn
-                  ? 'মানসিক গণিত'
+                  ? 'এক স্ট্রোকে'
                   : isHi
-                      ? 'मानसिक गणित'
-                      : 'Mental math',
-              onTap: () =>
-                  Navigator.pushNamed(context, AppRouter.introMathSprint),
+                      ? 'एक स्ट्रोक में'
+                      : 'Single stroke',
+              onTap: () => Navigator.pushNamed(context, AppRouter.introOneLine),
             ),
             _buildRecommendedGameTile(
               context: context,

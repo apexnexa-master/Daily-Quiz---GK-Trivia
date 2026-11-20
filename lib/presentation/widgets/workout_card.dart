@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_animations.dart';
 
@@ -58,22 +59,21 @@ class QuickBrainWorkoutCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: isDark ? AppColors.tileDark : AppColors.tileLight,
-        border: isDark ? AppColors.tileBorderDark : AppColors.tileBorderLight,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.32 : 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Padding(
-
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: isDark ? AppColors.tileDark : AppColors.tileLight,
+          border: isDark ? AppColors.tileBorderDark : AppColors.tileBorderLight,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.32 : 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
               child: Row(
                 children: [
@@ -121,11 +121,11 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                           '$titleWord$titleSuffix',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: GoogleFonts.montserrat(
                             fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.2,
-                            height: 1.08,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.1,
+                            height: 1.1,
                             color: textPrimary,
                           ),
                         ),
@@ -138,8 +138,7 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             height: 1.25,
-                            color:
-                                textSecondary.withValues(alpha: 0.85),
+                            color: textSecondary.withValues(alpha: 0.85),
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -154,8 +153,8 @@ class QuickBrainWorkoutCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.neonLime.withValues(
-                                      alpha: isDark ? 0.30 : 0.22),
+                                  color: AppColors.neonLime
+                                      .withValues(alpha: isDark ? 0.30 : 0.22),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),

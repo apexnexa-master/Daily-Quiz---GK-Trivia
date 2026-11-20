@@ -36,20 +36,15 @@ double _pointSegDist(Offset p, Offset a, Offset b) {
 void main() {
   final g = OneLineGenerator();
 
-  test('every level is drawable: long strokes and generous line gaps',
-      () {
-    for (int n = 1; n <= 60; n++) {
+  test('every level is drawable: long strokes and generous line gaps', () {
+    for (int n = 1; n <= 120; n++) {
       final lv = g.generateLevel(n);
 
       // No stroke shorter than the drag-friendly minimum.
       for (final e in lv.edges) {
         final len =
-            (lv.vertices[e.b].position - lv.vertices[e.a].position)
-                .distance;
-        expect(
-            len,
-            greaterThanOrEqualTo(
-                OneLineGenerator.minSpanFor(n) - 1e-6),
+            (lv.vertices[e.b].position - lv.vertices[e.a].position).distance;
+        expect(len, greaterThanOrEqualTo(OneLineGenerator.minSpanFor(n) - 1e-6),
             reason: 'L$n ${lv.name} edge ${e.a}-${e.b} too short: $len');
       }
 
@@ -58,8 +53,7 @@ void main() {
         for (int j = i + 1; j < lv.edges.length; j++) {
           final e = lv.edges[i];
           final f = lv.edges[j];
-          final adjacent = e.a == f.a || e.a == f.b || e.b == f.a ||
-              e.b == f.b;
+          final adjacent = e.a == f.a || e.a == f.b || e.b == f.a || e.b == f.b;
           if (adjacent) continue;
           final rel = _segmentRelation(
             lv.vertices[e.a].position,
@@ -68,25 +62,20 @@ void main() {
             lv.vertices[f.b].position,
           );
           if (rel.crossing) {
-            var acute = ((lv.vertices[e.b].position -
-                        lv.vertices[e.a].position)
+            var acute = ((lv.vertices[e.b].position - lv.vertices[e.a].position)
                     .direction -
                 (lv.vertices[f.b].position - lv.vertices[f.a].position)
                     .direction);
             acute = acute.abs() % math.pi;
             if (acute > math.pi / 2) acute = math.pi - acute;
             expect(acute * 180 / math.pi,
-                greaterThanOrEqualTo(OneLineGenerator.minCrossingAngleDeg),
-                reason:
-                    'L$n ${lv.name} shallow crossing edges ${e.a}-${e.b} '
+                greaterThanOrEqualTo(OneLineGenerator.minCrossingAngleFor(n)),
+                reason: 'L$n ${lv.name} shallow crossing edges ${e.a}-${e.b} '
                     'and ${f.a}-${f.b}');
           } else {
-            expect(
-                rel.distance,
-                greaterThanOrEqualTo(
-                    OneLineGenerator.minGapFor(n) - 1e-6),
-                reason:
-                    'L$n ${lv.name} edges ${e.a}-${e.b} and ${f.a}-${f.b} '
+            expect(rel.distance,
+                greaterThanOrEqualTo(OneLineGenerator.minGapFor(n) - 1e-6),
+                reason: 'L$n ${lv.name} edges ${e.a}-${e.b} and ${f.a}-${f.b} '
                     'too close: ${rel.distance}');
           }
         }

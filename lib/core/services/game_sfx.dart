@@ -5,6 +5,8 @@
 // ships with zero audio licensing concerns. Playback is fire-and-forget and
 // silently no-ops when disabled or on platforms without audio support.
 
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,6 +20,11 @@ enum GameSfx {
   wrong,
   levelUp,
   gameOver,
+  trace,
+  hint,
+  undo,
+  replay,
+  success,
 }
 
 class GameSfxService {
@@ -29,6 +36,21 @@ class GameSfxService {
   bool _initialized = false;
 
   static const String prefKey = 'game_sfx_enabled';
+
+  static const Map<GameSfx, double> _volumes = {
+    GameSfx.tap: 0.42,
+    GameSfx.trace: 0.34,
+    GameSfx.hint: 0.55,
+    GameSfx.undo: 0.42,
+    GameSfx.replay: 0.48,
+    GameSfx.success: 0.58,
+    GameSfx.countdown: 0.48,
+    GameSfx.correct: 0.62,
+    GameSfx.combo: 0.60,
+    GameSfx.wrong: 0.52,
+    GameSfx.levelUp: 0.68,
+    GameSfx.gameOver: 0.58,
+  };
 
   static String _asset(GameSfx sfx) => switch (sfx) {
         GameSfx.levelUp => 'sfx/sfx_levelup.wav',
@@ -60,7 +82,11 @@ class GameSfxService {
   }
 
   AudioPlayer _playerFor(GameSfx sfx) {
-    return _players.putIfAbsent(sfx, () => AudioPlayer());
+    return _players.putIfAbsent(sfx, () {
+      final player = AudioPlayer();
+      unawaited(player.setVolume(_volumes[sfx] ?? 0.5));
+      return player;
+    });
   }
 
   /// Plays a cue. Never throws; failures are swallowed so a missing sound can

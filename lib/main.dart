@@ -17,6 +17,7 @@ import 'core/services/question_tracking_service.dart';
 import 'core/services/gamification_service.dart';
 import 'core/services/cloud_sync_service.dart';
 import 'core/services/daily_progress_service.dart';
+import 'core/services/game_sfx.dart';
 import 'core/services/analytics_service.dart';
 import 'core/services/quiz/practice_quiz_service.dart';
 import 'core/scoring/progression_service.dart';
@@ -54,6 +55,7 @@ void main() async {
     GamificationService.instance.init(),
     CloudSyncService.instance.init(),
     DailyProgressService.instance.init(),
+    GameSfxService.instance.init(),
     ProgressionService.instance.init(),
     LocalQuizData.init(),
     PracticeQuizService.instance.init(),

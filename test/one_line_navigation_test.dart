@@ -55,6 +55,22 @@ void main() {
       expect(pick(const Offset(-15, -2), traced: {12}), isNull);
     });
 
+    test('a start touch snaps to the nearest vertex inside the radius', () {
+      int? start(Offset pointer, {double radius = 30}) =>
+          OneLineNavigation.chooseStartVertex(
+        positions: positions,
+        pointer: pointer,
+        snapRadius: radius,
+      );
+
+      expect(start(const Offset(8, 6)), 0);
+      expect(start(const Offset(92, 9)), 1);
+      expect(start(const Offset(6, 96)), 2);
+      expect(start(const Offset(-94, 4)), 3);
+      expect(start(const Offset(50, 50)), isNull);
+      expect(start(const Offset(45, 45), radius: 70), 0);
+    });
+
     test('commits only near the far vertex', () {
       final far = positions[1]!;
       expect(

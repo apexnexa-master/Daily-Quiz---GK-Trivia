@@ -23,12 +23,6 @@ import 'silhouette_engine.dart';
 import 'silhouette_levels.dart';
 import 'silhouette_painter.dart';
 
-/// Testing helper: when true every level is playable regardless of progress.
-/// Keep this `false` so levels stay locked and unlock one-by-one as the player
-/// completes them (the shipped behaviour). Only flip it to `true` temporarily
-/// while debugging a level you have not unlocked yet.
-const bool kUnlockAllLevels = false;
-
 /// Minimum arrow cell size, in logical pixels. Boards that would have to shrink
 /// below this to fit the screen instead render larger and overflow the
 /// viewport, where the player pans / zooms (InteractiveViewer) to reach the
@@ -57,9 +51,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
 
   bool _showWinOverlay = false;
   int _hintsRemaining = 3;
+
   /// Genuine progression: the first not-yet-completed level (the resume point).
-  /// [kUnlockAllLevels] only relaxes the level picker's lock display, it never
-  /// overwrites this, so progress is saved correctly.
   int _unlockedLevel = 1;
   final Map<int, int> _starsMap = {};
   Timer? _blockedFlashTimer;
@@ -87,7 +80,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
   final Map<String, double> _flyProgress = {};
   final List<AnimationController> _escapeControllers = [];
 
-  final TransformationController _transformController = TransformationController();
+  final TransformationController _transformController =
+      TransformationController();
   int? _centeredForLevel;
 
   Map<int, int>? _maskDepths;
@@ -96,7 +90,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
   @override
   void initState() {
     super.initState();
-    _tickerController = AnimationController(vsync: this, duration: const Duration(seconds: 1));
+    _tickerController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 1));
     _introController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1900),
@@ -356,7 +351,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
 
     _escapeControllers.add(controller);
     controller.addListener(() {
-      _flyProgress[arrow.id] = flyOff.total * Curves.easeIn.transform(controller.value);
+      _flyProgress[arrow.id] =
+          flyOff.total * Curves.easeIn.transform(controller.value);
       setState(() {});
     });
 
@@ -382,7 +378,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     _tickerController.repeat();
     final outOfLives = _lives <= 1;
     setState(() {
-      _engine.flashBlocked(arrow); // charges a wasted move, retractable via undo
+      _engine
+          .flashBlocked(arrow); // charges a wasted move, retractable via undo
       _lives = max(0, _lives - 1);
     });
     _blockedFlashTimer = Timer(const Duration(milliseconds: 420), () {
@@ -520,16 +517,20 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     if (!_loaded && !_isLoading) {
       return const Scaffold(
         backgroundColor: Color(0xFF0A0E1A),
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        body:
+            Center(child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
 
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+        backgroundColor:
+            isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
         body: Container(
           decoration: BoxDecoration(
-            gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
+            gradient: isDark
+                ? AppColors.homeBackdropDark
+                : AppColors.homeBackdropGradient,
           ),
           child: SafeArea(
             child: Center(
@@ -555,10 +556,13 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
     }
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+      backgroundColor:
+          isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
       body: Container(
         decoration: BoxDecoration(
-          gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
+          gradient: isDark
+              ? AppColors.homeBackdropDark
+              : AppColors.homeBackdropGradient,
         ),
         child: SafeArea(
           child: Stack(
@@ -610,7 +614,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                 IconButton(
                   tooltip: 'Levels',
                   icon: Icon(Icons.grid_view_rounded,
-                      color: isDark ? Colors.white70 : Colors.black54, size: 22),
+                      color: isDark ? Colors.white70 : Colors.black54,
+                      size: 22),
                   onPressed: _showLevelPicker,
                 ),
             ],
@@ -666,6 +671,10 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
 
   void _showLevelPicker() {
     final current = _currentLevelId;
+    final visibleLevels = silhouetteLevels
+        .where(
+            (level) => _starsMap.containsKey(level.id) || level.id == current)
+        .toList();
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -704,7 +713,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Complete a level to unlock the next one.',
+                  'Solved levels and your current level only.',
                   style: GoogleFonts.montserrat(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
@@ -714,35 +723,23 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                 const SizedBox(height: 12),
                 Flexible(
                   child: GridView.builder(
-                    itemCount: silhouetteLevels.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    itemCount: visibleLevels.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 6,
                       childAspectRatio: 0.82,
                       mainAxisSpacing: 8,
                       crossAxisSpacing: 8,
                     ),
                     itemBuilder: (_, index) {
-                      final level = silhouetteLevels[index];
-                      final locked =
-                          !kUnlockAllLevels && level.id > _unlockedLevel;
+                      final level = visibleLevels[index];
                       final selected = level.id == current;
                       final stars = _starsMap[level.id] ?? 0;
                       return GestureDetector(
-                        onTap: locked
-                            ? () {
-                                ScaffoldMessenger.of(sheetContext).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Finish level ${level.id - 1} to unlock ${level.themeEmoji} ${level.name}.',
-                                    ),
-                                    duration: const Duration(milliseconds: 1600),
-                                  ),
-                                );
-                              }
-                            : () {
-                                Navigator.pop(sheetContext);
-                                _loadLevel(level.id);
-                              },
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          _loadLevel(level.id);
+                        },
                         child: Container(
                           decoration: BoxDecoration(
                             color: selected
@@ -761,31 +758,13 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Expanded(
-                                  child: locked
-                                      ? Stack(
-                                          alignment: Alignment.center,
-                                          children: [
-                                            Opacity(
-                                              opacity: 0.22,
-                                              child: _MaskThumb(
-                                                level: level,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                            const Icon(
-                                              Icons.lock_rounded,
-                                              color: Colors.white60,
-                                              size: 18,
-                                            ),
-                                          ],
-                                        )
-                                      : _MaskThumb(
-                                          level: level,
-                                          color: selected
-                                              ? AppColors.primary
-                                              : Colors.white,
-                                          opacity: selected ? 1.0 : 0.8,
-                                        ),
+                                  child: _MaskThumb(
+                                    level: level,
+                                    color: selected
+                                        ? AppColors.primary
+                                        : Colors.white,
+                                    opacity: selected ? 1.0 : 0.8,
+                                  ),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
@@ -793,9 +772,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                                   style: GoogleFonts.inter(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
-                                    color: locked
-                                        ? Colors.white38
-                                        : Colors.white70,
+                                    color: Colors.white70,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -828,7 +805,9 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
         style: GoogleFonts.montserrat(
           fontSize: 13,
           fontWeight: FontWeight.w800,
-          color: highlight ? AppColors.primary : (isDark ? Colors.white70 : Colors.black54),
+          color: highlight
+              ? AppColors.primary
+              : (isDark ? Colors.white70 : Colors.black54),
         ),
       ),
     );
@@ -899,24 +878,25 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                   alignment: Alignment.center,
                   child: GestureDetector(
                     onTapDown: (d) => _onTapDown(d, viewport),
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge([_tickerController, _introController]),
-                    builder: (context, child) {
-                      return CustomPaint(
-                        painter: SilhouettePainter(
-                          engine: _engine,
-                          animationValue: _tickerController.value,
-                          flyOffs: _flyOffs,
-                          flyProgress: _flyProgress,
-                          introductionValue: _introController.value,
-                          maskDepths: _maskDepths,
-                          arrowBuildOrder: _arrowBuildOrder,
-                          isDark: isDark,
-                        ),
-                        size: layout.size,
-                      );
-                    },
-                  ),
+                    child: AnimatedBuilder(
+                      animation: Listenable.merge(
+                          [_tickerController, _introController]),
+                      builder: (context, child) {
+                        return CustomPaint(
+                          painter: SilhouettePainter(
+                            engine: _engine,
+                            animationValue: _tickerController.value,
+                            flyOffs: _flyOffs,
+                            flyProgress: _flyProgress,
+                            introductionValue: _introController.value,
+                            maskDepths: _maskDepths,
+                            arrowBuildOrder: _arrowBuildOrder,
+                            isDark: isDark,
+                          ),
+                          size: layout.size,
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -1123,8 +1103,9 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                         i < stars
                             ? Icons.star_rounded
                             : Icons.star_outline_rounded,
-                        color:
-                            i < stars ? const Color(0xFFFACC15) : Colors.white24,
+                        color: i < stars
+                            ? const Color(0xFFFACC15)
+                            : Colors.white24,
                         size: 36,
                       ),
                     );
@@ -1346,9 +1327,8 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: _reviving
-                        ? null
-                        : () => _loadLevel(_currentLevelId),
+                    onPressed:
+                        _reviving ? null : () => _loadLevel(_currentLevelId),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       side: BorderSide(

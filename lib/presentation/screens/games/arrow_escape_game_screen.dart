@@ -32,7 +32,8 @@ class ArrowEscapeGameScreen extends StatefulWidget {
   State<ArrowEscapeGameScreen> createState() => _ArrowEscapeGameScreenState();
 }
 
-class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with TickerProviderStateMixin {
+class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen>
+    with TickerProviderStateMixin {
   late final GameCanvas _game;
   late final GameBloc _bloc;
   final AnalyticsService _analytics = NullAnalyticsService();
@@ -71,7 +72,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
         setState(() {
           _elapsedSeconds++;
         });
-      } else if (state.status == GameStatus.won || state.status == GameStatus.failed) {
+      } else if (state.status == GameStatus.won ||
+          state.status == GameStatus.failed) {
         _timer?.cancel();
       }
     });
@@ -140,12 +142,15 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
           final parsed = state.parsedLevel;
           if (parsed != null) {
             try {
-              final arrow = parsed.arrowEntities.firstWhere((a) => a.id == state.lastTappedArrowId);
-              if (GameSolver.isCoveredByHigherLayer(parsed.logicalGrid, arrow)) {
+              final arrow = parsed.arrowEntities
+                  .firstWhere((a) => a.id == state.lastTappedArrowId);
+              if (GameSolver.isCoveredByHigherLayer(
+                  parsed.logicalGrid, arrow)) {
                 ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Blocked: This arrow is covered by an arrow above it!'),
+                    content: Text(
+                        'Blocked: This arrow is covered by an arrow above it!'),
                     duration: Duration(milliseconds: 1500),
                   ),
                 );
@@ -153,7 +158,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                 ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Blocked: Clear the path in front of this arrow first!'),
+                    content: Text(
+                        'Blocked: Clear the path in front of this arrow first!'),
                     duration: Duration(milliseconds: 1500),
                   ),
                 );
@@ -170,7 +176,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ??
+            {};
     final isDaily = args['isDailyChallenge'] == true;
     final step = args['workoutStep'];
     final prepared = args['preparedLevelId'];
@@ -219,7 +227,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     Offset buttonCenter = const Offset(300, 80);
-    final renderBox = _helpButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        _helpButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox != null) {
       final buttonPosition = renderBox.localToGlobal(Offset.zero);
       final buttonSize = renderBox.size;
@@ -242,7 +251,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
                 side: BorderSide(
-                  color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
                 ),
               ),
               title: Row(
@@ -294,11 +305,17 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('✓ ', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                        const Text('✓ ',
+                            style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold)),
                         Expanded(
                           child: Text(
                             'Arrows with an empty, clear path in front of them.',
-                            style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                            style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color:
+                                    isDark ? Colors.white70 : Colors.black87),
                           ),
                         ),
                       ],
@@ -307,11 +324,17 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('✓ ', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                        const Text('✓ ',
+                            style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold)),
                         Expanded(
                           child: Text(
                             'Arrows at the top layer (brighter lines, casting longer shadows).',
-                            style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                            style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color:
+                                    isDark ? Colors.white70 : Colors.black87),
                           ),
                         ),
                       ],
@@ -330,11 +353,17 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('✗ ', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                        const Text('✗ ',
+                            style: TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.bold)),
                         Expanded(
                           child: Text(
                             'Path Blocked: Another arrow is sitting directly on the path in front of it.',
-                            style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                            style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color:
+                                    isDark ? Colors.white70 : Colors.black87),
                           ),
                         ),
                       ],
@@ -343,11 +372,17 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('✗ ', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                        const Text('✗ ',
+                            style: TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.bold)),
                         Expanded(
                           child: Text(
                             'Covered (3D Stacking): Another arrow on a higher layer is crossing directly over its body. You must clear the top, brighter arrow first!',
-                            style: GoogleFonts.inter(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87),
+                            style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color:
+                                    isDark ? Colors.white70 : Colors.black87),
                           ),
                         ),
                       ],
@@ -406,8 +441,10 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
             builder: (context, childWidget) {
               final t = curvedAnimation.value;
               final screenSize = MediaQuery.of(context).size;
-              final screenCenter = Offset(screenSize.width / 2, screenSize.height / 2);
-              final translation = Offset.lerp(buttonCenter - screenCenter, Offset.zero, t)!;
+              final screenCenter =
+                  Offset(screenSize.width / 2, screenSize.height / 2);
+              final translation =
+                  Offset.lerp(buttonCenter - screenCenter, Offset.zero, t)!;
 
               return Transform.translate(
                 offset: translation,
@@ -430,7 +467,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
 
   int getHarderDailyLevelId() {
     final now = DateTime.now();
-    final dateKey = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final dateKey =
+        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
     final seed = int.tryParse(dateKey) ?? 0;
     // Map the seed to a hard level between level 70 and 95 (25 levels range)
     return 70 + (seed % 25);
@@ -438,7 +476,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
 
   Future<void> _loadProgressAndStart() async {
     try {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ?? {};
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ??
+              {};
       final isDaily = args['isDailyChallenge'] == true;
       final step = args['workoutStep'];
       final prepared = args['preparedLevelId'];
@@ -592,6 +632,11 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
 
   void _showLevelSelector() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final visibleLevels = List<int>.generate(_catalog.totalLevels, (i) => i + 1)
+        .where((levelId) =>
+            (_progress.getStarRating(levelId) ?? 0) > 0 ||
+            levelId == _currentLevelId)
+        .toList();
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -617,7 +662,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.24) : Colors.black.withValues(alpha: 0.24),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.24)
+                      : Colors.black.withValues(alpha: 0.24),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -631,68 +678,59 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                   color: AppColors.primary,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 4),
+              Text(
+                'Solved levels and your current level only.',
+                style: GoogleFonts.montserrat(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white54 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 12),
               Expanded(
                 child: GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   physics: const BouncingScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 5,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
                   ),
-                  itemCount: 100,
+                  itemCount: visibleLevels.length,
                   itemBuilder: (context, idx) {
-                    final levelId = idx + 1;
-                    final isUnlocked = levelId <= _progress.getHighestUnlockedLevel() || ProgressManager.bypassLocks;
-                    final isCompleted = _progress.getProgress(levelId) != null;
+                    final levelId = visibleLevels[idx];
+                    final isSelected = levelId == _currentLevelId;
 
                     return GestureDetector(
                       onTap: () {
-                        if (isUnlocked) {
-                          Navigator.pop(context);
-                          _loadLevel(levelId);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('This level is locked.')),
-                          );
-                        }
+                        Navigator.pop(context);
+                        _loadLevel(levelId);
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isCompleted
-                              ? const Color(0xFF10B981).withValues(alpha: 0.15)
-                              : (isUnlocked
-                                  ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05))
-                                  : (isDark ? Colors.white.withValues(alpha: 0.01) : Colors.black.withValues(alpha: 0.01))),
+                          color: isSelected
+                              ? AppColors.primary.withValues(alpha: 0.16)
+                              : const Color(0xFF10B981).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isCompleted
-                                ? const Color(0xFF10B981)
-                                : (isUnlocked
-                                    ? AppColors.primary.withValues(alpha: 0.4)
-                                    : (isDark ? Colors.white10 : Colors.black12)),
+                            color: isSelected
+                                ? AppColors.primary
+                                : const Color(0xFF10B981),
                             width: 1.5,
                           ),
                         ),
                         child: Center(
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              if (!isUnlocked)
-                                Icon(Icons.lock, size: 16, color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black.withValues(alpha: 0.3))
-                              else
-                                Text(
-                                  '$levelId',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w900,
-                                    color: isCompleted
-                                        ? const Color(0xFF10B981)
-                                        : (isDark ? Colors.white : Colors.black.withValues(alpha: 0.87)),
-                                  ),
-                                ),
-                            ],
+                          child: Text(
+                            '$levelId',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : const Color(0xFF10B981),
+                            ),
                           ),
                         ),
                       ),
@@ -721,10 +759,13 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+      backgroundColor:
+          isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
       body: Container(
         decoration: BoxDecoration(
-          gradient: isDark ? AppColors.homeBackdropDark : AppColors.homeBackdropGradient,
+          gradient: isDark
+              ? AppColors.homeBackdropDark
+              : AppColors.homeBackdropGradient,
         ),
         child: SafeArea(
           child: Stack(
@@ -735,24 +776,29 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                     WorkoutProgressBanner(step: _workoutStep!),
                   // Glassmorphic Header Bar
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       children: [
                         IconButton(
-                          icon: Icon(Icons.arrow_back_rounded, color: isDark ? Colors.white : Colors.black87),
+                          icon: Icon(Icons.arrow_back_rounded,
+                              color: isDark ? Colors.white : Colors.black87),
                           onPressed: () => Navigator.pop(context),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: GestureDetector(
-                            onTap: _isDailyChallenge ? null : _showLevelSelector,
+                            onTap:
+                                _isDailyChallenge ? null : _showLevelSelector,
                             child: Row(
                               children: [
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      _isDailyChallenge ? 'DAILY CHALLENGE' : 'ARROW ESCAPE',
+                                      _isDailyChallenge
+                                          ? 'DAILY CHALLENGE'
+                                          : 'ARROW ESCAPE',
                                       style: GoogleFonts.montserrat(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w900,
@@ -769,12 +815,17 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                                           style: GoogleFonts.montserrat(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w900,
-                                            color: isDark ? Colors.white : Colors.black87,
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black87,
                                           ),
                                         ),
                                         if (!_isDailyChallenge) ...[
                                           const SizedBox(width: 6),
-                                          Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppColors.primary),
+                                          Icon(
+                                              Icons.keyboard_arrow_down_rounded,
+                                              size: 16,
+                                              color: AppColors.primary),
                                         ],
                                       ],
                                     ),
@@ -794,7 +845,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                           },
                           child: IconButton(
                             key: _helpButtonKey,
-                            icon: Icon(Icons.help_outline_rounded, color: AppColors.primary, size: 20),
+                            icon: Icon(Icons.help_outline_rounded,
+                                color: AppColors.primary, size: 20),
                             onPressed: () => _showRulesDialog(),
                           ),
                         ),
@@ -809,9 +861,12 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                       stream: _bloc.stream,
                       builder: (context, snapshot) {
                         return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.black.withValues(alpha: 0.02),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.02)
+                                : Colors.black.withValues(alpha: 0.02),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
                               color: isDark ? Colors.white10 : Colors.black12,
@@ -820,7 +875,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(24),
                             child: GestureDetector(
-                              onTapUp: (details) => _game.handleTap(details.localPosition),
+                              onTapUp: (details) =>
+                                  _game.handleTap(details.localPosition),
                               onScaleStart: (details) {
                                 _initialScale = _game.gameCamera.scale;
                                 _initialPan = _game.gameCamera.pan;
@@ -829,16 +885,23 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                               onScaleUpdate: (details) {
                                 final double minScale = 0.2;
                                 final double maxScale = 8.0;
-                                final double newScale = (_initialScale * details.scale).clamp(minScale, maxScale);
+                                final double newScale =
+                                    (_initialScale * details.scale)
+                                        .clamp(minScale, maxScale);
 
-                                final double gx = (_focalPoint.dx - _initialPan.dx) / (_game.gameCamera.tileSize * _initialScale);
-                                final double gy = (_focalPoint.dy - _initialPan.dy) / (_game.gameCamera.tileSize * _initialScale);
+                                final double gx = (_focalPoint.dx -
+                                        _initialPan.dx) /
+                                    (_game.gameCamera.tileSize * _initialScale);
+                                final double gy = (_focalPoint.dy -
+                                        _initialPan.dy) /
+                                    (_game.gameCamera.tileSize * _initialScale);
 
                                 _game.gameCamera.scale = newScale;
-                                _game.gameCamera.pan = details.localFocalPoint - Offset(
-                                  gx * _game.gameCamera.tileSize * newScale,
-                                  gy * _game.gameCamera.tileSize * newScale,
-                                );
+                                _game.gameCamera.pan = details.localFocalPoint -
+                                    Offset(
+                                      gx * _game.gameCamera.tileSize * newScale,
+                                      gy * _game.gameCamera.tileSize * newScale,
+                                    );
                               },
                               child: GameWidget(game: _game),
                             ),
@@ -856,13 +919,19 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                       final s = snapshot.data!;
                       final canUndo = _bloc.canUndo;
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 16),
+                        margin: const EdgeInsets.only(
+                            left: 20, right: 20, bottom: 20),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B).withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.8),
+                          color: isDark
+                              ? const Color(0xFF1E293B).withValues(alpha: 0.8)
+                              : Colors.white.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.black.withValues(alpha: 0.05),
                           ),
                         ),
                         child: Row(
@@ -875,7 +944,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                                   style: GoogleFonts.inter(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w900,
-                                    color: isDark ? Colors.white38 : Colors.black38,
+                                    color: isDark
+                                        ? Colors.white38
+                                        : Colors.black38,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -884,7 +955,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                                   style: GoogleFonts.montserrat(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w900,
-                                    color: isDark ? Colors.white : Colors.black87,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
                                   ),
                                 ),
                               ],
@@ -898,7 +970,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                                   style: GoogleFonts.inter(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w900,
-                                    color: isDark ? Colors.white38 : Colors.black38,
+                                    color: isDark
+                                        ? Colors.white38
+                                        : Colors.black38,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -907,10 +981,17 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                                   children: List.generate(3, (idx) {
                                     final active = idx < s.lives;
                                     return Padding(
-                                      padding: const EdgeInsets.only(right: 3.0),
+                                      padding:
+                                          const EdgeInsets.only(right: 3.0),
                                       child: Icon(
-                                        active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                        color: active ? Colors.redAccent : (isDark ? Colors.white24 : Colors.black26),
+                                        active
+                                            ? Icons.favorite_rounded
+                                            : Icons.favorite_border_rounded,
+                                        color: active
+                                            ? Colors.redAccent
+                                            : (isDark
+                                                ? Colors.white24
+                                                : Colors.black26),
                                         size: 16,
                                       ),
                                     );
@@ -927,7 +1008,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                                   style: GoogleFonts.inter(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w900,
-                                    color: isDark ? Colors.white38 : Colors.black38,
+                                    color: isDark
+                                        ? Colors.white38
+                                        : Colors.black38,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -936,7 +1019,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                                   style: GoogleFonts.montserrat(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w900,
-                                    color: isDark ? Colors.white : Colors.black87,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
                                   ),
                                 ),
                               ],
@@ -1004,12 +1088,16 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: enabled
-              ? (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05))
+              ? (isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.black.withValues(alpha: 0.05))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: enabled
-                ? (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1))
+                ? (isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.1))
                 : Colors.transparent,
           ),
         ),
@@ -1017,8 +1105,12 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
           icon,
           size: 20,
           color: enabled
-              ? (isDark ? Colors.white.withValues(alpha: 0.87) : Colors.black.withValues(alpha: 0.87))
-              : (isDark ? Colors.white.withValues(alpha: 0.24) : Colors.black.withValues(alpha: 0.24)),
+              ? (isDark
+                  ? Colors.white.withValues(alpha: 0.87)
+                  : Colors.black.withValues(alpha: 0.87))
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.24)
+                  : Colors.black.withValues(alpha: 0.24)),
         ),
       ),
     );
@@ -1074,7 +1166,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                   'Moves Used: ${result.movesUsed} (Target: ${result.targetMoves})',
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.6),
+                    color: isDark
+                        ? Colors.white70
+                        : Colors.black.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1082,13 +1176,16 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                   'Time Taken: ${_formatTime(_elapsedSeconds)}',
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.6),
+                    color: isDark
+                        ? Colors.white70
+                        : Colors.black.withValues(alpha: 0.6),
                   ),
                 ),
                 if (isPerfect) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFF00F1FE).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
@@ -1135,7 +1232,10 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                             },
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              side: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.24) : Colors.black.withValues(alpha: 0.24)),
+                              side: BorderSide(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.24)
+                                      : Colors.black.withValues(alpha: 0.24)),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -1144,7 +1244,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                               'Retry',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.7),
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.black.withValues(alpha: 0.7),
                               ),
                             ),
                           ),
@@ -1154,7 +1256,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
-                            if (!_isDailyChallenge && _currentLevelId < _catalog.totalLevels) {
+                            if (!_isDailyChallenge &&
+                                _currentLevelId < _catalog.totalLevels) {
                               _loadLevel(_currentLevelId + 1);
                             } else {
                               Navigator.pop(context, _lastCompletionScore);
@@ -1168,7 +1271,10 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                             ),
                           ),
                           child: Text(
-                            (!_isDailyChallenge && _currentLevelId < _catalog.totalLevels) ? 'Next Level' : 'Exit',
+                            (!_isDailyChallenge &&
+                                    _currentLevelId < _catalog.totalLevels)
+                                ? 'Next Level'
+                                : 'Exit',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -1205,7 +1311,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
+                const Icon(Icons.error_outline_rounded,
+                    color: Colors.redAccent, size: 48),
                 const SizedBox(height: 12),
                 Text(
                   'DEAD END',
@@ -1221,7 +1328,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.6),
+                    color: isDark
+                        ? Colors.white70
+                        : Colors.black.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1248,13 +1357,13 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                           _bloc.add(ResetLevelEvent());
-                           _timer?.cancel();
-                           setState(() {
-                             _showDeadEndOverlay = false;
-                             _elapsedSeconds = 0;
-                             _timerStarted = false;
-                           });
+                          _bloc.add(ResetLevelEvent());
+                          _timer?.cancel();
+                          setState(() {
+                            _showDeadEndOverlay = false;
+                            _elapsedSeconds = 0;
+                            _timerStarted = false;
+                          });
                         },
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1263,7 +1372,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Reset', style: TextStyle(color: Colors.white)),
+                        child: const Text('Reset',
+                            style: TextStyle(color: Colors.white)),
                       ),
                     ),
                   ],
@@ -1295,7 +1405,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.heart_broken_rounded, color: Colors.redAccent, size: 52),
+                const Icon(Icons.heart_broken_rounded,
+                    color: Colors.redAccent, size: 52),
                 const SizedBox(height: 12),
                 Text(
                   'OUT OF LIVES',
@@ -1313,7 +1424,9 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    color: isDark ? Colors.white70 : Colors.black.withValues(alpha: 0.6),
+                    color: isDark
+                        ? Colors.white70
+                        : Colors.black.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1323,11 +1436,15 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                       child: OutlinedButton(
                         onPressed: () async {
                           if (_isDailyChallenge) {
-                            Navigator.pop(context, _lastCompletionScore); // Exit
+                            Navigator.pop(
+                                context, _lastCompletionScore); // Exit
                           } else {
                             if (!AdService.instance.isRewardedReady) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Ad is loading, please wait...'), duration: Duration(seconds: 1)),
+                                const SnackBar(
+                                    content:
+                                        Text('Ad is loading, please wait...'),
+                                    duration: Duration(seconds: 1)),
                               );
                               await AdService.instance.loadRewarded();
                               if (!AdService.instance.isRewardedReady) {
@@ -1338,7 +1455,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                                 return;
                               }
                             }
-                            final earned = await AdService.instance.showRewarded();
+                            final earned =
+                                await AdService.instance.showRewarded();
                             if (earned) {
                               _bloc.add(ReviveEvent());
                               setState(() {
@@ -1353,7 +1471,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: Text(_isDailyChallenge ? 'Exit' : 'Revive', style: const TextStyle(color: Colors.redAccent)),
+                        child: Text(_isDailyChallenge ? 'Exit' : 'Revive',
+                            style: const TextStyle(color: Colors.redAccent)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1363,7 +1482,10 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                           if (_isDailyChallenge) {
                             if (!AdService.instance.isRewardedReady) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Ad is loading, please wait...'), duration: Duration(seconds: 1)),
+                                const SnackBar(
+                                    content:
+                                        Text('Ad is loading, please wait...'),
+                                    duration: Duration(seconds: 1)),
                               );
                               await AdService.instance.loadRewarded();
                               if (!AdService.instance.isRewardedReady) {
@@ -1374,7 +1496,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                                 return;
                               }
                             }
-                            final earned = await AdService.instance.showRewarded();
+                            final earned =
+                                await AdService.instance.showRewarded();
                             if (earned) {
                               _bloc.add(ReviveEvent());
                               setState(() {
@@ -1398,7 +1521,8 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen> with Tick
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: Text(_isDailyChallenge ? 'Revive' : 'Restart', style: const TextStyle(color: Colors.white)),
+                        child: Text(_isDailyChallenge ? 'Revive' : 'Restart',
+                            style: const TextStyle(color: Colors.white)),
                       ),
                     ),
                   ],

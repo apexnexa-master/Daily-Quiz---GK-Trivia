@@ -59,11 +59,12 @@ class OneLineBoardState {
   /// win, the victory comet riding the finished figure.
   final double pulsePhase;
 
-  /// 0..1 one-shot intro sweep; 0 or 1 means no shimmer.
-  final double introSweepPhase;
-
   /// 0..1 celebration timeline; 0 means no confetti.
   final double confettiPhase;
+
+  /// Hide the accent dots that mark already-traced junctions on dense
+  /// hidden-node hard levels.
+  final bool hideNodeDots;
 
   const OneLineBoardState({
     required this.vertices,
@@ -80,8 +81,8 @@ class OneLineBoardState {
     this.buildProgress,
     this.winGlow = 0,
     this.pulsePhase = 0,
-    this.introSweepPhase = 0,
     this.confettiPhase = 0,
+    this.hideNodeDots = false,
   });
 
   /// A completed run plays its victory flare instead of live markers.
@@ -122,8 +123,12 @@ class OneLinePainter extends CustomPainter {
     final positions = <int, Offset>{
       for (final v in state.vertices) v.id: px(v.position),
     };
-    final baseW = size.shortestSide * 0.025;
-    final traceW = baseW * 1.12;
+    final density =
+        ((state.edges.length - 25) / 35.0).clamp(0.0, 1.0).toDouble();
+    final baseW = size.shortestSide * (0.025 - 0.007 * density);
+    final traceW = baseW * (1.12 + 0.06 * density);
+    final outlineAlpha = (state.isFinished ? 0.08 : 0.18) -
+        (state.isFinished ? 0.02 : 0.06) * density;
     final layerBounds = Offset.zero & size;
     final baseColor = isDark ? _outline : const Color(0xFF2B2140);
 
@@ -152,8 +157,7 @@ class OneLinePainter extends CustomPainter {
     // at junctions blend once, keeping every meeting point smooth.
     canvas.saveLayer(
       layerBounds,
-      Paint()
-        ..color = baseColor.withValues(alpha: state.isFinished ? 0.08 : 0.18),
+      Paint()..color = baseColor.withValues(alpha: outlineAlpha),
     );
     final outlinePaint = Paint()
       ..color = baseColor
@@ -186,26 +190,23 @@ class OneLinePainter extends CustomPainter {
     }
     canvas.restore();
 
-    if (!state.isFinished &&
-        state.failGlow <= 0 &&
-        state.path.isEmpty &&
-        state.introSweepPhase > 0 &&
-        state.introSweepPhase < 1) {
-      _paintIdleShimmer(canvas, positions, baseW);
-    }
-
-    if (state.path.length > 2 && !state.isFinished && state.failGlow <= 0) {
+    if (!state.hideNodeDots &&
+        state.edges.length < 60 &&
+        state.path.length > 2 &&
+        !state.isFinished &&
+        state.failGlow <= 0) {
+      final dotScale = 1.0 - 0.6 * density;
       for (var i = 1; i < state.path.length - 1; i++) {
         final jp = positions[state.path[i]];
         if (jp == null) continue;
         canvas.drawCircle(
             jp,
-            baseW * 0.95,
+            baseW * 0.95 * dotScale,
             Paint()
               ..color = accent.withValues(alpha: 0.16)
               ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
-        canvas.drawCircle(
-            jp, baseW * 0.5, Paint()..color = accent.withValues(alpha: 0.72));
+        canvas.drawCircle(jp, baseW * 0.5 * dotScale,
+            Paint()..color = accent.withValues(alpha: 0.72 - 0.18 * density));
       }
     }
 
@@ -253,18 +254,6 @@ class OneLinePainter extends CustomPainter {
     }
 
     if (!solved && !failing) {
-      final pulse = math.sin(state.pulsePhase * 2 * math.pi);
-      final tailC = state.path.isEmpty ? null : positions[state.path.first];
-      if (tailC != null) {
-        canvas.drawCircle(
-            tailC,
-            baseW * (0.95 + 0.12 * pulse),
-            Paint()
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = baseW * 0.45
-              ..color =
-                  accent.withValues(alpha: (0.75 + 0.20 * pulse).clamp(0, 1)));
-      }
       final marker = tipPx ?? positions[headId];
       if (marker != null) {
         canvas.drawCircle(marker, traceW * 0.70, Paint()..color = traceColor);
@@ -373,27 +362,6 @@ class OneLinePainter extends CustomPainter {
     return points.last;
   }
 
-  /// Before the first touch, a gentle light glides around the figure so
-  /// the board reads as interactive without needing written instructions.
-  void _paintIdleShimmer(Canvas canvas, Map<int, Offset> positions, double w) {
-    final route = <Offset>[
-      for (final id in state.solution)
-        if (positions[id] != null) positions[id]!,
-    ];
-    if (route.length < 2) return;
-    final travel = state.introSweepPhase.clamp(0.0, 1.0);
-    final spot = _pointAlong(route, travel);
-    if (spot == null) return;
-    canvas.drawCircle(
-        spot,
-        w * 2.6,
-        Paint()
-          ..color = accent.withValues(alpha: 0.16)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10));
-    canvas.drawCircle(
-        spot, w * 0.42, Paint()..color = Colors.white.withValues(alpha: 0.55));
-  }
-
   static const _confettiColors = <Color>[
     Color(0xFFFFD54F),
     Color(0xFFFF9F1C),
@@ -401,6 +369,15 @@ class OneLinePainter extends CustomPainter {
     Color(0xFF38BDF8),
     Colors.white,
     Color(0xFFFF5A5F),
+  ];
+
+  static const _lightConfettiColors = <Color>[
+    Color(0xFFB45309),
+    Color(0xFFEA580C),
+    Color(0xFF0F9D76),
+    Color(0xFF2563EB),
+    Color(0xFF7C3AED),
+    Color(0xFFE11D48),
   ];
 
   static double _noise(num seed) {
@@ -415,6 +392,7 @@ class OneLinePainter extends CustomPainter {
     final center = size.center(Offset.zero);
     final side = size.shortestSide;
     const count = 64;
+    final palette = isDark ? _confettiColors : _lightConfettiColors;
 
     for (var i = 0; i < count; i++) {
       final angle = _noise(i + 1) * math.pi * 2;
@@ -426,7 +404,7 @@ class OneLinePainter extends CustomPainter {
           center.dy + math.sin(angle) * speed * t + (fall * t * t) - (lift * t);
       final alpha =
           math.pow(1 - t, 1.35).toDouble() * (0.65 + 0.35 * _noise(i + 160));
-      final color = _confettiColors[i % _confettiColors.length];
+      final color = palette[i % palette.length];
       final w = side * (0.008 + 0.006 * _noise(i + 200));
       final h = w * (i % 3 == 0 ? 1.0 : 2.1);
       final spin =
@@ -460,15 +438,16 @@ class OneLinePainter extends CustomPainter {
     );
     if (c == null) return;
 
+    final glowColor = isDark ? Colors.white : accent;
     canvas.drawCircle(
         c,
         traceW * 1.7,
         Paint()
-          ..color = Colors.white
-              .withValues(alpha: 0.28 * state.winGlow.clamp(0.4, 1.0))
+          ..color =
+              glowColor.withValues(alpha: 0.28 * state.winGlow.clamp(0.4, 1.0))
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
     canvas.drawCircle(
-        c, traceW * 0.75, Paint()..color = Colors.white.withValues(alpha: 0.9));
+        c, traceW * 0.75, Paint()..color = glowColor.withValues(alpha: 0.9));
   }
 
   /// The committed stroke as one continuous polyline, trimmed while
@@ -494,6 +473,8 @@ class OneLinePainter extends CustomPainter {
   void _paintHint(Canvas canvas, Map<int, Offset> positions, double traceW) {
     final eid = state.hintEdgeId;
     if (eid == null) return;
+    final hintColor = isDark ? _hintCyan : const Color(0xFF2563EB);
+    final coreColor = isDark ? Colors.white : accent;
     for (final e in state.edges) {
       if (e.id != eid) continue;
       final a = positions[e.a];
@@ -504,12 +485,12 @@ class OneLinePainter extends CustomPainter {
           a,
           b,
           Paint()
-            ..color = _hintCyan.withValues(alpha: 0.16 + 0.14 * pulse)
+            ..color = hintColor.withValues(alpha: 0.16 + 0.14 * pulse)
             ..style = PaintingStyle.stroke
             ..strokeWidth = traceW * 3.0
             ..strokeCap = StrokeCap.round);
       final dash = Paint()
-        ..color = _hintCyan.withValues(alpha: 0.75 + 0.25 * pulse)
+        ..color = hintColor.withValues(alpha: 0.75 + 0.25 * pulse)
         ..style = PaintingStyle.stroke
         ..strokeWidth = traceW * 0.85
         ..strokeCap = StrokeCap.round;
@@ -519,9 +500,9 @@ class OneLinePainter extends CustomPainter {
             Offset.lerp(a, b, (i + 1) / segments)!, dash);
       }
       canvas.drawCircle(b, traceW * (1.0 + 0.25 * pulse),
-          Paint()..color = _hintCyan.withValues(alpha: 0.22 + 0.18 * pulse));
-      canvas.drawCircle(b, traceW * 0.45,
-          Paint()..color = Colors.white.withValues(alpha: 0.9));
+          Paint()..color = hintColor.withValues(alpha: 0.22 + 0.18 * pulse));
+      canvas.drawCircle(
+          b, traceW * 0.45, Paint()..color = coreColor.withValues(alpha: 0.9));
       return;
     }
   }
@@ -530,6 +511,7 @@ class OneLinePainter extends CustomPainter {
       Offset? tip, double traceW) {
     final pen = tip ?? (headId == null ? null : positions[headId]);
     if (pen == null) return;
+    final sparkColor = isDark ? Colors.white : accent;
 
     canvas.drawCircle(
         pen,
@@ -541,7 +523,7 @@ class OneLinePainter extends CustomPainter {
         pen,
         traceW * 1.35,
         Paint()
-          ..color = Colors.white.withValues(alpha: 0.28)
+          ..color = sparkColor.withValues(alpha: 0.28)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
 
     const count = 12;
@@ -556,7 +538,7 @@ class OneLinePainter extends CustomPainter {
           spot,
           traceW * (0.30 - 0.19 * life),
           Paint()
-            ..color = (i.isEven ? Colors.white : accent)
+            ..color = (i.isEven ? sparkColor : accent)
                 .withValues(alpha: (1 - life) * 0.9));
     }
     _paintSparkTrail(canvas, positions, tip, traceW);
@@ -564,6 +546,7 @@ class OneLinePainter extends CustomPainter {
 
   void _paintSparkTrail(
       Canvas canvas, Map<int, Offset> positions, Offset? tip, double traceW) {
+    final sparkColor = isDark ? Colors.white : accent;
     final pts = <Offset>[
       for (final id in state.path)
         if (positions[id] != null) positions[id]!,
@@ -593,11 +576,8 @@ class OneLinePainter extends CustomPainter {
       }
       final twinkle =
           0.5 + 0.5 * math.sin(state.pulsePhase * math.pi * 6 + i * 1.9);
-      canvas.drawCircle(
-          spot,
-          traceW * (0.09 + 0.13 * twinkle),
-          Paint()
-            ..color = Colors.white.withValues(alpha: 0.20 + 0.55 * twinkle));
+      canvas.drawCircle(spot, traceW * (0.09 + 0.13 * twinkle),
+          Paint()..color = sparkColor.withValues(alpha: 0.20 + 0.55 * twinkle));
     }
   }
 

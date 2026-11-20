@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 /// (drawing) and the screen (hit-testing) so both use IDENTICAL
 /// geometry — a mismatch here makes strokes snap in the wrong place
 /// near the figure's extremes.
-const double kOneLineBoardInset = 0.03;
+const double kOneLineBoardInset = 0.02;
 
 class OneLineVertex {
   final int id;
@@ -56,16 +56,24 @@ class OneLineLevel {
   final List<int> suggestedStarts;
   final int parSeconds;
 
-  /// Tutorial levels (1-10) let the stroke begin anywhere on the outline.
-  /// From level 11 onward the puzzle is "locked" to a single glowing
-  /// start vertex, so a wrong turn at a junction can strand the stroke
-  /// and the player has to plan ahead.
+  /// True only when the figure is an all-even circuit and the generated
+  /// solution therefore works from any outline point. Input never uses
+  /// this to force a start; the UI always lets the player try anywhere.
   final bool startAnywhere;
 
-  /// The mandated start vertex when [startAnywhere] is false. For an
-  /// all-even figure this is a valid circuit start (the stroke returns
-  /// to it when complete).
+  /// Hidden canonical solution start. For an all-even figure this is a
+  /// valid circuit start; for a two-odd bridge figure it is one of the
+  /// two trail endpoints. Never shown or enforced by the UI.
   final int startVertex;
+
+  /// The other hidden solution endpoint for two-odd bridge trails. Null
+  /// for all-even circuit levels. Never shown or enforced by the UI.
+  final int? alternateStartVertex;
+
+  /// Hard-mode helper: suppress the accent dots that normally mark every
+  /// already-traced junction, so dense figures read as one continuous
+  /// line instead of a sequence of highlighted nodes.
+  final bool hideNodeDots;
 
   const OneLineLevel({
     required this.number,
@@ -78,6 +86,8 @@ class OneLineLevel {
     required this.parSeconds,
     this.startAnywhere = true,
     this.startVertex = 0,
+    this.alternateStartVertex,
+    this.hideNodeDots = false,
   });
 
   int get edgeCount => edges.length;

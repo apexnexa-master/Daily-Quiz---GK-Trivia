@@ -5,9 +5,9 @@ void main() {
   test('ascii', () {
     final gen = OneLineGenerator();
     final out = StringBuffer();
-    for (final n in [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 18, 27]) {
+    for (final n in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 62, 65, 79]) {
       final lv = gen.generateLevel(n);
-      final W = 62, H = 31;
+      const W = 62, H = 31;
       final grid = List.generate(H, (_) => List.filled(W, ' '));
       void put(double x, double y, String c) {
         final cx = (x * (W - 1)).round().clamp(0, W - 1);

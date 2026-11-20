@@ -6,10 +6,10 @@
 //
 // The stroke may BEGIN anywhere along the outline: [startOnEdge] splits
 // the touched segment at parameter t into two half-edges joined by a
-// virtual touch-point vertex. Generated levels are Eulerian circuits
-// (connected, every degree even), so a full circuit from the touch
-// point always exists. Win = every edge half traced; the stroke closes
-// back where it began.
+// virtual touch-point vertex. Eulerian circuits solve from any touch;
+// two-odd bridge trails only solve from one of their odd endpoints, so
+// wrong starts dead-end and the player discovers the right one by trial.
+// Win = every edge half traced.
 
 import 'dart:math' as math;
 import 'dart:ui' show Offset;
@@ -263,12 +263,11 @@ class OneLineEngine {
     }
     if (adj.isEmpty) return null;
 
-    // Prefer continuing from the head; fall back to tail, then anywhere.
-    var start = head!;
-    if ((adj[start] ?? const {}).isEmpty) {
-      final t = tail!;
-      start = (adj[t] ?? const {}).isNotEmpty ? t : adj.keys.first;
-    }
+    // A hint must always be a legal move from the current head. When the
+    // walk is stranded there is no forward move to show - the recovery is
+    // an undo, never an edge in some disconnected leftover component.
+    final start = head!;
+    if ((adj[start] ?? const <int, int>{}).isEmpty) return null;
 
     // Iterative Hierholzer over the remaining multigraph.
     final consumed = <int>{};
