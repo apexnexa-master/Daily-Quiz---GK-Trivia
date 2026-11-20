@@ -267,51 +267,6 @@ class _TwoCarScreenState extends ConsumerState<TwoCarScreen>
                             child: const SizedBox.expand(),
                           ),
                         ),
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          t('LEFT HAND', 'বাঁ হাত',
-                                              'बायाँ हाथ'),
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 1.1,
-                                            color: isDark
-                                                ? Colors.white54
-                                                : Colors.black45,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          t('RIGHT HAND', 'ডান হাত',
-                                              'दायाँ हाथ'),
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 1.1,
-                                            color: isDark
-                                                ? Colors.white54
-                                                : Colors.black45,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                         if (_blinkActive) _buildBlinkMessage(isDark, t),
                         if (_engine.phase == TwoCarPhase.ready)
                           _buildStartOverlay(isDark, t),
@@ -365,14 +320,22 @@ class _TwoCarScreenState extends ConsumerState<TwoCarScreen>
     );
   }
 
+  String _failureMessage(
+    String Function(String, String, String) t,
+    TwoCarFailure failure,
+  ) {
+    if (failure == TwoCarFailure.missedCoin) {
+      return t("DON'T MISS THE CIRCLE!", 'বৃত্তটি নিন!', 'वृत्त लें!');
+    }
+    return t('DODGE THE SQUARE!', 'বর্গ এড়ান!', 'वर्ग से बचें!');
+  }
+
   Widget _buildBlinkMessage(
     bool isDark,
     String Function(String, String, String) t,
   ) {
     final missed = _blinkFailure == TwoCarFailure.missedCoin;
-    final message = missed
-        ? t("DON'T MISS THE CIRCLE!", 'বৃত্তটি নিন!', 'वृत्त लें!')
-        : t('DODGE THE SQUARE!', 'বর্গ এড়ান!', 'वर्ग से बचें!');
+    final message = _failureMessage(t, _blinkFailure);
     return Positioned(
       top: 46,
       left: 0,
@@ -539,11 +502,11 @@ class _TwoCarScreenState extends ConsumerState<TwoCarScreen>
       title: missedCoin
           ? t('MISSED!', 'মিস!', 'चूक गए!')
           : t('CRASH!', 'ধাক্কা!', 'टक्कर!'),
-      subtitle: missedCoin
-          ? t('Collect every circle.', 'প্রতিটি বৃত্ত সংগ্রহ করুন।',
-              'हर वृत्त इकट्ठा करें।')
-          : t('Keep both cars alive.', 'দুটি গাড়িকে বাঁচিয়ে রাখুন।',
-              'दोनों कारों को बचाए रखें।'),
+      subtitle: _failureMessage(t, _engine.failure),
+      subtitleColor: missedCoin
+          ? (isDark ? Colors.amber : const Color(0xFFB45309))
+          : (isDark ? const Color(0xFFFF6B81) : const Color(0xFFC62846)),
+      pulseSubtitle: true,
       score: _engine.score,
       isNewBest: _isNewBest,
       stars: _engine.stars,

@@ -28,6 +28,8 @@ class GameResultStat {
 class GameResultsPanel extends StatefulWidget {
   final String title;
   final String? subtitle;
+  final Color? subtitleColor;
+  final bool pulseSubtitle;
   final int score;
   final bool isNewBest;
 
@@ -52,6 +54,8 @@ class GameResultsPanel extends StatefulWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.subtitleColor,
+    this.pulseSubtitle = false,
     required this.score,
     required this.isNewBest,
     this.stars,
@@ -72,10 +76,12 @@ class GameResultsPanel extends StatefulWidget {
 }
 
 class _GameResultsPanelState extends State<GameResultsPanel>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fade;
   late final Animation<Offset> _slide;
+  AnimationController? _pulseController;
+  Animation<double>? _pulse;
 
   @override
   void initState() {
@@ -86,11 +92,22 @@ class _GameResultsPanelState extends State<GameResultsPanel>
     )..forward();
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     _slide = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+        .animate(
+            CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    if (widget.pulseSubtitle) {
+      _pulseController = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 850),
+      )..repeat(reverse: true);
+      _pulse = Tween<double>(begin: 0.45, end: 1).animate(
+        CurvedAnimation(parent: _pulseController!, curve: Curves.easeInOut),
+      );
+    }
   }
 
   @override
   void dispose() {
+    _pulseController?.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -98,18 +115,46 @@ class _GameResultsPanelState extends State<GameResultsPanel>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    Widget? subtitle;
+    if (widget.subtitle != null) {
+      subtitle = Text(
+        widget.subtitle!,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: widget.subtitleColor ??
+              (isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight),
+        ),
+      );
+      final pulse = _pulse;
+      if (pulse != null) {
+        subtitle = FadeTransition(
+          opacity: pulse,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.98, end: 1.02).animate(pulse),
+            child: subtitle,
+          ),
+        );
+      }
+    }
 
     return Positioned.fill(
       child: Material(
-        color: (isDark ? const Color(0xFF05080E) : Colors.white).withValues(alpha: isDark ? 0.95 : 0.97),
+        color: (isDark ? const Color(0xFF05080E) : Colors.white)
+            .withValues(alpha: isDark ? 0.95 : 0.97),
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                (isDark ? const Color(0xFF0B0E14) : Colors.white).withValues(alpha: 0.0),
-                (isDark ? const Color(0xFF0B0E14) : Colors.white).withValues(alpha: 0.55),
+                (isDark ? const Color(0xFF0B0E14) : Colors.white)
+                    .withValues(alpha: 0.0),
+                (isDark ? const Color(0xFF0B0E14) : Colors.white)
+                    .withValues(alpha: 0.55),
               ],
             ),
           ),
@@ -120,7 +165,8 @@ class _GameResultsPanelState extends State<GameResultsPanel>
                 position: _slide,
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 24),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -135,19 +181,9 @@ class _GameResultsPanelState extends State<GameResultsPanel>
                           AppSpacing.vSm,
                           _buildStars(),
                         ],
-                        if (widget.subtitle != null) ...[
+                        if (subtitle != null) ...[
                           AppSpacing.vMd,
-                          Text(
-                            widget.subtitle!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? AppColors.textSecondaryDark
-                                  : AppColors.textSecondaryLight,
-                            ),
-                          ),
+                          subtitle,
                         ],
                         if (widget.footerHint != null) ...[
                           AppSpacing.vXs,
@@ -196,7 +232,8 @@ class _GameResultsPanelState extends State<GameResultsPanel>
           fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 1.6,
-          color: isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
+          color:
+              isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight,
         ),
       ),
     );
@@ -284,12 +321,10 @@ class _GameResultsPanelState extends State<GameResultsPanel>
           children: [
             for (var i = 0; i < 3; i++)
               Transform.scale(
-                scale: Curves.easeOutBack
-                    .transform(((t * 3 - i).clamp(0.0, 1.0))),
+                scale:
+                    Curves.easeOutBack.transform(((t * 3 - i).clamp(0.0, 1.0))),
                 child: Icon(
-                  i < stars
-                      ? Icons.star_rounded
-                      : Icons.star_outline_rounded,
+                  i < stars ? Icons.star_rounded : Icons.star_outline_rounded,
                   size: 34,
                   color: i < stars
                       ? const Color(0xFFFBBF24)
@@ -324,8 +359,14 @@ class _GameResultsPanelState extends State<GameResultsPanel>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: isDark
-              ? [Colors.white.withValues(alpha: 0.08), Colors.white.withValues(alpha: 0.02)]
-              : [Colors.white.withValues(alpha: 0.95), Colors.white.withValues(alpha: 0.65)],
+              ? [
+                  Colors.white.withValues(alpha: 0.08),
+                  Colors.white.withValues(alpha: 0.02)
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.95),
+                  Colors.white.withValues(alpha: 0.65)
+                ],
         ),
         borderRadius: BorderRadius.circular(AppSpacing.rXl),
         border: Border.all(
@@ -485,9 +526,11 @@ class _GameResultsPanelState extends State<GameResultsPanel>
             child: OutlinedButton(
               onPressed: widget.onShare,
               style: OutlinedButton.styleFrom(
-                foregroundColor: isDark ? Colors.white : AppColors.textPrimaryLight,
+                foregroundColor:
+                    isDark ? Colors.white : AppColors.textPrimaryLight,
                 side: BorderSide(
-                  color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.18),
+                  color: (isDark ? Colors.white : Colors.black)
+                      .withValues(alpha: 0.18),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.rLg),
@@ -520,7 +563,9 @@ class _GameResultsPanelState extends State<GameResultsPanel>
               style: GoogleFonts.montserrat(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                color: isDark
+                    ? AppColors.textSecondaryDark
+                    : AppColors.textSecondaryLight,
               ),
             ),
           ),

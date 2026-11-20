@@ -21,8 +21,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 16));
 
     expect(find.text('START'), findsNothing);
-    expect(find.text('LEFT HAND'), findsOneWidget);
-    expect(find.text('RIGHT HAND'), findsOneWidget);
+    expect(find.text('LEFT HAND'), findsNothing);
+    expect(find.text('RIGHT HAND'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

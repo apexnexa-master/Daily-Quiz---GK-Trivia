@@ -35,9 +35,12 @@ void main() {
 
       engine.setCarX(2, 0.4);
       expect(engine.carX, [TwoCarLayout.minCarX, TwoCarLayout.maxCarX]);
+      expect(TwoCarLayout.minCarX - TwoCarLayout.carWidth / 2,
+          closeTo(TwoCarLayout.laneEdgePadding, 0.000001));
+      expect(TwoCarLayout.maxCarX + TwoCarLayout.carWidth / 2, lessThan(1));
       expect(
         TwoCarLayout.maxCarX + TwoCarLayout.carWidth / 2,
-        lessThan(1),
+        closeTo(1 - TwoCarLayout.laneEdgePadding, 0.000001),
       );
     });
 

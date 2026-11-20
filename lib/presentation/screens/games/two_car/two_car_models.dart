@@ -10,9 +10,9 @@ class TwoCarLayout {
   static const double carHeight = 0.10;
   static const double coinWidth = 0.14;
   static const double coinHeight = 0.075;
-  static const double obstacleWidth = 0.20;
-  static const double obstacleHeight = 0.095;
-  static const double laneEdgePadding = 0.08;
+  static const double obstacleWidth = 0.17;
+  static const double obstacleHeight = 0.085;
+  static const double laneEdgePadding = 0.10;
   static const double minCarX = carWidth / 2 + laneEdgePadding;
   static const double maxCarX = 1.0 - minCarX;
 

@@ -42,8 +42,8 @@ android {
         applicationId = "com.nexasoft.dailyquiz"
         minSdk = 24
         targetSdk = 36
-        versionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 18
-        versionName = localProperties.getProperty("flutter.versionName") ?: "1.9.1"
+        versionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 19
+        versionName = localProperties.getProperty("flutter.versionName") ?: "1.9.2"
         multiDexEnabled = true
     }
 
