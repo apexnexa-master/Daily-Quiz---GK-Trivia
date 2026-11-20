@@ -27,6 +27,7 @@ import '../presentation/screens/games/math_sprint/math_sprint_screen.dart';
 import '../presentation/screens/games/flow_free/flow_free_screen.dart';
 import '../presentation/screens/games/one_line/one_line_screen.dart';
 import '../presentation/screens/games/arrow_silhouette/arrow_silhouette_screen.dart';
+import '../presentation/screens/games/two_car/two_car_screen.dart';
 import '../presentation/workout/workout_screen.dart';
 
 class AppRouter {
@@ -61,9 +62,11 @@ class AppRouter {
   static const String flowFree = '/flow-free';
   static const String oneLine = '/one-line';
   static const String arrowSilhouette = '/arrow-silhouette';
+  static const String dualDrive = '/dual-drive';
   static const String introFlowFree = '/intro/flow-free';
   static const String introOneLine = '/intro/one-line';
   static const String introArrowSilhouette = '/intro/arrow-silhouette';
+  static const String introDualDrive = '/intro/dual-drive';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     // Intercept deep links of format: /challenge/{roomId}
@@ -128,6 +131,8 @@ class AppRouter {
         return _buildFade(const OneLineScreen(), settings);
       case arrowSilhouette:
         return _buildFade(const ArrowSilhouetteScreen(), settings);
+      case dualDrive:
+        return _buildFade(const TwoCarScreen(), settings);
       case workout:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return _buildFade(
@@ -180,6 +185,14 @@ class AppRouter {
         return _buildFade(
           GameIntroScreen(
             gameData: GameIntroData.games['arrow-silhouette']!,
+            routeArgs: settings.arguments as Map<String, dynamic>?,
+          ),
+          settings,
+        );
+      case introDualDrive:
+        return _buildFade(
+          GameIntroScreen(
+            gameData: GameIntroData.games['dual-drive']!,
             routeArgs: settings.arguments as Map<String, dynamic>?,
           ),
           settings,

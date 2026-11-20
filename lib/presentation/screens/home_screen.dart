@@ -10,6 +10,7 @@ import '../../core/services/quiz_scheduler_service.dart';
 import '../../core/utils/offline_manager.dart';
 import '../../core/services/daily_progress_service.dart';
 import '../widgets/game_card.dart';
+import '../widgets/dual_drive_tile_icon.dart';
 import '../widgets/workout_card.dart';
 import '../utils/daily_challenge_auth.dart';
 import '../utils/account_linker.dart';
@@ -1435,7 +1436,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       BuildContext context, bool isBn, bool isHi, bool isDark) {
     const accentCyan = Color(0xFF00F1FE);
     const accentPurple = Color(0xFFB79CFF);
-    const accentOrange = Color(0xFFF97316);
     const accentEmerald = Color(0xFF34D399);
 
     return Column(
@@ -1501,30 +1501,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               isBn: isBn,
               isHi: isHi,
               badgeText: isBn
-                  ? 'পাজল'
+                  ? 'দুই হাত'
                   : isHi
-                      ? 'पहेली'
-                      : 'PUZZLE',
+                      ? 'दो हाथ'
+                      : 'TWO HANDS',
               title: isBn
-                  ? 'ফ্লো ফ্রি'
+                  ? 'ডুয়াল ড্রাইভ'
                   : isHi
-                      ? 'फ्लो फ्री'
-                      : 'Flow Free',
+                      ? 'डुअल ड्राइव'
+                      : 'Dual Drive',
               subtitle: isBn
-                  ? 'রঙের জোড়া জুড়ে গ্রিড পূরণ'
+                  ? 'দুই আঙুলে দুটি গাড়ি চালান'
                   : isHi
-                      ? 'रंगीन जोड़े जोड़ें'
-                      : 'Connect matching colors',
-              accent: accentEmerald,
-              icon: Icons.water_drop_rounded,
-              emblemPath: 'assets/covers/flow_free_emblem.svg',
+                      ? 'दो उँगलियों से दो कार चलाएँ'
+                      : 'Steer two cars at once',
+              accent: accentCyan,
+              cover: DualDriveTileIcon(isDark: isDark),
               footer: isBn
-                  ? 'পাইপ পাজল'
+                  ? 'বৃত্ত নিন, বর্গ এড়ান'
                   : isHi
-                      ? 'पाइप पहेली'
-                      : 'Pipe puzzle',
+                      ? 'वृत्त लें, वर्ग से बचें'
+                      : 'Circles & squares',
+              isNew: true,
               onTap: () =>
-                  Navigator.pushNamed(context, AppRouter.introFlowFree),
+                  Navigator.pushNamed(context, AppRouter.introDualDrive),
             ),
             _buildRecommendedGameTile(
               context: context,
@@ -1562,30 +1562,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               isBn: isBn,
               isHi: isHi,
               badgeText: isBn
-                  ? 'গতি'
+                  ? 'পাজল'
                   : isHi
-                      ? 'गति'
-                      : 'SPEED',
+                      ? 'पहेली'
+                      : 'PUZZLE',
               title: isBn
-                  ? 'স্ট্রুপ রাশ'
+                  ? 'ফ্লো ফ্রি'
                   : isHi
-                      ? 'स्ट्रूप रश'
-                      : 'Stroop Rush',
+                      ? 'फ्लो फ्री'
+                      : 'Flow Free',
               subtitle: isBn
-                  ? 'প্রতিক্রিয়া ও ফোকাস গতি'
+                  ? 'রঙের জোড়া জুড়ে গ্রিড পূরণ'
                   : isHi
-                      ? 'प्रतिक्रिया व फोकस गति'
-                      : 'Reaction & focus speed',
-              accent: accentOrange,
-              icon: Icons.palette_rounded,
-              emblemPath: 'assets/covers/stroop_rush_emblem.svg',
+                      ? 'रंगीन जोड़े जोड़ें'
+                      : 'Connect matching colors',
+              accent: accentEmerald,
+              icon: Icons.water_drop_rounded,
+              emblemPath: 'assets/covers/flow_free_emblem.svg',
               footer: isBn
-                  ? 'ফোকাস ও প্রতিক্রিয়া'
+                  ? 'পাইপ পাজল'
                   : isHi
-                      ? 'फोकस व प्रतिक्रिया'
-                      : 'Focus & reaction',
+                      ? 'पाइप पहेली'
+                      : 'Pipe puzzle',
               onTap: () =>
-                  Navigator.pushNamed(context, AppRouter.introStroopRush),
+                  Navigator.pushNamed(context, AppRouter.introFlowFree),
             ),
           ],
         ),

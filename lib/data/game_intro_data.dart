@@ -329,5 +329,46 @@ class GameIntroData {
       ],
       targetRoute: '/arrow-silhouette',
     ),
+    'dual-drive': GameIntroData(
+      id: 'dual-drive',
+      title: 'DUAL DRIVE',
+      titleBn: 'ডুয়াল ড্রাইভ',
+      titleHi: 'डुअल ड्राइव',
+      tagline: 'Two hands. Two cars. One road.',
+      taglineBn: 'দুই হাত। দুই গাড়ি। এক রাস্তা।',
+      taglineHi: 'दो हाथ। दो कारें। एक सड़क।',
+      icon: Icons.directions_car_rounded,
+      accentColor: Color(0xFF00E5FF),
+      secondaryColor: Color(0xFFB388FF),
+      brainBenefit:
+          'Trains divided attention and bilateral hand-eye coordination. Each car needs a separate finger, forcing your brain to track two moving hazards at once while filtering distractions and reacting quickly.',
+      brainBenefitBn:
+          'বিভক্ত মনোযোগ ও দুই হাতের চোখ-হাত সমন্বয় প্রশিক্ষণ দেয়। প্রতিটি গাড়ির জন্য আলাদা আঙুল লাগে, ফলে মস্তিষ্ক একসাথে দুটি চলমান বিপদ ট্র্যাক করে দ্রুত প্রতিক্রিয়া দেখায়।',
+      brainBenefitHi:
+          'विभाजित ध्यान और दोनों हाथों का आँख-हाथ समन्वय प्रशिक्षित करता है। हर कार के लिए अलग उँगली चाहिए, जिससे मस्तिष्क एक साथ दो गतिशील खतरों को ट्रैक करके तेज़ प्रतिक्रिया देता है।',
+      rules: [
+        'Place one finger on each half of the road',
+        'Drag to steer that car left or right',
+        'Collect every matching circle for +10 points',
+        'Missing a circle or hitting a red square ends the run',
+        'The road speeds up the longer you survive',
+      ],
+      rulesBn: [
+        'রাস্তার প্রতি ভাগে একটি করে আঙুল রাখুন',
+        'টেনে ওই গাড়িকে বাঁ বা ডানে চালান',
+        'প্রতিটি একই রঙের বৃত্ত সংগ্রহ করুন +10 পয়েন্টের জন্য',
+        'বৃত্ত মিস বা লাল বর্গক্ষেত্রে লাগলে খেলা শেষ',
+        'যতক্ষণ বেঁচে থাকবেন রাস্তা তত দ্রুত হবে',
+      ],
+      rulesHi: [
+        'सड़क के हर हिस्से पर एक उँगली रखें',
+        'खींचकर उस कार को बाएँ या दाएँ चलाएँ',
+        'हर मेल खाते वृत्त को इकट्ठा करें +10 अंकों के लिए',
+        'वृत्त चूकने या लाल वर्ग से टकराने पर खेल समाप्त',
+        'जितने देर बचेंगे सड़क उतनी तेज़ होगी',
+      ],
+      targetRoute: '/dual-drive',
+      showOrbitingDots: true,
+    ),
   };
 }

@@ -7,6 +7,7 @@ import '../providers/app_providers.dart';
 import '../../core/services/quiz/practice_quiz_service.dart';
 import '../../routes/app_router.dart';
 import '../widgets/game_card.dart';
+import '../widgets/dual_drive_tile_icon.dart';
 
 class PlayZoneScreen extends ConsumerStatefulWidget {
   const PlayZoneScreen({super.key});
@@ -223,6 +224,29 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
         isImplemented: true,
         onTap: () {
           Navigator.pushNamed(context, AppRouter.introArrowSilhouette);
+        },
+      ),
+      ChallengeData(
+        title: isBn
+            ? 'ডুয়াল ড্রাইভ'
+            : isHi
+                ? 'डुअल ड्राइव'
+                : 'Dual Drive',
+        description: isBn
+            ? 'দুই আঙুলে দুটি গাড়ি চালান, প্রতিটি বৃত্ত নিন এবং লাল বর্গক্ষেত্র এড়ান।'
+            : isHi
+                ? 'दो उँगलियों से दो कार चलाएँ, हर वृत्त लें और लाल वर्गों से बचें।'
+                : 'Steer two cars with two fingers, collect every circle and dodge red squares.',
+        category: 'Focus',
+        duration: 'Endless',
+        icon: Icons.directions_car_rounded,
+        cover: DualDriveTileIcon(isDark: isDark),
+        accentColor: const Color(0xFF00E5FF),
+        imagePath: null,
+        isLocked: false,
+        isImplemented: true,
+        onTap: () {
+          Navigator.pushNamed(context, AppRouter.introDualDrive);
         },
       ),
     ];
@@ -452,6 +476,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                               data: game,
                               isBn: isBn,
                               isHi: isHi,
+                              cover: game.cover,
                             );
                           }).toList(),
                         ),
@@ -533,8 +558,8 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
       fillHeight: true,
       compact: true,
       coverHeight: 116,
-      icon: data.icon,
-      emblemPath: _emblemPathFor(resolvedImagePath),
+      icon: cover == null ? data.icon : null,
+      emblemPath: cover == null ? _emblemPathFor(resolvedImagePath) : null,
       imagePath: cover == null ? resolvedImagePath : null,
       cover: cover,
       accent: categoryColor,
@@ -675,7 +700,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                         : isHi
                             ? 'प्रश्नों की संख्या'
                             : 'Number of Questions',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
@@ -709,7 +734,7 @@ class _PlayZoneScreenState extends ConsumerState<PlayZoneScreen> {
                         : isHi
                             ? 'कठिनाई स्तर'
                             : 'Difficulty Level',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
@@ -815,6 +840,7 @@ class ChallengeData {
   final String category;
   final String duration;
   final IconData icon;
+  final Widget? cover;
   final String? imagePath;
   final bool isLocked;
   final bool isImplemented;
@@ -828,6 +854,7 @@ class ChallengeData {
     required this.duration,
     required this.icon,
     required this.isLocked,
+    this.cover,
     this.imagePath,
     this.isImplemented = false,
     this.accentColor,
