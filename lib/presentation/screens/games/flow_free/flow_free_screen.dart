@@ -358,7 +358,7 @@ class _FlowFreeScreenState extends ConsumerState<FlowFreeScreen>
           performance: input,
           isDailyChallenge: _isDailyChallenge,
           challengeId: _isDailyChallenge
-              ? DailyChallengeService.todaysChallengeId('flowFree')
+              ? DailyChallengeService.challengeIdForGame('flowFree')
               : null,
           playerName: _playerName,
           durationSeconds: _elapsedSeconds,

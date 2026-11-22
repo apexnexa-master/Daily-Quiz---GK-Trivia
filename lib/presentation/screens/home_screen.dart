@@ -9,6 +9,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/services/quiz_scheduler_service.dart';
 import '../../core/utils/offline_manager.dart';
 import '../../core/services/daily_progress_service.dart';
+import '../../core/scoring/daily_challenge_service.dart';
 import '../widgets/game_card.dart';
 import '../widgets/dual_drive_tile_icon.dart';
 import '../widgets/workout_card.dart';
@@ -1200,144 +1201,94 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           isDark: isDark,
         ),
         const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          clipBehavior: Clip.none,
-          child: Row(
-            children: [
-              // Card 1: Arrow Puzzle daily challenge (one official attempt).
-              _buildChallengeTile(
-                context: context,
-                isDark: isDark,
-                badgeText: isBn
-                    ? 'এরো'
-                    : isHi
-                        ? 'एरो'
-                        : 'ARROWS',
-                title: isBn
-                    ? 'এরো পাজল'
-                    : isHi
-                        ? 'एरो पज़ल'
-                        : 'Arrow Puzzle',
-                subtitle: isBn
-                    ? 'আজকের তীর পাজল'
-                    : isHi
-                        ? 'आज की एरो पहेली'
-                        : "Today's silhouette puzzle",
-                timeLeft: timeLeftStr,
-                isLocked: false,
-                isLive: true,
-                onTap: () {
-                  if (!DailyChallengeAuth.canStart(ref)) {
-                    DailyChallengeAuth.requireLogin(context, ref);
-                    return;
-                  }
-                  Navigator.pushNamed(
-                    context,
-                    AppRouter.introArrowSilhouette,
-                    arguments: {'isDailyChallenge': true},
+        ValueListenableBuilder<Map<String, List<String>>>(
+          valueListenable: DailyChallengeService.scheduleNotifier,
+          builder: (context, schedule, child) {
+            final games = DailyChallengeService.gamesForToday();
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.only(right: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: games.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final game = entry.value;
+                  final isDualDrive = game.gameId == 'dualDrive';
+                  return Padding(
+                    padding: EdgeInsets.only(
+                        right: index == games.length - 1 ? 0 : 10),
+                    child: _buildChallengeTile(
+                      context: context,
+                      isDark: isDark,
+                      badgeText: game.badge,
+                      title: game.label,
+                      subtitle: isBn
+                          ? 'আজ সবার জন্য একই চ্যালেঞ্জ'
+                          : isHi
+                              ? 'आज सभी के लिए एक ही चुनौती'
+                              : "Same challenge for everyone today",
+                      timeLeft: timeLeftStr,
+                      isLocked: false,
+                      isLive: true,
+                      onTap: () {
+                        if (!DailyChallengeAuth.canStart(ref)) {
+                          DailyChallengeAuth.requireLogin(context, ref);
+                          return;
+                        }
+                        Navigator.pushNamed(
+                          context,
+                          game.introRoute,
+                          arguments: {
+                            'isDailyChallenge': true,
+                            'gameId': game.gameId,
+                          },
+                        );
+                      },
+                      isBn: isBn,
+                      isHi: isHi,
+                      icon: _dailyGameIcon(game.gameId),
+                      emblemPath: isDualDrive ? null : game.emblemPath,
+                      cover: isDualDrive
+                          ? DualDriveTileIcon(isDark: isDark)
+                          : null,
+                      footerText: isBn
+                          ? 'প্রতি গেমে এক অফিশিয়াল চেষ্টা'
+                          : isHi
+                              ? 'প্রতিক খেলে এক আধিকারিক প্রয়াস'
+                              : 'One official attempt per game',
+                    ),
                   );
-                },
-                isBn: isBn,
-                isHi: isHi,
-                icon: Icons.alt_route_rounded,
-                emblemPath: 'assets/covers/arrow_maze_emblem.svg',
-                footerText: isBn
-                    ? 'এস্কেপ পাজল'
-                    : isHi
-                        ? 'एस्केप पहेली'
-                        : 'Escape puzzle',
+                }).toList(growable: false),
               ),
-              const SizedBox(width: 12),
-              // Card 2: Stroop Rush daily challenge (one official attempt).
-              _buildChallengeTile(
-                context: context,
-                isDark: isDark,
-                badgeText: isBn
-                    ? 'স্ট্রুপ'
-                    : isHi
-                        ? 'स्ट्रूप'
-                        : 'STROOP',
-                title: isBn
-                    ? 'স্ট্রুপ রাশ'
-                    : isHi
-                        ? 'स्ट्रूप रश'
-                        : 'Stroop Rush',
-                subtitle: isBn
-                    ? 'আজকের ফোকাস স্প্রিন্ট'
-                    : isHi
-                        ? 'आज की फोकस स्प्रिंट'
-                        : "Today's focus sprint",
-                timeLeft: timeLeftStr,
-                isLocked: false,
-                isLive: true,
-                onTap: () {
-                  if (!DailyChallengeAuth.canStart(ref)) {
-                    DailyChallengeAuth.requireLogin(context, ref);
-                    return;
-                  }
-                  Navigator.pushNamed(
-                    context,
-                    AppRouter.introStroopRush,
-                    arguments: {'isDailyChallenge': true},
-                  );
-                },
-                isBn: isBn,
-                isHi: isHi,
-                icon: Icons.palette_rounded,
-                emblemPath: 'assets/covers/stroop_rush_emblem.svg',
-                footerText: isBn
-                    ? 'ফোকাস ও প্রতিক্রিয়া'
-                    : isHi
-                        ? 'फोकस और प्रतिक्रिया'
-                        : 'Focus & reaction',
-              ),
-              const SizedBox(width: 12),
-              // Card 3: Math Speed Sprint (login-gated).
-              _buildChallengeTile(
-                context: context,
-                isDark: isDark,
-                badgeText: isBn
-                    ? 'গণিত'
-                    : isHi
-                        ? 'गणित'
-                        : 'MATH',
-                title: isBn
-                    ? 'গণিত স্প্রিন্ট'
-                    : isHi
-                        ? 'गणित स्प्रिंट'
-                        : 'Math Speed Sprint',
-                subtitle: isBn
-                    ? 'গতি ও হিসাব পরীক্ষা'
-                    : isHi
-                        ? 'त्वरित गणना खेल'
-                        : 'Mental arithmetic sprint',
-                timeLeft: timeLeftStr,
-                isLocked: false,
-                isLive: false,
-                onTap: () {
-                  if (!DailyChallengeAuth.canStart(ref)) {
-                    DailyChallengeAuth.requireLogin(context, ref);
-                    return;
-                  }
-                  Navigator.pushNamed(
-                    context,
-                    AppRouter.introMathSprint,
-                    arguments: {'isDailyChallenge': true},
-                  );
-                },
-                isBn: isBn,
-                isHi: isHi,
-                icon: Icons.calculate_rounded,
-                emblemPath: 'assets/covers/math_sprint_emblem.svg',
-                footerText: null,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
+  }
+
+  IconData _dailyGameIcon(String gameId) {
+    switch (gameId) {
+      case 'quiz':
+        return Icons.quiz_rounded;
+      case 'stroop':
+        return Icons.palette_rounded;
+      case 'math':
+        return Icons.calculate_rounded;
+      case 'flowFree':
+        return Icons.grid_4x4_rounded;
+      case 'arrowSilhouette':
+        return Icons.alt_route_rounded;
+      case 'synapse':
+        return Icons.psychology_rounded;
+      case 'oneLine':
+        return Icons.draw_rounded;
+      case 'dualDrive':
+        return Icons.directions_car_rounded;
+      default:
+        return Icons.emoji_events_rounded;
+    }
   }
 
   Widget _buildChallengeTile({
@@ -1354,6 +1305,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required bool isHi,
     required IconData icon,
     String? emblemPath,
+    Widget? cover,
     String? footerText,
   }) {
     final categoryColor = isLive
@@ -1368,8 +1320,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       width: 148,
       compact: true,
       coverAspectRatio: 1.0,
-      icon: icon,
+      icon: cover == null ? icon : null,
       emblemPath: emblemPath,
+      cover: cover,
       accent: categoryColor,
       badge: badgeText,
       isLive: isLive,

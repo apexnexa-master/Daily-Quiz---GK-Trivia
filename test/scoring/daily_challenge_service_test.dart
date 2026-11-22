@@ -8,6 +8,7 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await ScoringStore.instance.resetForTest();
+    DailyChallengeService.scheduleNotifier.value = <String, List<String>>{};
   });
 
   group('DailyChallengeService.challengeIdFor', () {
@@ -18,6 +19,51 @@ void main() {
           DateTime(2026, 1, 5), 'quiz'), 'DC-20260105-quiz');
       expect(DailyChallengeService.challengeIdFor(DateTime(2026, 8, 16), 'gk'),
           DailyChallengeService.challengeIdFor(DateTime(2026, 8, 16), 'gk'));
+    });
+  });
+
+  group('DailyChallengeService schedule', () {
+    test('uses every configured game for the date', () {
+      DailyChallengeService.scheduleNotifier.value = {
+        '2026-11-18': ['math', 'dualDrive', 'quiz'],
+      };
+      final games = DailyChallengeService.gamesForDate(
+        DateTime.utc(2026, 11, 18, 12),
+      );
+
+      expect(games.map((game) => game.gameId),
+          ['math', 'dualDrive', 'quiz']);
+      expect(DailyChallengeService.isScheduledGame(
+        'dualDrive',
+        DateTime.utc(2026, 11, 18, 12),
+      ), isTrue);
+    });
+
+    test('falls back when no date or default config is cached', () {
+      final ids = DailyChallengeService.configuredGameIds(
+        DateTime.utc(2026, 11, 18, 12),
+      );
+      expect(ids, DailyChallengeService.fallbackGameIds);
+    });
+
+    test('uses default config for dates without an override', () {
+      DailyChallengeService.scheduleNotifier.value = {
+        'default': ['oneLine'],
+      };
+      final id = DailyChallengeService.scheduledChallengeId(
+        DateTime.utc(2026, 11, 18, 12),
+      );
+      expect(id, 'DC-20261118-oneLine');
+    });
+
+    test('scheduled ids use IST date and the selected game', () {
+      DailyChallengeService.scheduleNotifier.value = {
+        '2026-11-19': ['stroop'],
+      };
+      final id = DailyChallengeService.scheduledChallengeId(
+        DateTime.utc(2026, 11, 18, 20),
+      );
+      expect(id, 'DC-20261119-stroop');
     });
   });
 

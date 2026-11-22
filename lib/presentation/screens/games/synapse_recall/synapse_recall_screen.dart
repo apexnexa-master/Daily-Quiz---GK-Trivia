@@ -23,6 +23,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/services/daily_progress_service.dart';
 import '../../../../core/services/game_sfx.dart';
+import '../../../../core/scoring/daily_challenge_service.dart';
 import '../../../../core/scoring/game_performance.dart';
 import '../../../../core/scoring/progression_service.dart';
 import '../../../../core/theme/app_animations.dart';
@@ -77,6 +78,7 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
   bool _isNewBest = false;
 
   WorkoutStep? _workoutStep;
+  bool _isDailyChallenge = false;
   bool _gameFinished = false;
   int _workoutScore = 0;
 
@@ -98,6 +100,9 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
     final step = args?['workoutStep'];
     if (step is WorkoutStep && _workoutStep == null) {
       _workoutStep = step;
+    }
+    if (_workoutStep == null && args?['isDailyChallenge'] == true) {
+      _isDailyChallenge = true;
     }
   }
 
@@ -313,7 +318,13 @@ class _SynapseRecallScreenState extends ConsumerState<SynapseRecallScreen>
           gameId: 'synapse',
           mode: _workoutStep != null
               ? SessionMode.workoutGame
-              : SessionMode.practice,
+              : _isDailyChallenge
+                  ? SessionMode.dailyChallenge
+                  : SessionMode.practice,
+          isDailyChallenge: _workoutStep == null && _isDailyChallenge,
+          challengeId: _isDailyChallenge
+              ? DailyChallengeService.challengeIdForGame('synapse')
+              : null,
           gameType: GameType.synapse,
           primaryPillar: BrainPillar.memory,
           performance: input,

@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../widgets/admin/admin_upload_tab.dart';
 import '../widgets/admin/admin_timing_tab.dart';
 import '../widgets/admin/admin_question_list_tab.dart';
+import '../widgets/admin/admin_daily_challenge_tab.dart';
 import '../../core/services/quiz_scheduler_service.dart';
 
 enum AdminFlowStep { email, password, dashboard }
@@ -124,7 +125,7 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         backgroundColor: isDark ? AppColors.bgDark : AppColors.bgLight,
         appBar: AppBar(
@@ -173,6 +174,10 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
                     Tab(icon: Icon(Icons.cloud_upload_rounded), text: 'Upload'),
                     Tab(icon: Icon(Icons.storage_rounded), text: 'Database'),
                     Tab(icon: Icon(Icons.schedule_rounded), text: 'Timing'),
+                    Tab(
+                      icon: Icon(Icons.emoji_events_rounded),
+                      text: 'Daily Games',
+                    ),
                   ],
                 )
               : null,
@@ -257,6 +262,9 @@ class _AdminScreenState extends ConsumerState<AdminScreen> {
             ),
             AdminTimingTab(
               key: ValueKey('timing_$_refreshCounter'),
+            ),
+            AdminDailyChallengeTab(
+              key: ValueKey('daily_games_$_refreshCounter'),
             ),
           ],
         );

@@ -48,10 +48,10 @@ class DailyChallengeAuth {
         ),
         content: Text(
           isBn
-              ? 'আজকের চ্যালেঞ্জ খেলতে এবং আপনার স্কোর লিডারবোর্ডে জমা করতে আপনাকে অবশ্যই অ্যাকাউন্ট দিয়ে লগইন করতে হবে। অতিথি ব্যবহারকারীরা আজকের চ্যালেঞ্জ খেলতে পারবেন না।'
+              ? 'আপনি অতিথি হিসেবে খেলতে পারবেন, তবে স্কোর লিডারবোর্ডে জমা দিতে অ্যাকাউন্ট লিংক করতে হবে।'
               : isHi
-                  ? 'आज की चुनौती खेलने और लीडरबोर्ड पर अपना स्कोर दर्ज कराने के लिए आपको लॉगिन करना होगा। अतिथि उपयोगकर्ता आज की चुनौती नहीं खेल सकते।'
-                  : "To play today's challenge and save your score on the leaderboard, please sign in with your account. Guest users cannot play today's challenge.",
+                  ? 'आप अतिथि के रूप में खेल सकते हैं, लेकिन स्कोर लीडरबोर्ड में जमा करने के लिए खाता लिंक करना होगा।'
+                  : "You can play as a guest, but you'll need to sign in to submit your score to the leaderboard.",
           style: TextStyle(
             fontSize: 13,
             color: isDark ? Colors.white70 : Colors.grey.shade600,

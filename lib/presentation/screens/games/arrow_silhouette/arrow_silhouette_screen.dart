@@ -474,7 +474,7 @@ class _ArrowSilhouetteScreenState extends State<ArrowSilhouetteScreen>
         hintsUsed: (3 - _hintsRemaining).clamp(0, 3),
       ),
       isDailyChallenge: true,
-      challengeId: DailyChallengeService.todaysChallengeId('arrowSilhouette'),
+      challengeId: DailyChallengeService.challengeIdForGame('arrowSilhouette'),
       playerName: _playerName,
       durationSeconds: _elapsedSeconds,
     );

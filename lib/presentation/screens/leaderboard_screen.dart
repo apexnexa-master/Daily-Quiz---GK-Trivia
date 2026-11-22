@@ -1,10 +1,10 @@
 // lib/presentation/screens/leaderboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_animations.dart';
 import '../../core/services/local_stats_service.dart';
+import '../../core/scoring/daily_challenge_service.dart';
 import '../../core/scoring/leaderboard_service.dart';
 import '../providers/app_providers.dart';
 import '../widgets/shimmer_loading.dart';
@@ -22,7 +22,7 @@ class LeaderboardScreen extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isBn = lang == 'bn';
     final isHi = lang == 'hi';
-    final leaderboardAsync = ref.watch(localLeaderboardProvider);
+    final leaderboardAsync = ref.watch(displayLeaderboardProvider);
     final selectedTab = ref.watch(leaderboardTabProvider);
 
     return Scaffold(
@@ -35,30 +35,18 @@ class LeaderboardScreen extends ConsumerWidget {
             Expanded(
               child: leaderboardAsync.when(
                 data: (entries) {
-                  // Filter and aggregate entries based on the selected tab
                   List<LeaderboardEntryLocal> filteredEntries = [];
-                  final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+                  final todayStr = DailyChallengeService.todayDateString();
 
                   if (selectedTab == 0) {
                     filteredEntries = entries.where((e) => e.date == todayStr).toList();
-                  } else if (selectedTab == 1) {
-                    // Weekly board = best 5 daily scores per player (§19), not
-                    // a sum of every play. The engine handles the window.
-                    filteredEntries = LeaderboardService
-                        .aggregateWeekly(entries)
-                        .map((a) => LeaderboardEntryLocal(
-                              playerName: a.playerName,
-                              score: a.score,
-                              timeTaken: a.timeTaken,
-                              date: todayStr,
-                            ))
-                        .toList();
                   } else {
-                    // All-time board uses the same best-5 rule to avoid
-                    // lifetime accumulation (§21).
-                    filteredEntries = LeaderboardService
-                        .aggregateAllTime(entries)
+                    final aggregated = selectedTab == 1
+                        ? LeaderboardService.aggregateWeekly(entries)
+                        : LeaderboardService.aggregateAllTime(entries);
+                    filteredEntries = aggregated
                         .map((a) => LeaderboardEntryLocal(
+                              playerId: a.playerId,
                               playerName: a.playerName,
                               score: a.score,
                               timeTaken: a.timeTaken,
@@ -66,11 +54,38 @@ class LeaderboardScreen extends ConsumerWidget {
                             ))
                         .toList();
                   }
+
+                  filteredEntries.sort((a, b) {
+                    final scoreCompare = b.score.compareTo(a.score);
+                    if (scoreCompare != 0) return scoreCompare;
+                    return a.timeTaken.compareTo(b.timeTaken);
+                  });
 
                   if (filteredEntries.isEmpty) {
                     return _buildEmptyState(ref, isDark, isBn, isHi);
                   }
-                  return _buildContent(ref, filteredEntries, isDark, isBn, isHi, selectedTab != 0);
+                  return Column(
+                    children: [
+                      _buildMyRankCard(
+                        ref,
+                        filteredEntries,
+                        isDark,
+                        isBn,
+                        isHi,
+                        selectedTab != 0,
+                      ),
+                      Expanded(
+                        child: _buildContent(
+                          ref,
+                          filteredEntries,
+                          isDark,
+                          isBn,
+                          isHi,
+                          selectedTab != 0,
+                        ),
+                      ),
+                    ],
+                  );
                 },
                 loading: () => const Padding(
                   padding: EdgeInsets.all(20.0),
@@ -180,6 +195,45 @@ class LeaderboardScreen extends ConsumerWidget {
               color: Colors.white70,
             ),
           ),
+          const SizedBox(height: 8),
+          ValueListenableBuilder<Map<String, List<String>>>(
+            valueListenable: DailyChallengeService.scheduleNotifier,
+            builder: (context, schedule, child) {
+              final labels = DailyChallengeService.gamesForToday()
+                  .map((game) => game.label)
+                  .join(', ');
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.sports_esports_rounded,
+                        size: 13, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        isBn
+                            ? 'আজকের গেম: $labels'
+                            : isHi
+                                ? 'आज के खेल: $labels'
+                                : "Today's games: $labels",
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -249,6 +303,107 @@ class LeaderboardScreen extends ConsumerWidget {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return '${now.day} ${months[now.month - 1]}';
+  }
+
+  Widget _buildMyRankCard(
+    WidgetRef ref,
+    List<LeaderboardEntryLocal> entries,
+    bool isDark,
+    bool isBn,
+    bool isHi,
+    bool isCumulative,
+  ) {
+    final user = ref.watch(authStateProvider).value;
+    final index = entries.indexWhere((entry) {
+      if (user == null) return false;
+      if (entry.playerId.isNotEmpty) return entry.playerId == user.uid;
+      return entry.playerName == user.displayName;
+    });
+    final hasScore = index != -1;
+    final entry = hasScore ? entries[index] : null;
+    final next = hasScore && index > 0 ? entries[index - 1] : null;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.leaderboard_rounded,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasScore
+                      ? (isBn
+                          ? 'আপনার অবস্থান'
+                          : isHi
+                              ? 'आपकी रैंक'
+                              : 'Your rank')
+                      : (isBn
+                          ? 'এখনো কোনো স্কোর নেই'
+                          : isHi
+                              ? 'अभी कोई स्कोर नहीं'
+                              : 'No score yet'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white60 : Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hasScore
+                      ? '#${index + 1}  ·  ${entry!.score}${isCumulative ? '' : ' pts'}'
+                      : (isBn
+                          ? 'র্যাঙ্ক পেতে একটি গেম খেলুন'
+                          : isHi
+                              ? 'रैंक पाने के लिए एक गेम खेलें'
+                              : 'Play a game to earn your rank'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: isDark ? Colors.white : AppColors.textPrimaryLight,
+                  ),
+                ),
+                if (hasScore && next != null)
+                  Text(
+                    isBn
+                        ? 'পরবর্তী র্যাঙ্কের জন্য ${next.score - entry!.score} পয়েন্ট'
+                        : isHi
+                            ? 'अगली रैंक के लिए ${next.score - entry!.score} अंक'
+                            : '${next.score - entry!.score} pts to next rank',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white54 : Colors.grey.shade600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEmptyState(WidgetRef ref, bool isDark, bool isBn, bool isHi) {
@@ -604,10 +759,12 @@ class LeaderboardScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: _getScoreColor(entry.score).withValues(alpha: 0.15),
+              color: _getScoreColor(entry.score, isCumulative)
+                  .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _getScoreColor(entry.score).withValues(alpha: 0.3),
+                color: _getScoreColor(entry.score, isCumulative)
+                    .withValues(alpha: 0.3),
               ),
             ),
             child: Text(
@@ -615,7 +772,7 @@ class LeaderboardScreen extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
-                color: _getScoreColor(entry.score),
+                color: _getScoreColor(entry.score, isCumulative),
               ),
             ),
           ),
@@ -624,9 +781,14 @@ class LeaderboardScreen extends ConsumerWidget {
     );
   }
 
-  Color _getScoreColor(int score) {
-    if (score >= 150) return AppColors.success;
-    if (score >= 80) return AppColors.warning;
+  Color _getScoreColor(int score, bool isCumulative) {
+    if (isCumulative) {
+      if (score >= 4000) return AppColors.success;
+      if (score >= 2500) return AppColors.warning;
+      return AppColors.error;
+    }
+    if (score >= 850) return AppColors.success;
+    if (score >= 600) return AppColors.warning;
     return AppColors.error;
   }
 
@@ -670,7 +832,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                "Only official Daily Challenge submissions (GK Live Challenge) award leaderboard points. Practice modes and campaign levels never count. Each challenge grants one official attempt per day — retries can improve your personal best but never award extra points.",
+                "One game is selected for everyone each day by a date-seeded rotation (GK Quiz, Stroop Rush, Math Sprint, Flow Free or Arrow Silhouette). Only your first completed attempt in that game counts. Practice, workouts and other games never award leaderboard points. Guests can play; sign in afterwards to submit the score.",
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,
@@ -706,7 +868,7 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Each official challenge is scored as performance 0–100 (accuracy, speed, difficulty, efficiency) and then scaled ×10 into 0–1000 leaderboard points. The points shown on the board are exactly these scaled challenge points.',
+                 'Each game produces a fair 0–100 performance score from its own rules (accuracy, speed, difficulty and efficiency). It is scaled to 0–1000 and adjusted by a small per-game difficulty factor, then clamped to 1000. This keeps different daily games comparable.',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,
@@ -724,10 +886,10 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '• GK Quiz & Battle: Accuracy 60% + Difficulty 25% + Speed 15% (30s per question budget).\n'
-                '• Stroop Test: Accuracy 50% + Reaction 30% + Difficulty 20%.\n'
-                '• Synapse Recall: Sequence 50% + Accuracy 30% + Difficulty 20%.\n'
-                '• Math Speed: Accuracy 50% + Speed 30% + Difficulty 20% (6s per problem budget).',
+                '• GK Quiz: Accuracy 60% + Difficulty 25% + Speed 15%.\n'
+                '• Stroop Rush: Accuracy 50% + Reaction 30% + Difficulty 20%.\n'
+                '• Math Sprint: Accuracy 50% + Speed 30% + Difficulty 20%.\n'
+                '• Flow Free & Arrow Silhouette: Completion quality + time + efficiency.',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: isDark ? Colors.white70 : Colors.black87,

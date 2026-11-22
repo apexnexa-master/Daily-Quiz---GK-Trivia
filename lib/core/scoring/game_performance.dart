@@ -275,6 +275,32 @@ class OneLinePerformanceInput extends GamePerformanceInput {
   }
 }
 
+class DualDrivePerformanceInput extends GamePerformanceInput {
+  final int coins;
+  final int timeSeconds;
+  final bool missedCoin;
+
+  const DualDrivePerformanceInput({
+    required this.coins,
+    required this.timeSeconds,
+    this.missedCoin = false,
+  });
+
+  @override
+  int normalize() {
+    final coinScore = clamp01(coins / ScoringConfig.dualDriveTargetCoins);
+    final timeScore = clamp01(
+      (ScoringConfig.dualDriveTargetSeconds - timeSeconds) /
+          ScoringConfig.dualDriveTargetSeconds,
+    );
+    final qualityScore = missedCoin ? 0.0 : 1.0;
+    final score = coinScore * ScoringConfig.dualDriveCoinWeight +
+        timeScore * ScoringConfig.dualDriveTimeWeight +
+        qualityScore * ScoringConfig.dualDriveQualityWeight;
+    return toPercent(score);
+  }
+}
+
 /// Battle Mode (GK quiz versus another player). Same formula as the quiz.
 class BattlePerformanceInput extends GamePerformanceInput {
   final int correct;

@@ -94,6 +94,16 @@ class ScoringConfig {
   // ── Leaderboard ───────────────────────────────────────────────
   static const int dailyScoreMax = 1000;
   static const int weeklyBestChallenges = 5;
+  static const Map<String, double> dailyGameScoreMultiplier = {
+    'quiz': 1.0,
+    'synapse': 0.95,
+    'stroop': 0.95,
+    'math': 1.05,
+    'flowFree': 1.1,
+    'oneLine': 1.05,
+    'arrowSilhouette': 1.15,
+    'dualDrive': 1.1,
+  };
 
   // ── Per-game performance formulas ─────────────────────────────
   static const int quizSecondsPerQuestion = 30;
@@ -124,6 +134,12 @@ class ScoringConfig {
   static const double mathDifficultyWeight = 0.20;
   static const double mathSecondsPerAnswerBudget = 6.0;
 
+  static const double dualDriveCoinWeight = 0.65;
+  static const double dualDriveTimeWeight = 0.25;
+  static const double dualDriveQualityWeight = 0.10;
+  static const int dualDriveTargetCoins = 20;
+  static const int dualDriveTargetSeconds = 45;
+
   // ── Per-game → skill mapping (weights must sum to 1.0) ────────
   static const Map<String, Map<String, double>> gameSkillWeights = {
     // GK Quiz: Knowledge primary, Focus secondary.
@@ -144,6 +160,8 @@ class ScoringConfig {
     'oneLine': {skillLogic: 0.70, skillSpeed: 0.30},
     // Arrow Silhouette: Logic primary, Focus secondary.
     'arrowSilhouette': {skillLogic: 0.60, skillFocus: 0.40},
+    // Dual Drive: Logic, Focus and Speed all matter.
+    'dualDrive': {skillLogic: 0.35, skillFocus: 0.35, skillSpeed: 0.30},
   };
 
   /// Validates that every game's skill weights sum to 1.0 within a small

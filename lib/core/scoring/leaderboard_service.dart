@@ -39,11 +39,13 @@ class ChallengeResult {
 
 /// Aggregated leaderboard row (a player's weekly / all-time entry).
 class AggregatedEntry {
+  final String playerId;
   final String playerName;
   final int score;
   final int timeTaken;
 
   const AggregatedEntry({
+    required this.playerId,
     required this.playerName,
     required this.score,
     required this.timeTaken,
@@ -273,18 +275,19 @@ class LeaderboardService {
     DateTime? weekReference,
   }) {
     final ref = weekReference ?? DateTime.now();
-    final windowStart = ref.subtract(const Duration(days: 6));
+    final weekId = weekIdFor(ref);
 
     final grouped = <String, List<LeaderboardEntryLocal>>{};
     for (final entry in raw) {
       final date = DateTime.tryParse(entry.date);
       if (date == null) continue;
-      if (date.isBefore(windowStart) || date.isAfter(ref)) continue;
-      grouped.putIfAbsent(entry.playerName, () => []).add(entry);
+      if (weekIdFor(date) != weekId) continue;
+      final key = entry.playerId.isNotEmpty ? entry.playerId : entry.playerName;
+      grouped.putIfAbsent(key, () => []).add(entry);
     }
 
     final aggregated = <AggregatedEntry>[];
-    grouped.forEach((name, entries) {
+    grouped.forEach((key, entries) {
       final best5 = (entries.toList()
             ..sort((a, b) => b.score.compareTo(a.score)))
           .take(ScoringConfig.weeklyBestChallenges);
@@ -295,7 +298,8 @@ class LeaderboardService {
         totalTime += e.timeTaken;
       }
       aggregated.add(AggregatedEntry(
-        playerName: name,
+        playerId: key,
+        playerName: entries.first.playerName,
         score: totalScore,
         timeTaken: totalTime,
       ));
@@ -318,11 +322,12 @@ class LeaderboardService {
     final grouped = <String, List<LeaderboardEntryLocal>>{};
     for (final entry in raw) {
       if (entry.score <= 0) continue;
-      grouped.putIfAbsent(entry.playerName, () => []).add(entry);
+      final key = entry.playerId.isNotEmpty ? entry.playerId : entry.playerName;
+      grouped.putIfAbsent(key, () => []).add(entry);
     }
 
     final aggregated = <AggregatedEntry>[];
-    grouped.forEach((name, entries) {
+    grouped.forEach((key, entries) {
       final best5 = (entries.toList()
             ..sort((a, b) => b.score.compareTo(a.score)))
           .take(ScoringConfig.weeklyBestChallenges);
@@ -333,7 +338,8 @@ class LeaderboardService {
         totalTime += e.timeTaken;
       }
       aggregated.add(AggregatedEntry(
-        playerName: name,
+        playerId: key,
+        playerName: entries.first.playerName,
         score: totalScore,
         timeTaken: totalTime,
       ));

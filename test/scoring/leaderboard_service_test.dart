@@ -12,6 +12,15 @@ String _day(int daysAgo) {
   return '${d.year}-$m-$day';
 }
 
+String _thisWeekDay(int indexFromMonday) {
+  final now = DateTime.now();
+  final monday = now.subtract(Duration(days: now.weekday - DateTime.monday));
+  final d = monday.add(Duration(days: indexFromMonday));
+  final m = d.month.toString().padLeft(2, '0');
+  final day = d.day.toString().padLeft(2, '0');
+  return '${d.year}-$m-$day';
+}
+
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -131,20 +140,19 @@ void main() {
     test('aggregateWeekly sums only the best 5 in the window', () {
       final raw = [
         LeaderboardEntryLocal(
-            playerName: 'A', score: 900, timeTaken: 10, date: _day(0)),
+            playerName: 'A', score: 900, timeTaken: 10, date: _thisWeekDay(0)),
         LeaderboardEntryLocal(
-            playerName: 'A', score: 800, timeTaken: 20, date: _day(1)),
+            playerName: 'A', score: 800, timeTaken: 20, date: _thisWeekDay(1)),
         LeaderboardEntryLocal(
-            playerName: 'A', score: 700, timeTaken: 30, date: _day(2)),
+            playerName: 'A', score: 700, timeTaken: 30, date: _thisWeekDay(2)),
         LeaderboardEntryLocal(
-            playerName: 'A', score: 600, timeTaken: 40, date: _day(3)),
+            playerName: 'A', score: 600, timeTaken: 40, date: _thisWeekDay(3)),
         LeaderboardEntryLocal(
-            playerName: 'A', score: 500, timeTaken: 50, date: _day(4)),
+            playerName: 'A', score: 500, timeTaken: 50, date: _thisWeekDay(4)),
         LeaderboardEntryLocal(
-            playerName: 'A', score: 400, timeTaken: 60, date: _day(5)),
+            playerName: 'A', score: 400, timeTaken: 60, date: _thisWeekDay(5)),
         LeaderboardEntryLocal(
-            playerName: 'A', score: 300, timeTaken: 70, date: _day(6)),
-        // Outside the 7-day window — must be ignored.
+            playerName: 'A', score: 300, timeTaken: 70, date: _thisWeekDay(6)),
         LeaderboardEntryLocal(
             playerName: 'A', score: 950, timeTaken: 5, date: _day(10)),
       ];
@@ -158,9 +166,9 @@ void main() {
     test('aggregateWeekly handles players with fewer than 5 days', () {
       final raw = [
         LeaderboardEntryLocal(
-            playerName: 'B', score: 700, timeTaken: 10, date: _day(0)),
+            playerName: 'B', score: 700, timeTaken: 10, date: _thisWeekDay(0)),
         LeaderboardEntryLocal(
-            playerName: 'B', score: 200, timeTaken: 20, date: _day(1)),
+            playerName: 'B', score: 200, timeTaken: 20, date: _thisWeekDay(1)),
       ];
       final agg = LeaderboardService.aggregateWeekly(raw);
       expect(agg.first.score, 900);

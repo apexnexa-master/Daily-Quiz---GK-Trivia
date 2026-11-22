@@ -10,6 +10,7 @@
 // throws: bookkeeping failures degrade silently instead of breaking a game.
 
 import '../services/analytics_service.dart';
+import '../services/daily_challenge_submission_service.dart';
 import '../services/daily_progress_service.dart';
 import '../services/local_stats_service.dart';
 import 'activity_service.dart';
@@ -53,6 +54,8 @@ class SessionRecord {
   /// Session duration in seconds (leaderboard time tie-break).
   final int durationSeconds;
 
+  final DateTime? challengeDate;
+
   const SessionRecord({
     required this.gameId,
     required this.mode,
@@ -63,6 +66,7 @@ class SessionRecord {
     this.challengeId,
     this.playerName,
     this.durationSeconds = 0,
+    this.challengeDate,
   });
 }
 
@@ -132,21 +136,25 @@ class ProgressionService {
     //    best for display but never double-reward (§18 / §33).
     var challengeScore = 0;
     var countsAsOfficial = false;
+    var officialChallengeId = '';
     if (record.isDailyChallenge && perf > 0) {
-      challengeScore =
-          (perf / 100 * ScoringConfig.dailyScoreMax).round().clamp(0, 1000);
-      final challengeId =
-          record.challengeId ?? DailyChallengeService.todaysChallengeId(record.gameId);
-      try {
-        final submission =
-            await DailyChallengeService.instance.submitOfficialScore(
-          challengeId: challengeId,
-          score: challengeScore,
-        );
-        countsAsOfficial = submission.countsAsOfficial;
-      } catch (_) {
-        // Invalid/unparseable score — treat as non-official so nothing leaks
-        // into the leaderboard.
+      final challengeDate =
+          record.challengeDate ?? DailyChallengeService.challengeDate();
+      if (DailyChallengeService.isScheduledGame(record.gameId, challengeDate)) {
+        final multiplier = DailyChallengeService.scoreMultiplierFor(record.gameId);
+        challengeScore = (perf / 100 * ScoringConfig.dailyScoreMax * multiplier)
+            .round()
+            .clamp(0, ScoringConfig.dailyScoreMax);
+        officialChallengeId =
+            DailyChallengeService.challengeIdForGame(record.gameId, challengeDate);
+        try {
+          final submission =
+              await DailyChallengeService.instance.submitOfficialScore(
+            challengeId: officialChallengeId,
+            score: challengeScore,
+          );
+          countsAsOfficial = submission.countsAsOfficial;
+        } catch (_) {}
       }
     }
 
@@ -216,22 +224,33 @@ class ProgressionService {
       } catch (_) {}
       try {
         await LeaderboardService.instance.recordChallengeResult(
-          challengeId: record.challengeId ??
-              DailyChallengeService.todaysChallengeId(record.gameId),
-          date: DateTime.now(),
+          challengeId: officialChallengeId,
+          date: record.challengeDate ?? DailyChallengeService.challengeDate(),
           score: challengeScore,
         );
         await LeaderboardService.instance.updateBestDailyScore(challengeScore);
       } catch (_) {}
+
       final effectiveName = (record.playerName != null && record.playerName!.isNotEmpty)
           ? record.playerName!
           : 'Explorer';
+      final playerId = await DailyChallengeSubmissionService.instance
+          .currentPlayerId();
       try {
         await LocalStatsService.instance.addScoreToLeaderboard(
           effectiveName,
           challengeScore,
           record.durationSeconds,
-          record.challengeId ?? 'daily_challenge',
+          officialChallengeId,
+          playerId: playerId ?? '',
+        );
+      } catch (_) {}
+
+      try {
+        await DailyChallengeSubmissionService.instance.submit(
+          challengeId: officialChallengeId,
+          score: challengeScore,
+          timeTaken: record.durationSeconds,
         );
       } catch (_) {}
     }

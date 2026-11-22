@@ -605,7 +605,7 @@ class _StroopRushScreenState extends ConsumerState<StroopRushScreen>
           ),
           isDailyChallenge: _isDailyChallenge,
           challengeId: _isDailyChallenge
-              ? DailyChallengeService.todaysChallengeId('stroop')
+              ? DailyChallengeService.challengeIdForGame('stroop')
               : null,
           playerName: _playerName,
         ),

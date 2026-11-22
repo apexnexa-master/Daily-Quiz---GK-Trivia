@@ -247,23 +247,7 @@ class QuizService {
         'challengeId': challengeId,
         'timeTaken': timeTaken,
       });
-    } catch (_) {
-      // Fallback: write directly to Firestore leaderboard collection if Cloud Function fails/offline
-      try {
-        await _db
-            .collection(AppConstants.colLeaderboard)
-            .doc(user.uid)
-            .set({
-          'uid': user.uid,
-          'display_name': playerName.isNotEmpty ? playerName : 'Explorer',
-          'score': score,
-          'time_taken': timeTaken,
-          'challenge_id': challengeId,
-          'quiz_date': DateTime.now().toIso8601String().split('T').first,
-          'updated_at': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      } catch (_) {}
-    }
+    } catch (_) {}
   }
 
   // ── Streak ────────────────────────────────────────────────

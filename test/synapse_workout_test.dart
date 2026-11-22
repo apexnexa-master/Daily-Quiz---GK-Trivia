@@ -55,16 +55,11 @@ Future<void> _startSynapse(WidgetTester tester, _Result result) async {
 
   await tester.tap(find.text('open'));
   await tester.pump(Duration.zero);
+  await tester.pump(Duration.zero);
   await tester.pump(const Duration(milliseconds: 400));
 
-  expect(find.text('START'), findsOneWidget,
-      reason: 'Screen texts: ${_screenTexts(tester)}');
-  await tester.tap(find.text('START'));
-  await tester.pump(Duration.zero);
-
-  // Games start immediately after Start — no 3-2-1 countdown gate anymore.
-  await tester.pump();
-  await tester.pump();
+  // Workout games start automatically — no intro Start gate or countdown.
+  expect(find.byType(SynapseRecallScreen), findsOneWidget);
 }
 
 /// Captures the memorize sequence (rendered in order on the board) and waits

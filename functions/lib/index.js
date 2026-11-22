@@ -28,6 +28,35 @@ const getWeekId = (date) => {
     return `${d.getFullYear()}-W${String(week).padStart(2, '0')}`;
 };
 const EXAM_MODES = ['GENERAL', 'WBPSC', 'SSC', 'UPSC', 'BANK'];
+const DAILY_GAME_KEYS = [
+    'quiz',
+    'synapse',
+    'stroop',
+    'math',
+    'flowFree',
+    'oneLine',
+    'arrowSilhouette',
+    'dualDrive',
+];
+const FALLBACK_DAILY_GAME_KEYS = [
+    'arrowSilhouette',
+    'math',
+    'dualDrive',
+];
+const getConfiguredDailyGames = async (date) => {
+    var _a;
+    const configs = db.collection('daily_challenge_config');
+    for (const docId of [date, 'default']) {
+        const snap = await configs.doc(docId).get();
+        const gameIds = (_a = snap.data()) === null || _a === void 0 ? void 0 : _a.game_ids;
+        if (!Array.isArray(gameIds) || gameIds.length === 0)
+            continue;
+        const valid = gameIds.filter((id) => typeof id === 'string' && DAILY_GAME_KEYS.includes(id));
+        if (valid.length > 0)
+            return valid;
+    }
+    return FALLBACK_DAILY_GAME_KEYS;
+};
 // ══════════════════════════════════════════════════════════════
 // 1. DAILY QUIZ GENERATOR
 //    Cron: every day at 6:30 AM IST (1:00 AM UTC)
@@ -289,7 +318,7 @@ async function updateUserStats(uid, score) {
 //    and writes/merges the daily entry atomically. Retries are marked
 //    non-official and never inflate the score.
 // ══════════════════════════════════════════════════════════════
-const CHALLENGE_ID_PATTERN = /^DC-\d{8}-[a-z_]+$/;
+const CHALLENGE_ID_PATTERN = /^DC-(\d{8})-([a-zA-Z][a-zA-Z0-9]*)$/;
 exports.submitChallengeScore = functions
     .region('asia-south1')
     .https
@@ -308,9 +337,16 @@ exports.submitChallengeScore = functions
         throw new functions.https.HttpsError('invalid-argument', 'challengeId must be a valid daily challenge id');
     }
     const t = (typeof timeTaken === 'number' && timeTaken >= 0) ? Math.floor(timeTaken) : 0;
+    const parts = CHALLENGE_ID_PATTERN.exec(challengeId);
+    if (!parts) {
+        throw new functions.https.HttpsError('invalid-argument', 'challengeId must be a valid daily challenge id');
+    }
     const today = getISTDate();
-    if (!challengeId.startsWith(`DC-${today}-`)) {
-        throw new functions.https.HttpsError('invalid-argument', 'challenge is not valid for today');
+    const compactDate = today.replace(/-/g, '');
+    const gameKey = parts[2];
+    const allowedGames = await getConfiguredDailyGames(today);
+    if (parts[1] !== compactDate || !allowedGames.includes(gameKey)) {
+        throw new functions.https.HttpsError('invalid-argument', 'challenge is not scheduled for today');
     }
     const uid = context.auth.uid;
     const entryId = `${uid}_${today}`;
@@ -338,6 +374,8 @@ exports.submitChallengeScore = functions
                 quiz_date: today,
                 week_id: weekId,
                 exam_mode: 'GENERAL',
+                game_id: gameKey,
+                game_ids: admin.firestore.FieldValue.arrayUnion(gameKey),
                 rank: 99,
                 verified: true,
                 completed_challenges: [...prevChallenges, challengeId],

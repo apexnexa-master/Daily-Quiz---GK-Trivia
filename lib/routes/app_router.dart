@@ -132,7 +132,15 @@ class AppRouter {
       case arrowSilhouette:
         return _buildFade(const ArrowSilhouetteScreen(), settings);
       case dualDrive:
-        return _buildFade(const TwoCarScreen(), settings);
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        return _buildFade(
+          TwoCarScreen(
+            isDailyChallenge:
+                args['isDailyChallenge'] == true && args['workoutStep'] == null,
+            seed: args['seed'] as int?,
+          ),
+          settings,
+        );
       case workout:
         final args = settings.arguments as Map<String, dynamic>? ?? {};
         return _buildFade(
@@ -149,7 +157,10 @@ class AppRouter {
         );
       case introSynapseRecall:
         return _buildFade(
-          GameIntroScreen(gameData: GameIntroData.games['synapse-recall']!),
+          GameIntroScreen(
+            gameData: GameIntroData.games['synapse-recall']!,
+            routeArgs: settings.arguments as Map<String, dynamic>?,
+          ),
           settings,
         );
       case introMathSprint:
@@ -162,7 +173,10 @@ class AppRouter {
         );
       case introGkQuiz:
         return _buildFade(
-          GameIntroScreen(gameData: GameIntroData.games['gk-quiz']!),
+          GameIntroScreen(
+            gameData: GameIntroData.games['gk-quiz']!,
+            routeArgs: settings.arguments as Map<String, dynamic>?,
+          ),
           settings,
         );
       case introFlowFree:

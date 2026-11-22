@@ -33,6 +33,7 @@ class GameType {
   static const String flowFree = 'flowFree';
   static const String oneLine = 'oneLine';
   static const String arrowSilhouette = 'arrowSilhouette';
+  static const String dualDrive = 'dualDrive';
 }
 
 class DailyProgress {

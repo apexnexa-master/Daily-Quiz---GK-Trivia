@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/scoring/daily_challenge_service.dart';
+import '../../../../core/scoring/game_performance.dart';
+import '../../../../core/scoring/progression_service.dart';
+import '../../../../core/services/daily_progress_service.dart';
 import '../../../../core/services/game_sfx.dart';
 import '../../../games/widgets/game_results_panel.dart';
 import '../../../games/widgets/game_scaffold.dart';
@@ -17,7 +23,14 @@ import 'two_car_painter.dart';
 const String _twoCarBestKey = 'two_car_drive_best';
 
 class TwoCarScreen extends ConsumerStatefulWidget {
-  const TwoCarScreen({super.key});
+  final bool isDailyChallenge;
+  final int? seed;
+
+  const TwoCarScreen({
+    super.key,
+    this.isDailyChallenge = false,
+    this.seed,
+  });
 
   @override
   ConsumerState<TwoCarScreen> createState() => _TwoCarScreenState();
@@ -25,7 +38,7 @@ class TwoCarScreen extends ConsumerStatefulWidget {
 
 class _TwoCarScreenState extends ConsumerState<TwoCarScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
-  final TwoCarEngine _engine = TwoCarEngine();
+  late final TwoCarEngine _engine;
   final Map<int, int> _pointerLanes = <int, int>{};
 
   Ticker? _ticker;
@@ -43,6 +56,11 @@ class _TwoCarScreenState extends ConsumerState<TwoCarScreen>
   @override
   void initState() {
     super.initState();
+    final dailySeed =
+        widget.seed ?? int.tryParse(DailyChallengeService.dateKey());
+    _engine = TwoCarEngine(
+      seed: widget.isDailyChallenge ? dailySeed : null,
+    );
     WidgetsBinding.instance.addObserver(this);
     _loadBest();
   }
@@ -180,6 +198,33 @@ class _TwoCarScreenState extends ConsumerState<TwoCarScreen>
       _best = isNewBest ? _engine.score : previous;
       _isNewBest = isNewBest;
     });
+
+    if (widget.isDailyChallenge) {
+      final input = DualDrivePerformanceInput(
+        coins: _engine.coins,
+        timeSeconds: _engine.elapsedSeconds,
+        missedCoin: _engine.failure == TwoCarFailure.missedCoin,
+      );
+      unawaited(
+        ProgressionService.instance.recordSession(
+          SessionRecord(
+            gameId: 'dualDrive',
+            mode: SessionMode.dailyChallenge,
+            gameType: GameType.dualDrive,
+            primaryPillar: BrainPillar.reaction,
+            performance: input,
+            isDailyChallenge: true,
+            challengeId:
+                DailyChallengeService.challengeIdForGame('dualDrive'),
+            durationSeconds: _engine.elapsedSeconds,
+          ),
+        ),
+      );
+      try {
+        ProviderScope.containerOf(context, listen: false)
+            .invalidate(dailyProgressProvider);
+      } catch (_) {}
+    }
   }
 
   void _onPointerDown(PointerDownEvent event, double boardWidth) {

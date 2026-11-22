@@ -1,6 +1,5 @@
 // lib/presentation/screens/result_screen.dart
 import 'dart:math' as math;
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -9,7 +8,6 @@ import '../providers/scoring_providers.dart';
 import '../widgets/result/score_circle.dart';
 import '../widgets/result/question_review_card.dart';
 import '../../core/services/ad_service.dart';
-import '../../core/services/quiz_service.dart';
 import '../../core/services/question_tracking_service.dart';
 import '../../core/services/daily_progress_service.dart';
 import '../../core/scoring/brain_score.dart';
@@ -311,7 +309,7 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
               avgDifficulty: _averageQuizDifficulty(session),
             ),
             isDailyChallenge: !isPractice,
-            challengeId: 'gk_challenge',
+            challengeId: DailyChallengeService.challengeIdForGame('quiz'),
             playerName: ref.read(authServiceProvider).currentUser?.displayName ?? 'Explorer',
             durationSeconds: totalTimeTaken,
           ),
@@ -322,22 +320,6 @@ class _ResultScreenState extends ConsumerState<ResultScreen>
           });
         }
         ref.invalidate(dailyProgressProvider);
-
-        // Push the normalized challenge score (0-1000) to the global
-        // leaderboard. Only the standalone daily challenge does this —
-        // workout quizzes never reach this screen, and raw per-game points
-        // are never uploaded anywhere.
-        final user = ref.read(authServiceProvider).currentUser;
-        if (!isPractice && user != null && outcome.challengeScore > 0) {
-          unawaited(
-            QuizService().submitScoreToLeaderboard(
-              playerName: user.displayName ?? 'You',
-              score: outcome.challengeScore,
-              timeTaken: totalTimeTaken,
-              challengeId: DailyChallengeService.todaysChallengeId('quiz'),
-            ),
-          );
-        }
 
         // Mark questions as answered
         final questionIds = session.quiz.questions.map((q) => q.id).toList();

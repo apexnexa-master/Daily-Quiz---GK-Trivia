@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/daily_challenge_submission_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../providers/app_providers.dart';
 
@@ -25,9 +26,21 @@ class AccountLinker {
       },
     );
 
+    final authService = ref.read(authServiceProvider);
     UpgradeResult? result;
     try {
-      result = await ref.read(authServiceProvider).upgradeAnonymousAccount();
+      final currentUser = authService.currentUser;
+      if (currentUser == null) {
+        final authResult = await authService.signInWithGoogle();
+        if (authResult != null) {
+          result = UpgradeResult(
+            userCredential: authResult.credential,
+            needsOnboarding: false,
+          );
+        }
+      } else if (currentUser.isAnonymous) {
+        result = await authService.upgradeAnonymousAccount();
+      }
     } catch (e) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (dialogContext != null && dialogContext!.mounted) {
@@ -70,6 +83,8 @@ class AccountLinker {
       }
 
       ref.invalidate(authStateProvider);
+      await DailyChallengeSubmissionService.instance.flushPending();
+      ref.invalidate(localLeaderboardProvider);
 
       if (result.needsOnboarding) {
         WidgetsBinding.instance.addPostFrameCallback((_) {

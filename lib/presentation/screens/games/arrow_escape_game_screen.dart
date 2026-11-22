@@ -17,6 +17,7 @@ import '../../../core/theme/app_animations.dart';
 import '../../../../core/services/ad_service.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/daily_progress_service.dart';
+import '../../../../core/scoring/daily_challenge_service.dart';
 import '../../../../core/scoring/game_performance.dart';
 import '../../../../core/scoring/progression_service.dart';
 import '../../providers/app_providers.dart';
@@ -581,7 +582,7 @@ class _ArrowEscapeGameScreenState extends State<ArrowEscapeGameScreen>
             primaryPillar: BrainPillar.logic,
             performance: input,
             isDailyChallenge: true,
-            challengeId: 'arrow_puzzle',
+            challengeId: DailyChallengeService.todaysChallengeId(),
             playerName: playerName,
             durationSeconds: _elapsedSeconds,
           ),

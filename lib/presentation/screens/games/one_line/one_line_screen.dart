@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/scoring/daily_challenge_service.dart';
 import '../../../../core/scoring/game_performance.dart';
 import '../../../../core/scoring/progression_service.dart';
 import '../../../../core/services/cloud_sync_service.dart';
@@ -86,6 +87,8 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
   String? _resultWord;
   int _elapsedSeconds = 0;
 
+  bool _isDailyChallenge = false;
+
   Timer? _clockTimer;
   Timer? _autoStartTimer;
   Timer? _hintTimer;
@@ -113,6 +116,14 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
       : _isHi
           ? hi
           : en;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    if (args?['isDailyChallenge'] == true) _isDailyChallenge = true;
+  }
 
   @override
   void initState() {
@@ -303,10 +314,17 @@ class _OneLineScreenState extends ConsumerState<OneLineScreen>
     );
     unawaited(ProgressionService.instance.recordSession(SessionRecord(
       gameId: 'oneLine',
-      mode: SessionMode.practice,
+      mode: _isDailyChallenge
+          ? SessionMode.dailyChallenge
+          : SessionMode.practice,
       gameType: GameType.oneLine,
       primaryPillar: BrainPillar.logic,
       performance: input,
+      isDailyChallenge: _isDailyChallenge,
+      challengeId: _isDailyChallenge
+          ? DailyChallengeService.challengeIdForGame('oneLine')
+          : null,
+      durationSeconds: _elapsedSeconds,
     )));
     try {
       ProviderScope.containerOf(context, listen: false)

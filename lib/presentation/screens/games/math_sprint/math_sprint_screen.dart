@@ -397,7 +397,7 @@ class _MathSprintScreenState extends ConsumerState<MathSprintScreen>
           performance: input,
           isDailyChallenge: _isDailyChallenge,
           challengeId: _isDailyChallenge
-              ? DailyChallengeService.todaysChallengeId('math')
+              ? DailyChallengeService.challengeIdForGame('math')
               : null,
           playerName: _playerName,
           durationSeconds: _engine.runSeconds,
